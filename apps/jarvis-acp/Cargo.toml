@@ -54,7 +54,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "jarvis-acp-test-driver"
-path = "src/bin/agent-vesper-acp-test-driver.rs"
+path = "src/bin/jarvis-acp-test-driver.rs"
 required-features = ["integration-test-harness"]
 
 [lints]

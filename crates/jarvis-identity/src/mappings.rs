@@ -651,7 +651,7 @@ pub const MAPPINGS: &[Mapping] = &[
         legacy: "AGENT_VESPER_TEST_DISPATCH_GATE",
         planned: None,
         classification: RequiresEvidence,
-        source: "apps/jarvis-acp/src/bin/agent-vesper-acp-test-driver.rs",
+        source: "apps/jarvis-acp/src/bin/jarvis-acp-test-driver.rs",
     },
     Mapping {
         surface: Environment,

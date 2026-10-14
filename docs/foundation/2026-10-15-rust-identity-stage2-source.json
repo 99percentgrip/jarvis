@@ -567,11 +567,11 @@
     {
       "change": "A",
       "path": "apps/jarvis-acp/Cargo.toml",
-      "sha256": "e9109a60c41bf0bc028aa9ebb14acb65b44c54a1ec1b6b1b5eed1fb4dd6f2a14"
+      "sha256": "c4322b097bea3d01249c8fa1b020e3f9bb02d637f76f8e80d808f5d7346cd58e"
     },
     {
       "change": "R091",
-      "path": "apps/jarvis-acp/src/bin/agent-vesper-acp-test-driver.rs",
+      "path": "apps/jarvis-acp/src/bin/jarvis-acp-test-driver.rs",
       "from": "apps/agent-vesper-acp/src/bin/agent-vesper-acp-test-driver.rs",
       "sha256": "c06b83b0682eeef9ec97e457ac08856dbdc6e8ec62bed933eefa04f0d1193337"
     },
@@ -2789,7 +2789,7 @@
     {
       "change": "M",
       "path": "crates/jarvis-identity/src/mappings.rs",
-      "sha256": "71f7c1bf2ef7485c100f0fe59254da1114a74de64f8e80064e17cbdf486f1ea5"
+      "sha256": "adc4a6db5f25385725a15d274f9440a5a77d46ee975c212be423ff6445e453a3"
     },
     {
       "change": "M",
