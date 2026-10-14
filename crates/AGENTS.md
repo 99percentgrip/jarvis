@@ -8,6 +8,12 @@ test-only conformance support.
 
 ## Local Contracts
 
+- `jarvis-identity` owns side-effect-free Stage 1 planned identities and explicit
+  first-party package ownership. It has no production dependencies or runtime
+  consumers; only xtask verification may link it. Its dev-only config dependency
+  compares planned paths against the real Vesper defaults.
+
+
 - `vesper-domain` depends on no workspace crate.
 - `vesper-provider` depends only on `vesper-domain`.
 - `vesper-security` depends on no workspace crate.
@@ -152,6 +158,10 @@ test-only conformance support.
 - Run `cargo test --workspace --all-features`.
 
 ## Child DOX Index
+
+- `jarvis-identity/AGENTS.md` — planned identity, compatibility registry and pure
+  ownership verification; runtime migration is not authorized by this module.
+
 
 - `vesper-domain/AGENTS.md` — stable provider-neutral values and events.
 - `vesper-config/AGENTS.md` — platform paths, profiles, and typed configuration.

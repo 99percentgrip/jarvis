@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/jarvis-identity",
     "apps/agent-vesper-acp",
     "apps/agent-vesper-tui",
     "crates/vesper-config",

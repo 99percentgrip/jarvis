@@ -2,10 +2,15 @@
 
 ## Purpose
 
-Own read-only external-repository pattern reconnaissance synthesized into
+Own first-party identity specifications and read-only external-repository pattern reconnaissance synthesized into
 Vesper terminology, feeding future feature PRDs (e.g. VRO-16 hive governance).
 
 ## Ownership
+
+- `identity-architecture.md` owns the authorized Stage 1 first-party identity and
+  compatibility inventory. Its scope is local architecture design; the external
+  reconnaissance rules below apply to external reports, not this specification.
+
 
 - `recon_existing_voice_stack.md` owns the read-only inventory of
   Vesper's own shipped voice capabilities (push-to-talk trace, the

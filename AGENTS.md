@@ -96,9 +96,10 @@ Default section order:
   change unless Alex explicitly requests a documentation-only push.
 - Prose-only and execution-report updates require content, links, JSON and
   whitespace checks, not program suites, a version bump or another release.
-  Automatic CI filters must exclude prose/report-only pushes while retaining
-  gates for source, fixtures, bundled skills, dependencies, workflows and
-  release-objective provenance. Never represent skipped checks as release proof.
+  In J.A.R.V.I.S., all mandatory checks run for every PR and main push, including
+  prose, because branch protection requires the full matrix. This explicit owner
+  policy supersedes inherited documentation path exclusions. Never represent
+  skipped checks as proof.
 
 When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
 
@@ -179,11 +180,19 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Project Contracts
 
+- Stage 1 identity specifications live in `jarvis-identity`; only verification
+  consumes them. Existing packages, runtime paths, credentials, protocol fields,
+  installers and release controllers remain unchanged until their separate stage
+  approval. The naming embargo retains its frozen baseline; reviewed quoted
+  first-party declarations are allowed only in the owned Stage 1 scope.
+
+
 - J.A.R.V.I.S. solo-maintainer governance requires feature-branch PRs, resolved review
   threads and successful exact-PR-head CI/security gates, with zero mandatory human
   approvals and no ruleset bypass. Main deletion and force-push remain prohibited.
   Release tags stay frozen and publishing/controlled RRC workflows stay disabled
-  until separately authorized. No Rust identity migration is authorized by CI setup.
+  until separately authorized. Independent future registration/release ownership
+  never adopts the original Vesper registry PR or release epochs. No Rust identity migration is authorized by CI setup.
 
 - Hash-pinned fixtures and routing evidence retain LF bytes through `.gitattributes`
   on every platform. Do not weaken frozen digests to accommodate checkout conversion.

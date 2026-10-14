@@ -1,0 +1,11 @@
+{
+  "source_repository": "99percentgrip/agent-vesper",
+  "source_release": "v0.24.14",
+  "tag_object": "4f53195320e4a0a8439a933e9378655a0616cba4",
+  "source_commit": "692985a1ceeb2740024c8a4b26770d5afb4ee889",
+  "tag_signature_verified": false,
+  "release_url": "https://github.com/99percentgrip/agent-vesper/releases/tag/v0.24.14",
+  "stage1_baseline": "57d8280a8d4a470af5878088b9d8d0e1645a12da",
+  "source_ref": "upstream/vesper/v0.24.14",
+  "method": "Authenticated read-only GitHub tag object and release lookup; unsigned tag, no cryptographic verification claimed."
+}

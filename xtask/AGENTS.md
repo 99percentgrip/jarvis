@@ -7,6 +7,17 @@ architecture, MSRV, and source-oracle checks.
 
 ## Local Contracts
 
+- Architecture verifies all current first-party packages/binaries/import targets
+  against the explicit Stage 1 registry. Only verification may consume the new
+  pure identity module. Runtime consumer or production-dependency drift fails.
+- `src/identity_purity.rs` admits only pure standard-library data/path operations
+  and rejects I/O, clock, grouped imports, output and external code boundaries.
+- `src/identity_naming.rs` permits only reviewed quoted first-party identifiers
+  within the new identity crate and named Stage 1 owner documents. Bare upstream
+  branding, unknown identifiers and historical-scope additions stay embargoed;
+  the frozen naming baseline and all thirteen upstream patterns remain intact.
+
+
 - Resolve repository and fixture roots from the invoking directory at runtime,
   including nested paths and shared-cache worktrees. Print the actual verification
   workspace. Never fall back to `CARGO_MANIFEST_DIR` embedded in a cached binary;
