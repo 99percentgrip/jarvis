@@ -65,11 +65,18 @@ fn actual_workspace() -> Vec<WorkspacePackage> {
                 .filter(|t| t["kind"].as_array().unwrap().iter().any(|k| k == "bin"))
                 .map(|t| t["name"].as_str().unwrap().to_owned())
                 .collect(),
+            custom_build: p["targets"].as_array().unwrap().iter().any(|t| {
+                t["kind"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|k| k == "custom-build")
+            }),
             normal_dependencies: p["dependencies"]
                 .as_array()
                 .unwrap()
                 .iter()
-                .filter(|d| d["kind"].is_null())
+                .filter(|d| d["kind"].as_str() != Some("dev"))
                 .map(|d| d["name"].as_str().unwrap().to_owned())
                 .collect(),
         })
@@ -113,6 +120,7 @@ fn newly_added_packages_binaries_or_runtime_dependencies_fail_verification() {
         manifest: "crates/unregistered/Cargo.toml".into(),
         library: None,
         binaries: vec![],
+        custom_build: false,
         normal_dependencies: vec![],
     });
     assert!(validate_workspace(&changed).is_err());
@@ -124,6 +132,13 @@ fn newly_added_packages_binaries_or_runtime_dependencies_fail_verification() {
     assert!(validate_workspace(&changed).is_err());
     let mut changed = actual.clone();
     changed[0].library = Some("unregistered_library".into());
+    assert!(validate_workspace(&changed).is_err());
+    let mut changed = actual.clone();
+    changed
+        .iter_mut()
+        .find(|p| p.name == "jarvis-identity")
+        .unwrap()
+        .custom_build = true;
     assert!(validate_workspace(&changed).is_err());
     for target in ["jarvis-identity", "vesper-domain"] {
         let mut changed = actual.clone();
@@ -348,4 +363,57 @@ fn all_five_planned_platform_roots_are_disjoint_from_actual_legacy_defaults() {
         assert_ne!(new.scope_stamp, ".vesper-scope-id");
     }
     assert_eq!(DISTRIBUTIONS.len(), 5);
+}
+
+#[test]
+fn active_source_and_shipped_skill_environment_inputs_are_all_classified() {
+    fn collect(directory: &Path, found: &mut BTreeSet<String>) {
+        for entry in std::fs::read_dir(directory).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() {
+                if entry.file_name() != "jarvis-identity" {
+                    collect(&path, found);
+                }
+                continue;
+            }
+            let extension = path.extension().and_then(|v| v.to_str()).unwrap_or("");
+            if ![
+                "rs", "md", "sh", "ps1", "py", "js", "mjs", "json", "toml", "yaml", "yml", "bat",
+                "cmd", "txt",
+            ]
+            .contains(&extension)
+            {
+                continue;
+            }
+            let source = std::fs::read_to_string(path).unwrap();
+            for word in source.split(|c: char| !(c.is_ascii_alphanumeric() || c == '_')) {
+                let branded = ["AGENT_VESPER_", "VESPER_"].iter().any(|prefix| {
+                    word.strip_prefix(prefix)
+                        .is_some_and(|suffix| suffix.starts_with(|c: char| c.is_ascii_uppercase()))
+                });
+                if word == "GLM_VENV_PATH"
+                    || (branded
+                        && word
+                            .bytes()
+                            .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_'))
+                {
+                    found.insert(word.to_owned());
+                }
+            }
+        }
+    }
+    let mut source = BTreeSet::new();
+    for directory in ["apps", "crates", "scripts", "skills"] {
+        collect(&root().join(directory), &mut source);
+    }
+    let registered: BTreeSet<_> = MAPPINGS
+        .iter()
+        .filter(|m| m.surface == Surface::Environment)
+        .map(|m| m.legacy.to_owned())
+        .collect();
+    assert_eq!(
+        source, registered,
+        "source/skill identity-bearing environment inputs require classification"
+    );
 }

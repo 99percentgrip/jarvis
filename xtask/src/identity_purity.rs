@@ -1,7 +1,11 @@
 //! Conservative source policy for the data-only identity specification.
 pub fn validate(source: &str) -> Result<(), String> {
-    for (position, _) in source.match_indices("std::") {
-        let tail = &source[position..];
+    let compact = source.split_whitespace().collect::<String>();
+    if compact.contains("usestdas") || compact.contains("use::stdas") {
+        return Err("identity source aliases the standard-library root".into());
+    }
+    for (position, _) in compact.match_indices("std::") {
+        let tail = &compact[position..];
         if !tail.starts_with("std::path::") && !tail.starts_with("std::collections::") {
             return Err("identity source uses an unapproved standard-library boundary".into());
         }
@@ -13,9 +17,23 @@ pub fn validate(source: &str) -> Result<(), String> {
         "eprint!",
         "dbg!",
         "include!",
-        "extern ",
+        "externcrate",
+        "extern\"",
+        "include_str!",
+        "include_bytes!",
+        "env!",
+        "option_env!",
+        ".exists(",
+        ".try_exists(",
+        ".is_file(",
+        ".is_dir(",
+        ".metadata(",
+        ".symlink_metadata(",
+        ".read_dir(",
+        ".canonicalize(",
+        ".read_link(",
     ] {
-        if source.contains(term) {
+        if compact.contains(term) {
             return Err("identity source has an I/O or external-code boundary".into());
         }
     }
@@ -29,6 +47,14 @@ mod tests {
         assert!(validate("use std::path::PathBuf; use std::collections::BTreeSet;").is_ok());
         for source in [
             "use std::fs;",
+            "use std :: fs;",
+            "path . metadata ()",
+            "use std as runtime;",
+            "use ::std as runtime;",
+            "std::path::Path::new(path).exists()",
+            "path.canonicalize()",
+            "env!(key)",
+            "include_str!(path)",
             "use std::{fs as files};",
             "std::process::Command",
             "std::env::var",

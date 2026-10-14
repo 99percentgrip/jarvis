@@ -1171,4 +1171,32 @@ pub const MAPPINGS: &[Mapping] = &[
         classification: ThirdParty,
         source: "crates/vesper-harness/src/bridge_adapters.rs",
     },
+    Mapping {
+        surface: Environment,
+        legacy: "GLM_VENV_PATH",
+        planned: Some("JARVIS_VOICE_VENV_PATH"),
+        classification: CompatibilitySensitive,
+        source: "apps/agent-vesper-tui/src/voice_shared_stt.rs",
+    },
+    Mapping {
+        surface: Environment,
+        legacy: "AGENT_VESPER_VOICE_PYTHON",
+        planned: None,
+        classification: RequiresEvidence,
+        source: "apps/agent-vesper-tui/tests/voice_vad_worker.py",
+    },
+    Mapping {
+        surface: Environment,
+        legacy: "AGENT_VESPER_GWS_BIN",
+        planned: Some("JARVIS_GWS_BIN"),
+        classification: CompatibilitySensitive,
+        source: "skills/skills/google-workspace/scripts/google_api.py",
+    },
+    Mapping {
+        surface: Environment,
+        legacy: "AGENT_VESPER_CITATION_LEDGER",
+        planned: Some("JARVIS_CITATION_LEDGER"),
+        classification: CompatibilitySensitive,
+        source: "skills/skills/grounded-citations/scripts/sources.py",
+    },
 ];

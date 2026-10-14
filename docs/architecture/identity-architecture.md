@@ -309,6 +309,11 @@ established. Test/fixture-only environment symbols are explicitly uncertain.
 | Browser | `x-vesper-lens-token` | `x-jarvis-lens-token` | CompatibilitySensitive | `crates/vesper-agent/src/planning/vesper_lens/injector.rs` |
 | Bridge | `org.mpris.MediaPlayer2.Player` | Unchanged/undecided | ThirdParty | `crates/vesper-harness/src/bridge_adapters.rs` |
 
+| Environment | `GLM_VENV_PATH` | `JARVIS_VOICE_VENV_PATH` | CompatibilitySensitive | `apps/agent-vesper-tui/src/voice_shared_stt.rs` |
+| Environment | `AGENT_VESPER_VOICE_PYTHON` | Unchanged/undecided | RequiresEvidence | `apps/agent-vesper-tui/tests/voice_vad_worker.py` |
+| Environment | `AGENT_VESPER_GWS_BIN` | `JARVIS_GWS_BIN` | CompatibilitySensitive | `skills/skills/google-workspace/scripts/google_api.py` |
+| Environment | `AGENT_VESPER_CITATION_LEDGER` | `JARVIS_CITATION_LEDGER` | CompatibilitySensitive | `skills/skills/grounded-citations/scripts/sources.py` |
+
 ## Sequencing and remaining decisions
 
 Stage 2 needs explicit owner approval before any existing package/import rename,

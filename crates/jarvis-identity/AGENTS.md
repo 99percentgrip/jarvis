@@ -15,6 +15,7 @@ J.A.R.V.I.S.; remain separate from active runtime composition.
 ## Local Contracts
 
 - No filesystem, environment, process, network or credential access in `src/`.
+  No custom build target; automatic build scripts remain disabled.
 - No existing package, executable, protocol or persisted identity is renamed here.
 - Every legacy mapping cites inspected source; unknown targets remain `None`.
 - Credential and serialization contracts are migration-sensitive; provenance,

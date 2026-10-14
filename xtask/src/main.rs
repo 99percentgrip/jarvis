@@ -994,10 +994,14 @@ fn architecture() -> Result<(), String> {
                     .filter(|t| t.kind.iter().any(|k| k == "bin"))
                     .map(|t| t.name.clone())
                     .collect(),
+                custom_build: package
+                    .targets
+                    .iter()
+                    .any(|t| t.kind.iter().any(|k| k == "custom-build")),
                 normal_dependencies: package
                     .dependencies
                     .iter()
-                    .filter(|d| d.kind.is_none())
+                    .filter(|d| d.kind.as_deref() != Some("dev"))
                     .map(|d| d.name.clone())
                     .collect(),
             })

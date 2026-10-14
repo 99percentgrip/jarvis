@@ -39,7 +39,7 @@ acceptance, audit/deny and all five native targets are required in hosted CI.
 
 ## Verification and deviations
 
-Eight deterministic identity cases pass locally on Rust 1.95 and 1.88. Eight xtask
+Nine deterministic identity cases pass locally on Rust 1.95 and 1.88. Eight xtask
 unit cases and two invocation-root cases pass. Clippy on both changed packages passes. Architecture purity regressions also
 reject clock, I/O, output and grouped standard-library import attempts.
 Architecture validates 32 workspace packages; five excluded research manifests are
@@ -79,3 +79,14 @@ spikes/rust-sse-transport/Cargo.lock. The production Cargo.lock contains patched
 and is not a production/release dependency. Production audit/deny gates do not
 prove that every excluded research lockfile is clean. Remediation and a separate
 research-lock security policy remain follow-up decisions; no release is authorized.
+
+## Review-driven boundary regressions
+
+PR review identified path-method/whitespace purity bypasses, custom build targets
+and missing shipped-skill/legacy-voice environment inputs. Source policy now
+normalizes whitespace and rejects filesystem path methods and standard-library
+aliases; custom-build metadata is rejected and the identity manifest disables
+automatic build scripts. The environment census compares actual apps/crates/
+scripts/shipped-skill source symbols against all 109 registered input names.
+GLM_VENV_PATH and the two supported skill overrides are sensitive; a fixture-only
+voice input remains RequiresEvidence. No original source reader is renamed.

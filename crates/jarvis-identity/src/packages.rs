@@ -371,6 +371,8 @@ pub struct WorkspacePackage {
     pub manifest: String,
     pub binaries: Vec<String>,
     pub library: Option<String>,
+    pub custom_build: bool,
+    /// Non-dev dependencies, including build dependencies that can affect shipped code.
     pub normal_dependencies: Vec<String>,
 }
 
@@ -402,8 +404,13 @@ pub fn validate_workspace(actual: &[WorkspacePackage]) -> Result<(), String> {
         if package.library.as_deref() != registered.current_import {
             return Err(format!("unregistered library import: {}", package.name));
         }
-        if package.name == "jarvis-identity" && !package.normal_dependencies.is_empty() {
-            return Err("identity specification must have no production dependencies".into());
+        if package.name == "jarvis-identity"
+            && (package.custom_build || !package.normal_dependencies.is_empty())
+        {
+            return Err(
+                "identity specification must have no production dependencies or build script"
+                    .into(),
+            );
         }
         if package.name != "xtask"
             && package

@@ -11,7 +11,8 @@ architecture, MSRV, and source-oracle checks.
   against the explicit Stage 1 registry. Only verification may consume the new
   pure identity module. Runtime consumer or production-dependency drift fails.
 - `src/identity_purity.rs` admits only pure standard-library data/path operations
-  and rejects I/O, clock, grouped imports, output and external code boundaries.
+  and rejects I/O, clock, grouped/aliased imports, path filesystem methods,
+  output and external code boundaries. Identity custom-build targets are refused.
 - `src/identity_naming.rs` permits only reviewed quoted first-party identifiers
   within the new identity crate and named Stage 1 owner documents. Bare upstream
   branding, unknown identifiers and historical-scope additions stay embargoed;

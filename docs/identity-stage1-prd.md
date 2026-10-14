@@ -19,7 +19,7 @@ ordinary verification. Full CI remains required for the exact PR head.
 | Every current package accounted for | actual_cargo_packages_and_executables_are_registered; cargo xtask architecture |
 | Package/executable/import targets collision-free | package_executable_and_import_targets_are_collision_free |
 | All five default roots separate | all_five_planned_platform_roots_are_disjoint_from_actual_legacy_defaults |
-| No duplicate environment target | env_targets_are_unique_and_classified_without_automatic_fallback |
+| No duplicate environment target | env_targets_are_unique_and_classified_without_automatic_fallback; active_source_and_shipped_skill_environment_inputs_are_all_classified |
 | Serialized/credential identities sensitive | sensitive_data_is_not_mechanically_renamed_and_preserved_names_have_no_target |
 | ACP/registry identity consistent | acp_repository_provenance_and_release_ownership_agree_with_real_source |
 | RRC ownership independent | same ownership case; import policy compile-time assertions |
