@@ -179,7 +179,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Project Contracts
 
-- Jarvis solo-maintainer governance requires feature-branch PRs, resolved review
+- J.A.R.V.I.S. solo-maintainer governance requires feature-branch PRs, resolved review
   threads and successful exact-PR-head CI/security gates, with zero mandatory human
   approvals and no ruleset bypass. Main deletion and force-push remain prohibited.
   Release tags stay frozen and publishing/controlled RRC workflows stay disabled

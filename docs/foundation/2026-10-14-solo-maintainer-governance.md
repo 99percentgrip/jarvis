@@ -1,8 +1,8 @@
-# Jarvis solo-maintainer governance execution
+# J.A.R.V.I.S. solo-maintainer governance execution
 
 ## Objective
 
-Bootstrap mandatory, non-publishing exact-head Jarvis CI and replace the added
+Bootstrap mandatory, non-publishing exact-head J.A.R.V.I.S. CI and replace the added
 second-account requirement only after complete success. Stop before Rust migration.
 
 ## Methods and baseline
@@ -12,7 +12,7 @@ protection returns HTTP 404 Branch not protected. Vesper's established workflow
 uses CI plus maintainer discipline and RRC exact-SHA release gates, rather than a
 mandatory second account. Vesper was only queried, never modified.
 
-Jarvis starts at 692985a1ceeb2740024c8a4b26770d5afb4ee889 with active main
+J.A.R.V.I.S. starts at 692985a1ceeb2740024c8a4b26770d5afb4ee889 with active main
 ruleset 25049950 requiring one review and no bypass, and active tag freeze
 25049955. GitHub default workflow permissions are read-only.
 
@@ -61,3 +61,16 @@ repository. The existing dedicated settlement step already uses serial tests.
 Windows workspace execution now uses the same serial scheduling, retaining every
 case and timing assertion. This is CI execution policy only, not Rust repair.
 A fresh exact-head matrix is required; no old-head success will be reused.
+
+## Second hosted attempt and naming-policy correction
+
+Head e802bcd63bf26ac7d9c33343453a55557ae36fa0 cleared the Windows workspace
+step after serial scheduling, with timing assertions unchanged. Canonical run
+38514525807 failed the inherited upstream-name embargo on nine new governance
+prose/link occurrences. New prose now uses the approved dotted product spelling
+and neutral document filenames. The source naming guard, frozen baseline, Rust
+code and package identities remain unchanged. An early canonical invocation
+checks naming before the expensive full build. Stage 1 technical identity work
+requires an explicit naming-policy design; this bootstrap does not relax it.
+The matrix verifier refused the failed canonical run, demonstrating fail-closed
+hosted behavior. A new complete exact-head matrix is required.

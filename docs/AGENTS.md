@@ -6,7 +6,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
-- `jarvis-solo-maintainer-governance-prd.md` owns solo-maintainer CI bootstrap and exact-head merge requirements.
+- `solo-maintainer-governance-prd.md` owns solo-maintainer CI bootstrap and exact-head merge requirements.
 
 - `tui-message-queue-paste-prd.md` owns terminal future-turn admission, paste folding/inspection and durable recovery; the linked foundation report records source and acceptance evidence.
 

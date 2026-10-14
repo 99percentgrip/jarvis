@@ -2249,4 +2249,4 @@ v0.21.6 release notes own the final run links, image IDs and local-install recei
 
 - [Queue/paste normal-exit observer follow-up](2026-10-12-tui-message-queue-paste-execution.md#follow-up-macos-normal-exit-observer-audit) — complete failed macOS matrix, bounded exit observation, focused and sequential gate [receipts](2026-10-12-tui-message-queue-paste-exit-receipts.json).
 
-- [Jarvis solo-maintainer governance](2026-10-14-jarvis-solo-maintainer-governance.md) — governance/CI-only bootstrap; exact-head CI pending.
+- [J.A.R.V.I.S. solo-maintainer governance](2026-10-14-solo-maintainer-governance.md) — governance/CI-only bootstrap; exact-head CI pending.

@@ -1,4 +1,4 @@
-# Jarvis solo-maintainer governance
+# J.A.R.V.I.S. solo-maintainer governance
 
 ## Objective and scope
 
@@ -21,7 +21,7 @@ migration, releases, installations and Vesper changes are excluded.
 
 ## Evidence and limitations
 
-See [execution report](foundation/2026-10-14-jarvis-solo-maintainer-governance.md).
+See [execution report](foundation/2026-10-14-solo-maintainer-governance.md).
 CI_PENDING. Strict required job names mean prose-only PRs whose native workflows
 are filtered cannot merge under this bootstrap; skips are never fabricated as
 success. A future separately reviewed scope-aware merge gate may address that
