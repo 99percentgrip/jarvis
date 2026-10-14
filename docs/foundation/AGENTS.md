@@ -6,6 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-14-solo-maintainer-governance.md` owns governance bootstrap, exact-SHA CI, source isolation and remaining limitations.
+
 - `2026-10-13-security-messagejournal-release-mission.md` owns PR #42 dependency,
   integration, exact-SHA CI and native RRC publication evidence for this mission.
 

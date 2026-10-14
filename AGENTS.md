@@ -179,6 +179,12 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Project Contracts
 
+- J.A.R.V.I.S. solo-maintainer governance requires feature-branch PRs, resolved review
+  threads and successful exact-PR-head CI/security gates, with zero mandatory human
+  approvals and no ruleset bypass. Main deletion and force-push remain prohibited.
+  Release tags stay frozen and publishing/controlled RRC workflows stay disabled
+  until separately authorized. No Rust identity migration is authorized by CI setup.
+
 - Hash-pinned fixtures and routing evidence retain LF bytes through `.gitattributes`
   on every platform. Do not weaken frozen digests to accommodate checkout conversion.
 

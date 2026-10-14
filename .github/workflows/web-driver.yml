@@ -50,6 +50,9 @@ jobs:
             runner: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - name: Install pinned Rust
         run: rustup toolchain install 1.95.0 --profile minimal
       - name: Build immutable browser and helper image
@@ -104,6 +107,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - name: Install pinned Rust
         run: rustup toolchain install 1.95.0 --profile minimal
       - name: Build real namespace supervisor
