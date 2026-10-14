@@ -83,6 +83,9 @@ jobs:
             platform_spike: windows
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - name: Install pinned Rust toolchain
         shell: bash
         run: rustup toolchain install 1.95.0 --profile minimal

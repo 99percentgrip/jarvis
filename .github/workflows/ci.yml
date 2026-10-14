@@ -40,6 +40,9 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - name: Prepare native Rust storage
         run: sh .github/prepare-rust-runner.sh
       - name: Install pinned Rust toolchain
@@ -47,6 +50,7 @@ jobs:
       - name: Verify release prerequisite policy
         run: |
           python3 scripts/test_release_gate.py
+          python3 .github/test_verify_pr_matrix.py
           python3 .github/test_prepare_linux_apt.py
       - name: Verify workspace
         run: cargo xtask verify
@@ -95,6 +99,9 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - name: Offline install regression (Windows PowerShell 5.1 Desktop)
         shell: cmd
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test_install_windows.ps1
@@ -133,6 +140,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.95.0 --profile minimal
       - name: Install pinned policy tools

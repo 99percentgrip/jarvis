@@ -40,6 +40,9 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - name: Prepare native Rust storage
         run: sh .github/prepare-rust-runner.sh
       - name: Install MSRV

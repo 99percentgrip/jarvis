@@ -1,0 +1,28 @@
+name: Jarvis PR matrix verification
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  verification:
+    name: Jarvis verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Prove matrix refusal semantics
+        run: python3 .github/test_verify_pr_matrix.py
+      - name: Require complete exact-head success-only matrix
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 .github/verify_pr_matrix.py

@@ -7,6 +7,13 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- Jarvis PR verification checks out the exact PR head with persisted credentials
+  disabled. `pr-verification.yml` and `verify_pr_matrix.py` own the fail-closed
+  complete-matrix gate: exact head, repository, event, workflow path, current
+  attempt, expected job inventory and success-only conclusions. No skipped,
+  cancelled, missing or failed job is proof. Publishing and controlled RRC
+  acceptance workflows remain disabled in the Jarvis repository.
+
 - Canonical, MSRV, five-target and web-driver push/PR triggers exclude only
   README/DOX prose, documentation Markdown and named foundation report/evidence
   companions. Source, fixtures, seed skills, workflow/config/dependency changes
@@ -195,6 +202,8 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   cannot replace complete production prerequisite or publishing gates.
 
 ## Child DOX Index
+
+- `workflows/pr-verification.yml`, `verify_pr_matrix.py` and `test_verify_pr_matrix.py` — complete exact-head PR matrix validation and offline refusal regressions.
 
 - `verify_native_voice.py`, `test_verify_native_voice.py` and
   `native-voice-stt-model.json` — hosted real setup/recognition/synthesis, offline
