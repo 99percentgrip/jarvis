@@ -270,13 +270,27 @@ impl<T> WaitSlot<T> {
     }
 
     fn poll(&self, context: &mut std::task::Context<'_>) -> std::task::Poll<T> {
+        self.poll_with_registration(context, || {})
+    }
+
+    // The hook forces completion at registration in deterministic ordering tests.
+    // Production supplies no work and uses the same synchronization path.
+    fn poll_with_registration(
+        &self,
+        context: &mut std::task::Context<'_>,
+        during_registration: impl FnOnce(),
+    ) -> std::task::Poll<T> {
+        // Register before inspecting the result: delivery either leaves a value
+        // for this poll or observes the registered waker. Checking the result
+        // first creates a lost-wakeup window between these two mutexes.
+        if let Ok(mut waker) = self.waker.lock() {
+            *waker = Some(context.waker().clone());
+        }
+        during_registration();
         if let Ok(mut state) = self.state.lock()
             && let Some(value) = state.take()
         {
             return std::task::Poll::Ready(value);
-        }
-        if let Ok(mut waker) = self.waker.lock() {
-            *waker = Some(context.waker().clone());
         }
         std::task::Poll::Pending
     }
@@ -286,6 +300,39 @@ impl<T> WaitSlot<T> {
 mod tests {
     use super::*;
     use crate::VoiceCancel;
+
+    #[test]
+    fn completion_during_waker_registration_cannot_be_lost() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        struct WakeCount(AtomicUsize);
+        impl std::task::Wake for WakeCount {
+            fn wake(self: Arc<Self>) {
+                self.0.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+        let wake = Arc::new(WakeCount(AtomicUsize::new(0)));
+        let waker = std::task::Waker::from(Arc::clone(&wake));
+        let mut context = std::task::Context::from_waker(&waker);
+        let slot = WaitSlot::default();
+        let result = slot.poll_with_registration(&mut context, || slot.deliver(7u32));
+        assert!(
+            result == std::task::Poll::Ready(7) || wake.0.load(Ordering::SeqCst) > 0,
+            "completion cannot leave the caller pending without a wake"
+        );
+        if result.is_pending() {
+            assert_eq!(slot.poll(&mut context), std::task::Poll::Ready(7));
+        }
+        // Also cover delivery before polling and after a pending registration.
+        let early = WaitSlot::default();
+        early.deliver(9u32);
+        assert_eq!(early.poll(&mut context), std::task::Poll::Ready(9));
+        let late = WaitSlot::default();
+        assert_eq!(late.poll(&mut context), std::task::Poll::Pending);
+        let before = wake.0.load(Ordering::SeqCst);
+        late.deliver(11u32);
+        assert!(wake.0.load(Ordering::SeqCst) > before);
+        assert_eq!(late.poll(&mut context), std::task::Poll::Ready(11));
+    }
 
     #[tokio::test]
     async fn runs_work_and_returns_result() {

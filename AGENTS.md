@@ -183,7 +183,10 @@ When the user requests a durable behavior change, record it here or in the relev
 - Stage 1 identity specifications live in `jarvis-identity`; only verification
   consumes them. Existing packages, runtime paths, credentials, protocol fields,
   installers and release controllers remain unchanged until their separate stage
-  approval. The naming embargo retains its frozen baseline; reviewed quoted
+  approval. The separately authorized Stage 1 blocker repair permits only the
+  patched TLS lockfile resolution and proven voice completion synchronization
+  correction, with unchanged identity/runtime state ownership and security gates.
+  The naming embargo retains its frozen baseline; reviewed quoted
   first-party declarations are allowed only in the owned Stage 1 scope.
 
 

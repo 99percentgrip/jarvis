@@ -2251,4 +2251,4 @@ v0.21.6 release notes own the final run links, image IDs and local-install recei
 
 - [J.A.R.V.I.S. solo-maintainer governance](2026-10-14-solo-maintainer-governance.md) — governance/CI-only bootstrap; exact-head CI pending.
 
-- [Stage 1 identity architecture](2026-10-14-identity-stage1.md) — local contracts verified; exact-head CI and merge pending.
+- [Stage 1 identity architecture](2026-10-14-identity-stage1.md) — identity contracts plus authorized TLS/completion-race remediation; fresh exact-head CI and protected PR 3 merge pending.

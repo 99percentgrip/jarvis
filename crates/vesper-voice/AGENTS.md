@@ -35,7 +35,9 @@ types, and deterministic in-memory fakes.
   egress recheck; attempt bound), `PartialGate` (buffered-repass
   partials; whole-capture budget; final priority; stale rejection; no
   turn-submission surface exists), `run_blocking` (cancellable bridge;
-  honest computation-continues limit documented in-module).
+  honest computation-continues limit documented in-module). Completion registers
+  its waker before checking the result, so delivery cannot strand an awaiter
+  between those operations; the forced-registration regression pins this order.
 - `hygiene` (PR-2): the stateful bounded sentence gate — hygiene runs
   on gated segments; protected spans (reasoning/code/PEM) tracked
   across chunk and sentence boundaries; credential/blob redaction with

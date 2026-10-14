@@ -28,9 +28,13 @@ ordinary verification. Full CI remains required for the exact PR head.
 
 ## Status and evidence
 
-LOCAL_VERIFIED / CI_PENDING. Local identity tests pass on Rust 1.95 and 1.88;
-architecture and xtask unit/invocation-root tests pass. Full exact-head matrix,
-normal PR merge and integrated receipts are pending. Do not count plans as proof.
+LOCAL_VERIFIED / FRESH CI PENDING. The owner authorized correction of the four
+production TLS advisories and the proven voice completion race. Root rustls is
+0.23.46 with no unrelated dependency upgrades; security policies and voice fixture
+assertions remain unchanged. Deterministic registration-window proof is red on
+baseline ordering and green after correction. PR 3 remains unmerged until all
+thirteen exact-head checks pass. Existing identity tests and full verification
+remain mandatory; no Stage 2 or release is authorized.
 
 [Architecture inventory](architecture/identity-architecture.md) ·
 [Execution report](foundation/2026-10-14-identity-stage1.md).
