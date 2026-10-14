@@ -2250,3 +2250,5 @@ v0.21.6 release notes own the final run links, image IDs and local-install recei
 - [Queue/paste normal-exit observer follow-up](2026-10-12-tui-message-queue-paste-execution.md#follow-up-macos-normal-exit-observer-audit) — complete failed macOS matrix, bounded exit observation, focused and sequential gate [receipts](2026-10-12-tui-message-queue-paste-exit-receipts.json).
 
 - [J.A.R.V.I.S. solo-maintainer governance](2026-10-14-solo-maintainer-governance.md) — governance/CI-only bootstrap; exact-head CI pending.
+
+- [Stage 1 identity architecture](2026-10-14-identity-stage1.md) — identity contracts plus authorized TLS/completion-race remediation; fresh exact-head CI and protected PR 3 merge pending.

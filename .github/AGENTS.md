@@ -16,12 +16,10 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   cancelled, missing or failed job is proof. Publishing and controlled RRC
   acceptance workflows remain disabled in the Jarvis repository.
 
-- Canonical, MSRV, five-target and web-driver push/PR triggers exclude only
-  README/DOX prose, documentation Markdown and named foundation report/evidence
-  companions. Source, fixtures, seed skills, workflow/config/dependency changes
-  and `release-objective-provenance.json` still trigger every required gate.
-  Keep the same exclusion list in all four workflows. A missing filtered run
-  never authorizes a tag; the exact-commit release gate stays fail-closed.
+- Canonical, MSRV, five-target and web-driver PR/main-push triggers have no
+  path filters. Every mandatory context runs for README, documentation and source
+  changes. `scripts/test_release_gate.py` rejects filtered/missing trigger events
+  and pins all thirteen producers. Missing evidence never authorizes a merge/tag.
 
 - `prepare-rust-runner.sh` refuses outside GitHub-hosted Linux. It removes only
   unused preinstalled Android/.NET/GHC SDK trees on disposable CI machines,

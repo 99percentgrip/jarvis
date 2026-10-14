@@ -7,6 +7,8 @@ use std::{
     process::{Command, ExitCode},
 };
 
+mod identity_naming;
+mod identity_purity;
 mod naming_baseline;
 mod swarm_gate;
 
@@ -964,6 +966,48 @@ fn architecture() -> Result<(), String> {
         .filter(|package| workspace.contains(&package.id))
         .map(|package| (package.id.clone(), package.name.clone()))
         .collect::<BTreeMap<_, _>>();
+    let actual = metadata
+        .packages
+        .iter()
+        .filter(|package| workspace.contains(&package.id))
+        .map(|package| {
+            let canonical_manifest = package
+                .manifest_path
+                .canonicalize()
+                .map_err(|error| error.to_string())?;
+            let manifest = canonical_manifest
+                .strip_prefix(&root)
+                .map_err(|error| error.to_string())?
+                .to_string_lossy()
+                .replace('\\', "/");
+            Ok(jarvis_identity::WorkspacePackage {
+                name: package.name.clone(),
+                manifest,
+                library: package
+                    .targets
+                    .iter()
+                    .find(|t| t.kind.iter().any(|k| k == "lib"))
+                    .map(|t| t.name.clone()),
+                binaries: package
+                    .targets
+                    .iter()
+                    .filter(|t| t.kind.iter().any(|k| k == "bin"))
+                    .map(|t| t.name.clone())
+                    .collect(),
+                custom_build: package
+                    .targets
+                    .iter()
+                    .any(|t| t.kind.iter().any(|k| k == "custom-build")),
+                normal_dependencies: package
+                    .dependencies
+                    .iter()
+                    .filter(|d| d.kind.as_deref() != Some("dev"))
+                    .map(|d| d.name.clone())
+                    .collect(),
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    jarvis_identity::validate_workspace(&actual)?;
     let allowed = allowed_dependencies();
     for package in metadata
         .packages
@@ -1311,6 +1355,9 @@ fn naming_guard(regenerate: bool) -> Result<(), String> {
             let lower = line.to_lowercase();
             for pattern in &patterns {
                 if contains_word_bounded(&lower, pattern) {
+                    if pattern == "jarvis" && identity_naming::owned_line(&relative, line) {
+                        continue;
+                    }
                     let mut digest_input = String::with_capacity(relative.len() + line.len() + 8);
                     let _ = write!(digest_input, "{relative}\n{line}");
                     let digest = Sha256::digest(digest_input.as_bytes());
@@ -1697,7 +1744,11 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             "vesper-bridge",
             BTreeSet::from(["vesper-domain", "vesper-security"]),
         ),
-        ("xtask", BTreeSet::from(["vesper-testkit"])),
+        ("jarvis-identity", BTreeSet::from(["vesper-config"])),
+        (
+            "xtask",
+            BTreeSet::from(["vesper-testkit", "jarvis-identity"]),
+        ),
     ])
 }
 
@@ -1733,6 +1784,10 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
                     "foundational Rust source tree {} does not inherit a crate-level unsafe ban",
                     file.display()
                 ));
+            }
+            if crate_path.file_name().and_then(|name| name.to_str()) == Some("jarvis-identity") {
+                identity_purity::validate(&source)?;
+                continue;
             }
             // ADR 0022 (VRO-13 PR-3): the sandbox supervisor binary is the
             // one production unit that must perform raw syscalls (unshare,
@@ -1986,8 +2041,16 @@ struct Package {
     id: String,
     name: String,
     dependencies: Vec<Dependency>,
+    manifest_path: PathBuf,
+    targets: Vec<MetadataTarget>,
     #[serde(default)]
     features: BTreeMap<String, Vec<String>>,
+}
+
+#[derive(Deserialize)]
+struct MetadataTarget {
+    name: String,
+    kind: Vec<String>,
 }
 
 #[derive(Deserialize)]

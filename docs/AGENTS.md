@@ -6,6 +6,11 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `identity-stage1-prd.md` owns the authorized first-party identity architecture,
+  ten acceptance contracts and Stage 2 boundary; architecture/foundation children
+  own its specification, provenance and execution evidence.
+
+
 - `solo-maintainer-governance-prd.md` owns solo-maintainer CI bootstrap and exact-head merge requirements.
 
 - `tui-message-queue-paste-prd.md` owns terminal future-turn admission, paste folding/inspection and durable recovery; the linked foundation report records source and acceptance evidence.
@@ -296,7 +301,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 - `foundation/AGENTS.md` — Stage 0 decisions, fixture/oracle evidence, and technical-spike reports.
 - `vro19/AGENTS.md` — adopted VRO-19 reference material and the explicit initiative hold contract.
-- `architecture/AGENTS.md` — read-only external-repo pattern reconnaissance feeding feature PRDs.
+- `architecture/AGENTS.md` — first-party identity specifications and read-only external-repo pattern reconnaissance.
 - `recon/AGENTS.md` — Agent Vesper migration reconnaissance records and quality gates.
 - `adr/AGENTS.md` — accepted production decisions and verification obligations.
 - `stage1/AGENTS.md` — Stage 1 execution ledger, coverage, CI status, and final report.

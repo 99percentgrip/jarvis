@@ -6,6 +6,10 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-14-identity-stage1.md` and `stage1-source-provenance.json` own Stage 1
+  source provenance, exact-candidate verification, identity tests and limitations.
+
+
 - `2026-10-14-solo-maintainer-governance.md` owns governance bootstrap, exact-SHA CI, source isolation and remaining limitations.
 
 - `2026-10-13-security-messagejournal-release-mission.md` owns PR #42 dependency,

@@ -9,6 +9,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+jarvis-identity = { path = "../crates/jarvis-identity", version = "=0.24.14" }
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true

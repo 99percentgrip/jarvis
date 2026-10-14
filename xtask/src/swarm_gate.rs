@@ -61,7 +61,7 @@ mod tests {
     fn package(optional: bool, features: serde_json::Value) -> super::super::Package {
         serde_json::from_value(serde_json::json!({
             "id":"test", "name":"vesper-harness", "features": features,
-            "dependencies":[{"name":"vesper-swarm", "req":"=0.21.4", "source":null,
+            "manifest_path":"apps/agent-vesper-tui/Cargo.toml", "targets":[], "dependencies":[{"name":"vesper-swarm", "req":"=0.21.4", "source":null,
                 "path":"../vesper-swarm", "kind":null, "optional":optional, "rename":null}]
         }))
         .unwrap()
