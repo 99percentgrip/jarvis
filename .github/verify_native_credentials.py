@@ -30,11 +30,11 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     cases = [
         (
-            ["-p", "vesper-auth", "--test", "native_persistence"],
+            ["-p", "jarvis-auth", "--test", "native_persistence"],
             "hosted_native_credential_persistence",
         ),
         (
-            ["-p", "vesper-provider-openai", "--lib"],
+            ["-p", "jarvis-provider-openai", "--lib"],
             "auth::tests::hosted_device_flow_persists_large_subscription_record",
         ),
     ]

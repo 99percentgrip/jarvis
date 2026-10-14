@@ -1,0 +1,23 @@
+[package]
+name = "jarvis-checkpoints"
+description = "Workspace snapshot, rollback, session lineage, and bounded cron/export/clipboard/CI surface for Agent Vesper (ADR 0012 — Stage 14). JSONL-only, RAII-safe, no SQLite, no git refs."
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

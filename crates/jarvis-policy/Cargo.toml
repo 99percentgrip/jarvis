@@ -1,0 +1,22 @@
+[package]
+name = "jarvis-policy"
+description = "Pure permission and policy decision contracts for Agent Vesper"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+# Override the workspace `regex` pin (default-features = false, features =
+# ["std"]) to add `unicode-perl`: firewall rules use \w/\s/\b classes and the
+# std-only build rejects them. Mirrors the local override in jarvis-agent
+# and jarvis-cognition; does not leak to other crates.
+regex = { version = "1", default-features = false, features = ["std", "unicode-perl"] }
+serde.workspace = true
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
+
+[lints]
+workspace = true

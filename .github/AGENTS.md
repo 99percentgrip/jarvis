@@ -7,6 +7,12 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- Active verification builds Stage 2 package/target names; required contexts and
+  publication-disable settings remain unchanged. Windows PE audit selects the four
+  compiled targets explicitly. Private installer fixtures stage those binaries
+  under legacy payload names; they do not activate new installer/update ownership.
+
+
 - Jarvis Windows workspace tests run serially to avoid competing PowerShell startup fixtures; every test and fixed timing assertion remains required.
 
 - Jarvis PR verification checks out the exact PR head with persisted credentials

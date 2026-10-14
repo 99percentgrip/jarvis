@@ -13,8 +13,8 @@ mod naming_baseline;
 mod swarm_gate;
 
 use clap::{Parser, Subcommand};
+use jarvis_testkit::FixtureCorpus;
 use serde::Deserialize;
-use vesper_testkit::FixtureCorpus;
 
 const SOURCE_COMMIT: &str = "bf4d4287e2e3320aa3f09015f678e6169d520045";
 
@@ -766,31 +766,28 @@ fn validate_stage3_coverage(corpus: &FixtureCorpus) -> Result<(), String> {
 fn provider_glm_verify() -> Result<(), String> {
     let corpus = FixtureCorpus::load(fixture_root()).map_err(|error| error.to_string())?;
     validate_stage3_coverage(&corpus)?;
-    run("cargo", &["test", "-p", "vesper-provider-glm"])
+    run("cargo", &["test", "-p", "jarvis-provider-glm"])
 }
 
 fn runtime_verify() -> Result<(), String> {
-    run("cargo", &["test", "-p", "vesper-runtime", "--all-features"])
+    run("cargo", &["test", "-p", "jarvis-runtime", "--all-features"])
 }
 
 fn acp_verify() -> Result<(), String> {
-    run("cargo", &["test", "-p", "vesper-acp", "--all-features"])?;
     run(
         "cargo",
-        &[
-            "test",
-            "-p",
-            "agent-vesper-acp",
-            "--test",
-            "process_transcript",
-        ],
+        &["test", "-p", "jarvis-acp-protocol", "--all-features"],
+    )?;
+    run(
+        "cargo",
+        &["test", "-p", "jarvis-acp", "--test", "process_transcript"],
     )?;
     run(
         "cargo",
         &[
             "test",
             "-p",
-            "agent-vesper-acp",
+            "jarvis-acp",
             "--all-features",
             "--test",
             "process_blockers",
@@ -804,9 +801,9 @@ fn sessions_verify() -> Result<(), String> {
     scan_stage5_sources(&repository_root())?;
     run(
         "cargo",
-        &["test", "-p", "vesper-sessions", "--all-features"],
+        &["test", "-p", "jarvis-sessions", "--all-features"],
     )?;
-    run("cargo", &["test", "-p", "vesper-testkit", "--all-features"])
+    run("cargo", &["test", "-p", "jarvis-testkit", "--all-features"])
 }
 
 fn implemented_contracts(id: &str, category: &str) -> Vec<&'static str> {
@@ -1026,11 +1023,11 @@ fn architecture() -> Result<(), String> {
             // never enter the production build, so they are allowed for
             // the harness's cross-feature fixtures while the allowlist
             // above keeps binding for every normal dependency everywhere.
-            let harness_dev = package.name == "vesper-harness"
+            let harness_dev = package.name == "jarvis-harness"
                 && dependency.kind.as_deref() == Some("dev")
                 && matches!(
                     dependency.name.as_str(),
-                    "vesper-policy" | "vesper-provider" | "vesper-testkit"
+                    "jarvis-policy" | "jarvis-provider" | "jarvis-testkit"
                 );
             if let Some(target) = workspace_target
                 && !harness_dev
@@ -1043,8 +1040,8 @@ fn architecture() -> Result<(), String> {
                     package.name, target
                 ));
             }
-            if !matches!(package.name.as_str(), "vesper-testkit" | "xtask")
-                && dependency.name == "vesper-testkit"
+            if !matches!(package.name.as_str(), "jarvis-testkit" | "xtask")
+                && dependency.name == "jarvis-testkit"
                 && dependency.kind.as_deref() != Some("dev")
             {
                 return Err(format!(
@@ -1052,7 +1049,7 @@ fn architecture() -> Result<(), String> {
                     package.name
                 ));
             }
-            if dependency.name == "agent-client-protocol" && package.name != "vesper-acp" {
+            if dependency.name == "agent-client-protocol" && package.name != "jarvis-acp-protocol" {
                 return Err(format!(
                     "ACP SDK dependency escaped vesper-acp into {}",
                     package.name
@@ -1061,7 +1058,7 @@ fn architecture() -> Result<(), String> {
             if matches!(
                 dependency.name.as_str(),
                 "rusqlite" | "sqlx" | "libsqlite3-sys"
-            ) && package.name != "vesper-cognition"
+            ) && package.name != "jarvis-cognition"
             {
                 // ADR 0015 (Stage 16): `vesper-cognition` is the only
                 // production crate permitted to declare a SQLite dependency.
@@ -1113,7 +1110,7 @@ fn scan_production_scenario_ids(root: &Path) -> Result<(), String> {
             if !package.is_dir() {
                 continue;
             }
-            if package.file_name().and_then(|name| name.to_str()) == Some("vesper-testkit") {
+            if package.file_name().and_then(|name| name.to_str()) == Some("jarvis-testkit") {
                 continue;
             }
             let mut files = Vec::new();
@@ -1139,7 +1136,7 @@ fn scan_production_scenario_ids(root: &Path) -> Result<(), String> {
 }
 
 fn scan_stage5_sources(root: &Path) -> Result<(), String> {
-    let sessions = root.join("crates/vesper-sessions/src");
+    let sessions = root.join("crates/jarvis-sessions/src");
     // Stage 6 introduces a single bounded transactional writer module. Every
     // other module remains strictly read-only.
     let write_modules: BTreeSet<&str> = ["writer.rs"].into_iter().collect();
@@ -1194,9 +1191,9 @@ fn scan_stage5_sources(root: &Path) -> Result<(), String> {
 }
 
 fn scan_stage4_sources(root: &Path) -> Result<(), String> {
-    let runtime = root.join("crates/vesper-runtime/src");
-    let acp = root.join("crates/vesper-acp/src");
-    let app = root.join("apps/agent-vesper-acp/src");
+    let runtime = root.join("crates/jarvis-runtime/src");
+    let acp = root.join("crates/jarvis-acp-protocol/src");
+    let app = root.join("apps/jarvis-acp/src");
     for (path, forbidden) in [
         (
             runtime,
@@ -1237,7 +1234,7 @@ fn scan_stage4_sources(root: &Path) -> Result<(), String> {
     if main.lines().any(|line| line.trim().starts_with("println!")) {
         return Err("ACP composition binary may not write normal output to stdout".into());
     }
-    let app_manifest = fs::read_to_string(root.join("apps/agent-vesper-acp/Cargo.toml"))
+    let app_manifest = fs::read_to_string(root.join("apps/jarvis-acp/Cargo.toml"))
         .map_err(|error| error.to_string())?;
     if !app_manifest.contains("required-features = [\"integration-test-harness\"]")
         || app_manifest.contains("default = [\"integration-test-harness\"]")
@@ -1358,11 +1355,13 @@ fn naming_guard(regenerate: bool) -> Result<(), String> {
                     if pattern == "jarvis" && identity_naming::owned_line(&relative, line) {
                         continue;
                     }
+                    let (historical_path, historical_line) =
+                        identity_naming::historical_hit(&relative, line);
                     let mut digest_input = String::with_capacity(relative.len() + line.len() + 8);
-                    let _ = write!(digest_input, "{relative}\n{line}");
+                    let _ = write!(digest_input, "{historical_path}\n{historical_line}");
                     let digest = Sha256::digest(digest_input.as_bytes());
                     current.push(naming_baseline::Hit {
-                        path: relative.clone(),
+                        path: historical_path,
                         line: index + 1,
                         sha256: hex_digest(&digest),
                     });
@@ -1462,36 +1461,36 @@ fn collect_text_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), String> 
 
 fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
     BTreeMap::from([
-        ("vesper-domain", BTreeSet::new()),
-        ("vesper-security", BTreeSet::new()),
-        ("vesper-auth", BTreeSet::from(["vesper-security"])),
+        ("jarvis-domain", BTreeSet::new()),
+        ("jarvis-security", BTreeSet::new()),
+        ("jarvis-auth", BTreeSet::from(["jarvis-security"])),
         (
-            "vesper-memory",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-memory",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
         (
             // ADR 0015 (Stage 16): cognitive memory engine. Owns SQLite +
             // FTS5 + the trait ports for embeddings/extraction-LLM/entity-NLP.
             // Concrete provider impls live at the composition boundary
-            // (apps/agent-vesper-tui/src/main.rs). This is the only production
+            // (apps/jarvis-tui/src/main.rs). This is the only production
             // crate permitted to declare `rusqlite` (per-crate exception
             // below in scan_production_sources).
-            "vesper-cognition",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-cognition",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
         (
-            "vesper-checkpoints",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-checkpoints",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
         (
-            "vesper-config",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-config",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
         (
-            "vesper-mcp",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-mcp",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
-        ("vesper-provider", BTreeSet::from(["vesper-domain"])),
+        ("jarvis-provider", BTreeSet::from(["jarvis-domain"])),
         (
             // VRO-14 PR-1: the web oracle perception engine (pure DOM
             // transformation pipeline). Zero I/O by construction: parsing,
@@ -1499,8 +1498,8 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // functions over in-memory HTML strings. Network transports and
             // the headless renderer are later PRs' ports, implemented at the
             // composition boundary, never here.
-            "vesper-web",
-            BTreeSet::from(["vesper-domain"]),
+            "jarvis-web",
+            BTreeSet::from(["jarvis-domain"]),
         ),
         (
             // VRO-17 PR-0: the voice subsystem's pure core. Contracts,
@@ -1511,8 +1510,8 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // the runtime, agent, harness, or any provider adapter.
             // Speech-egress policy and bounded budgets live here
             // (config validation); real engines arrive in PR-1/PR-2.
-            "vesper-voice",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-voice",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
         (
             // VRO-17 R3: the Natural Voice pack adapter (composition
@@ -1522,8 +1521,8 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // lazily loaded, digest-verified pack component — never a
             // build-time link. Default-off `ort`/`mock-synthesis`
             // features; the crate compiles bare.
-            "vesper-voice-kokoro",
-            BTreeSet::from(["vesper-domain", "vesper-security", "vesper-voice"]),
+            "jarvis-voice-kokoro",
+            BTreeSet::from(["jarvis-domain", "jarvis-security", "jarvis-voice"]),
         ),
         (
             // VRO-14 PR-3: the sandboxed fetch route. This is the ONE
@@ -1532,12 +1531,12 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // inside an IsolationRequirement::Network sandbox with an
             // explicit network grant. The helper binary performs the only
             // web egress in the workspace, always inside the sandbox.
-            "vesper-web-fetch",
-            BTreeSet::from(["vesper-sandbox", "vesper-security", "vesper-web"]),
+            "jarvis-web-fetch",
+            BTreeSet::from(["jarvis-sandbox", "jarvis-security", "jarvis-web"]),
         ),
         (
-            "vesper-policy",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-policy",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
         (
             // ADR 0022 (VRO-13 PR-3): Linux namespaces sandbox backend. The
@@ -1546,74 +1545,74 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // lives in the `sandbox_init` supervisor binary, which performs
             // raw namespace/mount syscalls before exec. Per-crate exception
             // enforced by scan_production_sources' sandbox-safety gate.
-            "vesper-sandbox",
-            BTreeSet::from(["vesper-security"]),
+            "jarvis-sandbox",
+            BTreeSet::from(["jarvis-security"]),
         ),
         (
-            "vesper-testkit",
+            "jarvis-testkit",
             BTreeSet::from([
-                "vesper-domain",
-                "vesper-provider",
-                "vesper-security",
-                "vesper-policy",
-                "vesper-config",
+                "jarvis-domain",
+                "jarvis-provider",
+                "jarvis-security",
+                "jarvis-policy",
+                "jarvis-config",
                 // VB-PRD-001 Phase 1: the visibly-fake deterministic Bridge
                 // driver (FakeApplication) for test-only evidence.
-                "vesper-bridge",
+                "jarvis-bridge",
             ]),
         ),
         (
-            "vesper-provider-glm",
+            "jarvis-provider-glm",
             BTreeSet::from([
-                "vesper-auth",
-                "vesper-domain",
-                "vesper-provider",
-                "vesper-config",
-                "vesper-security",
-                "vesper-testkit",
+                "jarvis-auth",
+                "jarvis-domain",
+                "jarvis-provider",
+                "jarvis-config",
+                "jarvis-security",
+                "jarvis-testkit",
             ]),
         ),
         (
-            "vesper-provider-synthetic",
-            BTreeSet::from(["vesper-domain", "vesper-provider"]),
+            "jarvis-provider-synthetic",
+            BTreeSet::from(["jarvis-domain", "jarvis-provider"]),
         ),
         (
-            "vesper-provider-openai",
+            "jarvis-provider-openai",
             BTreeSet::from([
-                "vesper-auth",
-                "vesper-domain",
-                "vesper-provider",
-                "vesper-config",
-                "vesper-security",
+                "jarvis-auth",
+                "jarvis-domain",
+                "jarvis-provider",
+                "jarvis-config",
+                "jarvis-security",
             ]),
         ),
         (
             // VRO-18: native xAI HTTP adapter. Provider wire/authentication
             // behavior stays in this leaf crate and does not enter shared runtime.
-            "vesper-provider-xai",
+            "jarvis-provider-xai",
             BTreeSet::from([
-                "vesper-auth",
-                "vesper-domain",
-                "vesper-provider",
-                "vesper-security",
+                "jarvis-auth",
+                "jarvis-domain",
+                "jarvis-provider",
+                "jarvis-security",
             ]),
         ),
         (
-            "vesper-runtime",
+            "jarvis-runtime",
             BTreeSet::from([
-                "vesper-domain",
-                "vesper-provider",
-                "vesper-sessions",
-                "vesper-testkit",
+                "jarvis-domain",
+                "jarvis-provider",
+                "jarvis-sessions",
+                "jarvis-testkit",
             ]),
         ),
         (
-            "vesper-sessions",
-            BTreeSet::from(["vesper-config", "vesper-domain"]),
+            "jarvis-sessions",
+            BTreeSet::from(["jarvis-config", "jarvis-domain"]),
         ),
         (
-            "vesper-acp",
-            BTreeSet::from(["vesper-domain", "vesper-runtime"]),
+            "jarvis-acp-protocol",
+            BTreeSet::from(["jarvis-domain", "jarvis-runtime"]),
         ),
         (
             // ADR 0010 (Tier C): the agent loop composes the runtime's
@@ -1622,14 +1621,14 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // security when real executors arrive. PR-2/PR-3: the executor
             // consults the firewall (vesper-policy) and the sandbox caps
             // (vesper-security) before spawning.
-            "vesper-agent",
+            "jarvis-agent",
             BTreeSet::from([
-                "vesper-domain",
-                "vesper-provider",
-                "vesper-runtime",
-                "vesper-testkit",
-                "vesper-policy",
-                "vesper-security",
+                "jarvis-domain",
+                "jarvis-provider",
+                "jarvis-runtime",
+                "jarvis-testkit",
+                "jarvis-policy",
+                "jarvis-security",
             ]),
         ),
         (
@@ -1639,56 +1638,56 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // adapter: harness owns the concrete backend (vesper-sandbox)
             // and the config reader (vesper-config) behind the agent's
             // SandboxBackendPort, so neither host touches the backend type.
-            "vesper-harness",
+            "jarvis-harness",
             BTreeSet::from([
-                "vesper-agent",
-                "vesper-policy",
-                "vesper-checkpoints",
-                "vesper-config",
-                "vesper-domain",
-                "vesper-mcp",
-                "vesper-memory",
+                "jarvis-agent",
+                "jarvis-policy",
+                "jarvis-checkpoints",
+                "jarvis-config",
+                "jarvis-domain",
+                "jarvis-mcp",
+                "jarvis-memory",
                 // VRO-15 PR-9: optional deps behind the default-off `swarm`
                 // feature; the WorkerPort adapter links provider types and
                 // the swarm engine only when swarm is explicitly enabled.
-                "vesper-provider",
+                "jarvis-provider",
                 // dev-only: the deterministic synthetic provider backs the
                 // swarm adapter's integration tests (test kind only).
-                "vesper-provider-synthetic",
-                "vesper-runtime",
-                "vesper-swarm",
-                "vesper-sandbox",
-                "vesper-sessions",
+                "jarvis-provider-synthetic",
+                "jarvis-runtime",
+                "jarvis-swarm",
+                "jarvis-sandbox",
+                "jarvis-sessions",
                 // VRO-14 PR-5: the WebService hosts the five opt-in web
                 // tools over vesper-web's pure pipeline types.
-                "vesper-web",
+                "jarvis-web",
                 // VB-PRD-001 Phase 2: the hosted Bridge tool service
                 // (optional, default-off `bridge` feature) composes the
                 // pure vesper-bridge core. No adapter, transport or I/O
                 // here; every decision routes through the core gate.
-                "vesper-bridge",
-                "vesper-web-fetch",
+                "jarvis-bridge",
+                "jarvis-web-fetch",
             ]),
         ),
         (
-            "agent-vesper-acp",
+            "jarvis-acp",
             BTreeSet::from([
-                "vesper-provider-openai",
-                "vesper-provider-xai",
-                "vesper-acp",
-                "vesper-agent",
-                "vesper-auth",
-                "vesper-cognition",
-                "vesper-config",
-                "vesper-domain",
-                "vesper-harness",
-                "vesper-policy",
-                "vesper-provider",
-                "vesper-provider-glm",
-                "vesper-provider-synthetic",
-                "vesper-runtime",
-                "vesper-security",
-                "vesper-sessions",
+                "jarvis-provider-openai",
+                "jarvis-provider-xai",
+                "jarvis-acp-protocol",
+                "jarvis-agent",
+                "jarvis-auth",
+                "jarvis-cognition",
+                "jarvis-config",
+                "jarvis-domain",
+                "jarvis-harness",
+                "jarvis-policy",
+                "jarvis-provider",
+                "jarvis-provider-glm",
+                "jarvis-provider-synthetic",
+                "jarvis-runtime",
+                "jarvis-security",
+                "jarvis-sessions",
             ]),
         ),
         (
@@ -1696,35 +1695,35 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // multi-turn agent loop on top of the same shared registry that
             // powers the reasoning-override supervisor. The library stays
             // pure; the binary owns the spawn/drain plumbing.
-            "agent-vesper-tui",
+            "jarvis-tui",
             BTreeSet::from([
-                "vesper-provider-openai",
-                "vesper-provider-xai",
-                "vesper-agent",
-                "vesper-auth",
-                "vesper-checkpoints",
-                "vesper-cognition",
-                "vesper-domain",
-                "vesper-harness",
-                "vesper-mcp",
-                "vesper-memory",
-                "vesper-observability",
-                "vesper-policy",
-                "vesper-provider",
-                "vesper-provider-glm",
-                "vesper-provider-synthetic",
-                "vesper-runtime",
-                "vesper-security",
-                "vesper-sessions",
+                "jarvis-provider-openai",
+                "jarvis-provider-xai",
+                "jarvis-agent",
+                "jarvis-auth",
+                "jarvis-checkpoints",
+                "jarvis-cognition",
+                "jarvis-domain",
+                "jarvis-harness",
+                "jarvis-mcp",
+                "jarvis-memory",
+                "jarvis-observability",
+                "jarvis-policy",
+                "jarvis-provider",
+                "jarvis-provider-glm",
+                "jarvis-provider-synthetic",
+                "jarvis-runtime",
+                "jarvis-security",
+                "jarvis-sessions",
                 // VRO-17 PR-4: opt-in voice conversation mode behind the
                 // default-off `voice-conversation` feature; the pure
                 // voice core is agent-free (same class as vesper-web).
-                "vesper-voice",
+                "jarvis-voice",
                 // VRO-17 R3: the Natural Voice pack adapter behind the
                 // default-off `voice-kokoro` feature (composition-only;
                 // the heavy inference backend is lazily loaded from the
                 // verified pack, never linked into the binary).
-                "vesper-voice-kokoro",
+                "jarvis-voice-kokoro",
             ]),
         ),
         (
@@ -1732,8 +1731,8 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // pure Rust layer. Structurally limited to domain + security
             // foundations; execution/inference/sandboxing are trait ports
             // fulfilled at the composition boundary, never here.
-            "vesper-swarm",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-swarm",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
         (
             // VB-PRD-001 Phase 1: the pure application-control core
@@ -1741,13 +1740,13 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // machines, fenced leases, journal port, observations, error
             // contract). No I/O, clock or transport; adapters compose in
             // the hosted layer behind these ports.
-            "vesper-bridge",
-            BTreeSet::from(["vesper-domain", "vesper-security"]),
+            "jarvis-bridge",
+            BTreeSet::from(["jarvis-domain", "jarvis-security"]),
         ),
-        ("jarvis-identity", BTreeSet::from(["vesper-config"])),
+        ("jarvis-identity", BTreeSet::from(["jarvis-config"])),
         (
             "xtask",
-            BTreeSet::from(["vesper-testkit", "jarvis-identity"]),
+            BTreeSet::from(["jarvis-testkit", "jarvis-identity"]),
         ),
     ])
 }
@@ -1760,7 +1759,7 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
         "reqwest",
         "rusqlite",
         "spikes/",
-        "vesper-testkit",
+        "jarvis-testkit",
         "vesper_provider_glm",
     ];
     for entry in fs::read_dir(root.join("crates")).map_err(|error| error.to_string())? {
@@ -1768,7 +1767,7 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
         if !crate_path.is_dir() {
             continue;
         }
-        if crate_path.file_name().and_then(|name| name.to_str()) == Some("vesper-testkit") {
+        if crate_path.file_name().and_then(|name| name.to_str()) == Some("jarvis-testkit") {
             continue;
         }
         let mut files = Vec::new();
@@ -1796,10 +1795,10 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
             // discipline instead of the blanket lib-level ban: every unsafe
             // op must sit in an explicit unsafe block, and the file must
             // carry the ADR 0022 safety contract marker.
-            if crate_path.file_name().and_then(|name| name.to_str()) == Some("vesper-sandbox")
+            if crate_path.file_name().and_then(|name| name.to_str()) == Some("jarvis-sandbox")
                 && matches!(
                     file.file_name().and_then(|value| value.to_str()),
-                    Some("sandbox_init.rs")
+                    Some("jarvis-sandbox-init.rs")
                 )
             {
                 if !source.contains("#![deny(unsafe_op_in_unsafe_fn)]") {
@@ -1821,19 +1820,19 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
             // it runs INSIDE the provisioned sandbox (the harness process
             // never links it into a fetch path; vesper-web itself stays
             // reqwest-free and pure).
-            let forbidden: &[&str] = if crate_name == Some("vesper-web-fetch") {
+            let forbidden: &[&str] = if crate_name == Some("jarvis-web-fetch") {
                 &[
                     "agent_client_protocol",
                     "agent-client-protocol",
                     "ratatui",
                     "rusqlite",
                     "spikes/",
-                    "vesper-testkit",
+                    "jarvis-testkit",
                     "vesper_provider_glm",
                 ]
             } else if matches!(
                 crate_name,
-                Some("vesper-provider-openai" | "vesper-provider-xai")
+                Some("jarvis-provider-openai" | "jarvis-provider-xai")
             ) {
                 &[
                     "agent_client_protocol",
@@ -1841,12 +1840,12 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
                     "ratatui",
                     "rusqlite",
                     "spikes/",
-                    "vesper-testkit",
+                    "jarvis-testkit",
                     "vesper_provider_glm",
                     "std::process",
                     "tokio::process",
                 ]
-            } else if crate_name == Some("vesper-provider-glm") {
+            } else if crate_name == Some("jarvis-provider-glm") {
                 &[
                     "agent_client_protocol",
                     "agent-client-protocol",
@@ -1854,7 +1853,7 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
                     "rusqlite",
                     "spikes/",
                 ]
-            } else if crate_name == Some("vesper-acp") {
+            } else if crate_name == Some("jarvis-acp-protocol") {
                 &[
                     "ratatui",
                     "reqwest",
@@ -1862,7 +1861,7 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
                     "spikes/",
                     "vesper_provider_glm",
                 ]
-            } else if crate_name == Some("vesper-runtime") {
+            } else if crate_name == Some("jarvis-runtime") {
                 &[
                     "agent_client_protocol",
                     "agent-client-protocol",
@@ -1872,7 +1871,7 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
                     "spikes/",
                     "vesper_provider_glm",
                 ]
-            } else if crate_name == Some("vesper-mcp") {
+            } else if crate_name == Some("jarvis-mcp") {
                 &[
                     "agent_client_protocol",
                     "agent-client-protocol",
@@ -1881,7 +1880,7 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
                     "spikes/",
                     "vesper_provider_glm",
                 ]
-            } else if crate_name == Some("vesper-cognition") {
+            } else if crate_name == Some("jarvis-cognition") {
                 // ADR 0015 (Stage 16): this is the only production crate
                 // permitted to depend on SQLite. The `rusqlite` term is
                 // intentionally NOT in this list (it's in `shared_forbidden`)
@@ -1906,7 +1905,7 @@ fn scan_production_sources(root: &Path) -> Result<(), String> {
                     ));
                 }
             }
-            if crate_path.file_name().and_then(|name| name.to_str()) == Some("vesper-domain")
+            if crate_path.file_name().and_then(|name| name.to_str()) == Some("jarvis-domain")
                 && file.extension().and_then(|value| value.to_str()) == Some("rs")
                 && file.file_name().and_then(|value| value.to_str()) != Some("compatibility.rs")
             {
@@ -2071,42 +2070,42 @@ struct Dependency {
 fn acceptance_verify() -> Result<(), String> {
     let mut cases: Vec<(&str, &[&str], &str)> = vec![
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::native_backend::tests::native_observation_cancellation_interrupts_a_stalled_job_probe",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::native_backend::tests::windows_job_observations_reject_missing_malformed_and_inconsistent_values",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::native_backend::tests::native_capacity_and_owned_process_observation_is_real",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::native_backend::tests::native_owned_descendants_are_observed_and_reaped",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::native_backend::tests::native_tree_counts_descendants_excludes_siblings_and_refuses_cycles",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::tests::windows_job_bounds_preserve_physical_capacity_and_refuse_unsafe_admission",
         ),
         (
-            "agent-vesper-tui",
-            &["--bin", "agent-vesper-tui"],
+            "jarvis-tui",
+            &["--bin", "jarvis-tui"],
             "tests::native_release_controls_bypass_pending_account_discovery",
         ),
         (
-            "vesper-testkit",
+            "jarvis-testkit",
             &["--lib"],
             "fixture::tests::invocation_fixture_roots_do_not_follow_cached_build_paths",
         ),
@@ -2121,697 +2120,697 @@ fn acceptance_verify() -> Result<(), String> {
             "cached_binary_outside_workspace_refuses_build_directory_fallback",
         ),
         (
-            "agent-vesper-tui",
-            &["--bin", "agent-vesper-tui"],
+            "jarvis-tui",
+            &["--bin", "jarvis-tui"],
             "tests::xai_controls_reach_generic_turn_configuration",
         ),
         (
-            "vesper-agent",
+            "jarvis-agent",
             &["--test", "acceptance_policy"],
             "every_required_host_needs_its_own_evidence",
         ),
         (
-            "vesper-agent",
+            "jarvis-agent",
             &["--test", "acceptance_policy"],
             "unit_tests_cannot_substitute_for_native_tests",
         ),
         (
-            "vesper-agent",
+            "jarvis-agent",
             &["--test", "acceptance_policy"],
             "changed_source_contract_checks_platform_or_test_invalidates",
         ),
         (
-            "vesper-agent",
+            "jarvis-agent",
             &["--test", "acceptance_policy"],
             "duplicate_unknown_and_wrong_command_receipts_refuse",
         ),
         (
-            "vesper-agent",
+            "jarvis-agent",
             &["--test", "acceptance_policy"],
             "omitted_source_and_removed_scenario_checks_refuse",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::native_agent_cannot_stop_early_then_repairs_and_earns_real_evidence",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::automatic_enrollment_remembers_prd_and_requires_real_evidence_in_the_same_turn",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::automatic_enrollment_rejects_missing_external_and_forged_scope_without_saving",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::automatic_scope_review_refusal_and_cancellation_do_not_remember_a_path",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::delegated_finish_and_empty_deleted_or_replaced_plans_cannot_certify_parent",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::wrong_platform_and_verification_timeout_fail_closed",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::reviewer_unavailable_or_without_source_inspection_cannot_approve",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::explicit_scope_revision_and_resume_preserve_history_but_never_import_verification",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::independent_reexamination_resolves_spurious_finding_without_forged_override",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::cancelled_and_exhausted_turns_publish_incomplete_history",
         ),
         (
-            "agent-vesper-acp",
+            "jarvis-acp",
             &["--test", "acceptance_controls"],
             "native_acceptance_controls_persist_only_explicit_activation",
         ),
         (
-            "agent-vesper-tui",
-            &["--bin", "agent-vesper-tui"],
+            "jarvis-tui",
+            &["--bin", "jarvis-tui"],
             "acceptance_host::tests::acceptance_native_settings_show_scope_and_save_cancel",
         ),
         (
-            "agent-vesper-tui",
-            &["--bin", "agent-vesper-tui"],
+            "jarvis-tui",
+            &["--bin", "jarvis-tui"],
             "tests::acceptance_event_cannot_be_overridden_by_completed_plan",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::verification_never_bypasses_shell_permission_or_command_firewall",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::publication_rechecks_live_source_after_snapshot_review",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::project_rules_are_frozen_and_runtime_configuration_is_snapshotted",
         ),
         (
-            "vesper-agent",
+            "jarvis-agent",
             &["--lib"],
             "vro::react::tests::acceptance_parent_controls_reach_react_tools",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "acceptance::tests::saved_activation_restores_unverified_scope_and_cannot_disable_an_active_contract",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::directives_are_typed_and_back_off_without_model_step_polling",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::a_long_running_platform_matrix_is_not_active_repair_stagnation",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::missing_runs_cannot_reuse_a_stale_running_matrix_to_avoid_timeout",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::matching_published_release_resumes_closeout_without_new_epoch_or_tag",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::completed_version_does_not_claim_a_different_objective_was_released",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::published_release_keeps_worker_until_post_release_closeout",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::published_closeout_finishes_report_without_replaying_release_mutations",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_evidence_watchdog_ignores_streaming_and_repeated_tool_results",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_evidence_deadline_and_native_verification_are_distinct",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_dispatch_budget_survives_restart_without_a_focused_proof",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::failed_source_repair_journal_settles_only_with_clean_exact_candidate",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::failed_source_repair_journal_preserves_uncertain_mutations",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::failed_source_repair_restart_reconciles_before_heartbeat_and_permission",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::prepared_repair_resource_recovery_preserves_proof_and_admissions",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::prepared_repair_control_stops_preserve_failed_proof_boundary",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::isolated_repair_controller_stops_do_not_record_failed_hypotheses",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::live_progress_uses_durable_milestones_without_losing_case_counts",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_registry_stops_repeated_observations_for_each_provider_context",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_closeout::tests::closeout_registry_uncertain_write_never_replays",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_closeout::tests::closeout_registry_preserves_concurrent_edit_and_rejects_false_write_receipt",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_closeout::tests::closeout_later_main_has_a_distinct_report_without_overwriting_publication",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_closeout::tests::closeout_report_restart_is_idempotent_and_preserves_user_edits",
         ),
         (
-            "agent-vesper-tui",
-            &["--bin", "agent-vesper-tui"],
+            "jarvis-tui",
+            &["--bin", "jarvis-tui"],
             "tests::release_final_receipt_is_not_suppressed_by_last_active_milestone",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::partial_matrix_blocks_retry",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::missing_initial_workflow_runs_remain_an_active_matrix_wait",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::repeated_incomplete_matrix_refreshes_do_not_spend_repair_watchdog_actions",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::worker_keeps_matrix_and_classification_states_controller_owned",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::remote_poll_wait_is_responsive_to_cancellation",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::verified_repair_is_the_only_path_to_one_full_gate_retry",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::verified_repair_batch_records_every_failure_family_before_retry",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::paused_epoch_reopens_with_exact_identity_and_resumes_through_remote_refresh",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::green_release_then_red_closeout_keeps_publication_immutable",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::same_recoverable_epoch_resumes_from_natural_language_without_manual_command",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::obsolete_diagnosing_epoch_is_preserved_and_newer_candidate_is_admitted",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::canonical_objective_supersedes_historical_active_prerelease_without_clarification",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::unrelated_active_release_asks_one_human_clarification_without_mutation",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::different_release_target_with_pushed_candidate_requires_clarification",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::tui_natural_release_retains_registered_controller_through_local_gate_progress",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::production_orchestrator_reaches_publication_only_through_settled_gates",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::release_worker_cancel_restart_process_acceptance",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::resource_governor_defer_keeps_local_epoch_resumable_without_source_failure",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_progress_tests::persisted_hierarchy_uses_typed_gate_and_job_states_without_percentages",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::trusted_acceptance_output_updates_only_the_active_acceptance_subtask",
         ),
         (
-            "agent-vesper-tui",
+            "jarvis-tui",
             &["--lib"],
             "commands::tests::release_routes_to_the_controller_instead_of_a_model_workflow",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::background_controller_waits_then_publishes_without_continue_prompts",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::denied_host_permission_prevents_every_release_side_effect",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::an_unsettled_mutation_is_never_replayed_on_restart",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::publication_watch_budget_survives_reload_and_read_recovery",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::publication_read_timeout_continues_same_candidate_without_another_tag",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::publication_read_watchdog_recovery_is_persisted_and_bounded",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::publication_read_recovery_never_retries_cancellation_denials_or_invalid_evidence",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::same_tagged_publication_request_resumes_without_replacing_epoch",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::publication_requires_all_fourteen_nonempty_uploaded_assets",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::persisted_cancellation_reaches_a_worker_in_another_host",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::passing_error_module_tests_cannot_hide_the_real_causal_failure",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::dependency_errors_and_unrecognized_platform_logs_classify_truthfully",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::settled_windows_metadata_cannot_hide_version_assertion",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::settled_python_fixture_exceptions_admit_source_diagnosis",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::python_fixture_classification_preserves_owner_action_and_uncertainty",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::settled_dependency_download_precedes_downstream_missing_binary_panic",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::settled_package_index_timeout_retains_observed_setup_context",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::remote_operation_cancellation_is_not_local_user_cancellation",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::github_account_execution_restriction_requires_owner_action",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::native_worker_stops_owner_action_and_uncertain_causes_before_repair_permission",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::read_only_health_checks_do_not_request_source_repair_permissions",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::github_failed_job_retry_requires_exact_admission_scope",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::release_read_ports_share_worker_cancellation_before_dispatch",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::required_skipped_job_never_opens_tag_admission",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::last_green_missing_or_skipped_matching_job_preserves_unknown_context",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::missing_runner_log_uses_only_owned_failure_annotations",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::published_docs_red_repair_then_other_platform_red_stops_speculation",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::stale_writer_cannot_overwrite_cancelled_checkpoint",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::rejected_repair_event_does_not_partially_mutate_the_record",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::controller_owner_is_exclusive_across_independent_ledger_handles",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::cancelled_checkpoint_can_be_explicitly_resumed_without_erasing_counters",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::old_attempt_cannot_satisfy_a_reserved_infrastructure_retry",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::github_adapter_uses_exact_attempt_and_main_push_provenance",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::published_release_has_a_distinct_main_epoch_and_archived_history",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::quoted_credentials_basic_auth_and_signed_urls_are_redacted",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::arbitrary_successful_shell_commands_are_not_focused_proof",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::focused_test_proof_requires_a_nonzero_executed_pass",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::focused_proof_identifies_rust_panic_with_numeric_thread_id",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_cargo_requires_governor_and_rejects_policy_overrides",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_command_signal_watcher_settles_on_unwind",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::native_firewall_denial_cannot_be_bypassed_by_a_release_admission",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::local_failure_retains_the_causal_error_for_bounded_diagnosis",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::native_repair_patch_keeps_version_seed_and_includes_new_regressions",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::native_version_bump_keeps_all_workspace_dependency_pins_resolvable",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::colored_ci_logs_cannot_hide_credentials_or_causal_errors",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::publication_checksum_content_must_match_both_server_digests",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::github_command_echo_is_not_the_runtime_causal_error",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_preserves_provider_owned_hosted_tool_selections",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_iteration_budget_survives_disabled_host_cap",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_continues_unplanned_segments_for_two_provider_fixtures",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_terminal_diagnostics_identify_the_safety_stop",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::tests::expensive_slot_release_unlocks_inherited_file_description",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::version_preparation_rollback_routes_to_repair_and_pins_promoted_patch",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_initial_provider_retry_is_bounded_and_never_replays_tools",
         ),
         (
-            "vesper-provider-openai",
+            "jarvis-provider-openai",
             &["--lib"],
             "http_error_tests::transient_http_rejections_admit_only_before_output_retry_in_both_modes",
         ),
         (
-            "vesper-provider-openai",
+            "jarvis-provider-openai",
             &["--lib"],
             "http_error::retry_tests::transient_retry_respects_server_delay_and_refuses_malformed_headers",
         ),
         (
-            "vesper-agent",
+            "jarvis-agent",
             &["--test", "agent_loop"],
             "role_ceiling_bounds_planned_continuation",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_worker_cannot_create_unadmitted_release_tags",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_factory_executes_real_tools_for_two_provider_fixtures",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::isolated_agent_repair_verifies_and_promotes_one_patch_for_two_provider_fixtures",
         ),
         (
-            "agent-vesper-tui",
+            "jarvis-tui",
             &["--lib"],
             "ui::tests::registered_release_task_replaces_ready_and_no_active_tasks",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_recovery::tests::terminal_cancelled_runner_job_uses_owned_failure_annotations",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::local_failure_receipt_preserves_late_stdout_cause_and_redacts_secrets",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::tests::reported_normal_threshold_includes_swap_and_owned_tree_burst_margins",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::tests::swap_growth_window_rejects_subsecond_rate_amplification",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::tests::swap_growth_window_preserves_sustained_pressure_and_critical_signals",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::tests::target_cache_scan_tolerates_disappearing_entries",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "host_resources::tests::target_cache_scan_preserves_non_missing_errors",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::repair_factory_continues_after_documentation_invalidates_focused_proof",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::isolated_repair_fixtures_do_not_alias_shared_cargo_artifacts",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"],
             "release_executor::tests::cancelled_checkpoint_rejects_late_worker_failure_settlement",
         ),
@@ -2819,93 +2818,93 @@ fn acceptance_verify() -> Result<(), String> {
     #[cfg(target_os = "linux")]
     cases.extend([
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"] as &[&str],
             "host_resources::tests::cgroup_v2_discovery_uses_the_strictest_ancestor_limit_and_its_usage",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"] as &[&str],
             "host_resources_constrained_tests::constrained_memory_acceptance_withholds_expensive_cargo_before_spawn",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"] as &[&str],
             "host_resources_constrained_tests::constrained_disk_acceptance_preserves_target_cache_and_withholds_gate",
         ),
     ]);
     #[cfg(target_os = "linux")]
     cases.push((
-        "agent-vesper-acp",
+        "jarvis-acp",
         &["--test", "release_resource_governor"],
         "acp_completed_release_delivers_final_receipt_without_provider_or_new_release",
     ));
     #[cfg(target_os = "linux")]
     cases.push((
-        "agent-vesper-acp",
+        "jarvis-acp",
         &["--test", "release_resource_governor"],
         "acp_conflicting_published_target_returns_clarification_without_observing_old_worker",
     ));
     #[cfg(target_os = "linux")]
     cases.push((
-        "agent-vesper-acp",
+        "jarvis-acp",
         &["--test", "release_resource_governor"],
         "acp_process_release_status_uses_governor_for_every_cargo_path",
     ));
     #[cfg(target_os = "linux")]
     cases.push((
-        "agent-vesper-acp",
+        "jarvis-acp",
         &["--test", "release_resource_governor"],
         "acp_natural_release_inherits_session_permission_and_governor",
     ));
     #[cfg(target_os = "linux")]
     cases.extend([
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"] as &[&str],
             "release_executor::tests::repair_cargo_uses_managed_cache_and_bounded_environment",
         ),
         (
-            "agent-vesper-acp",
+            "jarvis-acp",
             &["--test", "release_resource_governor"] as &[&str],
             "controlled_cargo_metadata_emits_valid_json",
         ),
     ]);
     #[cfg(unix)]
     cases.push((
-        "agent-vesper-tui",
+        "jarvis-tui",
         &["--test", "rrc_terminal_pty"],
         "rrc_child_output_is_captured_sanitized_and_confined_in_a_real_pty",
     ));
     #[cfg(unix)]
     cases.push((
-        "agent-vesper-tui",
+        "jarvis-tui",
         &["--test", "openai_startup_responsiveness"],
         "native_release_admission_does_not_wait_for_account_model_discovery",
     ));
     cases.extend([
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"] as &[&str],
             "release_executor::tests::only_newly_classified_local_gate_errors_continue_to_repair",
         ),
         (
-            "vesper-harness",
+            "jarvis-harness",
             &["--lib"] as &[&str],
             "release_executor::tests::local_repair_dispatch_errors_are_retained_as_liveness_failures",
         ),
         (
-            "agent-vesper-tui",
-            &["--bin", "agent-vesper-tui"] as &[&str],
+            "jarvis-tui",
+            &["--bin", "jarvis-tui"] as &[&str],
             "tests::release_repair_uses_selected_model_and_effort_before_account_discovery",
         ),
         (
-            "agent-vesper-acp",
+            "jarvis-acp",
             &["--lib"] as &[&str],
             "tests::release_repair_configuration_uses_session_model_and_provider_controls",
         ),
         (
-            "agent-vesper-tui",
+            "jarvis-tui",
             &["--lib"] as &[&str],
             "ui::tests::recoverable_release_is_not_rendered_as_running_or_ready",
         ),
@@ -2991,7 +2990,7 @@ fn acceptance_mutations() -> Result<(), String> {
     for file in ["Cargo.toml", "Cargo.lock"] {
         fs::copy(root.join(file), temp.path().join(file)).map_err(|e| e.to_string())?;
     }
-    let source_path = temp.path().join("crates/vesper-agent/src/acceptance.rs");
+    let source_path = temp.path().join("crates/jarvis-agent/src/acceptance.rs");
     let original = fs::read_to_string(&source_path).map_err(|e| e.to_string())?;
     let mutations = [
         (
@@ -3031,7 +3030,7 @@ fn acceptance_mutations() -> Result<(), String> {
                     "--color",
                     "never",
                     "-p",
-                    "vesper-agent",
+                    "jarvis-agent",
                     "--test",
                     "acceptance_policy",
                     name,

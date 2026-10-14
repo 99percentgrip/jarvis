@@ -19,8 +19,14 @@ function Invoke-WebRequest {
 try {
     $package = Join-Path $root 'package/agent-vesper-acp'
     New-Item -ItemType Directory -Path $package -Force | Out-Null
-    foreach ($executable in @('agent-vesper-acp.exe', 'agent-vesper-tui.exe', 'vesper-web-fetch.exe', 'sandbox_init.exe')) {
-        Copy-Item -LiteralPath (Join-Path $BinaryDir $executable) -Destination $package
+    $buildTargets = @{
+        'agent-vesper-acp.exe' = 'jarvis-acp.exe'
+        'agent-vesper-tui.exe' = 'jarvis-tui.exe'
+        'vesper-web-fetch.exe' = 'jarvis-web-fetch.exe'
+        'sandbox_init.exe' = 'jarvis-sandbox-init.exe'
+    }
+    foreach ($executable in $buildTargets.Keys) {
+        Copy-Item -LiteralPath (Join-Path $BinaryDir $buildTargets[$executable]) -Destination (Join-Path $package $executable)
     }
     $archive = Join-Path $root 'agent-vesper-acp-windows-x86_64.zip'
     Compress-Archive -Path $package -DestinationPath $archive

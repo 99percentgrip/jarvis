@@ -1,3 +1,13 @@
+# Current Rust workspace identity
+
+The Stage 2 workspace has 32 explicitly owned packages. The
+[current package/directory map](architecture/rust-identity-stage2.md),
+[crate DOX index](../crates/AGENTS.md) and actual Cargo metadata own current identities.
+The inherited Stage 5 snapshot below is preserved verbatim as historical evidence;
+its package names, counts and feature restrictions are not current workspace claims.
+
+---
+
 # Stage 5 Read-Only Persistence Workspace Map
 
 Historical Stage 5 snapshot below; it is not the current crate inventory.

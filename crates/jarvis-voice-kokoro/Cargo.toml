@@ -1,0 +1,113 @@
+[package]
+name = "jarvis-voice-kokoro"
+description = "VRO-17 R3: local neural TTS adapter — Kokoro-82M ONNX inference behind the jarvis-voice ports (feature-gated composition adapter)"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+# Inference (ort + ONNX Runtime via load-dynamic). Default-off: this crate
+# must compile bare — pack files exist only after explicit user setup.
+ort = ["dep:ort", "dep:fs2"]
+# Development-only deterministic double for red tests of TUI/host wiring.
+# Test-only: bounded-buffer replay, no inference, never a production path.
+mock-synthesis = []
+
+[dependencies]
+futures-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["process", "time"] }
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
+jarvis-voice = { path = "../jarvis-voice", version = "=0.24.14", features = ["stt-sidecar", "tts-subprocess"] }
+ort = { version = "=2.0.0-rc.13", optional = true, default-features = false, features = ["std", "load-dynamic", "ndarray"] }
+
+fs2 = { version = "=0.4.3", optional = true }
+
+[dev-dependencies]
+futures-util.workspace = true
+tempfile.workspace = true
+tokio = { workspace = true, features = ["macros", "rt", "time"] }
+
+[lints]
+workspace = true
+
+# Evidence helpers require the inference feature (they drive the real
+# engine); they are excluded from default builds automatically.
+[[example]]
+name = "real_setup_receipt"
+required-features = ["ort"]
+
+[[example]]
+name = "perf_receipt"
+required-features = ["ort"]
+
+[[example]]
+name = "repro_tui_path"
+required-features = ["ort"]
+
+[[example]]
+name = "repro_tui_path2"
+required-features = ["ort"]
+
+[[example]]
+name = "repro_tui_path5"
+required-features = ["ort"]
+
+[[example]]
+name = "boundary_silence_receipt"
+required-features = ["ort"]
+
+[[example]]
+name = "latency_receipt"
+required-features = ["ort"]
+
+[[example]]
+name = "phoneme_char_matrix"
+required-features = ["ort"]
+
+[[example]]
+name = "phoneme_full_path"
+required-features = ["ort"]
+
+[[example]]
+name = "phoneme_markdown_units"
+required-features = ["ort"]
+
+[[example]]
+name = "phoneme_numeric_probe"
+required-features = ["ort"]
+
+[[example]]
+name = "phoneme_recon"
+required-features = ["ort"]
+
+[[example]]
+name = "phoneme_shape_matrix"
+required-features = ["ort"]
+
+[[example]]
+name = "phoneme_strand_check"
+required-features = ["ort"]
+
+[[example]]
+name = "piece_rtf_receipt"
+required-features = ["ort"]
+
+[[example]]
+name = "pron_ab_audio"
+required-features = ["ort"]
+
+[[example]]
+name = "repaired_boundary_receipt"
+required-features = ["ort"]
+
+[[example]]
+name = "signal_receipt"
+required-features = ["ort"]

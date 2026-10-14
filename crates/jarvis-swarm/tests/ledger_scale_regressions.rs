@@ -1,0 +1,237 @@
+//! Bounded ledger workload measurement with correctness assertions. This does
+//! not certify million-entry capacity, host latency, or detached memory usage.
+use futures_util::future::BoxFuture;
+use jarvis_swarm::ledger::hnsw::HnswConfig;
+use jarvis_swarm::ledger::store::{
+    BoundedText, EmbeddingPort, EntryDraft, EntryKind, Ledger, LedgerError, LedgerRetention,
+    MemoryScope, Provenance,
+};
+use std::sync::Arc;
+use std::time::Instant;
+struct Embedding;
+
+#[test]
+#[ignore = "explicit adversarial clustered-vector recall measurement"]
+fn clustered_insertion_order_measures_recall_against_exact_cosine() {
+    use jarvis_swarm::ledger::hnsw::HnswIndex;
+    let mut state = 472u64;
+    let mut random = || {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        (state >> 40) as f32 / (1u32 << 24) as f32
+    };
+    let vectors: Vec<Vec<f32>> = (0..4096)
+        .map(|id| {
+            let mut vector: Vec<f32> = (0..128).map(|_| (random() - 0.5) * 0.02).collect();
+            vector[id / 512] += 1.0;
+            vector
+        })
+        .collect();
+    let mut index = HnswIndex::new(HnswConfig::new(128)).unwrap();
+    let start = Instant::now();
+    for (id, vector) in vectors.iter().enumerate() {
+        index.add_point(id as u64, vector).unwrap();
+    }
+    let build = start.elapsed();
+    let cosine = |left: &[f32], right: &[f32]| {
+        let dot: f64 = left
+            .iter()
+            .zip(right)
+            .map(|(a, b)| f64::from(*a) * f64::from(*b))
+            .sum();
+        let a: f64 = left.iter().map(|v| f64::from(*v).powi(2)).sum();
+        let b: f64 = right.iter().map(|v| f64::from(*v).powi(2)).sum();
+        dot / (a * b).sqrt()
+    };
+    let mut correct = 0;
+    for sample in 0..64 {
+        let query = &vectors[(sample * 61) % vectors.len()];
+        let mut exact: Vec<_> = vectors
+            .iter()
+            .enumerate()
+            .map(|(id, v)| (id as u64, cosine(query, v)))
+            .collect();
+        exact.sort_by(|a, b| b.1.total_cmp(&a.1).then(a.0.cmp(&b.0)));
+        let found = index.search(query, 10, 200);
+        assert_eq!(found.len(), 10);
+        assert!(found.iter().all(|hit| hit.similarity.is_finite()));
+        correct += found
+            .iter()
+            .filter(|hit| exact[..10].iter().any(|(id, _)| *id == hit.id))
+            .count();
+    }
+    let recall = correct as f64 / 640.0;
+    eprintln!(
+        "clustered 4096/128D, 8 ordered clusters: build={build:?}, recall@10={recall:.5}, total={:?}",
+        start.elapsed()
+    );
+    assert!(
+        recall >= 0.95,
+        "clustered recall below the acceptance target: {recall}"
+    );
+}
+
+struct HighDimensional;
+impl EmbeddingPort for HighDimensional {
+    fn embed<'a>(
+        &'a self,
+        texts: Vec<BoundedText>,
+    ) -> BoxFuture<'a, Result<Vec<Vec<f32>>, LedgerError>> {
+        Box::pin(async move {
+            Ok(texts
+                .iter()
+                .map(|text| {
+                    let id: usize = text.as_str().parse().unwrap();
+                    let mut vector = vec![0.00001; 1536];
+                    vector[id % 1536] = 1.0;
+                    vector[(id * 17 + 1) % 1536] += 0.001;
+                    vector
+                })
+                .collect())
+        })
+    }
+}
+
+#[tokio::test]
+#[ignore = "explicit high-dimensional default-capacity measurement"]
+async fn high_dimensional_default_capacity_retains_coherent_readers() {
+    let config = HnswConfig::new(1536);
+    assert_eq!(config.max_elements, 1_000_000);
+    let ledger = Ledger::with_hnsw_config(config.clone(), Arc::new(HighDimensional)).unwrap();
+    let start = Instant::now();
+    for sequence in 0..1536 {
+        record(&ledger, sequence).await;
+    }
+    let retained = ledger.snapshot();
+    for sequence in 1536..2048 {
+        record(&ledger, sequence).await;
+    }
+    assert_eq!(retained.len(), 1536);
+    assert_eq!(ledger.len(), 2048);
+    let append = start.elapsed();
+    let bytes = ledger.to_snapshot().unwrap();
+    let loaded = Ledger::from_snapshot(config, &bytes, Arc::new(HighDimensional)).unwrap();
+    assert_eq!(loaded.to_snapshot().unwrap(), bytes);
+    record(&ledger, 2048).await;
+    record(&loaded, 2048).await;
+    assert_eq!(loaded.to_snapshot().unwrap(), ledger.to_snapshot().unwrap());
+    eprintln!(
+        "ledger default 1M cap, 2048/1536D: append={append:?}, encoded_bytes={}, total={:?}; raw+normalized vectors alone at 1M would require 12,288,000,000 bytes, excluding graph/log/generations",
+        bytes.len(),
+        start.elapsed()
+    );
+}
+impl EmbeddingPort for Embedding {
+    fn embed<'a>(
+        &'a self,
+        texts: Vec<BoundedText>,
+    ) -> BoxFuture<'a, Result<Vec<Vec<f32>>, LedgerError>> {
+        Box::pin(async move {
+            Ok(texts
+                .iter()
+                .map(|text| {
+                    let id: usize = text.as_str().parse().unwrap();
+                    (0..16)
+                        .map(|index| ((id * 31 + index * 17) % 97) as f32 / 97.0)
+                        .collect()
+                })
+                .collect())
+        })
+    }
+}
+async fn record(ledger: &Ledger, sequence: u64) -> u64 {
+    ledger
+        .record(EntryDraft {
+            scope: MemoryScope::Swarm,
+            kind: EntryKind::Observation,
+            text: BoundedText::new(sequence.to_string()).unwrap(),
+            confidence: 1.0,
+            key: Some("trajectory".into()),
+            provenance: Provenance {
+                worker_id: "worker".into(),
+                task_id: "task".into(),
+                role: "driver".into(),
+                sequence,
+            },
+        })
+        .await
+        .unwrap()
+}
+#[tokio::test]
+#[ignore = "explicit bounded scale measurement; run with --ignored --nocapture"]
+async fn ten_thousand_records_with_retained_generation_and_lossless_reload() {
+    let config = HnswConfig {
+        max_elements: 10_001,
+        ..HnswConfig::new(16)
+    };
+    let ledger = Ledger::with_hnsw_config(config.clone(), Arc::new(Embedding)).unwrap();
+    record(&ledger, 0).await;
+    let retained = ledger.snapshot();
+    let start = Instant::now();
+    for sequence in 1..10_000 {
+        record(&ledger, sequence).await;
+    }
+    let append = start.elapsed();
+    assert_eq!(retained.len(), 1);
+    assert_eq!(
+        retained.exact(&MemoryScope::Swarm, "trajectory")[0]
+            .entry
+            .provenance
+            .sequence,
+        0
+    );
+    assert_eq!(ledger.len(), 10_000);
+    let start = Instant::now();
+    let snapshot = ledger.to_snapshot().unwrap();
+    let loaded = Ledger::from_snapshot(config, &snapshot, Arc::new(Embedding)).unwrap();
+    assert_eq!(loaded.to_snapshot().unwrap(), snapshot);
+    let roundtrip = start.elapsed();
+    record(&ledger, 10_000).await;
+    record(&loaded, 10_000).await;
+    assert_eq!(loaded.to_snapshot().unwrap(), ledger.to_snapshot().unwrap());
+    eprintln!(
+        "ledger 10k/16D: append={append:?}, snapshot/load/compare={roundtrip:?}, encoded_bytes={}",
+        snapshot.len()
+    );
+}
+#[tokio::test]
+#[ignore = "explicit bounded retention measurement; run with --ignored --nocapture"]
+async fn one_thousand_retained_admissions_reclaim_capacity_and_keep_reader_generation() {
+    let ledger = Ledger::with_retention(
+        HnswConfig {
+            max_elements: 64,
+            ..HnswConfig::new(16)
+        },
+        Arc::new(Embedding),
+        LedgerRetention::Limited {
+            swarm: 64,
+            worker: 64,
+            task: 64,
+        },
+    )
+    .unwrap();
+    for sequence in 0..64 {
+        record(&ledger, sequence).await;
+    }
+    let retained = ledger.snapshot();
+    let start = Instant::now();
+    for sequence in 64..1064 {
+        record(&ledger, sequence).await;
+        assert_eq!(ledger.len(), 64);
+    }
+    let hits = ledger.exact(&MemoryScope::Swarm, "trajectory");
+    assert_eq!(hits.first().unwrap().entry.provenance.sequence, 1000);
+    assert_eq!(hits.last().unwrap().entry.provenance.sequence, 1063);
+    assert_eq!(
+        retained
+            .exact(&MemoryScope::Swarm, "trajectory")
+            .first()
+            .unwrap()
+            .entry
+            .provenance
+            .sequence,
+        0
+    );
+    eprintln!("ledger 1k retention/64 cap/16D: {:?}", start.elapsed());
+}

@@ -1,0 +1,39 @@
+[package]
+name = "jarvis-provider-xai"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+base64.workspace = true
+fs2 = "=0.4.3"
+futures-core.workspace = true
+futures-util.workspace = true
+jsonwebtoken.workspace = true
+rand.workspace = true
+reqwest = { workspace = true, features = ["form"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["io-util", "net"] }
+tokio-tungstenite.workspace = true
+url.workspace = true
+zeroize.workspace = true
+jarvis-auth = { path = "../jarvis-auth", version = "=0.24.14" }
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-provider = { path = "../jarvis-provider", version = "=0.24.14" }
+jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["io-util", "net", "test-util"] }
+
+[lints]
+workspace = true
+
+[features]
+integration-test-harness = []

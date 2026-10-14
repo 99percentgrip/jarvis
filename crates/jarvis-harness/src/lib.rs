@@ -1,0 +1,3782 @@
+#![forbid(unsafe_code)]
+//! Shared hosted tool services for the production ACP and TUI compositions.
+
+/// Shared model-facing completion-reporting contract, consumed identically
+/// by both production hosts (TUI + ACP) so every fresh install behaves the
+/// same after installation. Mirrors the `COGNITIVE_CAPABILITY_INSTRUCTION`
+/// precedent: one bounded static block, cache-stable, injected into every
+/// agent loop configuration (interactive and worker paths). The full
+/// methodology ships as the `work-unit-reporting` seed skill; this block is
+/// the binding mandate — file report + in-chat summary after every work
+/// unit, final audits with regression-first proofs, and release gating.
+pub const COMPLETION_REPORTING_INSTRUCTION: &str = "### Completion Reporting & Final Audit\n\
+Every completed work unit (implementation, repair, audit, or multi-step \
+directive) ends with BOTH, in the same delivery turn: (1) a formal execution \
+report written as a Markdown file in the workspace's evidence directory \
+(objective, methods/commands, files, exact evidence with verbatim receipts, \
+deviations, unresolved items, readiness effect) linked from the workspace's \
+evidence index; and (2) a full summary presented in the conversation \
+(status, what was built, constraints held, verification receipts, \
+deviations, open items). Neither alone completes a unit; a file link is not \
+a summary. Report honestly: preserve missing, failed, stale, and unexecuted \
+acceptance items rather than weakening scope; claims trace to current \
+scope-appropriate evidence. When a multi-part initiative completes, or on \
+explicit request, perform a final audit: re-derive invariants by hand, \
+re-check every narrative claim against recorded evidence, write regression \
+tests that FAIL on the pre-audit code before fixing, and correct any \
+overstatement in place with an explicit audit note. Follow the workspace's \
+release verification gates before declaring cross-platform work done.";
+
+pub mod acceptance;
+mod acceptance_runner;
+pub mod acceptance_settings;
+mod acceptance_snapshot;
+#[cfg(feature = "bridge")]
+pub mod bridge_adapters;
+pub mod bridge_command;
+#[cfg(feature = "bridge")]
+pub mod bridge_service;
+#[cfg(feature = "bridge")]
+pub mod bridge_settings;
+pub mod dependency_setup;
+pub mod host_resources;
+#[cfg(test)]
+mod host_resources_constrained_tests;
+pub mod lens_tools;
+pub mod release_closeout;
+pub mod release_executor;
+#[cfg(test)]
+mod release_progress_tests;
+pub mod release_recovery;
+pub mod sandbox_backend;
+pub mod scope_holder;
+pub mod skill_model_selector;
+pub mod skill_routing_settings;
+mod web_runtime;
+pub mod web_service;
+pub mod web_settings;
+
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use jarvis_agent::{AgentLoop, AgentTurnOutcome, ToolRegistry, ToolService};
+use jarvis_domain::{
+    BoundedString, ContentPart, ContentText, ConversationMessage, ExtensionMap, MessageId,
+    MessageRole, SessionOperatingMode, SessionPermissionMode, WorkspaceRoot,
+};
+
+fn session_root_path() -> PathBuf {
+    let root = match std::env::var("AGENT_VESPER_SESSION_ROOT") {
+        Ok(value) => PathBuf::from(value),
+        Err(_) => std::env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join(".agent-vesper")
+            .join("sessions"),
+    };
+    if root.is_absolute() {
+        root
+    } else {
+        std::env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join(root)
+    }
+}
+
+fn build_user_message(text: &str) -> ConversationMessage {
+    static SEQ: AtomicU64 = AtomicU64::new(10_000);
+    let n = SEQ.fetch_add(1, Ordering::Relaxed);
+    ConversationMessage {
+        id: MessageId::new(format!("harness-worker-{n}")).expect("bounded worker message id"),
+        role: MessageRole::User,
+        content: vec![ContentPart::Text(ContentText::new(text).unwrap_or_else(
+            |_| ContentText::new("[prompt too large]").expect("bounded"),
+        ))],
+        extensions: ExtensionMap::default(),
+    }
+}
+
+fn load_trusted_publishers(root: &Path) -> jarvis_mcp::TrustedPublishers {
+    let path = root.join("publishers.jsonl");
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return jarvis_mcp::TrustedPublishers::new();
+    };
+    let entries = text
+        .lines()
+        .filter_map(|line| serde_json::from_str::<jarvis_mcp::TrustedPublisher>(line.trim()).ok())
+        .collect::<Vec<_>>();
+    jarvis_mcp::TrustedPublishers::from_records(entries)
+}
+
+fn tui_tool_failure(name: &str, error: impl std::fmt::Display) -> jarvis_agent::ToolError {
+    jarvis_agent::ToolError::Failed(format!("{name} failed: {error}"))
+}
+
+/// Prefix the gateway executor and `mcp_list_tools` injection use to name
+/// dynamically-discovered MCP tools so the agent loop's gateway routing
+/// recognizes them. Format: `mcp__<server>__<tool>`.
+const MCP_GATEWAY_PREFIX: &str = "mcp__";
+/// Exact documented tool name advertised by the protected Search MCP.
+const ZAI_SEARCH_REMOTE_TOOL: &str = "webSearchPrime";
+
+/// Parses an `mcp__<server>__<tool>` gateway name into `(server, tool)`.
+/// Returns `None` when the name does not match the expected shape so the
+/// gateway can return a clear error rather than dispatching with a
+/// malformed server/tool pair.
+fn parse_mcp_gateway_name(name: &str) -> Option<(&str, &str)> {
+    let rest = name.strip_prefix(MCP_GATEWAY_PREFIX)?;
+    let (server, tool) = rest.split_once("__")?;
+    if server.is_empty() || tool.is_empty() {
+        return None;
+    }
+    Some((server, tool))
+}
+
+fn ensure_mcp_server_eligible(
+    server: &jarvis_mcp::McpServerConfig,
+    provider_id: &jarvis_domain::ProviderId,
+) -> Result<(), jarvis_agent::ToolError> {
+    if server.provider_scope.allows(provider_id) {
+        Ok(())
+    } else {
+        Err(jarvis_agent::ToolError::Failed(format!(
+            "MCP server `{}` is unavailable for active provider `{}`",
+            server.id, provider_id
+        )))
+    }
+}
+
+fn builtin_scope(server_id: &str) -> jarvis_domain::ToolProviderScope {
+    jarvis_mcp::mcp::builtin_servers()
+        .into_iter()
+        .find(|server| server.id == server_id)
+        .map(|server| server.provider_scope)
+        .unwrap_or_default()
+}
+
+/// Translates one advertised MCP tool descriptor into a provider-neutral
+/// [`ToolDefinition`] whose `harness_name` matches the gateway prefix so
+/// the agent loop can both advertise and execute it after a `mcp_list_tools`
+/// discovery call.
+///
+/// `defer_loading` is `false` because these definitions are surfaced when
+/// the model has actively requested them via `mcp_list_tools` — they should
+/// be live in the next turn's advertisement, not hidden behind another
+/// discovery step.
+fn mcp_descriptor_to_tool_definition(
+    server_id: &str,
+    provider_scope: jarvis_domain::ToolProviderScope,
+    descriptor: &jarvis_mcp::McpToolDescriptor,
+) -> jarvis_domain::ToolDefinition {
+    let harness_name_value = format!("mcp__{server_id}__{}", descriptor.name);
+    let description = descriptor
+        .description
+        .clone()
+        .unwrap_or_else(|| format!("MCP tool `{}` from server `{}`", descriptor.name, server_id));
+    let input_schema = descriptor
+        .input_schema
+        .clone()
+        .unwrap_or_else(|| serde_json::json!({"type": "object"}));
+    jarvis_domain::ToolDefinition {
+        id: jarvis_domain::ToolId::new(&harness_name_value).unwrap_or_else(|_| {
+            jarvis_domain::ToolId::new("mcp_tool").expect("static fallback id")
+        }),
+        harness_name: jarvis_domain::HarnessToolName::new(&harness_name_value)
+            .expect("bounded harness name"),
+        provider_name: None,
+        description,
+        input_schema,
+        execution_class: jarvis_domain::ToolExecutionClass::NestedWorkflow,
+        provider_scope,
+        extensions: jarvis_domain::ExtensionMap::default(),
+        defer_loading: false,
+    }
+}
+
+/// Gateway executor for `mcp__<server>__<tool>` tool names. The harness
+/// registers ONE of these under the `mcp__` prefix; the agent-loop registry
+/// routes any call whose name starts with `mcp__` to it. This executor
+/// parses out the server id and tool name, then dispatches via
+/// [`jarvis_mcp::McpClient::call_tool`].
+pub struct McpGatewayExecutor {
+    plugin_root: std::path::PathBuf,
+    mcp: Arc<jarvis_mcp::McpSession>,
+}
+
+impl std::fmt::Debug for McpGatewayExecutor {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("McpGatewayExecutor")
+            .field("plugin_root", &self.plugin_root)
+            .finish_non_exhaustive()
+    }
+}
+
+impl McpGatewayExecutor {
+    /// Creates a gateway executor rooted at `plugin_root`, the same root the
+    /// `McpRegistry` lives in.
+    #[must_use]
+    pub fn new(plugin_root: std::path::PathBuf) -> Self {
+        Self {
+            plugin_root,
+            mcp: Arc::new(jarvis_mcp::McpSession::default()),
+        }
+    }
+}
+
+impl jarvis_agent::ToolExecutor for McpGatewayExecutor {
+    fn definition(&self) -> jarvis_domain::ToolDefinition {
+        // The gateway has no single definition — it dispatches by name. The
+        // stub definition here is informational only; the loop never
+        // advertises it because gateways are registered via `with_gateway`,
+        // not `with_service`, and `definitions_for` consults `entries`.
+        jarvis_agent::schema_definition(
+            "mcp_gateway",
+            "Gateway executor for dynamically-discovered MCP tools (mcp__<server>__<tool>).",
+            jarvis_domain::ToolExecutionClass::NestedWorkflow,
+            &[],
+        )
+    }
+
+    fn execute<'a>(
+        &'a self,
+        call: &'a jarvis_domain::ToolCall,
+        context: &'a jarvis_agent::ToolContext,
+    ) -> jarvis_agent::ToolFuture<'a, Result<jarvis_agent::ToolResult, jarvis_agent::ToolError>>
+    {
+        let name = call.tool_id.as_str().to_owned();
+        let arguments = call.arguments.clone();
+        let plugin_root = self.plugin_root.clone();
+        let mcp = self.mcp.clone();
+        let cancellation = context.cancellation.clone();
+        let provider_id = context.provider_id.clone();
+        Box::pin(async move {
+            let (server, tool) = parse_mcp_gateway_name(&name).ok_or_else(|| {
+                jarvis_agent::ToolError::Failed(format!(
+                    "MCP gateway name `{name}` is not `{MCP_GATEWAY_PREFIX}<server>__<tool>`"
+                ))
+            })?;
+            let server_owned = server.to_owned();
+            let tool_owned = tool.to_owned();
+            let result = tokio::task::spawn_blocking(move || {
+                let registry = jarvis_mcp::McpRegistry::open(&plugin_root)
+                    .map_err(|error| tui_tool_failure("mcp_gateway", error))?;
+                let server = registry.get_with_builtins(&server_owned).ok_or_else(|| {
+                    jarvis_agent::ToolError::Failed(format!("MCP server not found: {server_owned}"))
+                })?;
+                ensure_mcp_server_eligible(&server, &provider_id)?;
+                mcp.call_tool_cancellable(&server, &tool_owned, arguments, &|| {
+                    cancellation.is_cancelled()
+                })
+                .map_err(|error| tui_tool_failure("mcp_gateway", error))
+            })
+            .await
+            .map_err(|_| jarvis_agent::ToolError::Failed("mcp gateway task failed".into()))??;
+            ensure_mcp_success(&result)?;
+            jarvis_agent::ToolResult::new(truncate_text(
+                &serde_json::to_string(&result)
+                    .map_err(|error| tui_tool_failure("mcp_gateway", error))?,
+                16_000,
+            ))
+        })
+    }
+}
+
+/// Compose a hosted service and route deferred MCP names back to that same
+/// service. Wrappers must delegate unknown calls to their inner harness.
+#[must_use]
+pub fn build_hosted_registry(service: Arc<dyn jarvis_agent::ToolService>) -> ToolRegistry {
+    struct Gateway(Arc<dyn jarvis_agent::ToolService>);
+    impl jarvis_agent::ToolExecutor for Gateway {
+        fn definition(&self) -> jarvis_domain::ToolDefinition {
+            jarvis_agent::schema_definition(
+                "mcp_gateway",
+                "Session-owned MCP gateway",
+                jarvis_domain::ToolExecutionClass::NestedWorkflow,
+                &[],
+            )
+        }
+        fn execute<'a>(
+            &'a self,
+            call: &'a jarvis_domain::ToolCall,
+            context: &'a jarvis_agent::ToolContext,
+        ) -> jarvis_agent::ToolFuture<'a, Result<jarvis_agent::ToolResult, jarvis_agent::ToolError>>
+        {
+            self.0.execute(call, context)
+        }
+    }
+    ToolRegistry::parity_default()
+        .with_service(service.clone())
+        .with_gateway(MCP_GATEWAY_PREFIX, Arc::new(Gateway(service)))
+}
+
+fn ensure_mcp_success(result: &serde_json::Value) -> Result<(), jarvis_agent::ToolError> {
+    if result.get("isError") == Some(&serde_json::Value::Bool(true)) {
+        return Err(tui_tool_failure("MCP", "server reported tool failure"));
+    }
+    Ok(())
+}
+
+fn mcp_result(
+    mcp: Arc<jarvis_mcp::McpSession>,
+    context: &jarvis_agent::ToolContext,
+    name: &str,
+    registry_root: &std::path::Path,
+    server_id: String,
+    tool: String,
+    arguments: serde_json::Value,
+) -> impl std::future::Future<Output = Result<jarvis_agent::ToolResult, jarvis_agent::ToolError>> + Send
+{
+    let cancellation = context.cancellation.clone();
+    let provider_id = context.provider_id.clone();
+    let registry_root = registry_root.to_path_buf();
+    let error_name = name.to_owned();
+    async move {
+        let task_error_name = error_name.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            let registry = jarvis_mcp::McpRegistry::open(&registry_root)
+                .map_err(|error| tui_tool_failure(&task_error_name, error))?;
+            let server = registry.get_with_builtins(&server_id).ok_or_else(|| {
+                jarvis_agent::ToolError::Failed(format!("MCP server not found: {server_id}"))
+            })?;
+            ensure_mcp_server_eligible(&server, &provider_id)?;
+            mcp.call_tool_cancellable(&server, &tool, arguments, &|| cancellation.is_cancelled())
+                .map_err(|error| tui_tool_failure(&task_error_name, error))
+        })
+        .await
+        .map_err(|_| jarvis_agent::ToolError::Failed("MCP call task failed".into()))??;
+        ensure_mcp_success(&result)?;
+        jarvis_agent::ToolResult::new(truncate_text(
+            &serde_json::to_string(&result)
+                .map_err(|error| tui_tool_failure(&error_name, error))?,
+            16_000,
+        ))
+    }
+}
+
+/// Executes the tool families that need a workspace/session boundary in
+/// addition to the durable memory stores. Keeping this at the composition
+/// boundary prevents the provider-neutral agent crate from depending on
+/// checkpoints, plugins, or frontend state.
+#[allow(clippy::too_many_arguments)]
+async fn execute_extended_tui_tool(
+    name: &str,
+    arguments: &serde_json::Value,
+    context: &jarvis_agent::ToolContext,
+    core: &ToolRegistry,
+    cron_root: &std::path::Path,
+    plugin_loader: Option<&jarvis_mcp::PluginLoader>,
+    trusted_publishers: &jarvis_mcp::TrustedPublishers,
+    plugin_root: &std::path::Path,
+    mcp: Arc<jarvis_mcp::McpSession>,
+    session_root: &std::path::Path,
+    worker_factory: Option<&WorkerFactory>,
+    worker_service: Arc<HarnessToolService>,
+) -> Result<jarvis_agent::ToolResult, jarvis_agent::ToolError> {
+    use jarvis_agent::confinement::{confine, primary_root};
+    use jarvis_domain::{ContentPart, MessageRole, ToolCall, ToolCallId, ToolId};
+    use sha2::{Digest, Sha256};
+    use std::collections::{BTreeMap, BTreeSet};
+    use std::fs;
+
+    let required_string = |key: &str| {
+        arguments
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned)
+            .ok_or_else(|| jarvis_agent::ToolError::InvalidArguments {
+                tool: name.to_owned(),
+                reason: format!("missing string argument `{key}`"),
+            })
+    };
+    let optional_string = |key: &str| {
+        arguments
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned)
+    };
+    let root = primary_root(context)?;
+
+    match name {
+        "search_tools" => {
+            let intent = required_string("intent")?;
+            if intent.chars().count() > 500 {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "intent exceeds 500 characters".into(),
+                });
+            }
+            let mode = optional_string("mode").unwrap_or_else(|| "bm25".into());
+            if !matches!(mode.as_str(), "bm25" | "regex") {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "mode must be `bm25` or `regex`".into(),
+                });
+            }
+            let definitions = worker_service
+                .definitions()
+                .into_iter()
+                .filter(|definition| definition.provider_scope.allows(&context.provider_id))
+                .collect::<Vec<_>>();
+            let mut matches = if mode == "regex" {
+                if intent.chars().count() > 200 {
+                    return Err(jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: "regex intent exceeds 200 characters".into(),
+                    });
+                }
+                let pattern = regex::RegexBuilder::new(&intent)
+                    .case_insensitive(true)
+                    .build()
+                    .map_err(|error| tui_tool_failure(name, error))?;
+                definitions
+                    .into_iter()
+                    .filter(|definition| {
+                        pattern.is_match(definition.harness_name.as_str())
+                            || pattern.is_match(&definition.description)
+                    })
+                    .map(|definition| (1usize, definition))
+                    .collect::<Vec<_>>()
+            } else {
+                let terms = intent
+                    .split_whitespace()
+                    .map(str::to_ascii_lowercase)
+                    .filter(|term| !term.is_empty())
+                    .collect::<Vec<_>>();
+                definitions
+                    .into_iter()
+                    .filter_map(|definition| {
+                        let haystack = format!(
+                            "{} {}",
+                            definition.harness_name.as_str().to_ascii_lowercase(),
+                            definition.description.to_ascii_lowercase()
+                        );
+                        let score = terms
+                            .iter()
+                            .filter(|term| haystack.contains(term.as_str()))
+                            .count();
+                        (score > 0).then_some((score, definition))
+                    })
+                    .collect::<Vec<_>>()
+            };
+            matches.sort_by(|left, right| {
+                right.0.cmp(&left.0).then_with(|| {
+                    left.1
+                        .harness_name
+                        .as_str()
+                        .cmp(right.1.harness_name.as_str())
+                })
+            });
+            matches.truncate(5);
+            let injected = matches
+                .iter()
+                .map(|(_, definition)| {
+                    let mut definition = definition.clone();
+                    definition.defer_loading = false;
+                    definition
+                })
+                .collect();
+            let output = matches
+                .into_iter()
+                .map(|(_, definition)| {
+                    serde_json::json!({
+                        "name": definition.harness_name.as_str(),
+                        "description": definition.description,
+                        "input_schema": definition.input_schema,
+                    })
+                })
+                .collect::<Vec<_>>();
+            jarvis_agent::ToolResult::new(
+                serde_json::to_string(&output).map_err(|error| tui_tool_failure(name, error))?,
+            )
+            .map(|result| result.with_injected_tools(injected))
+        }
+        "web_search" => {
+            let query = required_string("query")?;
+            if query.chars().count() > 2_000 {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "query exceeds 2000 characters".into(),
+                });
+            }
+            mcp_result(
+                mcp,
+                context,
+                name,
+                plugin_root,
+                "zai_search".into(),
+                ZAI_SEARCH_REMOTE_TOOL.into(),
+                serde_json::json!({"search_query": query}),
+            )
+            .await
+        }
+        "web_reader" => {
+            let url = required_string("url")?;
+            if url.chars().count() > 2_000
+                || !(url.starts_with("https://") || url.starts_with("http://"))
+            {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "url must be an http(s) URL of at most 2000 characters".into(),
+                });
+            }
+            mcp_result(
+                mcp,
+                context,
+                name,
+                plugin_root,
+                "zai_reader".into(),
+                "webReader".into(),
+                serde_json::json!({"url": url}),
+            )
+            .await
+        }
+        "vision_analyze" => {
+            let path = required_string("path")?;
+            let prompt = required_string("prompt")?;
+            if prompt.chars().count() > 2_000 {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "prompt exceeds 2000 characters".into(),
+                });
+            }
+            let path = confine(root, &path)?;
+            if !path.is_file() {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "image path must refer to a workspace file".into(),
+                });
+            }
+            mcp_result(
+                mcp,
+                context,
+                name,
+                plugin_root,
+                "zai_vision".into(),
+                "image_analysis".into(),
+                serde_json::json!({
+                    "image_path": path.to_string_lossy(),
+                    "prompt": prompt,
+                }),
+            )
+            .await
+        }
+        "browser_ui" => {
+            let action = required_string("action")?;
+            let tool = match action.as_str() {
+                "navigate" => "browser_navigate",
+                "snapshot" => "browser_snapshot",
+                "console" => "browser_console_messages",
+                "network" => "browser_network_requests",
+                "screenshot" => "browser_take_screenshot",
+                "click" => "browser_click",
+                "type" => "browser_type",
+                "fill_form" => "browser_fill_form",
+                "press_key" => "browser_press_key",
+                "wait" => "browser_wait_for",
+                "close" => "browser_close",
+                _ => {
+                    return Err(jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: "unsupported browser action".into(),
+                    });
+                }
+            };
+            let call_arguments = arguments.get("arguments").cloned().ok_or_else(|| {
+                jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "missing object argument `arguments`".into(),
+                }
+            })?;
+            if !call_arguments.is_object() {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "`arguments` must be a JSON object".into(),
+                });
+            }
+            mcp_result(
+                mcp,
+                context,
+                name,
+                plugin_root,
+                optional_string("server").unwrap_or_else(|| "playwright".into()),
+                tool.into(),
+                call_arguments,
+            )
+            .await
+        }
+        "mcp_search" => {
+            let requested_server = optional_string("server");
+            let cancellation = context.cancellation.clone();
+            let provider_id = context.provider_id.clone();
+            let registry_root = plugin_root.to_path_buf();
+            let descriptors = tokio::task::spawn_blocking(move || {
+                let registry = jarvis_mcp::McpRegistry::open(&registry_root)
+                    .map_err(|error| tui_tool_failure("mcp_search", error))?;
+                let mut output = Vec::new();
+                for server in registry.list_with_builtins() {
+                    if requested_server
+                        .as_deref()
+                        .is_some_and(|requested| requested != server.id)
+                    {
+                        continue;
+                    }
+                    if !server.provider_scope.allows(&provider_id) {
+                        if requested_server.is_some() {
+                            return Err(tui_tool_failure(
+                                "mcp_search",
+                                format!(
+                                    "MCP server `{}` is unavailable for active provider `{}`",
+                                    server.id, provider_id
+                                ),
+                            ));
+                        }
+                        continue;
+                    }
+                    match mcp.tools_cancellable(&server, &|| cancellation.is_cancelled()) {
+                        Ok(tools) => {
+                            output.push(serde_json::json!({"server": server.id, "tools": tools}))
+                        }
+                        Err(error) if requested_server.is_some() || cancellation.is_cancelled() => {
+                            return Err(tui_tool_failure("mcp_search", error));
+                        }
+                        Err(error) => output.push(
+                            serde_json::json!({"server": server.id, "error": error.to_string()}),
+                        ),
+                    }
+                }
+                if requested_server.is_some() && output.is_empty() {
+                    return Err(tui_tool_failure("mcp_search", "MCP server not found"));
+                }
+                Ok::<_, jarvis_agent::ToolError>(output)
+            })
+            .await
+            .map_err(|_| jarvis_agent::ToolError::Failed("mcp discovery task failed".into()))??;
+            jarvis_agent::ToolResult::new(
+                serde_json::to_string(&descriptors)
+                    .map_err(|error| tui_tool_failure(name, error))?,
+            )
+        }
+        "mcp_list_tools" => {
+            let server_id = required_string("server")?;
+            let server_id_for_injection = server_id.clone();
+            let cancellation = context.cancellation.clone();
+            let provider_id = context.provider_id.clone();
+            let registry_root = plugin_root.to_path_buf();
+            let (descriptors, provider_scope) = tokio::task::spawn_blocking(move || {
+                let registry = jarvis_mcp::McpRegistry::open(&registry_root)
+                    .map_err(|error| tui_tool_failure("mcp_list_tools", error))?;
+                let server = registry.get_with_builtins(&server_id).ok_or_else(|| {
+                    jarvis_agent::ToolError::Failed(format!("MCP server not found: {server_id}"))
+                })?;
+                ensure_mcp_server_eligible(&server, &provider_id)?;
+                let scope = server.provider_scope.clone();
+                mcp.tools_cancellable(&server, &|| cancellation.is_cancelled())
+                    .map(|tools| (tools, scope))
+                    .map_err(|error| tui_tool_failure("mcp_list_tools", error))
+            })
+            .await
+            .map_err(|_| jarvis_agent::ToolError::Failed("MCP discovery task failed".into()))??;
+            let injected: Vec<jarvis_domain::ToolDefinition> = descriptors
+                .iter()
+                .map(|descriptor| {
+                    mcp_descriptor_to_tool_definition(
+                        &server_id_for_injection,
+                        provider_scope.clone(),
+                        descriptor,
+                    )
+                })
+                .collect();
+            let summary = format!(
+                "discovered {} tool(s) from `{server_id_for_injection}`; they are now advertised and callable as `mcp__{server_id_for_injection}__<tool>`",
+                injected.len(),
+            );
+            Ok(jarvis_agent::ToolResult::new(summary)
+                .map_err(|error| tui_tool_failure("mcp_list_tools", error))?
+                .with_injected_tools(injected))
+        }
+        "mcp_call" => {
+            let server_id = required_string("server")?;
+            let tool = required_string("tool")?;
+            let arguments = arguments.get("arguments").cloned().ok_or_else(|| {
+                jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "missing object argument `arguments`".into(),
+                }
+            })?;
+            if !arguments.is_object() {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "`arguments` must be a JSON object".into(),
+                });
+            }
+            let cancellation = context.cancellation.clone();
+            let provider_id = context.provider_id.clone();
+            let registry_root = plugin_root.to_path_buf();
+            let result = tokio::task::spawn_blocking(move || {
+                let registry = jarvis_mcp::McpRegistry::open(&registry_root)
+                    .map_err(|error| tui_tool_failure("mcp_call", error))?;
+                let server = registry.get_with_builtins(&server_id).ok_or_else(|| {
+                    jarvis_agent::ToolError::Failed(format!("MCP server not found: {server_id}"))
+                })?;
+                ensure_mcp_server_eligible(&server, &provider_id)?;
+                mcp.call_tool_cancellable(&server, &tool, arguments, &|| {
+                    cancellation.is_cancelled()
+                })
+                .map_err(|error| tui_tool_failure("mcp_call", error))
+            })
+            .await
+            .map_err(|_| jarvis_agent::ToolError::Failed("mcp call task failed".into()))??;
+            ensure_mcp_success(&result)?;
+            jarvis_agent::ToolResult::new(truncate_text(
+                &serde_json::to_string(&result).map_err(|error| tui_tool_failure(name, error))?,
+                16_000,
+            ))
+        }
+        "cronjob" => {
+            let registry = jarvis_checkpoints::CronRegistry::open(cron_root)
+                .map_err(|error| tui_tool_failure(name, error))?;
+            match required_string("action")?.as_str() {
+                "list" => jarvis_agent::ToolResult::new(
+                    serde_json::to_string(&registry.list())
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                ),
+                "create" => {
+                    let entry = registry
+                        .register(
+                            optional_string("name").as_deref().unwrap_or("vesper-job"),
+                            &required_string("prompt")?,
+                            &required_string("schedule")?,
+                        )
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(
+                        serde_json::to_string(&entry)
+                            .map_err(|error| tui_tool_failure(name, error))?,
+                    )
+                }
+                "update" => {
+                    let id = required_string("job_id")?;
+                    let entry = registry
+                        .update(
+                            &id,
+                            optional_string("name").as_deref(),
+                            optional_string("prompt").as_deref(),
+                            optional_string("schedule").as_deref(),
+                        )
+                        .map_err(|error| tui_tool_failure(name, error))?
+                        .ok_or_else(|| {
+                            jarvis_agent::ToolError::Failed(format!("cron job not found: {id}"))
+                        })?;
+                    jarvis_agent::ToolResult::new(
+                        serde_json::to_string(&entry)
+                            .map_err(|error| tui_tool_failure(name, error))?,
+                    )
+                }
+                "pause" | "resume" => {
+                    let id = required_string("job_id")?;
+                    let enabled = required_string("action")? == "resume";
+                    let entry = registry
+                        .set_enabled(&id, enabled)
+                        .map_err(|error| tui_tool_failure(name, error))?
+                        .ok_or_else(|| {
+                            jarvis_agent::ToolError::Failed(format!("cron job not found: {id}"))
+                        })?;
+                    jarvis_agent::ToolResult::new(
+                        serde_json::to_string(&entry)
+                            .map_err(|error| tui_tool_failure(name, error))?,
+                    )
+                }
+                "run" => {
+                    let Some(factory) = worker_factory else {
+                        return Err(jarvis_agent::ToolError::Failed(
+                            "cron run requires a provider-backed worker factory".into(),
+                        ));
+                    };
+                    let id = required_string("job_id")?;
+                    let Some(entry) = registry.get(&id) else {
+                        return Err(jarvis_agent::ToolError::Failed(format!(
+                            "cron job not found: {id}"
+                        )));
+                    };
+                    if !entry.enabled {
+                        return Err(jarvis_agent::ToolError::Failed("cron job is paused".into()));
+                    }
+                    let report = run_provider_worker(
+                        factory,
+                        None,
+                        entry.prompt,
+                        SessionOperatingMode::Code,
+                        SessionPermissionMode::Ask,
+                        None,
+                    )
+                    .await?;
+                    jarvis_agent::ToolResult::new(report)
+                }
+                "remove" => {
+                    let id = required_string("job_id")?;
+                    let removed = registry
+                        .forget(&id)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!("cron job {id} removed: {removed}"))
+                }
+                action => Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: format!("unsupported cronjob action `{action}`"),
+                }),
+            }
+        }
+        "session_search" => {
+            let query = optional_string("query").unwrap_or_default();
+            let limit = arguments
+                .get("limit")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or(20)
+                .clamp(1, 20) as usize;
+            let persisted_store = jarvis_sessions::FilesystemSessionStore::new(
+                session_root.to_path_buf(),
+                jarvis_sessions::SessionSource::AgentVesper,
+                jarvis_sessions::DiscoveryBounds::default(),
+            )
+            .map_err(|error| tui_tool_failure(name, error))?;
+            let persisted = jarvis_sessions::search_sessions(
+                &persisted_store,
+                jarvis_sessions::SessionSearchRequest {
+                    query: query.clone(),
+                    session_id: None,
+                    around_ordinal: None,
+                    limit,
+                    window: 5,
+                },
+            )
+            .await
+            .map_err(|error| tui_tool_failure(name, error))?;
+            let mut matches = persisted
+                .into_iter()
+                .map(|hit| {
+                    serde_json::json!({
+                        "source": "persisted",
+                        "session_id": hit.session_id,
+                        "ordinal": hit.ordinal,
+                        "role": hit.role,
+                        "snippet": hit.snippet,
+                        "context": hit
+                            .context
+                            .into_iter()
+                            .map(|message| {
+                                serde_json::json!({
+                                    "ordinal": message.ordinal,
+                                    "role": message.role,
+                                    "text": message.text,
+                                })
+                            })
+                            .collect::<Vec<_>>(),
+                        "score": hit.score,
+                    })
+                })
+                .collect::<Vec<_>>();
+            let query_lower = query.to_lowercase();
+            for (ordinal, message) in context.conversation.iter().enumerate() {
+                let text = message
+                    .content
+                    .iter()
+                    .filter_map(|part| match part {
+                        ContentPart::Text(text) => Some(text.as_str()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                if query_lower.is_empty() || text.to_lowercase().contains(&query_lower) {
+                    let role = match &message.role {
+                        MessageRole::User => "user",
+                        MessageRole::Assistant => "assistant",
+                        MessageRole::Tool => "tool",
+                        MessageRole::ProviderOpaque(_) => "provider",
+                    };
+                    matches.push(serde_json::json!({
+                        "source": "current",
+                        "session_id": "current",
+                        "ordinal": ordinal,
+                        "role": role,
+                        "text": truncate_text(&text, 4000),
+                    }));
+                    if matches.len() >= limit {
+                        break;
+                    }
+                }
+            }
+            matches.truncate(limit);
+            jarvis_agent::ToolResult::new(
+                serde_json::to_string(&matches).map_err(|error| tui_tool_failure(name, error))?,
+            )
+        }
+        "semantic_code" => {
+            let action = required_string("action")?;
+            let requested = required_string("path")?;
+            let path = confine(root, &requested)?;
+            if action == "workspace_symbols" {
+                let query = optional_string("query").unwrap_or_default().to_lowercase();
+                let mut symbols = Vec::new();
+                collect_source_symbols(&path, &query, &mut symbols, 200)?;
+                return jarvis_agent::ToolResult::new(
+                    serde_json::to_string(&symbols)
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                );
+            }
+            let source =
+                fs::read_to_string(&path).map_err(|error| tui_tool_failure(name, error))?;
+            let query = optional_string("query").unwrap_or_default();
+            let symbols = source_symbols(&source, &query);
+            match action.as_str() {
+                "document_symbols" | "definition" => jarvis_agent::ToolResult::new(
+                    serde_json::to_string(&symbols)
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                ),
+                "references" => {
+                    let needle = if query.is_empty() {
+                        required_string("query")?
+                    } else {
+                        query
+                    };
+                    let references = source
+                        .lines()
+                        .enumerate()
+                        .filter(|(_, line)| line.contains(&needle))
+                        .take(200)
+                        .map(|(line, text)| {
+                            serde_json::json!({
+                                "path": requested,
+                                "line": line + 1,
+                                "text": truncate_text(text, 400),
+                            })
+                        })
+                        .collect::<Vec<_>>();
+                    jarvis_agent::ToolResult::new(
+                        serde_json::to_string(&references)
+                            .map_err(|error| tui_tool_failure(name, error))?,
+                    )
+                }
+                "hover" => {
+                    let line = arguments
+                        .get("line")
+                        .and_then(serde_json::Value::as_u64)
+                        .unwrap_or(1) as usize;
+                    let text = source.lines().nth(line.saturating_sub(1)).unwrap_or("");
+                    jarvis_agent::ToolResult::new(
+                        serde_json::json!({
+                            "path": requested,
+                            "line": line,
+                            "text": text,
+                            "symbols": symbols,
+                        })
+                        .to_string(),
+                    )
+                }
+                _ => Err(jarvis_agent::ToolError::Failed(format!(
+                    "semantic_code action `{action}` requires a language-server host; bounded source inspection supports document_symbols, workspace_symbols, definition, references, and hover"
+                ))),
+            }
+        }
+        "apply_patch_set" => {
+            let Some(entries) = arguments.get("patches").and_then(|value| value.as_array()) else {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "patches must be an array".into(),
+                });
+            };
+            if entries.is_empty() || entries.len() > 20 {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "patches must contain between 1 and 20 entries".into(),
+                });
+            }
+            let mut seen = BTreeSet::new();
+            let mut candidates = Vec::new();
+            for entry in entries {
+                let path_text = entry
+                    .get("path")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or_else(|| jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: "each patch needs path".into(),
+                    })?;
+                let path = confine(root, path_text)?;
+                if !seen.insert(path.clone()) {
+                    return Err(jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: format!("duplicate patch target `{path_text}`"),
+                    });
+                }
+                let old_bytes = fs::read(&path).map_err(|error| tui_tool_failure(name, error))?;
+                let expected = entry
+                    .get("expected_sha256")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("")
+                    .to_lowercase();
+                let actual = Sha256::digest(&old_bytes)
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                if expected.len() != 64 || expected != actual {
+                    return Err(jarvis_agent::ToolError::Failed(format!(
+                        "content hash mismatch for `{path_text}`"
+                    )));
+                }
+                let old_text = String::from_utf8(old_bytes.clone()).map_err(|_| {
+                    jarvis_agent::ToolError::Failed(format!("`{path_text}` is not UTF-8"))
+                })?;
+                let patch = entry
+                    .get("patch")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or_else(|| jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: "each patch needs patch text".into(),
+                    })?;
+                let new_text = jarvis_agent::tools::apply_unified_diff(&old_text, patch)?;
+                candidates.push((path, old_bytes, new_text.into_bytes()));
+            }
+            let mut committed = Vec::new();
+            for (path, old_bytes, new_bytes) in &candidates {
+                if let Err(error) = fs::write(path, new_bytes) {
+                    for (rollback_path, rollback_bytes) in committed.iter().rev() {
+                        let _ = fs::write(rollback_path, rollback_bytes);
+                    }
+                    return Err(tui_tool_failure(name, error));
+                }
+                committed.push((path, old_bytes));
+            }
+            jarvis_agent::ToolResult::new(format!(
+                "transactionally applied {} patch(es)",
+                candidates.len()
+            ))
+        }
+        "batch_read" => {
+            let Some(operations) = arguments
+                .get("operations")
+                .and_then(|value| value.as_array())
+            else {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "operations must be an array".into(),
+                });
+            };
+            if operations.is_empty() || operations.len() > 20 {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "operations must contain between 1 and 20 entries".into(),
+                });
+            }
+            let per_result = arguments
+                .get("max_chars_per_result")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or(4000)
+                .clamp(200, 16_000) as usize;
+            let mut results = Vec::new();
+            let mut ids = BTreeSet::new();
+            for (index, operation) in operations.iter().enumerate() {
+                let id = operation
+                    .get("id")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_owned)
+                    .unwrap_or_else(|| (index + 1).to_string());
+                if !ids.insert(id.clone()) {
+                    return Err(jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: format!("duplicate batch operation id `{id}`"),
+                    });
+                }
+                let tool = operation
+                    .get("tool")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("");
+                if !matches!(
+                    tool,
+                    "read_file" | "list_directory" | "search_files" | "grep"
+                ) {
+                    return Err(jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: format!("unsupported batch operation `{tool}`"),
+                    });
+                }
+                let call = ToolCall {
+                    id: ToolCallId::new(format!("batch-{index}"))
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                    tool_id: ToolId::new(tool).map_err(|error| tui_tool_failure(name, error))?,
+                    arguments: operation
+                        .get("arguments")
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::json!({})),
+                    extensions: jarvis_domain::ExtensionMap::default(),
+                };
+                let result = core.execute(&call, context).await;
+                match result {
+                    Ok(result) => {
+                        let text = result.text.as_str().to_owned();
+                        results.push(serde_json::json!({
+                            "id": id,
+                            "tool": tool,
+                            "ok": true,
+                            "output": truncate_text(&text, per_result),
+                            "truncated": text.chars().count() > per_result,
+                        }));
+                    }
+                    Err(error) => results.push(serde_json::json!({
+                        "id": id,
+                        "tool": tool,
+                        "ok": false,
+                        "error": truncate_text(&error.to_string(), 1000),
+                    })),
+                }
+            }
+            jarvis_agent::ToolResult::new(serde_json::json!({"results": results}).to_string())
+        }
+        "run_workflow" => {
+            let Some(steps) = arguments.get("steps").and_then(|value| value.as_array()) else {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "steps must be an array".into(),
+                });
+            };
+            if steps.is_empty() || steps.len() > 12 {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "steps must contain between 1 and 12 entries".into(),
+                });
+            }
+            let mut ids = BTreeMap::new();
+            for (index, step) in steps.iter().enumerate() {
+                let id = step
+                    .get("id")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_owned)
+                    .unwrap_or_else(|| format!("step-{index}"));
+                if ids.insert(id, index).is_some() {
+                    return Err(jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: "workflow step ids must be unique".into(),
+                    });
+                }
+            }
+            let mut completed = BTreeSet::new();
+            let mut order = Vec::new();
+            while order.len() < steps.len() {
+                let mut progressed = false;
+                for (index, step) in steps.iter().enumerate() {
+                    let id = ids
+                        .iter()
+                        .find_map(|(id, candidate)| (*candidate == index).then_some(id.clone()))
+                        .expect("workflow id");
+                    if completed.contains(&id) {
+                        continue;
+                    }
+                    let needs = step
+                        .get("needs")
+                        .and_then(|value| value.as_array())
+                        .map(|needs| {
+                            needs
+                                .iter()
+                                .filter_map(serde_json::Value::as_str)
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+                    if needs.iter().any(|need| !ids.contains_key(*need)) {
+                        return Err(jarvis_agent::ToolError::InvalidArguments {
+                            tool: name.to_owned(),
+                            reason: format!(
+                                "workflow step `{id}` references an unknown dependency"
+                            ),
+                        });
+                    }
+                    if needs.iter().all(|need| completed.contains(*need)) {
+                        completed.insert(id);
+                        order.push(index);
+                        progressed = true;
+                    }
+                }
+                if !progressed {
+                    return Err(jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: "workflow dependencies contain a cycle".into(),
+                    });
+                }
+            }
+            let mut results = Vec::new();
+            for index in order {
+                let step = &steps[index];
+                let id = step
+                    .get("id")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("");
+                let tool = step
+                    .get("tool")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("");
+                if core.definition(tool).is_none() {
+                    return Err(jarvis_agent::ToolError::Failed(format!(
+                        "workflow tool `{tool}` is not a registered core tool"
+                    )));
+                }
+                let call = ToolCall {
+                    id: ToolCallId::new(format!("workflow-{id}"))
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                    tool_id: ToolId::new(tool).map_err(|error| tui_tool_failure(name, error))?,
+                    arguments: step
+                        .get("arguments")
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::json!({})),
+                    extensions: jarvis_domain::ExtensionMap::default(),
+                };
+                match core.execute(&call, context).await {
+                    Ok(result) => results.push(serde_json::json!({
+                        "id": id,
+                        "tool": tool,
+                        "ok": true,
+                        "output": truncate_text(result.text.as_str(), 8000),
+                    })),
+                    Err(error) => {
+                        results.push(serde_json::json!({"id": id, "tool": tool, "ok": false, "error": error.to_string()}));
+                        break;
+                    }
+                }
+            }
+            jarvis_agent::ToolResult::new(serde_json::json!({"steps": results}).to_string())
+        }
+        "plugin_package" => {
+            let Some(loader) = plugin_loader else {
+                return Err(tui_tool_failure(name, "plugin loader unavailable"));
+            };
+            match required_string("action")?.as_str() {
+                "list" => jarvis_agent::ToolResult::new(
+                    serde_json::to_string(&loader.list())
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                ),
+                "publishers" => jarvis_agent::ToolResult::new(
+                    serde_json::to_string(&trusted_publishers.list())
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                ),
+                "verify" => {
+                    let package = confine(root, &required_string("manifest_path")?)?;
+                    let manifest = loader
+                        .verify(&package)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(
+                        serde_json::to_string(&manifest)
+                            .map_err(|error| tui_tool_failure(name, error))?,
+                    )
+                }
+                "install" => {
+                    let package = confine(root, &required_string("manifest_path")?)?;
+                    let record = loader
+                        .load(&package)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(
+                        serde_json::to_string(&record)
+                            .map_err(|error| tui_tool_failure(name, error))?,
+                    )
+                }
+                "trust" => {
+                    let publisher = required_string("publisher")?;
+                    let key_path = confine(root, &required_string("public_key_path")?)?;
+                    let key = fs::read_to_string(&key_path)
+                        .map_err(|error| tui_tool_failure(name, error))?
+                        .trim()
+                        .to_owned();
+                    let entry = jarvis_mcp::TrustedPublisher {
+                        publisher,
+                        public_key_hex: key,
+                    };
+                    trusted_publishers
+                        .trust(entry.clone())
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    persist_trusted_publishers(plugin_root, trusted_publishers)?;
+                    jarvis_agent::ToolResult::new("publisher trusted")
+                }
+                "untrust" => {
+                    let publisher = required_string("publisher")?;
+                    let removed = trusted_publishers.revoke(&publisher);
+                    persist_trusted_publishers(plugin_root, trusted_publishers)?;
+                    jarvis_agent::ToolResult::new(format!("publisher removed: {removed}"))
+                }
+                action => Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: format!("unsupported plugin action `{action}`"),
+                }),
+            }
+        }
+        "delegate_task" => {
+            let Some(factory) = worker_factory else {
+                return Err(jarvis_agent::ToolError::Failed(
+                    "delegate_task requires a provider-backed worker factory".into(),
+                ));
+            };
+            if arguments
+                .get("background")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false)
+            {
+                return Err(jarvis_agent::ToolError::Failed(
+                    "background delegate delivery is unavailable in the foreground TUI".into(),
+                ));
+            }
+            let goal = required_string("goal")?;
+            let context_text = optional_string("context").unwrap_or_default();
+            let prompt = if context_text.is_empty() {
+                goal
+            } else {
+                format!("{goal}\n\nAdditional read-only context:\n{context_text}")
+            };
+            let report = run_provider_worker(
+                factory,
+                Some(worker_service),
+                prompt,
+                SessionOperatingMode::Plan,
+                SessionPermissionMode::ReadOnly,
+                None,
+            )
+            .await?;
+            jarvis_agent::ToolResult::new(report)
+        }
+        "worktree_worker" => execute_worktree_worker(name, arguments, root, worker_factory).await,
+        _ => Err(jarvis_agent::ToolError::UnknownTool(name.to_owned())),
+    }
+}
+
+async fn run_provider_worker(
+    factory: &WorkerFactory,
+    service: Option<Arc<HarnessToolService>>,
+    prompt: String,
+    mode: SessionOperatingMode,
+    permission: SessionPermissionMode,
+    workspace: Option<std::path::PathBuf>,
+) -> Result<String, jarvis_agent::ToolError> {
+    let mut config = factory.config.clone();
+    if let Some(workspace) = workspace {
+        config.workspace_roots = vec![WorkspaceRoot {
+            name: BoundedString::new("worker").expect("bounded worker root name"),
+            path: BoundedString::new(workspace.display().to_string())
+                .map_err(|error| tui_tool_failure("worker", error))?,
+            primary: true,
+        }];
+    }
+    let tools = if let Some(service) = service {
+        service.build_default_registry()
+    } else {
+        ToolRegistry::parity_default()
+    };
+    let worker = AgentLoop::new(Arc::clone(&factory.registry), tools, config);
+    let outcome = worker
+        .run_prompt(build_user_message(&prompt), mode, permission)
+        .await
+        .map_err(|error| tui_tool_failure("worker", error))?;
+    Ok(outcome_text(&outcome))
+}
+
+async fn execute_worktree_worker(
+    name: &str,
+    arguments: &serde_json::Value,
+    root: &std::path::Path,
+    worker_factory: Option<&WorkerFactory>,
+) -> Result<jarvis_agent::ToolResult, jarvis_agent::ToolError> {
+    let required_string = |key: &str| {
+        arguments
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned)
+            .ok_or_else(|| jarvis_agent::ToolError::InvalidArguments {
+                tool: name.to_owned(),
+                reason: format!("missing string argument `{key}`"),
+            })
+    };
+    let optional_string = |key: &str| {
+        arguments
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned)
+    };
+    let action = required_string("action")?;
+    let confine_path = |value: &str| jarvis_agent::confinement::confine(root, value);
+    match action.as_str() {
+        "run" => {
+            let Some(factory) = worker_factory else {
+                return Err(jarvis_agent::ToolError::Failed(
+                    "worktree_worker requires a provider-backed worker factory".into(),
+                ));
+            };
+            let task = required_string("task")?;
+            let base_ref = optional_string("base_ref").unwrap_or_else(|| "HEAD".into());
+            if base_ref.starts_with('-') {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "base_ref must not begin with '-'".into(),
+                });
+            }
+            let path_text = optional_string("worker_path").unwrap_or_else(|| {
+                format!(".agent-vesper/worktrees/worker-{}", std::process::id())
+            });
+            if let Some(parent) = std::path::Path::new(&path_text).parent() {
+                let parent = if parent.is_absolute() {
+                    parent.to_path_buf()
+                } else {
+                    root.join(parent)
+                };
+                std::fs::create_dir_all(parent).map_err(|error| tui_tool_failure(name, error))?;
+            }
+            let path = confine_path(&path_text)?;
+            let output = std::process::Command::new("git")
+                .current_dir(root)
+                .args(["worktree", "add", "--detach"])
+                .arg(&path)
+                .arg(&base_ref)
+                .output()
+                .map_err(|error| tui_tool_failure(name, error))?;
+            if !output.status.success() {
+                return Err(jarvis_agent::ToolError::Failed(format!(
+                    "git worktree add failed: {}",
+                    truncate_text(&String::from_utf8_lossy(&output.stderr), 2000)
+                )));
+            }
+            let report = run_provider_worker(
+                factory,
+                None,
+                task,
+                SessionOperatingMode::Code,
+                SessionPermissionMode::Ask,
+                Some(path.clone()),
+            )
+            .await?;
+            jarvis_agent::ToolResult::new(format!(
+                "worker completed in {}\n{}",
+                path.display(),
+                report
+            ))
+        }
+        "inspect" | "verify" => {
+            let path = confine_path(&required_string("worker_path")?)?;
+            let args = if action == "inspect" {
+                vec!["diff", "--stat"]
+            } else {
+                if optional_string("verification_command").as_deref() != Some("git diff --check")
+                    && arguments.get("verification_command").is_some()
+                {
+                    return Err(jarvis_agent::ToolError::Failed(
+                        "verification_command is restricted to `git diff --check`".into(),
+                    ));
+                }
+                vec!["diff", "--check"]
+            };
+            let output = std::process::Command::new("git")
+                .current_dir(&path)
+                .args(args)
+                .output()
+                .map_err(|error| tui_tool_failure(name, error))?;
+            let body = if output.stdout.is_empty() {
+                &output.stderr
+            } else {
+                &output.stdout
+            };
+            jarvis_agent::ToolResult::new(format!(
+                "{} (exit {})\n{}",
+                action,
+                output.status.code().unwrap_or(1),
+                truncate_text(&String::from_utf8_lossy(body), 8000)
+            ))
+        }
+        "discard" => {
+            let path = confine_path(&required_string("worker_path")?)?;
+            let output = std::process::Command::new("git")
+                .current_dir(root)
+                .args(["worktree", "remove", "--force"])
+                .arg(&path)
+                .output()
+                .map_err(|error| tui_tool_failure(name, error))?;
+            if !output.status.success() {
+                return Err(jarvis_agent::ToolError::Failed(format!(
+                    "git worktree remove failed: {}",
+                    truncate_text(&String::from_utf8_lossy(&output.stderr), 2000)
+                )));
+            }
+            jarvis_agent::ToolResult::new(format!("worker discarded: {}", path.display()))
+        }
+        "promote" => {
+            let path = confine_path(&required_string("worker_path")?)?;
+            let diff = std::process::Command::new("git")
+                .current_dir(&path)
+                .args(["diff", "--binary"])
+                .output()
+                .map_err(|error| tui_tool_failure(name, error))?;
+            let expected = required_string("diff_sha256")?.to_lowercase();
+            let actual = sha256_hex(&diff.stdout);
+            if expected != actual {
+                return Err(jarvis_agent::ToolError::Failed(format!(
+                    "worker diff hash mismatch: expected {}, found {}",
+                    truncate_text(&expected, 16),
+                    truncate_text(&actual, 16)
+                )));
+            }
+            let mut apply = std::process::Command::new("git")
+                .current_dir(root)
+                .args(["apply", "--binary"])
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .spawn()
+                .map_err(|error| tui_tool_failure(name, error))?;
+            if let Some(stdin) = apply.stdin.as_mut() {
+                use std::io::Write;
+                stdin
+                    .write_all(&diff.stdout)
+                    .map_err(|error| tui_tool_failure(name, error))?;
+            }
+            let applied = apply
+                .wait_with_output()
+                .map_err(|error| tui_tool_failure(name, error))?;
+            if !applied.status.success() {
+                return Err(jarvis_agent::ToolError::Failed(format!(
+                    "git apply failed: {}",
+                    truncate_text(&String::from_utf8_lossy(&applied.stderr), 2000)
+                )));
+            }
+            let _ = std::process::Command::new("git")
+                .current_dir(root)
+                .args(["worktree", "remove", "--force"])
+                .arg(&path)
+                .output();
+            jarvis_agent::ToolResult::new(format!("worker diff promoted from {}", path.display()))
+        }
+        other => Err(jarvis_agent::ToolError::InvalidArguments {
+            tool: name.to_owned(),
+            reason: format!("unsupported worktree action `{other}`"),
+        }),
+    }
+}
+
+fn outcome_text(outcome: &AgentTurnOutcome) -> String {
+    match outcome {
+        AgentTurnOutcome::Acceptance { report, .. } => report.render(),
+        AgentTurnOutcome::Completed {
+            assistant_content, ..
+        } => assistant_content
+            .iter()
+            .filter_map(|part| match part {
+                ContentPart::Text(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n"),
+        AgentTurnOutcome::MaxIterationsReached { iterations, .. } => {
+            format!("worker reached the {iterations}-iteration safety cap")
+        }
+        AgentTurnOutcome::Interrupted {
+            assistant_content,
+            cause,
+            tool_call_started,
+            ..
+        } => {
+            let partial = assistant_content
+                .iter()
+                .filter_map(|part| match part {
+                    ContentPart::Text(text) => Some(text.as_str()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            let suffix = format!(
+                "[Agent Vesper: provider stream interrupted ({cause:?}); tool_call_started={tool_call_started}.]"
+            );
+            if partial.is_empty() {
+                suffix
+            } else {
+                format!("{partial}\n\n{suffix}")
+            }
+        }
+    }
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn truncate_text(value: &str, limit: usize) -> String {
+    let mut output = value.chars().take(limit).collect::<String>();
+    if value.chars().count() > limit {
+        output.push_str("… [truncated]");
+    }
+    output
+}
+
+fn source_symbols(source: &str, query: &str) -> Vec<serde_json::Value> {
+    source
+        .lines()
+        .enumerate()
+        .filter_map(|(line, text)| {
+            let trimmed = text.trim_start();
+            let (kind, name) = if let Some(rest) = trimmed.strip_prefix("fn ") {
+                ("function", rest.split(['(', '<', ' ', ':']).next()?)
+            } else if let Some(rest) = trimmed.strip_prefix("pub fn ") {
+                ("function", rest.split(['(', '<', ' ', ':']).next()?)
+            } else if let Some(rest) = trimmed.strip_prefix("struct ") {
+                ("struct", rest.split(['{', '<', ' ']).next()?)
+            } else if let Some(rest) = trimmed.strip_prefix("pub struct ") {
+                ("struct", rest.split(['{', '<', ' ']).next()?)
+            } else if let Some(rest) = trimmed.strip_prefix("class ") {
+                ("class", rest.split(['(', ':', ' ']).next()?)
+            } else if let Some(rest) = trimmed.strip_prefix("def ") {
+                ("function", rest.split(['(', ' ']).next()?)
+            } else {
+                return None;
+            };
+            if !query.is_empty() && !name.to_lowercase().contains(&query.to_lowercase()) {
+                return None;
+            }
+            Some(serde_json::json!({"name": name, "kind": kind, "line": line + 1}))
+        })
+        .collect()
+}
+
+fn collect_source_symbols(
+    path: &std::path::Path,
+    query: &str,
+    output: &mut Vec<serde_json::Value>,
+    limit: usize,
+) -> Result<(), jarvis_agent::ToolError> {
+    if output.len() >= limit {
+        return Ok(());
+    }
+    if path.is_file() {
+        let source = std::fs::read_to_string(path)
+            .map_err(|error| tui_tool_failure("semantic_code", error))?;
+        for mut symbol in source_symbols(&source, query) {
+            symbol["path"] = serde_json::Value::String(path.display().to_string());
+            output.push(symbol);
+            if output.len() >= limit {
+                break;
+            }
+        }
+        return Ok(());
+    }
+    let entries =
+        std::fs::read_dir(path).map_err(|error| tui_tool_failure("semantic_code", error))?;
+    for entry in entries.flatten() {
+        let child = entry.path();
+        if child.file_name().and_then(|name| name.to_str()) == Some(".git") {
+            continue;
+        }
+        if child.is_dir()
+            || matches!(
+                child.extension().and_then(|ext| ext.to_str()),
+                Some("rs" | "py" | "js" | "ts")
+            )
+        {
+            collect_source_symbols(&child, query, output, limit)?;
+        }
+        if output.len() >= limit {
+            break;
+        }
+    }
+    Ok(())
+}
+
+fn persist_trusted_publishers(
+    root: &std::path::Path,
+    publishers: &jarvis_mcp::TrustedPublishers,
+) -> Result<(), jarvis_agent::ToolError> {
+    let body = publishers
+        .list()
+        .into_iter()
+        .map(|entry| serde_json::to_string(&entry))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| tui_tool_failure("plugin_package", error))?
+        .join("\n");
+    std::fs::write(root.join("publishers.jsonl"), format!("{body}\n"))
+        .map_err(|error| tui_tool_failure("plugin_package", error))
+}
+
+fn execute_tui_tool(
+    name: &str,
+    arguments: &serde_json::Value,
+    stores: &MemoryStores,
+) -> Result<jarvis_agent::ToolResult, jarvis_agent::ToolError> {
+    use jarvis_memory::{
+        Confidence, EpistemicRecord, MemoryEntry, MemoryKind, RecordStatus, SkillBundle, SkillSlug,
+    };
+    use std::time::UNIX_EPOCH;
+
+    let string = |key: &str| {
+        arguments
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned)
+            .ok_or_else(|| jarvis_agent::ToolError::InvalidArguments {
+                tool: name.to_owned(),
+                reason: format!("missing string argument `{key}`"),
+            })
+    };
+    let optional_string = |key: &str| {
+        arguments
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned)
+    };
+    let result = match name {
+        "recall_memory" => {
+            let Some(store) = stores.memory.as_ref() else {
+                return Err(tui_tool_failure(name, "memory store unavailable"));
+            };
+            let entries = optional_string("query")
+                .map_or_else(|| store.list(None), |query| store.query(&query));
+            let body =
+                serde_json::to_string(&entries).map_err(|error| tui_tool_failure(name, error))?;
+            jarvis_agent::ToolResult::new(body)
+        }
+        "store_memory" => {
+            let Some(store) = stores.memory.as_ref() else {
+                return Err(tui_tool_failure(name, "memory store unavailable"));
+            };
+            let entry = store
+                .append(MemoryEntry {
+                    id: String::new(),
+                    kind: MemoryKind::Memory,
+                    summary: string("entry")?,
+                    scopes: Vec::new(),
+                    evidence: Vec::new(),
+                    created_at: UNIX_EPOCH,
+                    updated_at: UNIX_EPOCH,
+                })
+                .map_err(|error| tui_tool_failure(name, error))?;
+            jarvis_agent::ToolResult::new(format!("stored memory {}", entry.id))
+        }
+        "recall_user_profile" => {
+            let Some(profile) = stores.profile.as_ref() else {
+                return Err(tui_tool_failure(name, "user profile unavailable"));
+            };
+            jarvis_agent::ToolResult::new(profile.read())
+        }
+        "store_user_profile" => {
+            let Some(profile) = stores.profile.as_ref() else {
+                return Err(tui_tool_failure(name, "user profile unavailable"));
+            };
+            let category = string("category")?;
+            let entry = string("entry")?;
+            let size = profile
+                .append(&category, &entry)
+                .map_err(|error| tui_tool_failure(name, error))?;
+            jarvis_agent::ToolResult::new(format!("stored profile entry ({size} bytes)"))
+        }
+        "forget_memory" => {
+            let scope = string("scope")?;
+            let entry = string("entry")?;
+            match scope.as_str() {
+                "project" => {
+                    let Some(store) = stores.memory.as_ref() else {
+                        return Err(tui_tool_failure(name, "memory store unavailable"));
+                    };
+                    let ids: Vec<String> = store
+                        .query(&entry)
+                        .into_iter()
+                        .filter(|candidate| candidate.summary == entry)
+                        .map(|candidate| candidate.id)
+                        .collect();
+                    let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+                    let removed = store
+                        .forget(&refs)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!("removed {removed} project fact(s)"))
+                }
+                "user" => {
+                    let Some(profile) = stores.profile.as_ref() else {
+                        return Err(tui_tool_failure(name, "user profile unavailable"));
+                    };
+                    let removed = profile
+                        .forget(&entry)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!("removed {removed} profile line(s)"))
+                }
+                _ => Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "scope must be project or user".into(),
+                }),
+            }
+        }
+        "update_memory" => {
+            let Some(store) = stores.memory.as_ref() else {
+                return Err(tui_tool_failure(name, "memory store unavailable"));
+            };
+            let Some(operations) = arguments.get("operations").and_then(|v| v.as_array()) else {
+                return Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "operations must be an array".into(),
+                });
+            };
+            let mut changed = 0usize;
+            for operation in operations.iter().take(20) {
+                let op = operation.get("op").and_then(|v| v.as_str()).unwrap_or("");
+                let entry = operation
+                    .get("entry")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: "each operation needs an entry".into(),
+                    })?;
+                match op {
+                    "add" => {
+                        store
+                            .append(MemoryEntry {
+                                id: String::new(),
+                                kind: MemoryKind::Memory,
+                                summary: entry.to_owned(),
+                                scopes: Vec::new(),
+                                evidence: Vec::new(),
+                                created_at: UNIX_EPOCH,
+                                updated_at: UNIX_EPOCH,
+                            })
+                            .map_err(|error| tui_tool_failure(name, error))?;
+                        changed += 1;
+                    }
+                    "remove" => {
+                        let ids: Vec<String> = store
+                            .query(entry)
+                            .into_iter()
+                            .filter(|candidate| candidate.summary == entry)
+                            .map(|candidate| candidate.id)
+                            .collect();
+                        let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+                        changed += store
+                            .forget(&refs)
+                            .map_err(|error| tui_tool_failure(name, error))?;
+                    }
+                    _ => {
+                        return Err(jarvis_agent::ToolError::InvalidArguments {
+                            tool: name.to_owned(),
+                            reason: "operation must be add or remove".into(),
+                        });
+                    }
+                }
+            }
+            jarvis_agent::ToolResult::new(format!("applied {changed} memory change(s)"))
+        }
+        "update_awareness" | "update_deliberation" => {
+            let Some(ledger) = stores.awareness.as_ref() else {
+                return Err(tui_tool_failure(name, "awareness ledger unavailable"));
+            };
+            let action = string("action")?;
+            let id = optional_string("record_id").unwrap_or_default();
+            let changed = match action.as_str() {
+                "resolve" => ledger
+                    .resolve(&id)
+                    .map_err(|error| tui_tool_failure(name, error))?,
+                "invalidate" => ledger
+                    .invalidate(&id)
+                    .map_err(|error| tui_tool_failure(name, error))?,
+                "upsert" => {
+                    let kind = match optional_string("kind").as_deref() {
+                        Some("assumption") => MemoryKind::Assumption,
+                        Some("hypothesis") => MemoryKind::Hypothesis,
+                        Some("contradiction") => MemoryKind::Contradiction,
+                        Some("unknown") => MemoryKind::Unknown,
+                        Some("capability") => MemoryKind::Capability,
+                        _ if name == "update_deliberation" => MemoryKind::Deliberation,
+                        _ => MemoryKind::Observation,
+                    };
+                    let confidence = match optional_string("confidence").as_deref() {
+                        Some("low") => Confidence::Low,
+                        Some("high") => Confidence::High,
+                        _ => Confidence::Medium,
+                    };
+                    ledger
+                        .upsert(EpistemicRecord {
+                            id,
+                            kind,
+                            summary: string("summary")?,
+                            scopes: Vec::new(),
+                            evidence: Vec::new(),
+                            supports: Vec::new(),
+                            confidence,
+                            status: RecordStatus::Active,
+                            created_at: UNIX_EPOCH,
+                            updated_at: UNIX_EPOCH,
+                        })
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    true
+                }
+                _ => {
+                    return Err(jarvis_agent::ToolError::InvalidArguments {
+                        tool: name.to_owned(),
+                        reason: "action must be upsert, resolve, or invalidate".into(),
+                    });
+                }
+            };
+            ledger
+                .save()
+                .map_err(|error| tui_tool_failure(name, error))?;
+            jarvis_agent::ToolResult::new(format!("awareness update accepted: {changed}"))
+        }
+        "list_skills" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            jarvis_agent::ToolResult::new(
+                serde_json::to_string(
+                    &skills
+                        .list()
+                        .into_iter()
+                        .map(|summary| {
+                            serde_json::json!({
+                                "name": summary.slug,
+                                "headline": summary.headline,
+                            })
+                        })
+                        .collect::<Vec<_>>(),
+                )
+                .map_err(|error| tui_tool_failure(name, error))?,
+            )
+        }
+        "read_skill" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let slug =
+                SkillSlug::new(&string("name")?).map_err(|error| tui_tool_failure(name, error))?;
+            jarvis_agent::ToolResult::new(
+                skills
+                    .read(&slug)
+                    .map_err(|error| tui_tool_failure(name, error))?,
+            )
+        }
+        "learn_skill" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let slug =
+                SkillSlug::new(&string("name")?).map_err(|error| tui_tool_failure(name, error))?;
+            let body = format!(
+                "# {}\n\n{}\n\n{}\n",
+                slug.as_str(),
+                string("description")?,
+                string("instructions")?
+            );
+            skills
+                .write(&slug, &body)
+                .map_err(|error| tui_tool_failure(name, error))?;
+            jarvis_agent::ToolResult::new(format!("learned skill {}", slug.as_str()))
+        }
+        "forget_skill" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let slug =
+                SkillSlug::new(&string("name")?).map_err(|error| tui_tool_failure(name, error))?;
+            let removed = skills
+                .forget(&slug)
+                .map_err(|error| tui_tool_failure(name, error))?;
+            jarvis_agent::ToolResult::new(format!("skill removed: {removed}"))
+        }
+        "manage_skill" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let slug =
+                SkillSlug::new(&string("name")?).map_err(|error| tui_tool_failure(name, error))?;
+            let action = string("action")?;
+            let mut body = skills
+                .read(&slug)
+                .map_err(|error| tui_tool_failure(name, error))?;
+            let marker = format!("<!-- vesper:{action} -->");
+            match action.as_str() {
+                "pin" | "unpin" | "archive" | "restore" => {
+                    for previous in ["pin", "unpin", "archive", "restore"] {
+                        body = body.replace(&format!("<!-- vesper:{previous} -->\n"), "");
+                    }
+                    body = format!("{marker}\n{body}");
+                    skills
+                        .write(&slug, &body)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!("skill {}: {}", slug.as_str(), action))
+                }
+                _ => Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "action must be pin, unpin, archive, or restore".into(),
+                }),
+            }
+        }
+        "curate_skills" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let count = skills.list().len();
+            jarvis_agent::ToolResult::new(format!("skill curation scanned {count} skill(s)"))
+        }
+        "list_skill_bundles" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let bundles = skills.list_bundles();
+            jarvis_agent::ToolResult::new(
+                serde_json::to_string(&bundles).map_err(|error| tui_tool_failure(name, error))?,
+            )
+        }
+        "read_skill_bundle" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let slug =
+                SkillSlug::new(&string("name")?).map_err(|error| tui_tool_failure(name, error))?;
+            jarvis_agent::ToolResult::new(
+                serde_json::to_string(
+                    &skills
+                        .read_bundle(&slug)
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                )
+                .map_err(|error| tui_tool_failure(name, error))?,
+            )
+        }
+        "manage_skill_bundle" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let action = string("action")?;
+            let slug =
+                SkillSlug::new(&string("name")?).map_err(|error| tui_tool_failure(name, error))?;
+            match action.as_str() {
+                "delete" => {
+                    let removed = skills
+                        .forget_bundle(&slug)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!("bundle removed: {removed}"))
+                }
+                "create" => {
+                    let skills_value = arguments
+                        .get("skills")
+                        .and_then(|value| value.as_array())
+                        .map(|values| {
+                            values
+                                .iter()
+                                .filter_map(|value| value.as_str().map(str::to_owned))
+                                .take(32)
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+                    skills
+                        .write_bundle(SkillBundle {
+                            name: slug.as_str().to_owned(),
+                            description: optional_string("description").unwrap_or_default(),
+                            skills: skills_value,
+                            instruction: optional_string("instruction").unwrap_or_default(),
+                        })
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!("bundle created: {}", slug.as_str()))
+                }
+                _ => Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "action must be create or delete".into(),
+                }),
+            }
+        }
+        "evolve_skill" => {
+            let Some(skills) = stores.skills.as_ref() else {
+                return Err(tui_tool_failure(name, "skill store unavailable"));
+            };
+            let action = string("action")?;
+            let slug =
+                SkillSlug::new(&string("name")?).map_err(|error| tui_tool_failure(name, error))?;
+            let candidate = SkillSlug::new(&format!("candidate-{}", slug.as_str()))
+                .map_err(|error| tui_tool_failure(name, error))?;
+            match action.as_str() {
+                "draft" | "propose" => {
+                    let body = format!(
+                        "# {}\n\n{}\n\n{}\n",
+                        slug.as_str(),
+                        optional_string("description").unwrap_or_default(),
+                        optional_string("instructions").unwrap_or_default()
+                    );
+                    skills
+                        .write(&candidate, &body)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!(
+                        "candidate staged: {}",
+                        candidate.as_str()
+                    ))
+                }
+                "promote" => {
+                    let body = skills
+                        .read(&candidate)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    skills
+                        .write(&slug, &body)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    skills
+                        .forget(&candidate)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!("candidate promoted: {}", slug.as_str()))
+                }
+                "discard" => {
+                    let removed = skills
+                        .forget(&candidate)
+                        .map_err(|error| tui_tool_failure(name, error))?;
+                    jarvis_agent::ToolResult::new(format!("candidate discarded: {removed}"))
+                }
+                _ => Err(jarvis_agent::ToolError::InvalidArguments {
+                    tool: name.to_owned(),
+                    reason: "action must be draft, propose, promote, or discard".into(),
+                }),
+            }
+        }
+        "failure_corpus" => {
+            let Some(store) = stores.memory.as_ref() else {
+                return Err(tui_tool_failure(name, "memory store unavailable"));
+            };
+            if optional_string("action").as_deref() == Some("recall") {
+                let entries = store.list(Some(MemoryKind::MetaLearning));
+                jarvis_agent::ToolResult::new(
+                    serde_json::to_string(&entries)
+                        .map_err(|error| tui_tool_failure(name, error))?,
+                )
+            } else {
+                let entry = store
+                    .append(MemoryEntry {
+                        id: String::new(),
+                        kind: MemoryKind::MetaLearning,
+                        summary: string("summary")?,
+                        scopes: Vec::new(),
+                        evidence: Vec::new(),
+                        created_at: UNIX_EPOCH,
+                        updated_at: UNIX_EPOCH,
+                    })
+                    .map_err(|error| tui_tool_failure(name, error))?;
+                jarvis_agent::ToolResult::new(format!(
+                    "failure observation recorded as {}",
+                    entry.id
+                ))
+            }
+        }
+        _ => {
+            return Err(jarvis_agent::ToolError::UnknownTool(name.to_owned()));
+        }
+    }?;
+    Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use jarvis_agent::ToolService;
+
+    #[test]
+    fn memory_stores_read_the_cross_project_global_skill_layer() {
+        // Regression for the ACP /skills parity bug: the shared bundle must
+        // include the global skill layer exactly like the TUI composition.
+        let local = tempfile::tempdir().unwrap();
+        let global = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(global.path().join("skills")).unwrap();
+        std::fs::write(
+            global.path().join("skills").join("cross-project.md"),
+            "---\ndescription: learned anywhere\n---\nbody",
+        )
+        .unwrap();
+        let stores = MemoryStores::open_at(local.path(), global.path());
+        let skills = stores.skills().expect("skill store must open");
+        let summaries = skills.list();
+        assert!(
+            summaries
+                .iter()
+                .any(|summary| summary.slug == "cross-project"),
+            "global skills must appear in /skills, got {summaries:?}"
+        );
+        // A missing global root disables the layer instead of failing.
+        let missing = local.path().join("no-global");
+        let without_global = MemoryStores::open_at(local.path(), &missing);
+        assert!(
+            without_global
+                .skills()
+                .expect("skill store must open")
+                .list()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn shared_service_routes_skills_with_live_host_capabilities() {
+        let local = tempfile::tempdir().unwrap();
+        let global = tempfile::tempdir().unwrap();
+        let stores = Arc::new(MemoryStores::open_at(local.path(), global.path()));
+        stores
+            .skills()
+            .unwrap()
+            .write(
+                &jarvis_memory::SkillSlug::new("isolated-review").unwrap(),
+                "---\nname: isolated-review\ndescription: Review a pull request in isolation\ncontext: fork\nrequires-tools: [read_skill]\n---\nprivate body",
+            )
+            .unwrap();
+        let service = HarnessToolService::new_with_checkpoint_gate(
+            stores,
+            local.path().join("cron"),
+            local.path().join("plugins"),
+            None,
+            false,
+        );
+        let tools =
+            std::collections::BTreeSet::from(["read_skill".to_owned(), "delegate_task".to_owned()]);
+        let report = service.orchestrate_skills(
+            local.path(),
+            "Use skill isolated-review to inspect this pull request",
+            None,
+            &tools,
+            skill_routing_settings::RoutingTask::default(),
+        );
+        assert_eq!(report.selected_names(), vec!["isolated-review"]);
+        assert!(report.selected[0].body.is_empty());
+        assert!(report.context().unwrap().contains("delegate this skill"));
+    }
+
+    #[test]
+    fn shared_service_advertises_all_hosted_python_tools() {
+        let service = HarnessToolService {
+            stores: Arc::new(MemoryStores {
+                memory: None,
+                skills: None,
+                profile: None,
+                awareness: None,
+            }),
+            core: Arc::new(ToolRegistry::parity_default()),
+            cron_root: PathBuf::new(),
+            plugin_loader: None,
+            trusted_publishers: jarvis_mcp::TrustedPublishers::new(),
+            plugin_root: PathBuf::new(),
+            mcp: Arc::new(jarvis_mcp::McpSession::default()),
+            session_root: PathBuf::new(),
+            checkpoints_enabled: true,
+            worker_factory: None,
+            skill_outcomes: Arc::new(jarvis_memory::SkillOutcomeTracker::default()),
+            cron_abort: None,
+            web: None,
+            #[cfg(feature = "bridge")]
+            bridge: None,
+        };
+        let definitions = service.definitions();
+        for name in ["web_search", "web_reader", "vision_analyze"] {
+            let definition = definitions
+                .iter()
+                .find(|definition| definition.harness_name.as_str() == name)
+                .expect("protected first-party tool definition");
+            assert_eq!(
+                definition.provider_scope,
+                builtin_scope(match name {
+                    "web_search" => "zai_search",
+                    "web_reader" => "zai_reader",
+                    _ => "zai_vision",
+                })
+            );
+            assert!(
+                definition
+                    .provider_scope
+                    .allows(&jarvis_domain::ProviderId::new("zai").expect("provider id"))
+            );
+            assert!(
+                !definition
+                    .provider_scope
+                    .allows(&jarvis_domain::ProviderId::new("openai").expect("provider id"))
+            );
+        }
+        let names = definitions
+            .into_iter()
+            .map(|definition| definition.harness_name.as_str().to_owned())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(names.len(), 36);
+        for name in [
+            "update_awareness",
+            "recall_memory",
+            "store_memory",
+            "list_skills",
+            "cronjob",
+            "session_search",
+            "delegate_task",
+            "semantic_code",
+            "apply_patch_set",
+            "batch_read",
+            "run_workflow",
+            "plugin_package",
+            "worktree_worker",
+            "mcp_search",
+            "mcp_list_tools",
+            "mcp_call",
+            "search_tools",
+            "web_search",
+            "web_reader",
+            "vision_analyze",
+            "browser_ui",
+        ] {
+            assert!(names.contains(name), "missing shared hosted tool {name}");
+        }
+    }
+
+    #[tokio::test]
+    async fn non_zai_direct_discovery_and_gateway_aliases_stop_before_credentials_or_http() {
+        use jarvis_domain::{
+            BoundedString, ProviderId, SessionOperatingMode, SessionPermissionMode, ToolCall,
+            ToolCallId, ToolId, ToolProviderScope, WorkspaceRoot,
+        };
+        use std::net::TcpListener;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let root = tempfile::tempdir().unwrap();
+        let plugins = root.path().join("plugins");
+        std::fs::create_dir_all(&plugins).unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let address = listener.local_addr().unwrap();
+        jarvis_mcp::McpRegistry::open(&plugins)
+            .unwrap()
+            .add(jarvis_mcp::McpServerConfig {
+                id: "owned_fixture".into(),
+                transport: jarvis_mcp::McpTransport::Http,
+                command: None,
+                args: Vec::new(),
+                url: Some(format!("http://{address}")),
+                auth_env: Some("ZAI_API_KEY".into()),
+                label: Some("display name is not authority".into()),
+                provider_scope: ToolProviderScope::Provider(ProviderId::new("zai").unwrap()),
+                created_at: std::time::SystemTime::UNIX_EPOCH,
+            })
+            .unwrap();
+
+        let resolutions = Arc::new(AtomicUsize::new(0));
+        let resolution_counter = resolutions.clone();
+        let service = HarnessToolService::new_with_checkpoint_gate(
+            Arc::new(MemoryStores {
+                memory: None,
+                skills: None,
+                profile: None,
+                awareness: None,
+            }),
+            root.path().join("cron"),
+            plugins,
+            None,
+            false,
+        )
+        .with_mcp_credential_resolver_fn(move |_| {
+            resolution_counter.fetch_add(1, Ordering::SeqCst);
+            Some(jarvis_mcp::SecretValue::new("synthetic-zai-credential"))
+        });
+        let registry = Arc::new(service).build_default_registry();
+        let mut context = jarvis_agent::executor::uncancellable_context(
+            vec![WorkspaceRoot {
+                name: BoundedString::new("fixture").unwrap(),
+                path: BoundedString::new(root.path().to_string_lossy()).unwrap(),
+                primary: true,
+            }],
+            SessionOperatingMode::Code,
+            SessionPermissionMode::Bypass,
+        );
+        context.provider_id = ProviderId::new("xai").unwrap();
+        let call = |id: &str, tool: &str, arguments: serde_json::Value| ToolCall {
+            id: ToolCallId::new(id).unwrap(),
+            tool_id: ToolId::new(tool).unwrap(),
+            arguments,
+            extensions: Default::default(),
+        };
+
+        for request in [
+            call("direct", "web_search", serde_json::json!({"query":"rust"})),
+            call(
+                "search",
+                "mcp_search",
+                serde_json::json!({"server":"owned_fixture"}),
+            ),
+            call(
+                "list",
+                "mcp_list_tools",
+                serde_json::json!({"server":"owned_fixture"}),
+            ),
+            call(
+                "call",
+                "mcp_call",
+                serde_json::json!({"server":"owned_fixture","tool":"webSearchPrime","arguments":{}}),
+            ),
+            call(
+                "alias",
+                "mcp__owned_fixture__webSearchPrime",
+                serde_json::json!({}),
+            ),
+        ] {
+            let error = registry.execute(&request, &context).await.unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .contains("unavailable for active provider `xai`"),
+                "{} returned {error}",
+                request.tool_id
+            );
+        }
+        assert_eq!(resolutions.load(Ordering::SeqCst), 0);
+        assert!(matches!(
+            listener.accept(),
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock
+        ));
+
+        let names = registry
+            .definitions_for_provider(SessionOperatingMode::Code, &context.provider_id)
+            .into_iter()
+            .map(|definition| definition.harness_name.as_str().to_owned())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert!(names.contains("browser_ui"));
+        assert!(names.contains("mcp_search"));
+        assert!(!names.contains("web_search"));
+        assert!(!names.contains("web_reader"));
+        assert!(!names.contains("vision_analyze"));
+    }
+
+    // ------------------- Phase 3: MCP gateway & translation -------------------
+
+    #[test]
+    fn parse_mcp_gateway_name_extracts_server_and_tool() {
+        assert_eq!(
+            parse_mcp_gateway_name("mcp__playwright__navigate"),
+            Some(("playwright", "navigate"))
+        );
+        assert_eq!(
+            parse_mcp_gateway_name("mcp__zai-search__web_search_prime"),
+            Some(("zai-search", "web_search_prime"))
+        );
+    }
+
+    #[test]
+    fn parse_mcp_gateway_name_rejects_malformed_names() {
+        // Missing prefix.
+        assert_eq!(parse_mcp_gateway_name("playwright__navigate"), None);
+        // Missing the inner __ separator after the prefix.
+        assert_eq!(parse_mcp_gateway_name("mcp__playwright"), None);
+        // Empty server or tool.
+        assert_eq!(parse_mcp_gateway_name("mcp____navigate"), None);
+        assert_eq!(parse_mcp_gateway_name("mcp__playwright__"), None);
+        // Not an mcp__ name at all.
+        assert_eq!(parse_mcp_gateway_name("read_file"), None);
+        assert_eq!(parse_mcp_gateway_name(""), None);
+    }
+
+    #[test]
+    fn mcp_descriptor_translates_into_a_gateway_routed_tool_definition() {
+        let descriptor = jarvis_mcp::McpToolDescriptor {
+            name: "navigate".to_owned(),
+            description: Some("Navigate to a URL.".to_owned()),
+            input_schema: Some(serde_json::json!({
+                "type": "object",
+                "properties": {"url": {"type": "string"}},
+                "required": ["url"],
+            })),
+        };
+        let definition = mcp_descriptor_to_tool_definition(
+            "playwright",
+            jarvis_domain::ToolProviderScope::Any,
+            &descriptor,
+        );
+        assert_eq!(
+            definition.harness_name.as_str(),
+            "mcp__playwright__navigate"
+        );
+        assert_eq!(definition.description, "Navigate to a URL.");
+        assert_eq!(
+            definition.execution_class,
+            jarvis_domain::ToolExecutionClass::NestedWorkflow
+        );
+        assert!(
+            !definition.defer_loading,
+            "injected tools must NOT be deferred"
+        );
+        assert_eq!(
+            definition.input_schema,
+            serde_json::json!({
+                "type": "object",
+                "properties": {"url": {"type": "string"}},
+                "required": ["url"],
+            })
+        );
+    }
+
+    #[test]
+    fn mcp_descriptor_falls_back_to_default_description_and_schema() {
+        let descriptor = jarvis_mcp::McpToolDescriptor {
+            name: "ping".to_owned(),
+            description: None,
+            input_schema: None,
+        };
+        let definition = mcp_descriptor_to_tool_definition(
+            "echo",
+            jarvis_domain::ToolProviderScope::Any,
+            &descriptor,
+        );
+        assert_eq!(definition.harness_name.as_str(), "mcp__echo__ping");
+        assert!(
+            definition.description.contains("echo"),
+            "default description must mention the server id: {}",
+            definition.description
+        );
+        assert_eq!(
+            definition.input_schema,
+            serde_json::json!({"type": "object"}),
+            "missing inputSchema must default to a permissive object schema"
+        );
+    }
+
+    #[test]
+    fn build_default_registry_wires_the_mcp_gateway() {
+        // Use a real tempdir so the HarnessToolService constructor (which
+        // creates roots and reads publishers.jsonl) does not error.
+        let root = tempfile::tempdir().unwrap();
+        let stores = Arc::new(MemoryStores::open_default());
+        let service = Arc::new(HarnessToolService::new(
+            stores,
+            root.path().join("cron"),
+            root.path().join("mcp"),
+            None,
+        ));
+        let registry = service.build_default_registry();
+        // The 9 parity tools + 36 hosted tools are still advertised.
+        assert_eq!(
+            registry
+                .definitions_for(jarvis_domain::SessionOperatingMode::Code)
+                .len(),
+            9 + 36
+        );
+        // The gateway is registered under the mcp__ prefix.
+        assert!(registry.has_gateway(MCP_GATEWAY_PREFIX));
+        // A call to a name matching the prefix is considered registered.
+        assert!(registry.contains("mcp__anything__here"));
+    }
+}
+
+/// Returns the cross-project global memory root: `AGENT_VESPER_GLOBAL_MEMORY_ROOT`
+/// when set, else `~/.agent-vesper/memory` (`USERPROFILE` on Windows). Never
+/// created here; a missing directory simply disables the global skill read
+/// layer (mirror of the TUI composition's `home_memory_root`).
+fn global_memory_root() -> std::path::PathBuf {
+    if let Ok(value) = std::env::var("AGENT_VESPER_GLOBAL_MEMORY_ROOT") {
+        return std::path::PathBuf::from(value);
+    }
+    let variable = if cfg!(target_os = "windows") {
+        "USERPROFILE"
+    } else {
+        "HOME"
+    };
+    let home = std::env::var(variable)
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::path::PathBuf::from("."));
+    home.join(".agent-vesper").join("memory")
+}
+
+/// Drains one [`MemoryOp`] against the durable stores, pushing the result
+/// into the transcript. Pure-with-side-effects: no async, no terminal I/O,
+/// only local filesystem reads/writes via `jarvis_memory`.
+pub struct MemoryStores {
+    memory: Option<Arc<jarvis_memory::MemoryStore>>,
+    skills: Option<Arc<jarvis_memory::SkillStore>>,
+    profile: Option<Arc<jarvis_memory::UserProfile>>,
+    awareness: Option<Arc<jarvis_memory::AwarenessLedger>>,
+}
+
+impl MemoryStores {
+    /// Renders the host-neutral durable reports shared by TUI and ACP.
+    #[must_use]
+    pub fn parity_report(&self, name: &str) -> Option<String> {
+        let kind = match name {
+            "repository" => Some(jarvis_memory::MemoryKind::Repository),
+            "meta-learning" => Some(jarvis_memory::MemoryKind::MetaLearning),
+            "observability" => Some(jarvis_memory::MemoryKind::Observability),
+            "journey" => {
+                let memory_count = self
+                    .memory
+                    .as_ref()
+                    .map_or(0, |store| store.list(None).len());
+                let skill_count = self.skills.as_ref().map_or(0, |store| store.list().len());
+                let mut output = format!(
+                    "journey: {memory_count} memory entry/entries, {skill_count} learned skill(s)"
+                );
+                if let Some(store) = self.memory.as_ref() {
+                    let mut entries = store.list(None);
+                    entries.sort_by_key(|entry| entry.created_at);
+                    for entry in entries.iter().take(20) {
+                        output.push_str(&format!(
+                            "\n  [{}] {}: {}",
+                            entry.kind.as_str(),
+                            entry.id,
+                            entry.summary.chars().take(80).collect::<String>()
+                        ));
+                    }
+                }
+                return Some(output);
+            }
+            _ => return None,
+        };
+        let Some(ledger) = self.awareness.as_ref() else {
+            return Some(format!("{name}: awareness ledger unavailable"));
+        };
+        let records = ledger.list(kind);
+        let mut output = if records.is_empty() {
+            format!("{name}: (no records)")
+        } else {
+            format!("{name}: {} record(s)", records.len())
+        };
+        for record in records.iter().take(50) {
+            output.push_str(&format!(
+                "\n  [{}] {} ({:?}): {}",
+                record.kind.as_str(),
+                record.id,
+                record.status,
+                record.summary.chars().take(80).collect::<String>()
+            ));
+        }
+        Some(output)
+    }
+
+    /// Opens the bundle at `AGENT_VESPER_MEMORY_ROOT` (falling back to
+    /// `.agent-vesper/memory/` under the current directory). The skill
+    /// store additionally reads a cross-project global layer at
+    /// `AGENT_VESPER_GLOBAL_MEMORY_ROOT` (falling back to
+    /// `~/.agent-vesper/memory/`): global skills appear after local ones,
+    /// local slugs shadow, and writes always stay project-local (parity
+    /// with the TUI composition). If opening any store fails the bundle
+    /// stays `None` for that store and memory commands surface a clear
+    /// error rather than crashing the host.
+    pub fn open_default() -> Self {
+        let root = match std::env::var("AGENT_VESPER_MEMORY_ROOT") {
+            Ok(value) => std::path::PathBuf::from(value),
+            Err(_) => std::env::current_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("."))
+                .join(".agent-vesper")
+                .join("memory"),
+        };
+        Self::open_at(root, global_memory_root())
+    }
+
+    /// Opens the bundle at explicit roots (project + cross-project global
+    /// skill layer). Composition boundaries that resolve roots themselves
+    /// and tests use this constructor; `open_default` only resolves
+    /// environment paths.
+    pub fn open_at(
+        root: impl Into<std::path::PathBuf>,
+        global_memory_root: impl Into<std::path::PathBuf>,
+    ) -> Self {
+        let root = root.into();
+        let global_memory_root = global_memory_root.into();
+        // Ensure the root directory exists so the stores can open it.
+        let _ = std::fs::create_dir_all(&root);
+        let memory = jarvis_memory::MemoryStore::open(&root).ok().map(Arc::new);
+        let skills = jarvis_memory::SkillStore::open_with_global(&root, &global_memory_root)
+            .ok()
+            .map(Arc::new);
+        let profile = jarvis_memory::UserProfile::open(&root).ok().map(Arc::new);
+        let awareness = jarvis_memory::AwarenessLedger::open(&root)
+            .ok()
+            .map(Arc::new);
+        Self {
+            memory,
+            skills,
+            profile,
+            awareness,
+        }
+    }
+
+    /// The durable memory store backing `/memory`, `/goal`, `/subgoal`, and
+    /// the memory tools. `None` when the store failed to open.
+    #[must_use]
+    pub fn memory(&self) -> Option<&Arc<jarvis_memory::MemoryStore>> {
+        self.memory.as_ref()
+    }
+
+    /// The learned-skill store backing `/skills` and the skill tools.
+    #[must_use]
+    pub fn skills(&self) -> Option<&Arc<jarvis_memory::SkillStore>> {
+        self.skills.as_ref()
+    }
+
+    /// The cross-project user profile backing `/profile`.
+    #[must_use]
+    pub fn profile(&self) -> Option<&Arc<jarvis_memory::UserProfile>> {
+        self.profile.as_ref()
+    }
+
+    /// The epistemic ledger backing `/awareness`-family reports.
+    #[must_use]
+    pub fn awareness(&self) -> Option<&Arc<jarvis_memory::AwarenessLedger>> {
+        self.awareness.as_ref()
+    }
+}
+
+/// Memory/skills tool service injected into the agent loop.
+///
+/// These tools deliberately use the same durable stores as slash-command
+/// dispatch. The agent loop only sees the provider-neutral `ToolService`
+/// contract; storage ownership and secret-safe bounds remain in
+/// `vesper-memory`.
+#[derive(Clone)]
+pub struct WorkerFactory {
+    release_mode: SessionOperatingMode,
+    release_permission: SessionPermissionMode,
+    registry: Arc<jarvis_runtime::ProviderRegistry>,
+    config: jarvis_agent::AgentLoopConfig,
+    permission: Arc<dyn jarvis_agent::PermissionPort>,
+    /// Optional host progress sink for harness-internal sub-work (e.g.
+    /// acceptance reviewer agents). Bounded `Status` lines only; never
+    /// tool payloads. Absent in tests and composition paths that do not
+    /// opt in.
+    progress: Option<Arc<dyn jarvis_agent::AgentProgressPort>>,
+}
+
+/// Observe only whether a failed initial repair request is safe to repeat.
+struct RepairStartProgress {
+    downstream: Option<Arc<dyn jarvis_agent::AgentProgressPort>>,
+    requests: AtomicU64,
+    work_observed: std::sync::atomic::AtomicBool,
+}
+
+impl jarvis_agent::AgentProgressPort for RepairStartProgress {
+    fn emit(&self, event: jarvis_agent::AgentProgressEvent) {
+        use jarvis_agent::AgentProgressEvent;
+        if matches!(event, AgentProgressEvent::ProviderTurnStarted { .. }) {
+            self.requests.fetch_add(1, Ordering::Relaxed);
+        } else if !matches!(
+            event,
+            AgentProgressEvent::TurnStarted
+                | AgentProgressEvent::ContextPressureUpdated { .. }
+                | AgentProgressEvent::Status { .. }
+        ) {
+            self.work_observed.store(true, Ordering::Relaxed);
+        }
+        if let Some(downstream) = &self.downstream {
+            downstream.emit(event);
+        }
+    }
+}
+
+fn repair_loop_error_diagnostic(error: &jarvis_agent::AgentLoopError) -> String {
+    match error {
+        jarvis_agent::AgentLoopError::ProviderTurn(error) => format!(
+            "{} [category={:?}, HTTP={}, retry={:?}, retry-after-ms={:?}]",
+            error.info.safe_message,
+            error.info.category,
+            error
+                .http_status
+                .map_or_else(|| "unavailable".into(), |status| status.to_string()),
+            error.info.retryability,
+            error.info.retry_after_ms,
+        ),
+        _ => error.to_string(),
+    }
+}
+
+impl WorkerFactory {
+    #[must_use]
+    pub fn new(
+        registry: Arc<jarvis_runtime::ProviderRegistry>,
+        config: jarvis_agent::AgentLoopConfig,
+    ) -> Self {
+        Self {
+            release_mode: SessionOperatingMode::Code,
+            release_permission: SessionPermissionMode::Ask,
+            registry,
+            config,
+            permission: Arc::new(jarvis_agent::DenyPermissionPort),
+            progress: None,
+        }
+    }
+
+    /// Uses the host's ordinary permission port for bounded internal coding
+    /// turns. Requirements and controller state never grant permission.
+    #[must_use]
+    pub fn with_permission_port(
+        mut self,
+        permission: Arc<dyn jarvis_agent::PermissionPort>,
+    ) -> Self {
+        self.permission = permission;
+        self
+    }
+
+    /// Carries the invoking host's release authority envelope.
+    #[must_use]
+    pub fn with_release_policy(
+        mut self,
+        mode: SessionOperatingMode,
+        permission: SessionPermissionMode,
+    ) -> Self {
+        self.release_mode = mode;
+        self.release_permission = permission;
+        self
+    }
+
+    /// Attaches a host progress sink so harness-internal work is visible
+    /// while it runs (acceptance-enrollment visibility PRD D1).
+    #[must_use]
+    pub fn with_progress(mut self, progress: Arc<dyn jarvis_agent::AgentProgressPort>) -> Self {
+        self.progress = Some(progress);
+        self
+    }
+
+    pub(crate) fn progress(&self) -> Option<Arc<dyn jarvis_agent::AgentProgressPort>> {
+        self.progress.clone()
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn run_coding_turn_in_workspace(
+        &self,
+        workspace: PathBuf,
+        prompt: String,
+        cancellation: Arc<jarvis_runtime::RuntimeCancellation>,
+    ) -> Result<(AgentTurnOutcome, Vec<ConversationMessage>), String> {
+        self.run_coding_turn_in_workspace_with_registry(
+            workspace,
+            prompt,
+            cancellation,
+            release_executor::repair_tool_registry(),
+        )
+        .await
+    }
+
+    pub(crate) async fn run_coding_turn_in_workspace_with_registry(
+        &self,
+        workspace: PathBuf,
+        prompt: String,
+        cancellation: Arc<jarvis_runtime::RuntimeCancellation>,
+        tools: ToolRegistry,
+    ) -> Result<(AgentTurnOutcome, Vec<ConversationMessage>), String> {
+        let mut config = self.config.clone();
+        config.max_tool_iterations = if config.max_tool_iterations == 0 {
+            24
+        } else {
+            config.max_tool_iterations.min(24)
+        };
+        config.workspace_roots = vec![WorkspaceRoot {
+            name: BoundedString::new("release-repair").expect("static workspace name"),
+            path: BoundedString::new(workspace.display().to_string())
+                .map_err(|error| error.to_string())?,
+            primary: true,
+        }];
+        let total_limit = config
+            .max_tool_iterations
+            .saturating_mul(jarvis_agent::agent_loop::MAX_PLAN_CONTINUATION_SEGMENTS)
+            .min(jarvis_agent::ABSOLUTE_MAX_TOOL_ITERATIONS);
+        let mut worker = AgentLoop::new(self.registry.clone(), tools, config)
+            .with_permission_port(self.permission.clone());
+        let progress = Arc::new(RepairStartProgress {
+            downstream: self.progress.clone(),
+            requests: AtomicU64::new(0),
+            work_observed: std::sync::atomic::AtomicBool::new(false),
+        });
+        worker = worker.with_progress_port(progress.clone());
+        let mut history = vec![build_user_message(&prompt)];
+        let mut spent = 0_u32;
+        for _ in 0..jarvis_agent::agent_loop::MAX_PLAN_CONTINUATION_SEGMENTS {
+            worker = worker.with_tool_iteration_ceiling(total_limit.saturating_sub(spent));
+            let (mut outcome, next_history) = loop {
+                let result = worker
+                    .run_prompt_with_history_with_cancellation(
+                        history.clone(),
+                        self.release_mode,
+                        self.release_permission,
+                        cancellation.clone(),
+                    )
+                    .await;
+                match result {
+                    Ok(result) => break result,
+                    Err(jarvis_agent::AgentLoopError::ProviderTurn(ref error))
+                        if spent == 0
+                            && progress.requests.load(Ordering::Relaxed) == 1
+                            && !progress.work_observed.load(Ordering::Relaxed)
+                            && !cancellation.is_cancelled()
+                            && !error.info.visible_output_emitted
+                            && error.info.retryability
+                                == jarvis_domain::Retryability::BeforeVisibleOutput
+                            && error.info.retry_after_ms.unwrap_or(2000) <= 30_000 =>
+                    {
+                        spent = 1;
+                        let delay = error.info.retry_after_ms.unwrap_or(2000).max(2000);
+                        jarvis_agent::AgentProgressPort::emit(
+                            progress.as_ref(),
+                            jarvis_agent::AgentProgressEvent::Status {
+                                text: format!(
+                                    "Initial repair request was rejected before output or tools; one adapter-admitted retry after {delay} ms"
+                                ),
+                            },
+                        );
+                        tokio::select! {
+                            _ = tokio::time::sleep(std::time::Duration::from_millis(delay)) => {},
+                            _ = async { while !cancellation.is_cancelled() {
+                                tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+                            } } => return Err("repair cancelled before initial-request retry".into()),
+                        }
+                        worker =
+                            worker.with_tool_iteration_ceiling(total_limit.saturating_sub(spent));
+                    }
+                    Err(error) => return Err(repair_loop_error_diagnostic(&error)),
+                }
+            };
+            let iterations = match &mut outcome {
+                AgentTurnOutcome::Completed { iterations, .. }
+                | AgentTurnOutcome::Acceptance { iterations, .. }
+                | AgentTurnOutcome::Interrupted { iterations, .. }
+                | AgentTurnOutcome::MaxIterationsReached { iterations, .. } => iterations,
+            };
+            spent = spent.saturating_add(*iterations);
+            *iterations = spent;
+            let missing_proof = matches!(outcome, AgentTurnOutcome::Completed { .. })
+                && release_executor::repair_completion_needs_proof(&next_history);
+            if (!matches!(outcome, AgentTurnOutcome::MaxIterationsReached { .. }) && !missing_proof)
+                || spent >= total_limit
+                || cancellation.is_cancelled()
+            {
+                return Ok((outcome, next_history));
+            }
+            history = next_history;
+            history.push(build_user_message(if missing_proof {
+                "The repair is unfinished: no successful supported focused command was observed after the final file edit. Continue this same admission with preserved history and permissions. Finish required documentation first, then execute focused verification of the final patch. Do not repeat completed edits or claim prior checks as current proof. Commit, push, tag, release-state edits and publication remain forbidden."
+            } else {
+                "The ordinary repair segment ended with unfinished work. Continue this same isolated repair using the preserved history. Do not repeat completed actions. Keep the existing permissions and release prohibitions; finish all admitted families and run focused proof after the final edit."
+            }));
+        }
+        Err("repair continuation segment ceiling reached with unfinished work".into())
+    }
+}
+
+pub mod daemon_lock;
+mod host_commands;
+pub mod slash_commands;
+#[cfg(feature = "swarm")]
+pub mod swarm_adapter;
+#[cfg(feature = "swarm")]
+pub mod swarm_embedding;
+#[cfg(feature = "swarm")]
+pub mod swarm_gate_surface;
+#[cfg(feature = "swarm")]
+pub mod swarm_inputs;
+#[cfg(feature = "swarm")]
+pub mod swarm_journal;
+#[cfg(feature = "swarm")]
+pub mod swarm_sandbox;
+#[cfg(feature = "swarm")]
+pub mod swarm_service;
+#[cfg(feature = "swarm")]
+pub mod swarm_settings;
+pub mod watcher_sweep;
+
+pub use daemon_lock::{
+    DaemonLockError, DaemonLockGuard, DaemonLockStatus, daemon_lock_path, read_daemon_lock_status,
+};
+pub use watcher_sweep::{
+    SweepAction, SweepEventRow, SweepOutcome, WATCHER_EVENTS_LOG_NAME, WATCHER_MAX_RETRIES,
+    WATCHER_SWEEP_INTERVAL, WATCHER_SWEEP_MAX_FIRES, list_sweep_events, run_sweep_once,
+};
+
+pub struct HarnessToolService {
+    stores: Arc<MemoryStores>,
+    /// Core read/write tools used by `batch_read` and `run_workflow`.
+    core: Arc<ToolRegistry>,
+    cron_root: std::path::PathBuf,
+    plugin_loader: Option<Arc<jarvis_mcp::PluginLoader>>,
+    trusted_publishers: jarvis_mcp::TrustedPublishers,
+    plugin_root: std::path::PathBuf,
+    mcp: Arc<jarvis_mcp::McpSession>,
+    session_root: std::path::PathBuf,
+    /// Whether the checkpoint/lineage subsystem may create durable state.
+    /// See [`HarnessToolService::new_with_checkpoint_gate`].
+    checkpoints_enabled: bool,
+    /// VRO-14 PR-5: the opt-in web tools scope. `None` (the default when
+    /// `[web]` is absent or disabled) registers zero web tools — the
+    /// registry path stays byte-identical to the pre-web build.
+    web: Option<Arc<crate::web_service::WebService>>,
+    /// VB-PRD-001 Phase 2: the opt-in Bridge service. `None` (default, and
+    /// always when built without the `bridge` feature) registers zero
+    /// bridge tools and creates no Bridge state — the disabled path stays
+    /// byte-identical to the pre-bridge build (BR-30, NF-01, AT-01).
+    #[cfg(feature = "bridge")]
+    bridge: Option<Arc<crate::bridge_service::BridgeToolService>>,
+    worker_factory: Option<Arc<WorkerFactory>>,
+    skill_outcomes: Arc<jarvis_memory::SkillOutcomeTracker>,
+    cron_abort: Option<tokio::task::AbortHandle>,
+}
+
+impl Drop for HarnessToolService {
+    fn drop(&mut self) {
+        if let Some(handle) = self.cron_abort.take() {
+            handle.abort();
+        }
+    }
+}
+
+impl HarnessToolService {
+    pub fn new(
+        stores: Arc<MemoryStores>,
+        cron_root: std::path::PathBuf,
+        plugin_root: std::path::PathBuf,
+        worker_factory: Option<Arc<WorkerFactory>>,
+    ) -> Self {
+        Self::new_with_checkpoint_gate(stores, cron_root, plugin_root, worker_factory, true)
+    }
+
+    /// Like [`new`](Self::new), but with an explicit checkpoint opt-in.
+    ///
+    /// `checkpoints_enabled: false` builds the service WITHOUT creating the
+    /// checkpoint (`cron_root`) or lineage (`session_root`) directories and
+    /// without spawning the cron scheduler; every checkpoint-family host
+    /// command then answers with the opt-in notice instead of touching disk.
+    /// Plugins and MCP stay fully functional either way. The ACP composition
+    /// defaults this to OFF: Zed spawns the agent silently inside arbitrary
+    /// project directories, and an always-on store littered `.agent-vesper/`
+    /// state (and up to 50 × 10 MiB of snapshots per project) everywhere.
+    #[must_use]
+    pub fn new_with_checkpoint_gate(
+        stores: Arc<MemoryStores>,
+        cron_root: std::path::PathBuf,
+        plugin_root: std::path::PathBuf,
+        worker_factory: Option<Arc<WorkerFactory>>,
+        checkpoints_enabled: bool,
+    ) -> Self {
+        let _ = std::fs::create_dir_all(&plugin_root);
+        let session_root = session_root_path();
+        if checkpoints_enabled {
+            let _ = std::fs::create_dir_all(&cron_root);
+            let _ = std::fs::create_dir_all(&session_root);
+        }
+        let trusted_publishers = load_trusted_publishers(&plugin_root);
+        let plugin_loader =
+            jarvis_mcp::PluginLoader::open(&plugin_root, trusted_publishers.clone())
+                .ok()
+                .map(Arc::new);
+        let cron_abort = if checkpoints_enabled {
+            worker_factory.as_ref().and_then(|factory| {
+                tokio::runtime::Handle::try_current().ok().map(|handle| {
+                    handle
+                        .spawn(run_cron_scheduler(cron_root.clone(), (**factory).clone()))
+                        .abort_handle()
+                })
+            })
+        } else {
+            None
+        };
+        Self {
+            stores,
+            core: Arc::new(ToolRegistry::parity_default()),
+            cron_root,
+            plugin_loader,
+            trusted_publishers,
+            plugin_root,
+            mcp: Arc::new(jarvis_mcp::McpSession::default()),
+            session_root,
+            checkpoints_enabled,
+            web: None,
+            #[cfg(feature = "bridge")]
+            bridge: None,
+            worker_factory,
+            skill_outcomes: Arc::new(jarvis_memory::SkillOutcomeTracker::default()),
+            cron_abort,
+        }
+    }
+
+    /// Composes the parity-default registry with this hosted service and the
+    /// MCP gateway executor. Composition boundaries (TUI, ACP, internal
+    /// workers) call this so dynamically-discovered MCP tools advertised via
+    /// `mcp_list_tools` can actually be executed when the model calls them
+    /// by their `mcp__<server>__<tool>` name on a later turn.
+    #[must_use]
+    pub fn build_default_registry(self: Arc<Self>) -> ToolRegistry {
+        build_hosted_registry(self)
+    }
+
+    /// Attaches the composition's adapter-owned, on-demand MCP credential
+    /// resolver. Existing environment-only behavior remains the default for
+    /// custom compositions that do not provide this bridge.
+    #[must_use]
+    pub fn with_mcp_credential_resolver(
+        mut self,
+        resolver: Arc<dyn jarvis_mcp::McpCredentialResolver>,
+    ) -> Self {
+        self.mcp = Arc::new(jarvis_mcp::McpSession::default().with_credential_resolver(resolver));
+        self
+    }
+
+    /// Attaches an on-demand resolver without exposing the MCP crate's trait
+    /// through an application dependency edge.
+    #[must_use]
+    pub fn with_mcp_credential_resolver_fn<F>(self, resolver: F) -> Self
+    where
+        F: Fn(&str) -> Option<jarvis_mcp::SecretValue> + Send + Sync + 'static,
+    {
+        struct Resolver<F>(F);
+
+        impl<F> jarvis_mcp::McpCredentialResolver for Resolver<F>
+        where
+            F: Fn(&str) -> Option<jarvis_mcp::SecretValue> + Send + Sync,
+        {
+            fn resolve(&self, reference: &str) -> Option<jarvis_mcp::SecretValue> {
+                (self.0)(reference)
+            }
+        }
+
+        self.with_mcp_credential_resolver(Arc::new(Resolver(resolver)))
+    }
+
+    /// VRO-14 PR-5: attaches the opt-in `[web]` scope. Called by both
+    /// hosts after reading `.agent-vesper/config.toml`; a `None`/disabled
+    /// scope leaves the registry path byte-identical to the pre-web build
+    /// (zero web tools, zero schema cost, zero advertisement surface).
+    #[must_use]
+    pub fn with_web_scope(mut self, scope: Option<crate::web_service::WebScope>) -> Self {
+        self.web = scope.map(|scope| Arc::new(crate::web_service::WebService::from_scope(scope)));
+        self
+    }
+
+    /// VB-PRD-001 Phase 2: attaches the opt-in Bridge service. Called by
+    /// hosts only when Bridge is explicitly enabled in configuration; a
+    /// `false`/absent setting leaves the registry path byte-identical to
+    /// the pre-bridge build (zero bridge tools, no bridge state).
+    ///
+    /// Adapter selection (Phase 3, evidence-based): when
+    /// `VESPER_BRIDGE_RESOLVE_IPC` points at a live Resolve worker IPC
+    /// directory, the file-IPC adapter is attached; otherwise, when an
+    /// MPRIS player is live on the session bus, the MPRIS adapter binds
+    /// to it. Neither condition holds → the truthful no-adapter
+    /// composition. Hosts never launch applications here (§1: this
+    /// prompt does not authorize uncontrolled desktop operation).
+    #[cfg(feature = "bridge")]
+    #[must_use]
+    pub fn with_bridge(mut self, enabled: bool) -> Self {
+        self.bridge = enabled.then(|| {
+            let mut service = crate::bridge_service::BridgeToolService::no_adapter();
+            if let Ok(ipc_dir) = std::env::var("VESPER_BRIDGE_RESOLVE_IPC") {
+                let adapter =
+                    std::sync::Arc::new(crate::bridge_adapters::FileIpcAdapter::new(ipc_dir));
+                service = service.with_adapter(adapter);
+            } else if let Some(player) = crate::bridge_adapters::discover_mpris_players()
+                .into_iter()
+                .next()
+            {
+                let adapter =
+                    std::sync::Arc::new(crate::bridge_adapters::MprisAdapter::new(player));
+                service = service.with_adapter(adapter);
+            }
+            Arc::new(service)
+        });
+        self
+    }
+
+    /// Feature-off variant: a no-op so host composition code stays
+    /// identical with and without the `bridge` feature. The disabled
+    /// build cannot construct bridge state at all.
+    #[cfg(not(feature = "bridge"))]
+    #[must_use]
+    pub fn with_bridge(self, _enabled: bool) -> Self {
+        self
+    }
+
+    /// Production Bridge stop (NF-02): closes admission without a model
+    /// turn. Truthful report; no application is killed. No session and
+    /// feature-off compositions report that honestly.
+    #[must_use]
+    pub fn bridge_stop(&self) -> String {
+        #[cfg(feature = "bridge")]
+        if let Some(bridge) = &self.bridge {
+            return bridge.stop();
+        }
+        "Bridge: not enabled; nothing to stop.".to_string()
+    }
+
+    /// Production Bridge resume (NF-02): reopens admission and requires a
+    /// fresh observation before the next dispatch.
+    #[must_use]
+    pub fn bridge_resume(&self) -> String {
+        #[cfg(feature = "bridge")]
+        if let Some(bridge) = &self.bridge {
+            return bridge.resume();
+        }
+        "Bridge: not enabled; nothing to resume.".to_string()
+    }
+
+    /// Production Bridge input-release confirmation (BR-17 settlement).
+    #[must_use]
+    pub fn bridge_confirm_input_release(&self) -> String {
+        #[cfg(feature = "bridge")]
+        if let Some(bridge) = &self.bridge {
+            return bridge.confirm_input_release();
+        }
+        "Bridge: not enabled; nothing to confirm.".to_string()
+    }
+
+    /// Production Bridge disconnect (H4, BR-21): closes the session for
+    /// real and surfaces the C3 close report. Shared by both hosts.
+    #[must_use]
+    pub fn bridge_disconnect(&self) -> String {
+        #[cfg(feature = "bridge")]
+        if let Some(bridge) = &self.bridge {
+            return bridge.disconnect();
+        }
+        "Bridge: not enabled; nothing to disconnect.".to_string()
+    }
+
+    /// The shared durable stores backing slash-command report commands
+    /// (`/memory`, `/skills`, `/profile`, `/awareness`, `/goal`, `/subgoal`).
+    #[must_use]
+    pub fn stores(&self) -> &Arc<MemoryStores> {
+        &self.stores
+    }
+
+    /// Selects a bounded, policy-eligible skill set for one user prompt.
+    /// Hosts append the returned context transiently and restore the original
+    /// user message before persistence, exactly like cognitive auto-recall.
+    #[must_use]
+    pub fn orchestrate_skills(
+        &self,
+        root: &Path,
+        prompt: &str,
+        explicit_skill: Option<&str>,
+        available_tools: &std::collections::BTreeSet<String>,
+        task: skill_routing_settings::RoutingTask,
+    ) -> jarvis_memory::SkillRoutingReport {
+        let Some(store) = self.stores.skills() else {
+            return jarvis_memory::SkillRoutingReport::default();
+        };
+        let outcomes = self.skill_outcomes.adjustments();
+        skill_routing_settings::route(
+            root,
+            store,
+            &jarvis_memory::SkillRoutingQuery {
+                prompt,
+                explicit_skill,
+                available_tools,
+                platform: std::env::consts::OS,
+                outcome_adjustments: &outcomes,
+            },
+            task,
+        )
+    }
+
+    /// Feeds a verified terminal result back into the bounded in-process
+    /// ranking history. No prompt or skill content is retained.
+    pub fn record_skill_outcome(&self, skills: &[String], succeeded: bool) {
+        self.skill_outcomes.record(skills, succeeded);
+    }
+
+    /// Returns this hosted conversation's MCP owner for explicit host teardown.
+    pub fn mcp_session(&self) -> Arc<jarvis_mcp::McpSession> {
+        self.mcp.clone()
+    }
+
+    /// Clones composition ports with an explicitly conversation-owned MCP lifecycle.
+    /// The clone does not start another cron scheduler or share browser state.
+    pub fn fork_mcp_session(&self) -> Self {
+        let mut mcp = jarvis_mcp::McpSession::default();
+        if let Some(resolver) = self.mcp.credential_resolver() {
+            mcp = mcp.with_credential_resolver(resolver);
+        }
+        let mcp = Arc::new(mcp);
+        Self {
+            stores: self.stores.clone(),
+            core: self.core.clone(),
+            cron_root: self.cron_root.clone(),
+            plugin_loader: self.plugin_loader.clone(),
+            trusted_publishers: self.trusted_publishers.clone(),
+            plugin_root: self.plugin_root.clone(),
+            mcp,
+            session_root: self.session_root.clone(),
+            checkpoints_enabled: self.checkpoints_enabled,
+            web: self.web.clone(),
+            #[cfg(feature = "bridge")]
+            bridge: self.bridge.clone(),
+            worker_factory: self.worker_factory.clone(),
+            skill_outcomes: self.skill_outcomes.clone(),
+            cron_abort: None,
+        }
+    }
+
+    fn read_only_worker_service(&self) -> Arc<Self> {
+        Arc::new(Self {
+            stores: Arc::clone(&self.stores),
+            core: Arc::clone(&self.core),
+            cron_root: self.cron_root.clone(),
+            plugin_loader: self.plugin_loader.clone(),
+            trusted_publishers: self.trusted_publishers.clone(),
+            plugin_root: self.plugin_root.clone(),
+            mcp: Arc::new(match self.mcp.credential_resolver() {
+                Some(resolver) => {
+                    jarvis_mcp::McpSession::default().with_credential_resolver(resolver)
+                }
+                None => jarvis_mcp::McpSession::default(),
+            }),
+            session_root: self.session_root.clone(),
+            checkpoints_enabled: self.checkpoints_enabled,
+            web: self.web.clone(),
+            #[cfg(feature = "bridge")]
+            bridge: self.bridge.clone(),
+            worker_factory: None,
+            skill_outcomes: Arc::clone(&self.skill_outcomes),
+            cron_abort: None,
+        })
+    }
+}
+
+async fn run_cron_scheduler(root: PathBuf, factory: WorkerFactory) {
+    // VRO-13 PR-6: the scheduler now claims each (job, slot) exactly once
+    // across every coexisting process (foreground TUI + background daemon),
+    // via the kernel-arbitrated `O_CREAT|O_EXCL` marker under `slots/`.
+    // The lease discipline (`claim_due`) still drives due-detection; the
+    // slot marker is the exactly-once arbiter. When no daemon exists this
+    // changes nothing user-visible: every slot still fires exactly once.
+    loop {
+        if let Ok(registry) = jarvis_checkpoints::CronRegistry::open(&root)
+            && let Ok(runs) = registry.claim_due(std::time::SystemTime::now(), false)
+        {
+            for run in runs {
+                // Slot ordinal = the unix seconds of the fire time, aligned
+                // to the job's schedule granularity. Jobs firing at the same
+                // wall-clock second across processes share one ordinal, so
+                // exactly one process wins the marker.
+                let slot = run
+                    .entry
+                    .next_run_at
+                    .and_then(|when| when.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|elapsed| elapsed.as_secs())
+                    .unwrap_or_else(|| {
+                        std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|elapsed| elapsed.as_secs())
+                            .unwrap_or(0)
+                    });
+                if !registry
+                    .claim_slot(&run.entry.id, slot, std::time::SystemTime::now())
+                    .unwrap_or(false)
+                {
+                    // Another live scheduler (TUI or daemon) owns this slot.
+                    // Release the lease so it does not block the next tick.
+                    let _ = registry.finish_claim(
+                        &run.entry.id,
+                        &run.token,
+                        "silent",
+                        "slot owned by a coexisting scheduler",
+                    );
+                    continue;
+                }
+                let result = run_provider_worker(
+                    &factory,
+                    None,
+                    run.entry.prompt.clone(),
+                    SessionOperatingMode::Code,
+                    SessionPermissionMode::Ask,
+                    None,
+                )
+                .await;
+                let (status, output) = match result {
+                    Ok(output) => ("ok", output),
+                    Err(error) => ("error", error.to_string()),
+                };
+                let _ = registry.mark_fired(
+                    &run.entry.id,
+                    slot,
+                    status,
+                    &output,
+                    std::time::SystemTime::now(),
+                );
+            }
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
+}
+
+impl jarvis_agent::ToolService for HarnessToolService {
+    fn definitions(&self) -> Vec<jarvis_domain::ToolDefinition> {
+        use jarvis_domain::ToolExecutionClass;
+        type DefinitionRow = (
+            &'static str,
+            &'static str,
+            ToolExecutionClass,
+            &'static [(&'static str, &'static str, bool)],
+        );
+        let definitions: [DefinitionRow; 36] = [
+            (
+                "update_awareness",
+                "Upsert, resolve, or invalidate bounded evidence-backed awareness records.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("action", "string", true),
+                    ("record_id", "string", false),
+                    ("summary", "string", false),
+                    ("kind", "string", false),
+                    ("confidence", "string", false),
+                ],
+            ),
+            (
+                "recall_memory",
+                "Read opt-in durable project knowledge.",
+                ToolExecutionClass::ReadOnly,
+                &[("query", "string", false)],
+            ),
+            (
+                "store_memory",
+                "Store one stable reusable project fact.",
+                ToolExecutionClass::Mutating,
+                &[("entry", "string", true)],
+            ),
+            (
+                "recall_user_profile",
+                "Read approved cross-project user preferences.",
+                ToolExecutionClass::ReadOnly,
+                &[],
+            ),
+            (
+                "store_user_profile",
+                "Store one explicit durable user preference or environment fact.",
+                ToolExecutionClass::Mutating,
+                &[("entry", "string", true), ("category", "string", true)],
+            ),
+            (
+                "forget_memory",
+                "Remove one exact durable project or user fact.",
+                ToolExecutionClass::Mutating,
+                &[("scope", "string", true), ("entry", "string", true)],
+            ),
+            (
+                "update_memory",
+                "Apply bounded project-memory additions and removals.",
+                ToolExecutionClass::Mutating,
+                &[("operations", "array", true)],
+            ),
+            (
+                "list_skills",
+                "List reusable learned project skills.",
+                ToolExecutionClass::ReadOnly,
+                &[],
+            ),
+            (
+                "read_skill",
+                "Read one learned project skill.",
+                ToolExecutionClass::ReadOnly,
+                &[("name", "string", true)],
+            ),
+            (
+                "learn_skill",
+                "Create or refine a reusable project skill after verification.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("name", "string", true),
+                    ("description", "string", true),
+                    ("instructions", "string", true),
+                ],
+            ),
+            (
+                "forget_skill",
+                "Remove one agent-learned project skill.",
+                ToolExecutionClass::Mutating,
+                &[("name", "string", true)],
+            ),
+            (
+                "manage_skill",
+                "Pin, unpin, archive, or restore one learned skill.",
+                ToolExecutionClass::Mutating,
+                &[("name", "string", true), ("action", "string", true)],
+            ),
+            (
+                "curate_skills",
+                "Run deterministic bounded skill maintenance.",
+                ToolExecutionClass::Mutating,
+                &[],
+            ),
+            (
+                "list_skill_bundles",
+                "List project-local groups of learned skills.",
+                ToolExecutionClass::ReadOnly,
+                &[],
+            ),
+            (
+                "read_skill_bundle",
+                "Read one learned skill bundle.",
+                ToolExecutionClass::ReadOnly,
+                &[("name", "string", true)],
+            ),
+            (
+                "manage_skill_bundle",
+                "Create or delete a project-local skill bundle.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("action", "string", true),
+                    ("name", "string", true),
+                    ("description", "string", false),
+                    ("skills", "array", false),
+                    ("instruction", "string", false),
+                ],
+            ),
+            (
+                "evolve_skill",
+                "Draft, promote, or discard a bounded candidate skill.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("action", "string", true),
+                    ("name", "string", true),
+                    ("description", "string", false),
+                    ("instructions", "string", false),
+                ],
+            ),
+            (
+                "update_deliberation",
+                "Record a bounded deliberation state update.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("action", "string", true),
+                    ("record_id", "string", false),
+                    ("summary", "string", false),
+                ],
+            ),
+            (
+                "failure_corpus",
+                "Record or recall bounded failure-corpus observations.",
+                ToolExecutionClass::Mutating,
+                &[("action", "string", true), ("summary", "string", false)],
+            ),
+            (
+                "cronjob",
+                "Create, list, or remove persistent local scheduled-task definitions.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("action", "string", true),
+                    ("name", "string", false),
+                    ("prompt", "string", false),
+                    ("schedule", "string", false),
+                    ("job_id", "string", false),
+                ],
+            ),
+            (
+                "session_search",
+                "Search the bounded conversation currently visible to this session.",
+                ToolExecutionClass::ReadOnly,
+                &[("query", "string", false), ("limit", "integer", false)],
+            ),
+            (
+                "delegate_task",
+                "Delegate a bounded read-only investigation to an injected worker port.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("goal", "string", true),
+                    ("context", "string", false),
+                    ("role", "string", false),
+                    ("background", "boolean", false),
+                ],
+            ),
+            (
+                "semantic_code",
+                "Inspect bounded source symbols and references without editing files.",
+                ToolExecutionClass::ReadOnly,
+                &[
+                    ("action", "string", true),
+                    ("path", "string", true),
+                    ("query", "string", false),
+                    ("line", "integer", false),
+                    ("column", "integer", false),
+                ],
+            ),
+            (
+                "apply_patch_set",
+                "Transactionally apply hash-checked unified diffs to multiple files.",
+                ToolExecutionClass::Mutating,
+                &[("patches", "array", true)],
+            ),
+            (
+                "batch_read",
+                "Run up to twenty bounded read-only core operations and return JSON results.",
+                ToolExecutionClass::ReadOnly,
+                &[
+                    ("operations", "array", true),
+                    ("max_chars_per_result", "integer", false),
+                ],
+            ),
+            (
+                "run_workflow",
+                "Run a validated bounded dependency graph of registered core tools.",
+                ToolExecutionClass::Mutating,
+                &[("steps", "array", true)],
+            ),
+            (
+                "plugin_package",
+                "Verify, install, list, or manage signed declarative plugin packages.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("action", "string", true),
+                    ("manifest_path", "string", false),
+                    ("publisher", "string", false),
+                    ("public_key_path", "string", false),
+                ],
+            ),
+            (
+                "worktree_worker",
+                "Inspect or manage the lifecycle of a bounded isolated Git worker.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("action", "string", true),
+                    ("task", "string", false),
+                    ("worker_path", "string", false),
+                    ("base_ref", "string", false),
+                    ("diff_sha256", "string", false),
+                ],
+            ),
+            (
+                "mcp_search",
+                "Discover bounded tool descriptors from configured MCP servers.",
+                ToolExecutionClass::ReadOnly,
+                &[("server", "string", false)],
+            ),
+            (
+                "mcp_list_tools",
+                "List tools exposed by one configured MCP server.",
+                ToolExecutionClass::Mutating,
+                &[("server", "string", true)],
+            ),
+            (
+                "mcp_call",
+                "Call one explicitly selected MCP tool through the configured gateway.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("server", "string", true),
+                    ("tool", "string", true),
+                    ("arguments", "object", true),
+                ],
+            ),
+            (
+                "search_tools",
+                "Find up to five bounded hosted tools by capability intent.",
+                ToolExecutionClass::ReadOnly,
+                &[("intent", "string", true), ("mode", "string", false)],
+            ),
+            (
+                "web_search",
+                "Search the current web through the first-party Z.ai Web Search MCP.",
+                ToolExecutionClass::ReadOnly,
+                &[("query", "string", true)],
+            ),
+            (
+                "web_reader",
+                "Read and extract a public web page through the first-party Z.ai Reader MCP.",
+                ToolExecutionClass::ReadOnly,
+                &[("url", "string", true)],
+            ),
+            (
+                "vision_analyze",
+                "Analyze a workspace image through the first-party Z.ai Vision MCP.",
+                ToolExecutionClass::Mutating,
+                &[("path", "string", true), ("prompt", "string", true)],
+            ),
+            (
+                "browser_ui",
+                "Permission-gated isolated Playwright browser interaction without arbitrary eval.",
+                ToolExecutionClass::Mutating,
+                &[
+                    ("action", "string", true),
+                    ("arguments", "object", true),
+                    ("server", "string", false),
+                ],
+            ),
+        ];
+        let mut definitions: Vec<_> = definitions
+            .into_iter()
+            .map(|(name, description, class, properties)| {
+                jarvis_agent::schema_definition(name, description, class, properties)
+            })
+            .collect();
+        for (tool_name, server_id) in [
+            ("web_search", "zai_search"),
+            ("web_reader", "zai_reader"),
+            ("vision_analyze", "zai_vision"),
+        ] {
+            if let Some(definition) = definitions
+                .iter_mut()
+                .find(|definition| definition.harness_name.as_str() == tool_name)
+            {
+                definition.provider_scope = builtin_scope(server_id);
+            }
+        }
+        if let Some(web) = &self.web {
+            definitions.extend(crate::web_service::WebService::scoped_definitions(
+                web.scope(),
+            ));
+        }
+        #[cfg(feature = "bridge")]
+        if let Some(bridge) = &self.bridge {
+            definitions.extend(crate::bridge_service::bridge_definitions());
+            let _ = bridge;
+        }
+        definitions
+    }
+
+    fn execute<'a>(
+        &'a self,
+        call: &'a jarvis_domain::ToolCall,
+        context: &'a jarvis_agent::ToolContext,
+    ) -> jarvis_agent::ToolFuture<'a, Result<jarvis_agent::ToolResult, jarvis_agent::ToolError>>
+    {
+        if parse_mcp_gateway_name(call.tool_id.as_str()).is_some() {
+            let gateway = McpGatewayExecutor {
+                plugin_root: self.plugin_root.clone(),
+                mcp: self.mcp.clone(),
+            };
+            return Box::pin(async move {
+                jarvis_agent::ToolExecutor::execute(&gateway, call, context).await
+            });
+        }
+        #[cfg(feature = "bridge")]
+        if crate::bridge_service::BRIDGE_TOOL_NAMES.contains(&call.tool_id.as_str()) {
+            if let Some(bridge) = &self.bridge {
+                return jarvis_agent::ToolService::execute(bridge.as_ref(), call, context);
+            }
+            return Box::pin(async {
+                Err(jarvis_agent::ToolError::Failed(
+                    "Bridge tools are disabled.".into(),
+                ))
+            });
+        }
+        if crate::web_service::WEB_TOOL_NAMES.contains(&call.tool_id.as_str()) {
+            if let Some(web) = &self.web {
+                return jarvis_agent::ToolService::execute(web.as_ref(), call, context);
+            }
+            return Box::pin(async {
+                Err(jarvis_agent::ToolError::Failed(
+                    "Web tools are disabled.".into(),
+                ))
+            });
+        }
+        let stores = Arc::clone(&self.stores);
+        let core = Arc::clone(&self.core);
+        let cron_root = self.cron_root.clone();
+        let plugin_loader = self.plugin_loader.clone();
+        let trusted_publishers = self.trusted_publishers.clone();
+        let plugin_root = self.plugin_root.clone();
+        let mcp = self.mcp.clone();
+        let session_root = self.session_root.clone();
+        let worker_factory = self.worker_factory.clone();
+        let worker_service = self.read_only_worker_service();
+        let name = call.tool_id.as_str().to_owned();
+        let arguments = call.arguments.clone();
+        Box::pin(async move {
+            match name.as_str() {
+                "cronjob" | "session_search" | "delegate_task" | "semantic_code"
+                | "apply_patch_set" | "batch_read" | "run_workflow" | "plugin_package"
+                | "worktree_worker" | "mcp_search" | "mcp_list_tools" | "mcp_call"
+                | "search_tools" | "web_search" | "web_reader" | "vision_analyze"
+                | "browser_ui" => {
+                    execute_extended_tui_tool(
+                        &name,
+                        &arguments,
+                        context,
+                        &core,
+                        &cron_root,
+                        plugin_loader.as_deref(),
+                        &trusted_publishers,
+                        &plugin_root,
+                        mcp,
+                        &session_root,
+                        worker_factory.as_deref(),
+                        worker_service,
+                    )
+                    .await
+                }
+                _ => execute_tui_tool(&name, &arguments, &stores),
+            }
+        })
+    }
+}
+
+#[cfg(test)]
+mod mcp_session_tests;

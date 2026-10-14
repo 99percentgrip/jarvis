@@ -1,0 +1,67 @@
+#![forbid(unsafe_code)]
+//! `vesper-agent` — multi-turn tool-executing agent loop (ADR 0010, Tier C).
+//!
+//! Composes `vesper-runtime`'s single-turn provider dispatch into a ReAct
+//! agent loop bounded by `max_tool_iterations`. Owns the tool registry, the
+//! permission gate, and the loop mechanics. The runtime stays pure and
+//! single-turn; this crate holds the multi-turn, tool-executing layer above
+//! it.
+//!
+//! ## Layout
+//!
+//! - [`executor`] — `ToolExecutor` trait, `ToolContext`, `ToolResult`.
+//! - [`tools`] — the nine parity-critical confined executors.
+//! - [`registry`] — `ToolRegistry` mapping tool names → executors.
+//! - [`permission`] — pure `(mode × permission × class)` gate.
+//! - [`agent_loop`] — the `AgentLoop` ReAct driver.
+//!
+//! ## DOX
+//!
+//! See `crates/jarvis-agent/AGENTS.md` for purpose, ownership, contracts, and
+//! verification.
+
+pub mod acceptance;
+pub mod agent_loop;
+pub mod compaction;
+pub mod confinement;
+pub mod executor;
+pub mod permission;
+pub mod planning;
+pub mod project_context;
+pub mod provider_output;
+pub mod providers;
+pub mod references;
+pub mod registry;
+pub mod sandbox_route;
+pub mod tools;
+pub mod vro;
+
+pub use agent_loop::{
+    ABSOLUTE_MAX_TOOL_ITERATIONS, AgentHistoryPort, AgentLoop, AgentLoopConfig, AgentLoopError,
+    AgentProgressEvent, AgentProgressPort, AgentSteeringPort, AgentTurnOutcome,
+    DEFAULT_MAX_TOOL_ITERATIONS, ENABLED_DEFAULT_MAX_TOOL_ITERATIONS,
+};
+pub use compaction::{
+    AUTO_COMPACT_PERCENT, CONTEXT_PRESSURE_THRESHOLDS, CompactionCommit, CompactionError,
+    CompactionReason, CompactionReport, ContextPressure, NativeCompactionPolicy,
+    RESPONSE_RESERVE_TOKENS, estimate_context_tokens,
+};
+pub use executor::{
+    HostedTool, ToolContext, ToolError, ToolExecutor, ToolFuture, ToolResult, ToolService,
+    schema_definition,
+};
+pub use permission::{
+    ApprovalBroker, DenyPermissionPort, PermissionDecision, PermissionPort, PermissionRequest,
+    check_tool_permission,
+};
+pub use project_context::{MAX_PROJECT_CONTEXT_BYTES, project_instructions};
+pub use provider_output::render_provider_citations;
+pub use references::{
+    MAX_FOLDER_FILES, MAX_REFERENCE_BYTES, MAX_REFERENCE_FILE_BYTES, MAX_REFERENCES,
+    ReferenceError, expand_references,
+};
+pub use registry::ToolRegistry;
+// VRO-13 PR-4: the sandbox port names this type; harness adapters use the
+// re-export instead of a direct vesper-provider dependency.
+pub use jarvis_provider::CancellationSignal;
+pub use vro::{TaskProfiler, VroOrchestrator, VroRoutingDecision};

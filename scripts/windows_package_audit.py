@@ -8,6 +8,8 @@ import struct
 
 EXECUTABLES = ("agent-vesper-acp.exe", "agent-vesper-tui.exe",
                "vesper-web-fetch.exe", "sandbox_init.exe")
+BUILD_EXECUTABLES = ("jarvis-acp.exe", "jarvis-tui.exe",
+                     "jarvis-web-fetch.exe", "jarvis-sandbox-init.exe")
 RUNTIME = re.compile(r"^(?:vcruntime\d.*|msvcp\d.*|msvcr\d.*|ucrtbase|"
                      r"api-ms-win-crt-.*)\.dll$", re.IGNORECASE)
 
@@ -88,9 +90,9 @@ def pe_imports(data):
     return sorted(imports, key=str.lower)
 
 
-def audit(bundle):
+def audit(bundle, executables=EXECUTABLES):
     results = {}
-    for executable in EXECUTABLES:
+    for executable in executables:
         path = bundle / executable
         imports = pe_imports(path.read_bytes())
         forbidden = [dll for dll in imports if RUNTIME.fullmatch(dll)]
@@ -103,9 +105,10 @@ def audit(bundle):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("bundle", type=Path)
+    parser.add_argument("--build-targets", action="store_true", help="audit Stage 2 compiled target names; legacy release payloads remain default")
     args = parser.parse_args()
     try:
-        results = audit(args.bundle)
+        results = audit(args.bundle, BUILD_EXECUTABLES if args.build_targets else EXECUTABLES)
     except (ValueError, OSError) as error:
         parser.exit(1, f"error: Windows release package audit: {error}\n")
     for executable, imports in results.items():

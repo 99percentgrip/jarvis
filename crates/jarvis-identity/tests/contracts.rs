@@ -140,7 +140,7 @@ fn newly_added_packages_binaries_or_runtime_dependencies_fail_verification() {
         .unwrap()
         .custom_build = true;
     assert!(validate_workspace(&changed).is_err());
-    for target in ["jarvis-identity", "vesper-domain"] {
+    for target in ["jarvis-identity", "jarvis-domain"] {
         let mut changed = actual.clone();
         changed
             .iter_mut()
@@ -176,7 +176,7 @@ fn package_executable_and_import_targets_are_collision_free() {
             assert!(binaries.insert(b.planned));
         }
     }
-    assert!(binaries.contains(PRODUCT.slug));
+    assert!(binaries.contains("jarvis-tui"));
     assert!(binaries.contains("jarvis-acp"));
 }
 
@@ -310,7 +310,7 @@ fn acp_repository_provenance_and_release_ownership_agree_with_real_source() {
 
 #[test]
 fn all_five_planned_platform_roots_are_disjoint_from_actual_legacy_defaults() {
-    use vesper_config::{PathEnvironment, Platform as LegacyPlatform, VesperPaths};
+    use jarvis_config::{PathEnvironment, Platform as LegacyPlatform, VesperPaths};
     let inputs = PathInputs {
         home: "/identity-fixture/home".into(),
         config_base: "/identity-fixture/home/.config".into(),

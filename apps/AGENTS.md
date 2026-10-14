@@ -16,5 +16,5 @@ domain, provider, runtime, or protocol business logic.
 
 ## Child DOX Index
 
-- `agent-vesper-acp/AGENTS.md` — ACP stdio composition and process lifecycle.
-- `agent-vesper-tui/AGENTS.md` — Stage 11b Terminal User Interface.
+- `jarvis-acp/AGENTS.md` — ACP stdio composition and process lifecycle.
+- `jarvis-tui/AGENTS.md` — Stage 11b Terminal User Interface.

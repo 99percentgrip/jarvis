@@ -1,0 +1,1199 @@
+//! MCP server registry + stdio JSON-RPC client.
+//!
+//! [`McpRegistry`] is the persistent backing for `/mcp`: a config-driven
+//! list of MCP servers (stdio command or future HTTP URL). [`McpClient`]
+//! is a bounded JSON-RPC 2.0 over stdio client that performs the MCP
+//! handshake and supports discovery plus `tools/call`. The subprocess is
+//! owned by a call or an explicit conversation-scoped session.
+
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::sync::Mutex;
+use std::time::SystemTime;
+
+use jarvis_domain::{ProviderId, ToolProviderScope};
+use jarvis_security::SecretValue;
+use serde::{Deserialize, Serialize};
+
+use crate::error::McpError;
+use crate::plugins::{append_line, read_all_jsonl};
+
+/// MCP protocol version this client advertises (mirrors the oracle's
+/// `MCP_PROTOCOL_VERSION = "2025-06-18"`).
+pub const MCP_PROTOCOL_VERSION: &str = "2025-06-18";
+/// Maximum bytes of a single MCP server id.
+pub const MAX_SERVER_ID_CHARS: usize = 64;
+/// Maximum bytes of a configured command string.
+pub const MAX_COMMAND_CHARS: usize = 1024;
+/// Maximum number of MCP servers the registry will hold.
+pub const MAX_SERVERS: usize = 100;
+/// Maximum bytes of a single JSON-RPC response we will read.
+pub const MAX_RESPONSE_BYTES: usize = 1024 * 1024;
+
+/// On-demand secret resolver supplied by a composition boundary.
+///
+/// The MCP crate never knows a concrete provider or credential store. A host
+/// may bridge an adapter-owned credential source into this port; returned
+/// values remain redacted wrappers and are used only to construct the outbound
+/// authorization header or subprocess environment.
+pub trait McpCredentialResolver: Send + Sync {
+    /// Resolves one configured, non-secret credential reference.
+    fn resolve(&self, reference: &str) -> Option<SecretValue>;
+}
+
+/// Transport for an MCP server.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum McpTransport {
+    /// Spawn a subprocess and speak JSON-RPC over its stdin/stdout.
+    Stdio,
+    /// Connect to a bounded Streamable HTTP endpoint.
+    Http,
+}
+
+/// One configured MCP server.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct McpServerConfig {
+    /// Stable opaque id (e.g. `playwright`, `zai-search`).
+    pub id: String,
+    /// Transport.
+    pub transport: McpTransport,
+    /// For stdio: the executable to spawn (e.g. `npx`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub command: Option<String>,
+    /// For stdio: the argv (after the command).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub args: Vec<String>,
+    /// For HTTP: the endpoint URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// Optional environment variable name containing a bearer token. The
+    /// secret itself is never persisted in the registry.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auth_env: Option<String>,
+    /// Optional human-readable label.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    /// Active-provider eligibility for this trusted backend. Custom servers
+    /// default to provider-neutral; protected presets may be provider-scoped.
+    #[serde(default)]
+    pub provider_scope: ToolProviderScope,
+    /// Creation timestamp.
+    pub created_at: SystemTime,
+}
+
+impl McpServerConfig {
+    /// Validates the config against the bounded contract.
+    pub fn validate(&self) -> Result<(), McpError> {
+        if self.id.is_empty() || self.id.len() > MAX_SERVER_ID_CHARS {
+            return Err(McpError::BoundsViolated("server id length"));
+        }
+        if !self
+            .id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        {
+            return Err(McpError::BoundsViolated("server id charset"));
+        }
+        match self.transport {
+            McpTransport::Stdio => {
+                let Some(command) = &self.command else {
+                    return Err(McpError::BoundsViolated("stdio command missing"));
+                };
+                if command.len() > MAX_COMMAND_CHARS {
+                    return Err(McpError::BoundsViolated("command length"));
+                }
+            }
+            McpTransport::Http => {
+                if self.url.is_none() {
+                    return Err(McpError::BoundsViolated("http url missing"));
+                }
+                if let Some(name) = &self.auth_env
+                    && (name.is_empty()
+                        || !name
+                            .chars()
+                            .all(|character| character.is_ascii_alphanumeric() || character == '_'))
+                {
+                    return Err(McpError::BoundsViolated("auth environment name"));
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Returns the first-party MCP presets exposed by the Python oracle.
+///
+/// Presets are intentionally kept out of the persisted registry: users may
+/// add custom servers, but cannot shadow the stable web, vision, or browser
+/// routes. Credentials are resolved from the named environment variable only
+/// and are never written to this configuration.
+#[must_use]
+pub fn builtin_servers() -> Vec<McpServerConfig> {
+    vec![
+        McpServerConfig {
+            id: "zai_search".into(),
+            transport: McpTransport::Http,
+            command: None,
+            args: Vec::new(),
+            url: Some("https://api.z.ai/api/mcp/web_search_prime/mcp".into()),
+            auth_env: Some("ZAI_API_KEY".into()),
+            label: Some("Z.ai Web Search".into()),
+            provider_scope: ToolProviderScope::Provider(
+                ProviderId::new("zai").expect("static provider id"),
+            ),
+            created_at: SystemTime::UNIX_EPOCH,
+        },
+        McpServerConfig {
+            id: "zai_reader".into(),
+            transport: McpTransport::Http,
+            command: None,
+            args: Vec::new(),
+            url: Some("https://api.z.ai/api/mcp/web_reader/mcp".into()),
+            auth_env: Some("ZAI_API_KEY".into()),
+            label: Some("Z.ai Web Reader".into()),
+            provider_scope: ToolProviderScope::Provider(
+                ProviderId::new("zai").expect("static provider id"),
+            ),
+            created_at: SystemTime::UNIX_EPOCH,
+        },
+        McpServerConfig {
+            id: "zai_vision".into(),
+            transport: McpTransport::Stdio,
+            command: Some("npx".into()),
+            args: vec!["-y".into(), "@z_ai/mcp-server@latest".into()],
+            url: None,
+            auth_env: Some("ZAI_API_KEY".into()),
+            label: Some("Z.ai Vision".into()),
+            provider_scope: ToolProviderScope::Provider(
+                ProviderId::new("zai").expect("static provider id"),
+            ),
+            created_at: SystemTime::UNIX_EPOCH,
+        },
+        McpServerConfig {
+            id: "playwright".into(),
+            transport: McpTransport::Stdio,
+            command: Some("npx".into()),
+            args: vec![
+                "-y".into(),
+                "@playwright/mcp@latest".into(),
+                "--headless".into(),
+                "--isolated".into(),
+            ],
+            url: None,
+            auth_env: None,
+            label: Some("Playwright Browser".into()),
+            provider_scope: ToolProviderScope::Any,
+            created_at: SystemTime::UNIX_EPOCH,
+        },
+    ]
+}
+
+/// One advertised MCP tool (a subset of the MCP `Tool` schema — enough
+/// for `/mcp tools <name>` to render a useful list).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct McpToolDescriptor {
+    /// Tool name as the MCP server advertises it.
+    pub name: String,
+    /// Optional human-readable description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// JSON Schema for the tool arguments, when advertised by the server.
+    #[serde(
+        rename = "inputSchema",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub input_schema: Option<serde_json::Value>,
+}
+
+/// In-memory cache + on-disk JSONL store of [`McpServerConfig`]s.
+pub struct McpRegistry {
+    root: PathBuf,
+    state: Mutex<Vec<McpServerConfig>>,
+}
+
+impl std::fmt::Debug for McpRegistry {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("McpRegistry")
+            .field("root", &self.root)
+            .field("servers", &self.state.lock().map(|s| s.len()).unwrap_or(0))
+            .finish_non_exhaustive()
+    }
+}
+
+impl McpRegistry {
+    /// Opens (or creates) an MCP registry rooted at `root`.
+    pub fn open(root: &Path) -> Result<Self, McpError> {
+        Self::validate_root(root)?;
+        let log_path = Self::log_path(root);
+        let state = read_all_jsonl::<McpServerConfig>(&log_path)?;
+        Ok(Self {
+            root: root.to_path_buf(),
+            state: Mutex::new(state),
+        })
+    }
+
+    fn validate_root(root: &Path) -> Result<(), McpError> {
+        if !root.is_absolute() {
+            return Err(McpError::InvalidRoot);
+        }
+        match root.parent() {
+            Some(parent) if parent.as_os_str().is_empty() => Ok(()),
+            Some(parent) if parent.exists() => Ok(()),
+            _ => Err(McpError::InvalidRoot),
+        }
+    }
+
+    fn log_path(root: &Path) -> PathBuf {
+        root.join("mcp.jsonl")
+    }
+
+    /// Returns the current server count.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.state
+            .lock()
+            .expect("mcp registry mutex poisoned")
+            .len()
+    }
+
+    /// Returns true when the registry holds no servers.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Lists every configured server.
+    #[must_use]
+    pub fn list(&self) -> Vec<McpServerConfig> {
+        self.state
+            .lock()
+            .expect("mcp registry mutex poisoned")
+            .clone()
+    }
+
+    /// Returns the server with the given id, if any.
+    #[must_use]
+    pub fn get(&self, id: &str) -> Option<McpServerConfig> {
+        self.state
+            .lock()
+            .expect("mcp registry mutex poisoned")
+            .iter()
+            .find(|server| server.id == id)
+            .cloned()
+    }
+
+    /// Returns a custom server or one of the protected first-party presets.
+    #[must_use]
+    pub fn get_with_builtins(&self, id: &str) -> Option<McpServerConfig> {
+        builtin_servers()
+            .into_iter()
+            .find(|server| server.id == id)
+            .or_else(|| self.get(id))
+    }
+
+    /// Lists custom servers together with the protected first-party presets.
+    #[must_use]
+    pub fn list_with_builtins(&self) -> Vec<McpServerConfig> {
+        let custom = self.list();
+        let builtins = builtin_servers();
+        let builtin_ids = builtins
+            .iter()
+            .map(|server| server.id.clone())
+            .collect::<std::collections::BTreeSet<_>>();
+        let mut servers = builtins;
+        servers.extend(
+            custom
+                .into_iter()
+                .filter(|server| !builtin_ids.contains(&server.id)),
+        );
+        servers
+    }
+
+    /// Adds a configured server. Idempotent on the id.
+    pub fn add(&self, mut config: McpServerConfig) -> Result<McpServerConfig, McpError> {
+        config.validate()?;
+        if builtin_servers()
+            .iter()
+            .any(|builtin| builtin.id == config.id)
+        {
+            return Err(McpError::BuiltinServerProtected(config.id));
+        }
+        let mut state = self.state.lock().expect("mcp registry mutex poisoned");
+        if state.len() >= MAX_SERVERS {
+            return Err(McpError::BoundsViolated("server count"));
+        }
+        config.created_at = SystemTime::now();
+        // Replace if the id already exists.
+        state.retain(|existing| existing.id != config.id);
+        let serialized = serde_json::to_string(&config)?;
+        append_line(&Self::log_path(&self.root), &serialized)?;
+        state.push(config.clone());
+        Ok(config)
+    }
+
+    /// Removes the server with the given id. Idempotent.
+    pub fn remove(&self, id: &str) -> Result<bool, McpError> {
+        if builtin_servers().iter().any(|builtin| builtin.id == id) {
+            return Err(McpError::BuiltinServerProtected(id.to_owned()));
+        }
+        let mut state = self.state.lock().expect("mcp registry mutex poisoned");
+        let before = state.len();
+        state.retain(|server| server.id != id);
+        let removed = before != state.len();
+        if removed {
+            // Rewrite the log atomically.
+            let mut buffer = String::new();
+            for server in state.iter() {
+                buffer.push_str(&serde_json::to_string(server)?);
+                buffer.push('\n');
+            }
+            atomic_write(&Self::log_path(&self.root), buffer.as_bytes())?;
+        }
+        Ok(removed)
+    }
+}
+
+/// Minimal bounded MCP client. Each operation uses a fresh scoped stdio
+/// subprocess, performs the handshake, and then performs discovery or one
+/// tool call. The client does not retain processes or credentials between
+/// operations.
+pub struct McpClient;
+
+impl McpClient {
+    /// Connects to the configured stdio server, performs the MCP
+    /// handshake, and lists the advertised tools. Returns the tool
+    /// descriptors.
+    pub fn tools(config: &McpServerConfig) -> Result<Vec<McpToolDescriptor>, McpError> {
+        Self::tools_with_credentials(config, None)
+    }
+
+    pub(crate) fn tools_with_credentials(
+        config: &McpServerConfig,
+        credentials: Option<&dyn McpCredentialResolver>,
+    ) -> Result<Vec<McpToolDescriptor>, McpError> {
+        if config.transport == McpTransport::Http {
+            return http_tools(config, credentials);
+        }
+        let mut process = McpProcess::spawn(config)?;
+        process.initialize()?;
+        let tools_response = process.request(2, "tools/list", serde_json::json!({}))?;
+        // Parse the result.tools array.
+        let tools_value = tools_response
+            .get("result")
+            .and_then(|result| result.get("tools"))
+            .cloned()
+            .unwrap_or(serde_json::Value::Array(Vec::new()));
+        let mut tools = Vec::new();
+        if let Some(array) = tools_value.as_array() {
+            for entry in array {
+                let name = entry
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("(unnamed)")
+                    .to_string();
+                let description = entry
+                    .get("description")
+                    .and_then(|v| v.as_str())
+                    .map(String::from);
+                tools.push(McpToolDescriptor {
+                    name,
+                    description,
+                    input_schema: entry.get("inputSchema").cloned(),
+                });
+            }
+        }
+        Ok(tools)
+    }
+
+    /// Calls one advertised tool and returns the MCP `result` object. The
+    /// result remains JSON so hosts can preserve structured content while
+    /// applying their own output rendering and bounds.
+    pub fn call_tool(
+        config: &McpServerConfig,
+        tool: &str,
+        arguments: serde_json::Value,
+    ) -> Result<serde_json::Value, McpError> {
+        Self::call_tool_with_credentials(config, tool, arguments, None)
+    }
+
+    pub(crate) fn call_tool_with_credentials(
+        config: &McpServerConfig,
+        tool: &str,
+        arguments: serde_json::Value,
+        credentials: Option<&dyn McpCredentialResolver>,
+    ) -> Result<serde_json::Value, McpError> {
+        if tool.is_empty() || tool.len() > MAX_COMMAND_CHARS {
+            return Err(McpError::BoundsViolated("tool name length"));
+        }
+        if !arguments.is_object() {
+            return Err(McpError::BoundsViolated("tool arguments must be an object"));
+        }
+        if config.transport == McpTransport::Http {
+            let (_, session) = http_request_with_session(
+                config,
+                1,
+                "initialize",
+                serde_json::json!({
+                    "protocolVersion": MCP_PROTOCOL_VERSION,
+                    "capabilities": {},
+                    "clientInfo": {"name": "agent-vesper-tui", "version": env!("CARGO_PKG_VERSION")}
+                }),
+                None,
+                credentials,
+            )?;
+            http_notification(
+                config,
+                "notifications/initialized",
+                session.as_deref(),
+                credentials,
+            )?;
+            return http_request_with_session(
+                config,
+                2,
+                "tools/call",
+                serde_json::json!({"name": tool, "arguments": arguments}),
+                session.as_deref(),
+                credentials,
+            )?
+            .0
+            .get("result")
+            .cloned()
+            .ok_or(McpError::Http("tool call returned no result"));
+        }
+        let mut process = McpProcess::spawn(config)?;
+        process.initialize()?;
+        let response = process.request(
+            2,
+            "tools/call",
+            serde_json::json!({"name": tool, "arguments": arguments}),
+        )?;
+        response
+            .get("result")
+            .cloned()
+            .ok_or(McpError::Subprocess("tool call returned no result"))
+    }
+}
+
+fn http_tools(
+    config: &McpServerConfig,
+    credentials: Option<&dyn McpCredentialResolver>,
+) -> Result<Vec<McpToolDescriptor>, McpError> {
+    let (_, session) = http_request_with_session(
+        config,
+        1,
+        "initialize",
+        serde_json::json!({
+            "protocolVersion": MCP_PROTOCOL_VERSION,
+            "capabilities": {},
+            "clientInfo": {"name": "agent-vesper-tui", "version": env!("CARGO_PKG_VERSION")}
+        }),
+        None,
+        credentials,
+    )?;
+    http_notification(
+        config,
+        "notifications/initialized",
+        session.as_deref(),
+        credentials,
+    )?;
+    let response = http_request_with_session(
+        config,
+        2,
+        "tools/list",
+        serde_json::json!({}),
+        session.as_deref(),
+        credentials,
+    )?
+    .0;
+    let mut tools = Vec::new();
+    if let Some(array) = response
+        .get("result")
+        .and_then(|result| result.get("tools"))
+        .and_then(serde_json::Value::as_array)
+    {
+        for entry in array {
+            let name = entry
+                .get("name")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("(unnamed)")
+                .to_owned();
+            tools.push(McpToolDescriptor {
+                name,
+                description: entry
+                    .get("description")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_owned),
+                input_schema: entry.get("inputSchema").cloned(),
+            });
+        }
+    }
+    Ok(tools)
+}
+
+fn http_request_with_session(
+    config: &McpServerConfig,
+    id: u64,
+    method: &str,
+    params: serde_json::Value,
+    session: Option<&str>,
+    credentials: Option<&dyn McpCredentialResolver>,
+) -> Result<(serde_json::Value, Option<String>), McpError> {
+    let url = config.url.as_deref().ok_or(McpError::Http("url missing"))?;
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|_| McpError::Http("client"))?;
+    let mut request = client
+        .post(url)
+        .header("content-type", "application/json")
+        .header("Accept", "application/json, text/event-stream")
+        .header("MCP-Protocol-Version", MCP_PROTOCOL_VERSION)
+        .header("Mcp-Method", method)
+        .json(&serde_json::json!({"jsonrpc":"2.0","id":id,"method":method,"params":params}));
+    if let Some(session) = session {
+        request = request.header("Mcp-Session-Id", session);
+    }
+    if method == "tools/call"
+        && let Some(name) = params.get("name").and_then(serde_json::Value::as_str)
+    {
+        request = request.header("Mcp-Name", name);
+    }
+    if config.auth_env.is_some() {
+        let token = resolve_auth_token(config, credentials)?;
+        if token.expose().as_str().len() > 8 * 1024 {
+            return Err(McpError::BoundsViolated("auth token size"));
+        }
+        request = request.bearer_auth(token.expose().as_str());
+    }
+    let response = request.send().map_err(|_| McpError::Http("send"))?;
+    let status = response.status();
+    let session_id = response
+        .headers()
+        .get("Mcp-Session-Id")
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_owned);
+    let content_type = response
+        .headers()
+        .get("content-type")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    let bytes = response.bytes().map_err(|_| McpError::Http("body"))?;
+    if bytes.len() > MAX_RESPONSE_BYTES {
+        return Err(McpError::BoundsViolated("response size"));
+    }
+    let decoded = decode_http_payload(&bytes, &content_type);
+    if !status.is_success() {
+        return Err(remote_response_error(
+            Some(status.as_u16()),
+            decoded.ok().as_ref(),
+        ));
+    }
+    let value = decoded?;
+    if value.get("error").is_some() {
+        return Err(remote_response_error(Some(status.as_u16()), Some(&value)));
+    }
+    Ok((value, session_id))
+}
+
+fn http_notification(
+    config: &McpServerConfig,
+    method: &str,
+    session: Option<&str>,
+    credentials: Option<&dyn McpCredentialResolver>,
+) -> Result<(), McpError> {
+    let url = config.url.as_deref().ok_or(McpError::Http("url missing"))?;
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|_| McpError::Http("client"))?;
+    let mut request = client
+        .post(url)
+        .header("content-type", "application/json")
+        .header("Accept", "application/json, text/event-stream")
+        .header("MCP-Protocol-Version", MCP_PROTOCOL_VERSION)
+        .header("Mcp-Method", method)
+        .json(&serde_json::json!({"jsonrpc":"2.0","method":method}));
+    if let Some(session) = session {
+        request = request.header("Mcp-Session-Id", session);
+    }
+    if config.auth_env.is_some() {
+        let token = resolve_auth_token(config, credentials)?;
+        if token.expose().as_str().len() > 8 * 1024 {
+            return Err(McpError::BoundsViolated("auth token size"));
+        }
+        request = request.bearer_auth(token.expose().as_str());
+    }
+    let response = request.send().map_err(|_| McpError::Http("send"))?;
+    if !response.status().is_success() {
+        return Err(McpError::RemoteResponse {
+            http_status: Some(response.status().as_u16()),
+            jsonrpc_code: None,
+            category: safe_remote_category(Some(response.status().as_u16()), None),
+        });
+    }
+    Ok(())
+}
+
+fn resolve_auth_token(
+    config: &McpServerConfig,
+    credentials: Option<&dyn McpCredentialResolver>,
+) -> Result<SecretValue, McpError> {
+    let reference = config
+        .auth_env
+        .as_deref()
+        .ok_or(McpError::Http("auth reference missing"))?;
+    if let Some(secret) = credentials.and_then(|resolver| resolver.resolve(reference)) {
+        return Ok(secret);
+    }
+    std::env::var(reference)
+        .or_else(|_| {
+            if reference == "ZAI_API_KEY" {
+                std::env::var("Z_AI_API_KEY")
+            } else {
+                Err(std::env::VarError::NotPresent)
+            }
+        })
+        .map(SecretValue::new)
+        .map_err(|_| McpError::Http("auth unavailable"))
+}
+
+fn remote_response_error(http_status: Option<u16>, value: Option<&serde_json::Value>) -> McpError {
+    let error = value.and_then(|payload| payload.get("error"));
+    let jsonrpc_code = error
+        .and_then(|error| error.get("code"))
+        .and_then(serde_json::Value::as_i64);
+    McpError::RemoteResponse {
+        http_status,
+        jsonrpc_code,
+        category: safe_remote_category(http_status, jsonrpc_code),
+    }
+}
+
+fn safe_remote_category(http_status: Option<u16>, jsonrpc_code: Option<i64>) -> &'static str {
+    match http_status {
+        Some(401) => "authentication-rejected",
+        Some(403) => "authorization-or-entitlement-rejected",
+        Some(404) => "remote-service-not-found",
+        Some(408 | 504) => "remote-timeout",
+        Some(409) => "remote-conflict",
+        Some(429) => "remote-rate-limited",
+        Some(400..=499) => "remote-request-rejected",
+        Some(500..=599) => "remote-server-failure",
+        Some(_) => "remote-http-failure",
+        None if jsonrpc_code.is_some() => "remote-jsonrpc-failure",
+        None => "remote-response-failure",
+    }
+}
+
+fn decode_http_payload(bytes: &[u8], content_type: &str) -> Result<serde_json::Value, McpError> {
+    if content_type.contains("text/event-stream") {
+        let text = std::str::from_utf8(bytes).map_err(|_| McpError::Http("parse"))?;
+        let mut last = None;
+        for line in text.lines() {
+            if let Some(data) = line.strip_prefix("data:") {
+                let data = data.trim();
+                if !data.is_empty() {
+                    last = Some(serde_json::from_str(data).map_err(|_| McpError::Http("parse"))?);
+                }
+            }
+        }
+        return last.ok_or(McpError::Http("empty event stream"));
+    }
+    serde_json::from_slice(bytes).map_err(|_| McpError::Http("parse"))
+}
+
+/// A single scoped MCP subprocess. The reader is retained across requests;
+/// creating a fresh `BufReader` per request could discard bytes a server
+/// wrote ahead of the response being awaited.
+type McpWrite = (String, std::sync::mpsc::SyncSender<Result<(), McpError>>);
+
+pub(crate) struct McpProcess {
+    child: std::process::Child,
+    writer: Option<std::sync::mpsc::SyncSender<McpWrite>>,
+    responses: std::sync::mpsc::Receiver<Result<(serde_json::Value, usize), McpError>>,
+}
+
+impl McpProcess {
+    pub(crate) fn spawn(config: &McpServerConfig) -> Result<Self, McpError> {
+        config.validate()?;
+        if config.transport != McpTransport::Stdio {
+            return Err(McpError::Subprocess("non-stdio transport"));
+        }
+        let command = config
+            .command
+            .as_ref()
+            .ok_or(McpError::Subprocess("missing command"))?;
+        let mut process = Command::new(command);
+        process
+            .args(&config.args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null());
+        if config.id == "playwright" {
+            for (key, _) in std::env::vars() {
+                let uppercase = key.to_ascii_uppercase();
+                if uppercase.ends_with("_API_KEY")
+                    || uppercase.ends_with("_TOKEN")
+                    || uppercase.ends_with("_SECRET")
+                    || uppercase.ends_with("_PASSWORD")
+                    || uppercase.ends_with("_CREDENTIAL")
+                    || uppercase.ends_with("_PRIVATE_KEY")
+                    || uppercase.ends_with("_ACCESS_KEY")
+                    || uppercase == "SSH_AUTH_SOCK"
+                {
+                    process.env_remove(key);
+                }
+            }
+        }
+        if config.id == "zai_vision"
+            && let Some(environment) = &config.auth_env
+        {
+            let token = std::env::var(environment)
+                .or_else(|_| {
+                    if environment == "ZAI_API_KEY" {
+                        std::env::var("Z_AI_API_KEY")
+                    } else {
+                        Err(std::env::VarError::NotPresent)
+                    }
+                })
+                .map_err(|_| McpError::Http("auth unavailable"))?;
+            if token.len() > 8 * 1024 {
+                return Err(McpError::BoundsViolated("auth token size"));
+            }
+            process.env("Z_AI_API_KEY", token);
+            process.env("Z_AI_MODE", "ZAI");
+        }
+        let mut child = process.spawn().map_err(|_| McpError::Subprocess("spawn"))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or(McpError::Subprocess("no stdout"))?;
+        let stdin = child.stdin.take().ok_or(McpError::Subprocess("no stdin"))?;
+        let (writer, writes) = std::sync::mpsc::sync_channel::<McpWrite>(1);
+        std::thread::Builder::new()
+            .name("mcp-stdin".into())
+            .spawn(move || {
+                let mut stdin = stdin;
+                while let Ok((line, reply)) = writes.recv() {
+                    let result = write_line(Some(&mut stdin), &line);
+                    let failed = result.is_err();
+                    if reply.send(result).is_err() || failed {
+                        break;
+                    }
+                }
+            })
+            .map_err(|_| {
+                let _ = child.kill();
+                let _ = child.wait();
+                McpError::Subprocess("writer thread spawn")
+            })?;
+        let (sender, responses) = std::sync::mpsc::sync_channel(1);
+        std::thread::Builder::new()
+            .name("mcp-stdout".into())
+            .spawn(move || {
+                use std::io::{BufRead, Read};
+                let mut stdout = std::io::BufReader::new(stdout);
+                loop {
+                    let mut bytes = Vec::new();
+                    let result = match stdout
+                        .by_ref()
+                        .take((MAX_RESPONSE_BYTES + 1) as u64)
+                        .read_until(b'\n', &mut bytes)
+                    {
+                        Ok(0) => Err(McpError::Subprocess("no response")),
+                        Ok(_) if bytes.len() > MAX_RESPONSE_BYTES => {
+                            Err(McpError::BoundsViolated("response size"))
+                        }
+                        Ok(_) if bytes.iter().all(u8::is_ascii_whitespace) => {
+                            Ok(serde_json::Value::Null)
+                        }
+                        Ok(_) => serde_json::from_slice(&bytes)
+                            .map_err(|_| McpError::Subprocess("parse")),
+                        Err(_) => Err(McpError::Subprocess("read")),
+                    };
+                    let result = result.map(|value| (value, bytes.len()));
+                    let failed = result.is_err();
+                    if sender.send(result).is_err() || failed {
+                        break;
+                    }
+                }
+            })
+            .map_err(|_| {
+                let _ = child.kill();
+                let _ = child.wait();
+                McpError::Subprocess("reader thread spawn")
+            })?;
+        Ok(Self {
+            child,
+            writer: Some(writer),
+            responses,
+        })
+    }
+
+    fn initialize(&mut self) -> Result<(), McpError> {
+        self.initialize_cancellable(
+            std::time::Instant::now() + std::time::Duration::from_secs(60),
+            &|| false,
+        )
+    }
+
+    pub(crate) fn initialize_cancellable(
+        &mut self,
+        deadline: std::time::Instant,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Result<(), McpError> {
+        let response = self.request_cancellable(
+            1,
+            "initialize",
+            serde_json::json!({
+                "protocolVersion": MCP_PROTOCOL_VERSION, "capabilities": {},
+                "clientInfo": {"name": "agent-vesper", "version": env!("CARGO_PKG_VERSION")}
+            }),
+            deadline,
+            cancelled,
+        )?;
+        if response.get("error").is_some() || response.get("result").is_none() {
+            return Err(McpError::Subprocess("initialization rejected"));
+        }
+        self.write_bounded(
+            jsonrpc_notification("notifications/initialized", serde_json::json!({})),
+            deadline,
+            cancelled,
+        )
+    }
+
+    fn request(
+        &mut self,
+        id: u64,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, McpError> {
+        self.request_cancellable(
+            id,
+            method,
+            params,
+            std::time::Instant::now() + std::time::Duration::from_secs(60),
+            &|| false,
+        )
+    }
+
+    pub(crate) fn request_cancellable(
+        &mut self,
+        id: u64,
+        method: &str,
+        params: serde_json::Value,
+        deadline: std::time::Instant,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Result<serde_json::Value, McpError> {
+        self.write_bounded(jsonrpc_request(id, method, params), deadline, cancelled)?;
+        let mut total = 0usize;
+        loop {
+            let (value, bytes) = receive_bounded(&self.responses, deadline, cancelled)??;
+            total = total.saturating_add(bytes);
+            if total > MAX_RESPONSE_BYTES {
+                return Err(McpError::BoundsViolated("response size"));
+            }
+            if value.get("id") == Some(&serde_json::Value::from(id)) {
+                return Ok(value);
+            }
+        }
+    }
+
+    fn write_bounded(
+        &self,
+        line: String,
+        deadline: std::time::Instant,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Result<(), McpError> {
+        if cancelled() {
+            return Err(McpError::Subprocess("cancelled before dispatch"));
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err(McpError::Subprocess("deadline expired before dispatch"));
+        }
+        if line.len() > MAX_RESPONSE_BYTES {
+            return Err(McpError::BoundsViolated("request size"));
+        }
+        let (reply, received) = std::sync::mpsc::sync_channel(1);
+        self.writer
+            .as_ref()
+            .ok_or(McpError::Subprocess("closed stdin"))?
+            .try_send((line, reply))
+            .map_err(|_| McpError::Subprocess("writer unavailable"))?;
+        receive_bounded(&received, deadline, cancelled)?
+    }
+}
+
+fn receive_bounded<T>(
+    receiver: &std::sync::mpsc::Receiver<T>,
+    deadline: std::time::Instant,
+    cancelled: &dyn Fn() -> bool,
+) -> Result<T, McpError> {
+    loop {
+        if cancelled() {
+            return Err(McpError::Subprocess(
+                "cancelled; dispatched effects may be unknown",
+            ));
+        }
+        let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(McpError::Subprocess(
+                "timeout; dispatched effects may be unknown",
+            ));
+        }
+        match receiver.recv_timeout(remaining.min(std::time::Duration::from_millis(20))) {
+            Ok(value) => return Ok(value),
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+            Err(_) => {
+                return Err(McpError::Subprocess(
+                    "transport disconnected; effects may be unknown",
+                ));
+            }
+        }
+    }
+}
+
+impl Drop for McpProcess {
+    fn drop(&mut self) {
+        // EOF lets cooperative servers close their browser children first.
+        self.writer.take();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_millis(300);
+        while std::time::Instant::now() < deadline {
+            if matches!(self.child.try_wait(), Ok(Some(_))) {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
+/// Writes one JSON-RPC line to the child's stdin.
+fn write_line(stdin: Option<&mut std::process::ChildStdin>, line: &str) -> Result<(), McpError> {
+    use std::io::Write;
+    let Some(stdin) = stdin else {
+        return Err(McpError::Subprocess("no stdin"));
+    };
+    writeln!(stdin, "{line}").map_err(|_| McpError::Subprocess("write"))?;
+    stdin.flush().map_err(|_| McpError::Subprocess("flush"))?;
+    Ok(())
+}
+
+/// Builds a JSON-RPC 2.0 request string.
+fn jsonrpc_request(id: u64, method: &str, params: serde_json::Value) -> String {
+    serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "method": method,
+        "params": params,
+    })
+    .to_string()
+}
+
+/// Builds a JSON-RPC 2.0 notification string (no id).
+fn jsonrpc_notification(method: &str, params: serde_json::Value) -> String {
+    serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": method,
+        "params": params,
+    })
+    .to_string()
+}
+
+/// Atomic write helper.
+fn atomic_write(target: &Path, payload: &[u8]) -> Result<(), McpError> {
+    use std::io::Write;
+    let parent = target.parent().ok_or(McpError::InvalidRoot)?;
+    let temp = parent.join(format!(
+        ".{}.tmp",
+        target
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("mcp")
+    ));
+    {
+        let mut file = std::fs::File::create(&temp).map_err(|_| McpError::io("create"))?;
+        file.write_all(payload).map_err(|_| McpError::io("write"))?;
+        file.sync_all().map_err(|_| McpError::io("fsync"))?;
+    }
+    std::fs::rename(&temp, target).map_err(|_| McpError::io("rename"))?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    //! MCP registry: add, remove, persistence; client validation.
+
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    fn registry_under(temp: &TempDir) -> (PathBuf, McpRegistry) {
+        let root = temp.path().join("mcp-root");
+        fs::create_dir_all(&root).unwrap();
+        let registry = McpRegistry::open(&root).unwrap();
+        (root, registry)
+    }
+
+    #[test]
+    fn add_persists_across_reopen() {
+        let temp = TempDir::new().unwrap();
+        let (root, registry) = registry_under(&temp);
+        let config = registry
+            .add(McpServerConfig {
+                id: "demo".into(),
+                transport: McpTransport::Stdio,
+                command: Some("echo".into()),
+                args: vec!["hello".into()],
+                url: None,
+                auth_env: None,
+                label: Some("Demo server".into()),
+                provider_scope: jarvis_domain::ToolProviderScope::Any,
+                created_at: SystemTime::UNIX_EPOCH,
+            })
+            .unwrap();
+        assert_eq!(config.id, "demo");
+        // Reopen from the same root.
+        let reopened = McpRegistry::open(&root).unwrap();
+        assert_eq!(reopened.len(), 1);
+        assert_eq!(reopened.list()[0].id, "demo");
+    }
+
+    #[test]
+    fn remove_unlinks_from_log() {
+        let temp = TempDir::new().unwrap();
+        let (_root, registry) = registry_under(&temp);
+        registry
+            .add(McpServerConfig {
+                id: "ephemeral".into(),
+                transport: McpTransport::Stdio,
+                command: Some("echo".into()),
+                args: Vec::new(),
+                url: None,
+                auth_env: None,
+                label: None,
+                provider_scope: jarvis_domain::ToolProviderScope::Any,
+                created_at: SystemTime::UNIX_EPOCH,
+            })
+            .unwrap();
+        assert!(registry.remove("ephemeral").unwrap());
+        assert!(!registry.remove("ephemeral").unwrap());
+        assert!(registry.list().is_empty());
+    }
+
+    #[test]
+    fn rejects_invalid_server_id() {
+        let temp = TempDir::new().unwrap();
+        let (_root, registry) = registry_under(&temp);
+        let err = registry
+            .add(McpServerConfig {
+                id: "bad id with spaces".into(),
+                transport: McpTransport::Stdio,
+                command: Some("echo".into()),
+                args: Vec::new(),
+                url: None,
+                auth_env: None,
+                label: None,
+                provider_scope: jarvis_domain::ToolProviderScope::Any,
+                created_at: SystemTime::UNIX_EPOCH,
+            })
+            .unwrap_err();
+        assert_eq!(err, McpError::BoundsViolated("server id charset"));
+    }
+
+    #[test]
+    fn rejects_stdio_config_without_command() {
+        let temp = TempDir::new().unwrap();
+        let (_root, registry) = registry_under(&temp);
+        let err = registry
+            .add(McpServerConfig {
+                id: "incomplete".into(),
+                transport: McpTransport::Stdio,
+                command: None,
+                args: Vec::new(),
+                url: None,
+                auth_env: None,
+                label: None,
+                provider_scope: jarvis_domain::ToolProviderScope::Any,
+                created_at: SystemTime::UNIX_EPOCH,
+            })
+            .unwrap_err();
+        assert_eq!(err, McpError::BoundsViolated("stdio command missing"));
+    }
+
+    #[test]
+    fn stdio_client_discovers_and_calls_a_tool() {
+        let script = r#"
+while IFS= read -r line; do
+  case "$line" in
+    *'"id":1'*) printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{}}' ;;
+    *'"method":"tools/list"'*) printf '%s\n' '{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"echo","description":"echo input","inputSchema":{"type":"object"}}]}}' ;;
+    *'"method":"tools/call"'*) printf '%s\n' '{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"ok"}],"isError":false}}' ;;
+  esac
+done
+"#;
+        let config = McpServerConfig {
+            id: "demo".into(),
+            transport: McpTransport::Stdio,
+            command: Some("sh".into()),
+            args: vec!["-c".into(), script.into()],
+            url: None,
+            auth_env: None,
+            label: None,
+            provider_scope: jarvis_domain::ToolProviderScope::Any,
+            created_at: SystemTime::UNIX_EPOCH,
+        };
+        let tools = McpClient::tools(&config).unwrap();
+        assert_eq!(tools[0].name, "echo");
+        assert_eq!(
+            tools[0].input_schema,
+            Some(serde_json::json!({"type": "object"}))
+        );
+        let result =
+            McpClient::call_tool(&config, "echo", serde_json::json!({"value": "ok"})).unwrap();
+        assert_eq!(result["isError"], false);
+        assert_eq!(result["content"][0]["text"], "ok");
+    }
+
+    #[test]
+    fn first_party_mcp_presets_are_present_and_protected() {
+        let presets = builtin_servers();
+        assert_eq!(presets.len(), 4);
+        assert!(presets.iter().any(|server| server.id == "zai_search"));
+        assert!(presets.iter().any(|server| server.id == "zai_reader"));
+        assert!(presets.iter().any(|server| server.id == "zai_vision"));
+        assert!(presets.iter().any(|server| server.id == "playwright"));
+
+        let temp = TempDir::new().unwrap();
+        let (_root, registry) = registry_under(&temp);
+        let error = registry
+            .add(McpServerConfig {
+                id: "playwright".into(),
+                transport: McpTransport::Stdio,
+                command: Some("echo".into()),
+                args: Vec::new(),
+                url: None,
+                auth_env: None,
+                label: None,
+                provider_scope: jarvis_domain::ToolProviderScope::Any,
+                created_at: SystemTime::UNIX_EPOCH,
+            })
+            .unwrap_err();
+        assert_eq!(error, McpError::BuiltinServerProtected("playwright".into()));
+    }
+
+    #[test]
+    fn streamable_http_event_payload_is_bounded_and_decoded() {
+        let value = decode_http_payload(
+            b"event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{}}\n\n",
+            "text/event-stream",
+        )
+        .unwrap();
+        assert_eq!(value["id"], 2);
+    }
+}

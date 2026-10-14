@@ -1,0 +1,77 @@
+[package]
+name = "jarvis-harness"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+base64.workspace = true
+command-group.workspace = true
+fs2 = "=0.4.3"
+# Safe native resource observations; 0.37.2 retains the project Rust 1.88 MSRV.
+sysinfo = { version = "=0.37.2", default-features = false, features = ["system"] }
+chrono.workspace = true
+regex.workspace = true
+sha2.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio = { workspace = true, features = ["process"] }
+tempfile.workspace = true
+thiserror.workspace = true
+url.workspace = true
+futures-util.workspace = true
+jarvis-policy = { path = "../jarvis-policy", version = "=0.24.14" }
+jarvis-agent = { path = "../jarvis-agent", version = "=0.24.14" }
+jarvis-checkpoints = { path = "../jarvis-checkpoints", version = "=0.24.14" }
+jarvis-config = { path = "../jarvis-config", version = "=0.24.14" }
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-mcp = { path = "../jarvis-mcp", version = "=0.24.14" }
+jarvis-memory = { path = "../jarvis-memory", version = "=0.24.14" }
+jarvis-runtime = { path = "../jarvis-runtime", version = "=0.24.14" }
+jarvis-sandbox = { path = "../jarvis-sandbox", version = "=0.24.14" }
+jarvis-bridge = { path = "../jarvis-bridge", version = "=0.24.14", optional = true }
+jarvis-sessions = { path = "../jarvis-sessions", version = "=0.24.14" }
+# VRO-14 PR-5: the web tools' pure surfaces (perception pipeline, egress
+# policy, action vocabulary) live in jarvis-web; the transport stays behind
+# the port trait and is supplied by the composition boundary.
+jarvis-web = { path = "../jarvis-web", version = "=0.24.14" }
+jarvis-web-fetch = { path = "../jarvis-web-fetch", version = "=0.24.14" }
+# VRO-15 PR-9: optional, behind the default-off `swarm` feature.
+jarvis-swarm = { path = "../jarvis-swarm", version = "=0.24.14", optional = true }
+# The swarm adapter bridges WorkerPort to ProviderSession; provider types
+# are only linked when `swarm` is enabled (default builds stay identical).
+jarvis-provider = { path = "../jarvis-provider", version = "=0.24.14", optional = true }
+
+[features]
+# VRO-13 PR-6: the daemon's single-writer flock discipline. Unix-only
+
+# VB-PRD-001 Phase 2: the hosted Bridge tool service (pure core
+# composition; no adapter yet). Default-off: the disabled build advertises
+# zero bridge tools and creates no bridge state (BR-30, NF-01, AT-01).
+bridge = ["dep:jarvis-bridge"]
+
+# Forwards to jarvis-sandbox's docker backend so hosts can enable it
+docker = ["jarvis-sandbox/docker"]
+# VRO-15 PR-9: the opt-in swarm orchestration layer. Default-off: the
+# single-agent loop, TUI, and ACP build identically without it.
+swarm = ["dep:jarvis-swarm", "dep:jarvis-provider"]
+# Integration-only seams used by the ACP process conformance driver. This is
+# never enabled by the production ACP/TUI feature sets.
+test-support = []
+
+[dev-dependencies]
+tempfile.workspace = true
+# VRO-13 PR-8: the cross-feature e2e fixture composes the firewall holder
+# (production jarvis-policy), the test-only provider seam (jarvis-provider),
+# and deterministic fake provider (jarvis-testkit).
+jarvis-provider = { path = "../jarvis-provider", version = "=0.24.14" }
+jarvis-testkit = { path = "../jarvis-testkit", version = "=0.24.14" }
+# (jarvis-policy), the provider seam (jarvis-provider), and the deterministic
+# fake provider (jarvis-testkit) — test-only, mirroring jarvis-agent/tests.
+# VRO-15 PR-9: deterministic in-process provider for swarm adapter tests.
+jarvis-provider-synthetic = { path = "../jarvis-provider-synthetic", version = "=0.24.14" }
+
+[lints]
+workspace = true

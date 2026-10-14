@@ -1,0 +1,567 @@
+use std::sync::Arc;
+
+use jarvis_domain::{
+    BoundedString, ExtensionMap, ProviderId, SchemaVersion, VersionedExtensionEnvelope,
+};
+use jarvis_provider::{
+    AuthenticationMethodDescriptor, CancellationSignal, ModelCatalog, ModelCatalogSnapshot,
+    ProviderConfigContribution, ProviderConfiguration, ProviderDescriptor, ProviderError,
+    ProviderFactory, ProviderFuture,
+};
+use serde_json::json;
+
+use crate::{
+    EnvironmentCredentialSource, GlmCatalog, GlmConfig, GlmCredentialSource, GlmSession,
+    auth::{credential_sources, remove_stored_api_key},
+    error::{adapter_error, cancelled_error},
+    provider_id, resolve_credential, store_api_key,
+};
+
+/// Production GLM provider factory with injectable secret resolution.
+pub struct GlmFactory {
+    credentials: Arc<dyn GlmCredentialSource>,
+}
+
+impl std::fmt::Debug for GlmFactory {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("GlmFactory")
+            .field("credentials", &"<credential-source>")
+            .finish()
+    }
+}
+
+impl Default for GlmFactory {
+    fn default() -> Self {
+        Self::new(Arc::new(EnvironmentCredentialSource))
+    }
+}
+
+impl GlmFactory {
+    /// Creates a factory with an explicit credential source.
+    #[must_use]
+    pub fn new(credentials: Arc<dyn GlmCredentialSource>) -> Self {
+        Self { credentials }
+    }
+
+    /// Stable provider descriptor and non-secret configuration contribution.
+    #[must_use]
+    pub fn descriptor() -> ProviderDescriptor {
+        ProviderDescriptor {
+            provider_id: provider_id(),
+            display_name: BoundedString::new("Z.ai GLM").expect("bounded display name"),
+            authentication_methods: vec![AuthenticationMethodDescriptor {
+                method_id: BoundedString::new("zai-api-key").expect("bounded auth ID"),
+                display_name: BoundedString::new("Z.ai API key").expect("bounded auth name"),
+                secret_reference_fields: vec![
+                    BoundedString::new("ZAI_API_KEY").expect("bounded field"),
+                    BoundedString::new("Z_AI_API_KEY").expect("bounded field"),
+                ],
+                external_runtime_owned: false,
+                key_url: Some(
+                    BoundedString::new("https://z.ai/manage-apikey/apikey-list")
+                        .expect("bounded key url"),
+                ),
+                interactive_login: vec![],
+                optional: false,
+            }],
+            hosted_tools: Vec::new(),
+            configuration: Some(ProviderConfigContribution {
+                provider_id: provider_id(),
+                schema_version: 1,
+                config_schema: json!({
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "zai:model": {"type": "string"},
+                        "zai:endpoint-plan": {
+                            "enum": ["coding", "standard", "bigmodel", "custom"]
+                        },
+                        "zai:base-url": {"type": "string"},
+                        "zai:allow-insecure-http": {"type": "boolean"},
+                        "zai:attach-inference-auth": {"type": "boolean"},
+                        "zai:reasoning-mode": {
+                            "enum": ["disabled", "enabled", "high", "max"]
+                        },
+                        "zai:generation-profile": {
+                            "enum": ["balanced", "precise", "exploratory"]
+                        },
+                        "zai:continuation-limit": {
+                            "type": "integer", "minimum": 0, "maximum": 20
+                        }
+                    }
+                }),
+                secret_reference_fields: vec![
+                    BoundedString::new("ZAI_API_KEY").expect("bounded field"),
+                    BoundedString::new("Z_AI_API_KEY").expect("bounded field"),
+                ],
+            }),
+            metadata: ExtensionMap::default(),
+        }
+    }
+
+    /// Creates a default versioned configuration envelope.
+    #[must_use]
+    pub fn default_configuration() -> ProviderConfiguration {
+        let mut values = ExtensionMap::default();
+        values
+            .insert("zai:model", json!("glm-5.3"))
+            .expect("bounded config");
+        values
+            .insert("zai:endpoint-plan", json!("coding"))
+            .expect("bounded config");
+        values
+            .insert("zai:reasoning-mode", json!("enabled"))
+            .expect("bounded config");
+        values
+            .insert("zai:generation-profile", json!("balanced"))
+            .expect("bounded config");
+        ProviderConfiguration {
+            provider_id: provider_id(),
+            values: VersionedExtensionEnvelope {
+                namespace: jarvis_domain::ExtensionNamespace::new("provider.zai")
+                    .expect("static namespace"),
+                version: SchemaVersion::new(1).expect("static schema"),
+                values,
+            },
+        }
+    }
+}
+
+impl ProviderFactory for GlmFactory {
+    type Session = GlmSession;
+
+    fn provider_id(&self) -> &ProviderId {
+        static ID: std::sync::OnceLock<ProviderId> = std::sync::OnceLock::new();
+        ID.get_or_init(provider_id)
+    }
+
+    /// Advertises the real Z.ai auth descriptor so hosts route auth from the
+    /// provider instead of hardcoding provider match arms.
+    fn descriptor(&self) -> ProviderDescriptor {
+        Self::descriptor()
+    }
+
+    fn create_session<'a>(
+        &'a self,
+        config: &'a ProviderConfiguration,
+        cancellation: Arc<dyn CancellationSignal>,
+    ) -> ProviderFuture<'a, Result<Self::Session, ProviderError>> {
+        Box::pin(async move {
+            if cancellation.is_cancelled() {
+                return Err(cancelled_error(false));
+            }
+            let parsed = GlmConfig::from_provider_configuration(config)
+                .map_err(|error| adapter_error(&error, false))?;
+            let credential =
+                resolve_credential(self.credentials.as_ref()).map_err(|error| *error)?;
+            GlmSession::from_config(parsed, credential.secret)
+                .map_err(|error| adapter_error(&error, false))
+        })
+    }
+}
+
+impl ModelCatalog for GlmFactory {
+    fn models<'a>(
+        &'a self,
+        cancellation: Arc<dyn CancellationSignal>,
+    ) -> ProviderFuture<'a, Result<ModelCatalogSnapshot, ProviderError>> {
+        <GlmCatalog as ModelCatalog>::models(&GlmCatalog, cancellation)
+    }
+}
+
+impl jarvis_provider::ProviderCredentialPort for GlmFactory {
+    fn credential_present(&self) -> Result<bool, jarvis_provider::CredentialError> {
+        // Mirror the production startup check: resolve from the environment/
+        // store source and confirm structural validity. The secret itself and
+        // any future pool selection stay adapter-internal.
+        Ok(resolve_credential(&EnvironmentCredentialSource)
+            .ok()
+            .is_some_and(|resolved| {
+                jarvis_auth::validate_secret(resolved.secret.expose().as_str()).is_ok()
+            }))
+    }
+
+    fn store_credential(&self, secret: &str) -> Result<(), jarvis_provider::CredentialError> {
+        self.store_method_credential("zai-api-key", secret)
+    }
+    fn store_method_credential(
+        &self,
+        method_id: &str,
+        secret: &str,
+    ) -> Result<(), jarvis_provider::CredentialError> {
+        if method_id != "zai-api-key" {
+            return Err(jarvis_provider::CredentialError::Unavailable);
+        }
+        store_api_key(secret)
+            .map(|_| ())
+            .map_err(map_credential_store_error)
+    }
+    fn authentication_inventory(
+        &self,
+    ) -> Result<jarvis_provider::AuthenticationInventory, jarvis_provider::CredentialError> {
+        let (environment, stored) = credential_sources();
+        let source = if stored {
+            jarvis_provider::CredentialSource::Stored
+        } else if environment {
+            jarvis_provider::CredentialSource::Environment
+        } else {
+            jarvis_provider::CredentialSource::Absent
+        };
+        Ok(jarvis_provider::AuthenticationInventory {
+            selected_method: (source != jarvis_provider::CredentialSource::Absent)
+                .then(|| "zai-api-key".to_owned()),
+            methods: vec![jarvis_provider::AuthenticationMethodState {
+                method_id: "zai-api-key".into(),
+                source,
+            }],
+        })
+    }
+    fn clear_stored_method(&self, method_id: &str) -> Result<(), jarvis_provider::CredentialError> {
+        if method_id != "zai-api-key" {
+            return Err(jarvis_provider::CredentialError::Unavailable);
+        }
+        remove_stored_api_key().map_err(map_credential_store_error)
+    }
+    fn logout(&self) -> Result<(), jarvis_provider::CredentialError> {
+        self.clear_stored_method("zai-api-key")
+    }
+    fn removal_scope(&self) -> jarvis_provider::CredentialRemovalScope {
+        jarvis_provider::CredentialRemovalScope::EntireProvider
+    }
+}
+
+fn map_credential_store_error(
+    error: jarvis_auth::CredentialStoreError,
+) -> jarvis_provider::CredentialError {
+    match error {
+        jarvis_auth::CredentialStoreError::InvalidSecret => {
+            jarvis_provider::CredentialError::InvalidSecret
+        }
+        jarvis_auth::CredentialStoreError::Unavailable => {
+            jarvis_provider::CredentialError::Unavailable
+        }
+        _ => jarvis_provider::CredentialError::Failed,
+    }
+}
+
+/// Static GLM-specific superpower descriptors advertised to the composition
+/// boundary. Kept in a free function so a `GlmFactory` and any test stand-in
+/// share one source of truth.
+fn glm_superpowers() -> Vec<jarvis_provider::SuperpowerDescriptor> {
+    use jarvis_domain::BoundedString;
+    use jarvis_provider::{SuperpowerDescriptor, SuperpowerKind, SuperpowerScope, SuperpowerValue};
+
+    let provider_id = provider_id();
+
+    // ADR 0009: a single session-scoped reasoning dial matching the Python
+    // oracle's `thought_level` scale `{disabled, enabled, high, max}`. The
+    // former separate `zai:effort` (request-scoped) and
+    // `zai:interleaved-thinking` (toggle) controls are collapsed into this one
+    // dial; `low`/`medium` are intentionally absent — the oracle never emits
+    // them as `reasoning_effort` (only `high`/`max`).
+    vec![
+        SuperpowerDescriptor {
+            id: BoundedString::new("zai:reasoning").expect("bounded superpower id"),
+            provider_id: provider_id.clone(),
+            display_name: BoundedString::new("Thinking").expect("bounded display"),
+            kind: SuperpowerKind::Choice,
+            scope: SuperpowerScope::Session,
+            default_value: SuperpowerValue::Choice {
+                value: BoundedString::new("enabled").expect("bounded value"),
+            },
+            allowed_values: ["disabled", "enabled", "high", "max"]
+                .into_iter()
+                .map(|raw| SuperpowerValue::Choice {
+                    value: BoundedString::new(raw).expect("bounded value"),
+                })
+                .collect(),
+            command_alias: Some(BoundedString::new("thinking").expect("bounded alias")),
+            help: Some(
+                BoundedString::new("Session reasoning depth (disabled/enabled/high/max).")
+                    .expect("bounded help"),
+            ),
+        },
+        // Model selector: applies to the whole session.
+        SuperpowerDescriptor {
+            id: BoundedString::new("zai:model").expect("bounded superpower id"),
+            provider_id: provider_id.clone(),
+            display_name: BoundedString::new("Model").expect("bounded display"),
+            kind: SuperpowerKind::Choice,
+            scope: SuperpowerScope::Session,
+            default_value: SuperpowerValue::Choice {
+                value: BoundedString::new("glm-5.3").expect("bounded value"),
+            },
+            allowed_values: GlmCatalog::snapshot()
+                .models
+                .into_iter()
+                .map(|model| SuperpowerValue::Choice {
+                    value: BoundedString::new(model.model.model_id.as_str())
+                        .expect("catalog model ids are bounded"),
+                })
+                .collect(),
+            command_alias: Some(BoundedString::new("model").expect("bounded alias")),
+            help: Some(BoundedString::new("Switch the active Z.ai model.").expect("bounded help")),
+        },
+        // API endpoint plan selector (PRD provider-capability-gating FR-2):
+        // advertisement source for the harness `/plan` session control. The
+        // harness keeps the `SessionConfig` outcome; the descriptor supplies
+        // the panel row and the allowed value set, and
+        // `GlmSuperpowerPolicy` owns plan-change reactions.
+        SuperpowerDescriptor {
+            id: BoundedString::new("zai:plan").expect("bounded superpower id"),
+            provider_id: provider_id.clone(),
+            display_name: BoundedString::new("API plan").expect("bounded display"),
+            kind: SuperpowerKind::Choice,
+            scope: SuperpowerScope::Session,
+            default_value: SuperpowerValue::Choice {
+                value: BoundedString::new("coding").expect("bounded value"),
+            },
+            allowed_values: ["coding", "standard", "bigmodel"]
+                .into_iter()
+                .map(|raw| SuperpowerValue::Choice {
+                    value: BoundedString::new(raw).expect("bounded value"),
+                })
+                .collect(),
+            command_alias: Some(BoundedString::new("plan").expect("bounded alias")),
+            help: Some(
+                BoundedString::new("Z.ai endpoint plan (coding/standard/bigmodel).")
+                    .expect("bounded help"),
+            ),
+        },
+        // Generation style selector: advertisement source for the harness
+        // `/generation` session control.
+        SuperpowerDescriptor {
+            id: BoundedString::new("zai:generation").expect("bounded superpower id"),
+            provider_id: provider_id.clone(),
+            display_name: BoundedString::new("Generation style").expect("bounded display"),
+            kind: SuperpowerKind::Choice,
+            scope: SuperpowerScope::Session,
+            default_value: SuperpowerValue::Choice {
+                value: BoundedString::new("balanced").expect("bounded value"),
+            },
+            allowed_values: ["balanced", "precise", "exploratory"]
+                .into_iter()
+                .map(|raw| SuperpowerValue::Choice {
+                    value: BoundedString::new(raw).expect("bounded value"),
+                })
+                .collect(),
+            command_alias: Some(BoundedString::new("generation").expect("bounded alias")),
+            help: Some(
+                BoundedString::new("Sampling style (balanced/precise/exploratory).")
+                    .expect("bounded help"),
+            ),
+        },
+        // Auxiliary model selector: advertisement source for the harness
+        // `/auxiliary` session control. `allowed_values` advertises `main`
+        // plus the static catalog; `GlmSuperpowerPolicy::valid_choices`
+        // narrows to models eligible on the active plan (non-vision), so the
+        // harness never reproduces GLM predicates.
+        SuperpowerDescriptor {
+            id: BoundedString::new("zai:auxiliary").expect("bounded superpower id"),
+            provider_id,
+            display_name: BoundedString::new("Auxiliary model").expect("bounded display"),
+            kind: SuperpowerKind::Choice,
+            scope: SuperpowerScope::Session,
+            default_value: SuperpowerValue::Choice {
+                value: BoundedString::new("main").expect("bounded value"),
+            },
+            allowed_values: std::iter::once(SuperpowerValue::Choice {
+                value: BoundedString::new("main").expect("bounded value"),
+            })
+            .chain(GlmCatalog::snapshot().models.into_iter().map(|model| {
+                SuperpowerValue::Choice {
+                    value: BoundedString::new(model.model.model_id.as_str())
+                        .expect("catalog model ids are bounded"),
+                }
+            }))
+            .collect(),
+            command_alias: Some(BoundedString::new("auxiliary").expect("bounded alias")),
+            help: Some(
+                BoundedString::new("Bounded auxiliary work model (policy-filtered).")
+                    .expect("bounded help"),
+            ),
+        },
+    ]
+}
+
+/// The canonical reasoning-mode labels accepted by the reconciled
+/// `zai:reasoning` dial (ADR 0009). Mirrors the Python oracle's
+/// `THOUGHT_LEVELS` scale.
+pub const GLM_REASONING_MODES: [&str; 4] = ["disabled", "enabled", "high", "max"];
+
+/// Maps a `SuperpowerValue` resolved against the `zai:reasoning` descriptor into
+/// the opaque reasoning-mode label carried by `UpdateSessionReasoning` and
+/// ultimately by `ProviderRequest.reasoning.mode`.
+///
+/// Composition boundaries (e.g. the TUI) call this to translate a parsed
+/// `/thinking <level>` into the runtime command's mode field. Only the four
+/// oracle-faithful labels are accepted; `low`/`medium` are rejected.
+pub fn reasoning_mode_for_superpower(
+    value: &jarvis_provider::SuperpowerValue,
+) -> Result<BoundedString<128>, crate::error::GlmAdapterError> {
+    let jarvis_provider::SuperpowerValue::Choice { value } = value else {
+        return Err(crate::error::GlmAdapterError::Configuration(
+            "reasoning superpower expects a choice value",
+        ));
+    };
+    if !GLM_REASONING_MODES.contains(&value.as_str()) {
+        return Err(crate::error::GlmAdapterError::Configuration(
+            "reasoning mode must be one of disabled/enabled/high/max",
+        ));
+    }
+    Ok(value.clone())
+}
+
+impl jarvis_provider::ProviderSuperpowers for GlmFactory {
+    fn superpowers(&self) -> Vec<jarvis_provider::SuperpowerDescriptor> {
+        glm_superpowers()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! ADR 0009: the reconciled reasoning dial and its `SuperpowerValue →
+    //! mode` mapper. Asserts the oracle-faithful `{disabled, enabled, high,
+    //! max}` scale and that `low`/`medium` are rejected.
+
+    use super::*;
+    use jarvis_domain::BoundedString;
+    use jarvis_provider::{SuperpowerKind, SuperpowerScope, SuperpowerValue};
+
+    #[test]
+    fn reasoning_dial_is_single_session_scoped_with_oracle_scale() {
+        let descriptors = glm_superpowers();
+        let reasoning = descriptors
+            .iter()
+            .find(|descriptor| descriptor.id.as_str() == "zai:reasoning")
+            .expect("reconciled reasoning dial must be advertised");
+        assert_eq!(reasoning.kind, SuperpowerKind::Choice);
+        assert_eq!(reasoning.scope, SuperpowerScope::Session);
+        assert_eq!(
+            reasoning.command_alias.as_ref().map(|alias| alias.as_str()),
+            Some("thinking")
+        );
+        let allowed: Vec<&str> = reasoning
+            .allowed_values
+            .iter()
+            .filter_map(|value| match value {
+                SuperpowerValue::Choice { value } => Some(value.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(allowed, ["disabled", "enabled", "high", "max"]);
+    }
+
+    #[test]
+    fn former_effort_and_thinking_descriptors_are_gone() {
+        let descriptors = glm_superpowers();
+        assert!(
+            descriptors
+                .iter()
+                .all(|descriptor| descriptor.id.as_str() != "zai:effort"
+                    && descriptor.id.as_str() != "zai:interleaved-thinking"),
+            "the split effort/thinking controls must be collapsed (ADR 0009)"
+        );
+    }
+
+    #[test]
+    fn plan_generation_auxiliary_descriptors_advertise_session_scales() {
+        // PRD provider-capability-gating FR-2: the harness `/plan`,
+        // `/generation`, and `/auxiliary` controls are advertised here so the
+        // panel and value palettes derive from the active provider's surface.
+        let descriptors = glm_superpowers();
+
+        let plan = descriptors
+            .iter()
+            .find(|descriptor| descriptor.id.as_str() == "zai:plan")
+            .expect("plan descriptor advertised");
+        assert_eq!(
+            plan.command_alias.as_ref().map(|alias| alias.as_str()),
+            Some("plan")
+        );
+        assert_eq!(plan.scope, SuperpowerScope::Session);
+        let plan_values: Vec<&str> = plan
+            .allowed_values
+            .iter()
+            .filter_map(|value| match value {
+                SuperpowerValue::Choice { value } => Some(value.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(plan_values, ["coding", "standard", "bigmodel"]);
+
+        let generation = descriptors
+            .iter()
+            .find(|descriptor| descriptor.id.as_str() == "zai:generation")
+            .expect("generation descriptor advertised");
+        assert_eq!(
+            generation
+                .command_alias
+                .as_ref()
+                .map(|alias| alias.as_str()),
+            Some("generation")
+        );
+        let generation_values: Vec<&str> = generation
+            .allowed_values
+            .iter()
+            .filter_map(|value| match value {
+                SuperpowerValue::Choice { value } => Some(value.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(generation_values, ["balanced", "precise", "exploratory"]);
+
+        let auxiliary = descriptors
+            .iter()
+            .find(|descriptor| descriptor.id.as_str() == "zai:auxiliary")
+            .expect("auxiliary descriptor advertised");
+        assert_eq!(
+            auxiliary.command_alias.as_ref().map(|alias| alias.as_str()),
+            Some("auxiliary")
+        );
+        let auxiliary_values: Vec<&str> = auxiliary
+            .allowed_values
+            .iter()
+            .filter_map(|value| match value {
+                SuperpowerValue::Choice { value } => Some(value.as_str()),
+                _ => None,
+            })
+            .collect();
+        // `main` first, then every catalog model; plan/vision narrowing is
+        // the policy's job (`GlmSuperpowerPolicy::valid_choices`).
+        assert_eq!(auxiliary_values.first(), Some(&"main"));
+        let snapshot = GlmCatalog::snapshot();
+        let catalog_ids: Vec<&str> = snapshot
+            .models
+            .iter()
+            .map(|model| model.model.model_id.as_str())
+            .collect();
+        assert_eq!(&auxiliary_values[1..], &catalog_ids[..]);
+    }
+
+    #[test]
+    fn mapper_accepts_each_oracle_mode() {
+        for raw in GLM_REASONING_MODES {
+            let value = SuperpowerValue::Choice {
+                value: BoundedString::new(raw).unwrap(),
+            };
+            let mode = reasoning_mode_for_superpower(&value).unwrap();
+            assert_eq!(mode.as_str(), raw);
+        }
+    }
+
+    #[test]
+    fn mapper_rejects_invalid_modes_and_non_choice_values() {
+        // `low`/`medium` are invented values, not in the oracle.
+        for raw in ["low", "medium", "turbo"] {
+            let value = SuperpowerValue::Choice {
+                value: BoundedString::new(raw).unwrap(),
+            };
+            assert!(reasoning_mode_for_superpower(&value).is_err());
+        }
+        // A toggle/flag is the wrong value shape.
+        let flag = SuperpowerValue::Flag { value: true };
+        assert!(reasoning_mode_for_superpower(&flag).is_err());
+    }
+}

@@ -1,0 +1,22 @@
+[package]
+name = "jarvis-config"
+description = "Platform paths and typed configuration contracts for Agent Vesper"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

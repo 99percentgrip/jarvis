@@ -27,7 +27,7 @@ pub(super) fn validate(package: &super::Package) -> Result<(), String> {
         ));
     }
     for dependency in &package.dependencies {
-        if dependency.name != "vesper-swarm" || dependency.kind.as_deref() == Some("dev") {
+        if dependency.name != "jarvis-swarm" || dependency.kind.as_deref() == Some("dev") {
             continue;
         }
         let name = dependency.rename.as_deref().unwrap_or(&dependency.name);
@@ -60,9 +60,9 @@ mod tests {
     use super::*;
     fn package(optional: bool, features: serde_json::Value) -> super::super::Package {
         serde_json::from_value(serde_json::json!({
-            "id":"test", "name":"vesper-harness", "features": features,
-            "manifest_path":"apps/agent-vesper-tui/Cargo.toml", "targets":[], "dependencies":[{"name":"vesper-swarm", "req":"=0.21.4", "source":null,
-                "path":"../vesper-swarm", "kind":null, "optional":optional, "rename":null}]
+            "id":"test", "name":"jarvis-harness", "features": features,
+            "manifest_path":"apps/jarvis-tui/Cargo.toml", "targets":[], "dependencies":[{"name":"jarvis-swarm", "req":"=0.21.4", "source":null,
+                "path":"../jarvis-swarm", "kind":null, "optional":optional, "rename":null}]
         }))
         .unwrap()
     }
@@ -71,35 +71,35 @@ mod tests {
         assert!(
             validate(&package(
                 true,
-                serde_json::json!({"swarm":["dep:vesper-swarm"]})
+                serde_json::json!({"swarm":["dep:jarvis-swarm"]})
             ))
             .is_ok()
         );
         assert!(
             validate(&package(
                 false,
-                serde_json::json!({"swarm":["dep:vesper-swarm"]})
+                serde_json::json!({"swarm":["dep:jarvis-swarm"]})
             ))
             .is_err()
         );
         assert!(
             validate(&package(
                 true,
-                serde_json::json!({"other":["dep:vesper-swarm"]})
+                serde_json::json!({"other":["dep:jarvis-swarm"]})
             ))
             .is_err()
         );
         for target in [
             "swarm",
-            "dep:vesper-swarm",
-            "vesper-swarm/extra",
-            "vesper-harness/swarm",
+            "dep:jarvis-swarm",
+            "jarvis-swarm/extra",
+            "jarvis-harness/swarm",
         ] {
             assert!(
                 validate(&package(
                     true,
                     serde_json::json!({
-                        "default":["indirect"], "indirect":[target], "swarm":["dep:vesper-swarm"]
+                        "default":["indirect"], "indirect":[target], "swarm":["dep:jarvis-swarm"]
                     })
                 ))
                 .is_err()

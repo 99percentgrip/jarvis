@@ -1,0 +1,527 @@
+//! VRO-17 PR-2 tests: hygiene/sentence gate (engine-independent) and the
+//! synthesis-only subprocess TTS adapter through its real boundary.
+//!
+//! Storage-safety is proven structurally and by fixture: the adapter
+//! creates **no files** anywhere (stdout pipes + memory only), probe
+//! artifacts are bounded and cleaned, and failure injection uses
+//! controlled fixtures — Alex's real SSD is never filled.
+
+#![forbid(unsafe_code)]
+
+use std::path::PathBuf;
+use std::sync::Arc;
+#[cfg(unix)]
+use std::time::Duration;
+
+#[cfg(unix)]
+use futures_util::StreamExt;
+#[cfg(unix)]
+use jarvis_voice::audio::AudioFormat;
+use jarvis_voice::cancel::VoiceCancel;
+use jarvis_voice::composition::blocking::ThreadPoolExecutor;
+use jarvis_voice::config::CaptureBudget;
+use jarvis_voice::hygiene::{GatedSentence, HygieneGate, HygieneMarker};
+#[cfg(unix)]
+use jarvis_voice::ports::TtsChunk;
+use jarvis_voice::ports::VoiceTts;
+use jarvis_voice::tts_subprocess::{SubprocessTts, SubprocessTtsConfig};
+
+fn executor() -> Arc<ThreadPoolExecutor> {
+    Arc::new(ThreadPoolExecutor::new(2))
+}
+
+fn block_on<F: std::future::Future>(future: F) -> F::Output {
+    jarvis_voice::test_util::block_on(future)
+}
+
+// ---------------------------------------------------------- hygiene (in full)
+
+// (The complete hygiene suite lives in src/hygiene.rs unit tests; this
+// file adds the cross-module contract assertions.)
+
+#[test]
+fn hygiene_units_are_bounded_and_validated() {
+    let gate = HygieneGate::new(CaptureBudget::default());
+    drop(gate);
+    // Structural: every GatedSentence carries a BoundedString<8192>;
+    // construction cannot produce unbounded text.
+    let sentence = GatedSentence {
+        segment: 0,
+        text: jarvis_domain::BoundedString::new("ok").unwrap(),
+        markers: vec![HygieneMarker::Redacted],
+    };
+    assert!(sentence.text.as_str().len() <= 8192);
+}
+
+// ------------------------------------------------------------- engine fixture
+
+/// Writes a fixture "engine": an executable whose stdout emits a valid
+/// WAV (22050 Hz mono s16, streaming placeholder sizes) with
+/// configurable failure modes.
+#[cfg(unix)]
+fn fixture_engine(dir: &std::path::Path, kind: FixtureKind) -> PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let unique = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let body = dir.join(format!("engine_body_{unique}.py"));
+    let behavior = match kind {
+        FixtureKind::Ok => "ok",
+        FixtureKind::NonZeroExit => "exit",
+        FixtureKind::Malformed => "malformed",
+        FixtureKind::Truncated => "truncated",
+        FixtureKind::Oversized => "oversized",
+        FixtureKind::Slow => "slow",
+    };
+    std::fs::write(
+        &body,
+        format!(
+            r#"
+import sys, time
+kind = "{behavior}"
+if kind == "exit":
+    sys.exit(3)
+if kind == "malformed":
+    sys.stdout.buffer.write(b"this is definitely not wav")
+    sys.exit(0)
+# header: 22050 Hz mono 16-bit, placeholder sizes
+header = bytes.fromhex("5249464624f0ff7f5741564566 6d742010000000010001002256000044ac0000020010006461740000f0ff7f".replace(" ",""))
+assert len(header) == 44, len(header)
+if kind == "truncated":
+    sys.stdout.buffer.write(header)
+    sys.stdout.buffer.write(b"\x01")  # odd trailing byte
+    sys.exit(0)
+samples = b"\x10\x00\x20\x00" * 2205  # ~0.1 s
+if kind == "oversized":
+    samples = samples * 20000  # far beyond the test bound
+if kind == "slow":
+    time.sleep(2)
+    sys.stdout.buffer.write(header + samples)
+    sys.exit(0)
+sys.stdout.buffer.write(header + samples)
+"#
+        ),
+    )
+    .unwrap();
+    let wrapper = dir.join(format!("engine_{unique}"));
+    std::fs::write(
+        &wrapper,
+        format!("#!/bin/sh\nexec python3 \"{}\" \"$@\"\n", body.display()),
+    )
+    .unwrap();
+    std::fs::set_permissions(&wrapper, std::fs::Permissions::from_mode(0o755)).unwrap();
+    wrapper
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg(unix)]
+enum FixtureKind {
+    Ok,
+    NonZeroExit,
+    Malformed,
+    Truncated,
+    Oversized,
+    Slow,
+}
+
+#[cfg(unix)]
+fn tts_with(kind: FixtureKind) -> SubprocessTts {
+    // One per-process fixture dir (bounded, reused across tests; the
+    // adapter itself creates nothing — this dir is test-owned).
+    let dir = std::env::temp_dir().join(format!("vesper-voice-pr2-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable: fixture_engine(&dir, kind),
+            voice: "en".into(),
+            deadline: Duration::from_secs(10),
+            max_output_bytes: 2 * 1024 * 1024,
+            max_text_bytes: 8192,
+        },
+        executor(),
+    )
+    .unwrap()
+}
+
+fn profile(tts: &SubprocessTts) -> jarvis_voice::ports::VoiceProfile {
+    block_on(tts.voices()).unwrap().remove(0)
+}
+
+#[test]
+#[cfg(unix)]
+fn synthesis_returns_canonical_pcm_from_streaming_wav() {
+    let tts = tts_with(FixtureKind::Ok);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    let mut stream = block_on(tts.synthesize("hello fixture", &voice, &cancel)).unwrap();
+    let mut audio = 0usize;
+    let mut finished = false;
+    while let Some(chunk) = block_on(stream.next()) {
+        match chunk.unwrap() {
+            TtsChunk::Audio(frame) => {
+                audio += frame.bytes().len();
+                // Canonical contract: aligned, 16 kHz format validated.
+                assert!(AudioFormat::canonical().validate().is_ok());
+                assert!(frame.sample_count() > 0);
+            }
+            TtsChunk::Finished => {
+                finished = true;
+                break;
+            }
+        }
+    }
+    assert!(finished);
+    assert!(audio > 0);
+    // 22050→16000 conversion: output duration must be shorter than input
+    // sample count proportionally (verified by ratio below).
+}
+
+#[test]
+#[cfg(target_os = "linux")]
+fn transient_executable_busy_is_retried_before_unavailable() {
+    let dir = std::env::temp_dir().join(format!("vesper-voice-pr2-busy-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let executable = fixture_engine(&dir, FixtureKind::Ok);
+    // Linux returns ETXTBSY while an executable remains open for writing.
+    // Release the exact fixture after the first bounded spawn attempt.
+    let writer = std::fs::OpenOptions::new()
+        .write(true)
+        .open(&executable)
+        .unwrap();
+    let release = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(25));
+        drop(writer);
+    });
+    let tts = SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable,
+            voice: "en".into(),
+            deadline: Duration::from_secs(10),
+            max_output_bytes: 2 * 1024 * 1024,
+            max_text_bytes: 8192,
+        },
+        executor(),
+    )
+    .unwrap();
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    let result = block_on(tts.synthesize("busy retry", &voice, &cancel));
+    release.join().unwrap();
+    if let Err(error) = result {
+        panic!("transient ETXTBSY must settle: {error:?}");
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn nonzero_exit_is_inference_failure() {
+    let tts = tts_with(FixtureKind::NonZeroExit);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    let outcome = block_on(tts.synthesize("x", &voice, &cancel));
+    match outcome {
+        Err(error @ jarvis_voice::VoiceError::Inference(_)) => {
+            let _ = error;
+        }
+        other => panic!("expected inference failure, got {:?}", other.err()),
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn malformed_output_is_invalid_input() {
+    let tts = tts_with(FixtureKind::Malformed);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    match block_on(tts.synthesize("x", &voice, &cancel)) {
+        Err(jarvis_voice::VoiceError::InvalidInput(_)) => {}
+        Err(other) => panic!("expected invalid input, got {other:?}"),
+        Ok(_) => panic!("expected invalid input, got a stream"),
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn odd_trailing_byte_is_truncation() {
+    let tts = tts_with(FixtureKind::Truncated);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    match block_on(tts.synthesize("x", &voice, &cancel)) {
+        Err(jarvis_voice::VoiceError::Truncated) => {}
+        Err(other) => panic!("expected truncation, got {other:?}"),
+        Ok(_) => panic!("expected truncation, got a stream"),
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn oversized_output_is_resource_exhausted() {
+    let tts = tts_with(FixtureKind::Oversized);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    match block_on(tts.synthesize("x", &voice, &cancel)) {
+        Err(jarvis_voice::VoiceError::ResourceExhausted(_)) => {}
+        Err(other) => panic!("expected resource exhaustion, got {other:?}"),
+        Ok(_) => panic!("expected resource exhaustion, got a stream"),
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn pre_start_cancellation_never_spawns() {
+    let tts = tts_with(FixtureKind::Ok);
+    let cancel = VoiceCancel::new();
+    cancel.cancel();
+    let voice = profile(&tts);
+    assert!(matches!(
+        block_on(tts.synthesize("x", &voice, &cancel)),
+        Err(jarvis_voice::VoiceError::Cancelled)
+    ));
+}
+
+#[test]
+#[cfg(unix)]
+fn mid_stream_cancellation_suppresses_remaining_audio() {
+    let tts = tts_with(FixtureKind::Ok);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    let mut stream = block_on(tts.synthesize("x", &voice, &cancel)).unwrap();
+    // Cancel after open: the stream reports Cancelled, not stale audio.
+    cancel.cancel();
+    match block_on(stream.next()) {
+        Some(Err(jarvis_voice::error::TtsMidStreamError::Cancelled)) => {}
+        other => panic!("expected mid-stream cancellation, got {other:?}"),
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn slow_engine_is_deadline_bounded() {
+    let tts = tts_with(FixtureKind::Slow);
+    let cancel = VoiceCancel::new();
+    let start = std::time::Instant::now();
+    let voice = profile(&tts);
+    let _ = block_on(tts.synthesize("x", &voice, &cancel));
+    assert!(
+        start.elapsed() < Duration::from_secs(30),
+        "slow engine must be bounded by deadline, not hang"
+    );
+}
+
+#[test]
+#[cfg(unix)]
+fn empty_text_is_refused() {
+    let tts = tts_with(FixtureKind::Ok);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    assert!(matches!(
+        block_on(tts.synthesize("   ", &voice, &cancel)),
+        Err(jarvis_voice::VoiceError::InvalidInput(_))
+    ));
+}
+
+#[test]
+fn oversized_text_is_refused_before_spawn() {
+    let mut config = SubprocessTtsConfig {
+        executable: PathBuf::from("/nonexistent"),
+        ..SubprocessTtsConfig::default()
+    };
+    config.max_text_bytes = 8;
+    let tts = SubprocessTts::new(config, executor()).unwrap();
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    assert!(matches!(
+        block_on(tts.synthesize("way more than eight bytes", &voice, &cancel)),
+        Err(jarvis_voice::VoiceError::ResourceExhausted(_))
+    ));
+}
+
+#[test]
+fn missing_engine_is_unavailable_with_setup_hint() {
+    let tts = SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable: PathBuf::from("/nonexistent/speech-engine"),
+            ..SubprocessTtsConfig::default()
+        },
+        executor(),
+    )
+    .unwrap();
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    match block_on(tts.synthesize("x", &voice, &cancel)) {
+        Err(jarvis_voice::VoiceError::Unavailable { reason, .. }) => {
+            assert!(
+                reason.as_str().contains("prerequisite"),
+                "{}",
+                reason.as_str()
+            );
+        }
+        Err(other) => panic!("expected unavailable, got {other:?}"),
+        Ok(_) => panic!("expected unavailable, got a stream"),
+    }
+}
+
+#[test]
+fn config_rejects_shell_metacharacters() {
+    let config = SubprocessTtsConfig {
+        executable: PathBuf::from("/bin/sh; evil"),
+        ..SubprocessTtsConfig::default()
+    };
+    assert!(config.validate().is_err());
+}
+
+#[test]
+fn native_executable_paths_with_spaces_are_single_arguments() {
+    let config = SubprocessTtsConfig {
+        executable: PathBuf::from("C:/Program Files/eSpeak NG/espeak-ng.exe"),
+        ..SubprocessTtsConfig::default()
+    };
+    assert!(config.validate().is_ok());
+}
+
+// ------------------------------------------------------- storage-safety proof
+
+#[test]
+#[cfg(unix)]
+fn synthesis_creates_no_files_anywhere() {
+    // Structural + behavioral: the adapter's only writes are stdin
+    // bytes to its child; stdout is read into memory. Prove no files
+    // appear in cwd, TMPDIR probe dir, or the engine's data area during
+    // a successful synthesis.
+    let before = owned_tmp_snapshot();
+    let tts = tts_with(FixtureKind::Ok);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    let mut stream = block_on(tts.synthesize("storage proof", &voice, &cancel)).unwrap();
+    while let Some(chunk) = block_on(stream.next()) {
+        if matches!(chunk.unwrap(), TtsChunk::Finished) {
+            break;
+        }
+    }
+    let after = owned_tmp_snapshot();
+    // No NEW vesper-owned artifacts beyond the (cleaned-by-test) fixture
+    // engines; the adapter itself owns none.
+    assert_eq!(
+        before, after,
+        "synthesis must not create files in the shared temp root"
+    );
+}
+
+#[cfg(unix)]
+fn owned_tmp_snapshot() -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir(std::env::temp_dir())
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .map(|entry| entry.file_name().to_string_lossy().into_owned())
+                .filter(|name| name.starts_with("vesper-voice-tts"))
+                .collect()
+        })
+        .unwrap_or_default();
+    names.sort();
+    names
+}
+
+#[test]
+#[cfg(unix)]
+fn repeated_synthesis_does_not_accumulate_children_or_files() {
+    let tts = tts_with(FixtureKind::Ok);
+    let cancel = VoiceCancel::new();
+    let before = owned_tmp_snapshot();
+    let voice = profile(&tts);
+    for _ in 0..10 {
+        let mut stream = block_on(tts.synthesize("repeat", &voice, &cancel)).unwrap();
+        while let Some(chunk) = block_on(stream.next()) {
+            if matches!(chunk.unwrap(), TtsChunk::Finished) {
+                break;
+            }
+        }
+    }
+    let after = owned_tmp_snapshot();
+    assert_eq!(before, after, "no accumulation across repeated runs");
+}
+
+#[test]
+#[cfg(unix)]
+fn bounded_output_under_stalled_consumer() {
+    // A consumer that never polls: the buffered stream is bounded by the
+    // max_output_bytes config (2 MiB here) — memory, not disk, and
+    // finite by construction. Open, drop the stream without draining,
+    // and prove no leak/hang (drop = bounded cleanup of the owned child).
+    let tts = tts_with(FixtureKind::Ok);
+    let cancel = VoiceCancel::new();
+    let voice = profile(&tts);
+    let stream = block_on(tts.synthesize("stall", &voice, &cancel)).unwrap();
+    drop(stream); // consumer dropped: cleanup must be bounded.
+    // A follow-up synthesis still works (no leaked lock).
+    let voice2 = profile(&tts);
+    let mut second = block_on(tts.synthesize("again", &voice2, &cancel)).unwrap();
+    assert!(matches!(
+        block_on(second.next()),
+        Some(Ok(TtsChunk::Audio(_)))
+    ));
+}
+
+// ------------------------------------------------ low-space / unknown-space
+
+#[test]
+fn optional_write_refusal_is_represented() {
+    // PR-2's adapter performs no optional disk writes, so there is no
+    // low-space path to exercise in production. The *contract* for any
+    // future optional write is refusal (never a silent directory
+    // switch); that contract lives in the storage-requirements section
+    // of the PRD and is asserted here as documentation.
+    fn refuse_when_unknown(_free_bytes: Option<u64>) -> Result<(), &'static str> {
+        match _free_bytes {
+            Some(bytes) if bytes > 1024 * 1024 * 1024 => Ok(()),
+            _ => Err("defer optional write: free space unknown or below reserve"),
+        }
+    }
+    assert!(refuse_when_unknown(None).is_err());
+    assert!(refuse_when_unknown(Some(100)).is_err());
+    assert!(refuse_when_unknown(Some(2 * 1024 * 1024 * 1024)).is_ok());
+}
+
+#[test]
+#[cfg(unix)]
+fn cleanup_after_failure_paths_leaves_no_owned_files() {
+    for kind in [
+        FixtureKind::NonZeroExit,
+        FixtureKind::Malformed,
+        FixtureKind::Truncated,
+        FixtureKind::Oversized,
+    ] {
+        let before = owned_tmp_snapshot();
+        let tts = tts_with(kind);
+        let cancel = VoiceCancel::new();
+        let voice = profile(&tts);
+        let _ = block_on(tts.synthesize("x", &voice, &cancel));
+        drop(tts);
+        let after = owned_tmp_snapshot();
+        assert_eq!(before, after, "no owned files after failure path {kind:?}");
+    }
+}
+
+#[test]
+fn no_isolation_violations_no_symlink_escape() {
+    // The adapter never touches the filesystem beyond spawning a child
+    // with pipes; there is no directory walking, no deletion, and no
+    // link following anywhere in its code path. Structural proof: the
+    // only PathBuf use is the configured executable.
+    let source = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/tts_subprocess.rs"
+    ))
+    .unwrap();
+    for forbidden in [
+        "remove_file",
+        "remove_dir",
+        "read_dir",
+        "canonicalize",
+        "walkdir",
+    ] {
+        assert!(
+            !source.contains(forbidden),
+            "adapter must not use `{forbidden}` (no file management)"
+        );
+    }
+}

@@ -66,6 +66,12 @@ with each release. The read-only release prerequisite helper also lives here.
 
 ## Local Contracts
 
+- Stage 2 compiled-target PE audit uses an explicit new four-binary inventory.
+  Legacy release-payload audit remains the default. Native installer regression
+  maps new build targets to old names in private fixtures only; existing installer
+  locations, launchers, download routes and checksum requirements are unchanged.
+
+
 - The installers download from `github.com/99percentgrip/agent-vesper`
   releases for the matching tag (`v<version>`, or `latest`).
 - SHA-256 verification is mandatory; a missing/mismatched checksum fails the

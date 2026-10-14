@@ -1,0 +1,103 @@
+# Provider-neutral domain
+
+## Purpose
+
+Own stable IDs, messages, content, usage, outcomes, errors, session metadata,
+plans, goals, permissions, capabilities, versioned runtime commands/events,
+read/write-free frozen compatibility DTOs, and the Vesper Reasoning
+Orchestrator (VRO) Phase VRO-1 domain contracts.
+
+## Local Contracts
+
+- `src/acceptance.rs` owns ADR 0028 strict versioned requirement, platform, evidence,
+  finding, receipt and report values. DTO deserialization is not verification authority.
+  `/acceptance` is in the shared host-parity command catalog.
+
+- `slash_commands::SkillRoutingControl` is the shared pure parser for
+  `/skills settings status|save mode standard|enhanced|save model-assistance on|off|save enable|disable <skill>`.
+  It does not change the frozen oracle command descriptors or authorize tools.
+
+- This crate depends on no workspace crate and performs no I/O.
+- No ACP SDK, provider SDK, frontend, transport, or concrete-provider type may
+  enter these DTOs.
+- Serialized unknown/provider data stays namespaced and opaque.
+- Legacy GLM names may appear only in the explicit compatibility module.
+- Event sequences are scoped to runtime/session/turn ownership and turn
+  terminals are unique.
+- `FinishOutcome::StreamInterrupted` carries a provider-neutral classified
+  cause (including explicit cancellation) plus the tool-call ambiguity bit; transports must not collapse
+  deadline, inactivity, remote EOF, and transport failures into one label.
+- Hidden internal chain-of-thought is not a domain content requirement.
+- `ModelRequirement`, `ModelCandidate`, and `CapabilitySuggestion` are the
+  bounded provider-neutral capability-recovery DTOs. Candidate construction
+  caps at three and rejects cross-provider alternatives.
+- `src/slash_commands.rs` owns the frozen-oracle ACP slash-command catalog:
+  28 commands with byte-stable names and descriptions (verbatim from the
+  pinned oracle's `_send_available_commands`, verified against
+  `fixtures/acp/slash-command`) plus the pure case-insensitive
+  `parse_slash_command` parser. It is plain data — no stores, no I/O;
+  store-backed execution lives in `jarvis-harness`. It also owns the separate
+  shared host-parity extension descriptors, including ADR 0024 `/skill` and
+  workspace `/web` settings, plus the separately feature-gated
+  `SWARM_SLASH_COMMAND` descriptor, so
+  ACP advertisement and TUI registration are checked against one foundation
+  catalog. The ACP oracle catalog is a
+  distinct oracle surface from the TUI's `LOCAL_COMMANDS` palette (79+3
+  commands); the TUI keeps its own registry rather than collapsing onto this
+  28-command subset.
+- `ToolDefinition.defer_loading` is the visibility axis for the Claude
+  Code-style deferred-loading seam: when `true`, the tool stays registered for
+  execution but is excluded from the registry's advertisement. `provider_scope`
+  is the separate provider-eligibility axis (`Any` or one `ProviderId`) and is
+  enforced at advertisement, deferred injection, and execution. Both fields
+  carry serde defaults so existing serialized definitions remain universal and
+  non-deferred unless an owning composition opts into tighter behavior.
+- `FileChangePreview` and its operation/line-kind DTOs are bounded,
+  provider-neutral descriptions of a successful filesystem mutation. They
+  carry display/absolute paths, complete addition/deletion totals, a bounded
+  line preview, optional one-based `start_line` (absent for legacy/unknown),
+  and an explicit truncation bit; they never perform I/O or
+  imply that a transport rendered a native diff.
+- `src/vro.rs` owns the VRO domain contracts per
+  `docs/agent-vesper-reasoning-orchestrator-prd.md`: `ReasoningMode` (§8.1),
+  `ReasoningStrategy` (§10.3 — the authoritative 10-variant enum),
+  `TaskProfile` (§14.2; `ambiguity` is `f32`, so the struct derives `PartialEq`
+  but not `Eq`), `ReasoningBudget` (§10.4 — `u16` for
+  `max_parallel_branches`/`max_search_depth`/`max_repairs`), and the
+  `ReasoningConfig` `[reasoning]` block (§24). VRO-2.1 added the remaining §14
+  data contracts — `ReasoningRequest` (§14.1), `DeliberationArtifact` (§14.3),
+  `Candidate` (§14.4), `ReasoningOutcome` (§14.5) — plus `VerificationResult`
+  (§10.8), `OutcomeStatus`, `VerificationStatus`, `PrivacyMode`, and the
+  `InferenceCost`/`VerificationSummary`/`WorkflowPlanStep` placeholders. VRO-2.2
+  upgraded `VerificationFinding` from a `String` placeholder to a real struct
+  (`message`/`severity`/`location`) with a `VerificationSeverity` enum, and
+  added `VerificationStatus::Error` (the verifier itself could not run, distinct
+  from `Failed`). VRO-3.1 added `ModelCapabilities` (PRD §10.2). VRO-10
+  (PRD §10.5 + §14.3 + §10.4) closes three final PARTIAL/DEFERRED gaps:
+  (1) `WorkflowPlanStep` now carries the five previously-missing §10.5
+  fields (`expected_output_schema`, `failure_policy: StepFailurePolicy`,
+  `max_attempts`, `parallel_allowed`, `requires_user_approval`) with
+  conservative serde defaults so legacy plans deserialize unchanged;
+  (2) the VRO-2.1 free-form `String` aliases `Assumption`, `EvidenceRef`,
+  `ContextRef` are promoted to **strict newtypes** (`Assumption` carries
+  `statement`/`confidence: Option<f32>`/`status: AssumptionStatus`;
+  `EvidenceRef` carries `kind: EvidenceKind` + `locator`; `ContextRef` carries
+  `kind: ContextKind` + `locator`) — `From<&str>`/`From<String>`/`AsRef<str>`
+  impls keep every existing call site compiling, so the type-level strictness
+  is gained without a use-site rewrite. `DeliberationArtifact` now derives
+  `PartialEq` only (not `Eq`) because `Assumption` carries `Option<f32>`;
+  (3) `OutcomeStatus` gains the `RateLimitExceeded` variant (PRD §10.4
+  "account for provider rate limits") so the orchestrator halts cleanly on an
+  HTTP 429 instead of crashing. Provider names are FORBIDDEN in this file
+  (xtask architecture guard scans for them). Budget preset values pinned by
+  §24 are sourced from the PRD; fields §24 does not pin carry documented
+  Phase R3 calibrated baselines. No orchestration logic lives here.
+
+## Verification
+
+- Run `cargo test -p jarvis-domain`.
+- Run `cargo xtask architecture`.
+
+## Child DOX Index
+
+No children.

@@ -7,6 +7,8 @@ Vesper terminology, feeding future feature PRDs (e.g. VRO-16 hive governance).
 
 ## Ownership
 
+- `rust-identity-stage2.md` owns current Rust identities, complete directory/package mapping and explicit legacy adapters; it is a first-party implementation specification.
+
 - `identity-architecture.md` owns the authorized Stage 1 first-party identity and
   compatibility inventory. Its scope is local architecture design; the external
   reconnaissance rules below apply to external reports, not this specification.

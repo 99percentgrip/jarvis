@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Own Stage 1 planned identity, package ownership and compatibility policy for
+Own current Stage 2 Rust identity, explicit legacy-to-current ownership and deferred
+compatibility policy for
 J.A.R.V.I.S.; remain separate from active runtime composition.
 
 ## Ownership
@@ -16,7 +17,9 @@ J.A.R.V.I.S.; remain separate from active runtime composition.
 
 - No filesystem, environment, process, network or credential access in `src/`.
   No custom build target; automatic build scripts remain disabled.
-- No existing package, executable, protocol or persisted identity is renamed here.
+- Package/import/manifest/executable registry entries reflect actual Stage 2 metadata.
+  Explicit legacy names/manifests preserve migration provenance; deferred protocol
+  and persistence identities remain planned and unwired. `xtask` remains unchanged.
 - Every legacy mapping cites inspected source; unknown targets remain `None`.
 - Credential and serialization contracts are migration-sensitive; provenance,
   provider identities and third-party names are never mechanical replacements.

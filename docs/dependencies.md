@@ -1,3 +1,14 @@
+# Stage 2 dependency integrity
+
+Rust package identities follow the [current migration map](architecture/rust-identity-stage2.md).
+All 523 third-party lockfile entries remain unchanged; `rustls` remains 0.23.46.
+The sandbox executable-discovery regression adds a test-only `tempfile` edge to
+its existing workspace version. No third-party version, license or MSRV changes.
+The inherited dependency register below is preserved as historical evidence;
+actual Cargo manifests and the lockfile own current resolution.
+
+---
+
 # Direct Dependency Register
 
 The table below is the historical Stage 5 register, not a current restriction
