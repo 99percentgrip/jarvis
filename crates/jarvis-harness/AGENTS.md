@@ -752,6 +752,11 @@ Z.ai and Playwright MCP server descriptors.
 
 ## Verification
 
+- Executed local gate arguments must match their displayed commands and actual
+  Cargo package/feature metadata. Offline selector tests never execute a release
+  or adopt an epoch. Windows constrained-job fixture discovery uses actual current
+  package and library target identities; native Job Object assertions stay intact.
+
 - Shared selector composition fixtures use the actual host OS for preparation
   and resolution; a mismatched platform must still invalidate a pending selection.
 

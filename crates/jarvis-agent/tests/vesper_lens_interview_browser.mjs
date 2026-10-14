@@ -7,7 +7,7 @@ if (!playwrightModule) {
   throw new Error("Set PLAYWRIGHT_MODULE to the installed playwright package directory");
 }
 const { chromium } = createRequire(import.meta.url)(playwrightModule);
-const helper = spawn("cargo", ["run", "-p", "vesper-agent", "--example", "vesper_lens_fixture", "--", "--interview"], {
+const helper = spawn("cargo", ["run", "-p", "jarvis-agent", "--example", "vesper_lens_fixture", "--", "--interview"], {
   cwd: process.cwd(),
   stdio: ["ignore", "pipe", "pipe"],
 });

@@ -7,8 +7,8 @@ if (!playwrightModule) {
   throw new Error("Set PLAYWRIGHT_MODULE to the installed playwright package directory");
 }
 const { chromium } = createRequire(import.meta.url)(playwrightModule);
-const fixture = "crates/vesper-agent/tests/fixtures/vesper-lens/index.html";
-const helper = spawn("cargo", ["run", "-p", "vesper-agent", "--example", "vesper_lens_fixture", "--", fixture], {
+const fixture = "crates/jarvis-agent/tests/fixtures/vesper-lens/index.html";
+const helper = spawn("cargo", ["run", "-p", "jarvis-agent", "--example", "vesper_lens_fixture", "--", fixture], {
   cwd: process.cwd(),
   stdio: ["ignore", "pipe", "pipe"],
 });

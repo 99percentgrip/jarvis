@@ -507,7 +507,12 @@
     {
       "change": "M",
       "path": ".github/AGENTS.md",
-      "sha256": "493861ac2c0d5df82e21400d19a9eea10bf1ab62293c8c2f090ce45be9b0bf54"
+      "sha256": "1f581207376c756c8da939e0f66d404d389d5c19514db7a14c51a55f94af7331"
+    },
+    {
+      "change": "A",
+      "path": ".github/test_workspace_tooling_identity.py",
+      "sha256": "0fb11609a8b714bcd2ecda2c14cd590b24229352af5371ad15336462bbe0f61d"
     },
     {
       "change": "M",
@@ -522,7 +527,7 @@
     {
       "change": "M",
       "path": ".github/workflows/ci.yml",
-      "sha256": "9f8b493ac6f0a386227c2d46964a8839a3104079cf5796044431213283c3cfac"
+      "sha256": "ef64ac619020082b4f09e50b451eb1b179d804bc2ab6260b8686d97c63259168"
     },
     {
       "change": "M",
@@ -1451,10 +1456,10 @@
       "sha256": "44fd76ed2e2a7a8b50656e6157fb6d73ad7a482b334fb9240ce401f2cd3279b0"
     },
     {
-      "change": "R097",
+      "change": "R096",
       "path": "crates/jarvis-agent/AGENTS.md",
       "from": "crates/vesper-agent/AGENTS.md",
-      "sha256": "26ef90f73f672619c586d390e3b14a145a91caec2a912ce4a5302223a643cb39"
+      "sha256": "969de9a4917f913fd60ba4cfd0adecda9ab1c9b968ad1c6b5f9bd5ba94667aec"
     },
     {
       "change": "R081",
@@ -1775,16 +1780,16 @@
       "sha256": "b7b5b87b4c841ff80af3c49a5e17c5a3e1ed81a6001773af7a26134a2a86943b"
     },
     {
-      "change": "R100",
+      "change": "R096",
       "path": "crates/jarvis-agent/tests/vesper_lens_browser.mjs",
       "from": "crates/vesper-agent/tests/vesper_lens_browser.mjs",
-      "sha256": "c1490843881092929e58ebf215fb5c5d4370c2a0b752ceeb194450176fc58bd6"
+      "sha256": "129d160851a8fae5e99b2ec956d4aadfd25baa0bef9ad97ca2670b9604ed66ee"
     },
     {
-      "change": "R100",
+      "change": "R098",
       "path": "crates/jarvis-agent/tests/vesper_lens_interview_browser.mjs",
       "from": "crates/vesper-agent/tests/vesper_lens_interview_browser.mjs",
-      "sha256": "725c9947cfbec604ce7847af9bcb8f090fe02aac5fdd7421e1ff08895f16746b"
+      "sha256": "b6bf2dbadab5619954a3d0940f48f989fc4f9390a3f074be3f48d1f8b1f8f1f0"
     },
     {
       "change": "R096",
@@ -2342,7 +2347,7 @@
       "change": "R098",
       "path": "crates/jarvis-harness/AGENTS.md",
       "from": "crates/vesper-harness/AGENTS.md",
-      "sha256": "8a27f3b4204cb6ba85290162289c67ab1c7b01c921a22b479a349742dd5b25ca"
+      "sha256": "8682a5f6f1a8221147087b9587cc4b39990f37de78ed7550a22e7a38b2a0e0d2"
     },
     {
       "change": "R054",
@@ -2531,10 +2536,10 @@
       "sha256": "ccc50f5517aa8b47c03bfe3afea127b469ed67176029326e6b20eadba2bf557b"
     },
     {
-      "change": "R097",
+      "change": "R096",
       "path": "crates/jarvis-harness/src/release_executor.rs",
       "from": "crates/vesper-harness/src/release_executor.rs",
-      "sha256": "2f3dae663580ca3c23052e02e42e441e91e2dd683299e9c2676762229b5494f3"
+      "sha256": "f728527c95c95b4a8ccfa540d8928341b164c9524aa03707a27b4093d1e8066b"
     },
     {
       "change": "R100",
@@ -2771,10 +2776,10 @@
       "sha256": "13a9445331cc6f22bf19ed78d1ff09281b67b506f99c55cad580cc1535147695"
     },
     {
-      "change": "R100",
+      "change": "R099",
       "path": "crates/jarvis-harness/tests/windows_resource_job.py",
       "from": "crates/vesper-harness/tests/windows_resource_job.py",
-      "sha256": "02a0e936cd3f713747cec77a4b6c7d4902fb311a96a6902461218048cd271e75"
+      "sha256": "5cce0bedd8f0542bf99ba48349b93d900980d9663e6faf617f1f933435aea114"
     },
     {
       "change": "M",
@@ -4919,7 +4924,7 @@
     {
       "change": "A",
       "path": "docs/architecture/rust-identity-stage2.md",
-      "sha256": "4cf4b90eee18304b520441a412d0b5f256be26c03501bd37e01a3991c6bbda53"
+      "sha256": "456679655947adf073701164332971b3530ef1db4fac3a2de300df01f91f2ff4"
     },
     {
       "change": "M",
@@ -4933,7 +4938,7 @@
     {
       "change": "A",
       "path": "docs/foundation/2026-10-15-rust-identity-stage2.md",
-      "sha256": "b563dc712367d42eadb607265a1757815aa52c1a35258d54a6b1a52d1e03b9a4"
+      "sha256": "ecd969cf2443c7679e38f30ef74972ddc48a71447afad9a464be646e24896573"
     },
     {
       "change": "M",
@@ -4948,7 +4953,7 @@
     {
       "change": "A",
       "path": "docs/rust-identity-stage2-prd.md",
-      "sha256": "e45d2896a879a33fa3490fc406ac9da02f46a7b06fb3444fd0a1446aa6d8b4d2"
+      "sha256": "3afa9ce3896ac52a4c790b812f653df4e1ef0959adf8b1240667c49e5aaf2845"
     },
     {
       "change": "M",

@@ -114,6 +114,33 @@ Inherited disabled publishing workflows still require later-stage repository and
 artifact review. No independent public release or installer is claimed. Stage 3
 requires explicit approval and fresh integrated verification.
 
+## Review-driven build-selector correction
+
+Automated PR review identified three real integration omissions on initial head
+`1f113cebebbd683d2ca6f530ad7454ebbf9d478d`: executed RRC release-build argv still
+selected original packages despite a renamed displayed command; the Windows
+governor fixture selected the old package/library artifact; both Lens browser
+launchers selected the old package and one used a removed directory path.
+These are Stage 2 build/discovery defects, not authority to publish or rename protocols.
+
+The actual selectors and fixture path are corrected. A new Rust unit compares all
+executed local-gate commands and build package/feature selectors to actual Cargo
+metadata without running a release. The focused exact case executed once and
+passed; an earlier zero-match invocation is retained but is not proof. Two Python
+regressions inspect the executed Windows command/artifact filter and both Lens
+launchers against actual metadata; canonical CI now runs them. Existing native
+Job Object assertions and all browser assertions are preserved.
+
+Both real Lens browser and interview flows pass using the existing Chrome binary
+and the CI-pinned Playwright version in private test-tool storage. The first
+attempt failed because the long private temporary directory exceeded Chrome’s
+Unix socket-path limit; an unchanged retry with a shorter private temporary root
+passed. No timeout, assertion, browser protocol field or frozen fixture was changed.
+Warning-free harness Clippy and Rust 1.88 all-target/all-feature checks pass;
+the eleven release-prerequisite/trigger regressions still pass. Original source
+and protected state remain unchanged after both browser runs. The corrective candidate requires a fresh
+complete thirteen-check matrix; earlier-head successes cannot authorize merge.
+
 ## Final hosted receipts
 
 Pending candidate PR, exact head, thirteen successful conclusions, normal merge,

@@ -14,12 +14,12 @@ import tempfile
 
 def run():
     assert os.name == 'nt', 'this acceptance requires native Windows'
-    result = subprocess.run(['cargo', 'test', '--locked', '-p', 'vesper-harness',
+    result = subprocess.run(['cargo', 'test', '--locked', '-p', 'jarvis-harness',
                              '--all-features', '--lib', '--no-run', '--message-format=json'],
                             check=True, text=True, capture_output=True, timeout=300)
     executable = next(row['executable'] for line in result.stdout.splitlines()
                       if (row := json.loads(line)).get('reason') == 'compiler-artifact'
-                      and row.get('executable') and row['target']['name'] == 'vesper_harness')
+                      and row.get('executable') and row['target']['name'] == 'jarvis_harness')
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     size = ctypes.c_size_t
 

@@ -7,6 +7,9 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- `test_workspace_tooling_identity.py` checks actual Cargo metadata against Windows
+  governor package/library selectors and both Lens example launchers/fixture paths.
+  Canonical verification executes it before the full build.
 - Active verification builds Stage 2 package/target names; required contexts and
   publication-disable settings remain unchanged. Windows PE audit selects the four
   compiled targets explicitly. Private installer fixtures stage those binaries

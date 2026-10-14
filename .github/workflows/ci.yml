@@ -32,6 +32,7 @@ jobs:
           python3 scripts/test_release_gate.py
           python3 .github/test_verify_pr_matrix.py
           python3 .github/test_prepare_linux_apt.py
+          python3 .github/test_workspace_tooling_identity.py
       - name: Verify inherited naming policy before full build
         run: cargo xtask naming-guard
       - name: Verify workspace

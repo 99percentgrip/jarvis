@@ -13,7 +13,7 @@ The full mapping and compatibility boundaries are owned by the
 | Requirement | Evidence owner | Current disposition |
 |---|---|---|
 | All packages, directories, imports and executable targets match reviewed registry | Actual Cargo metadata, identity contract tests and complete architecture mapping | Local metadata and nine registry contracts pass; complete exact-head CI pending. |
-| Default and all-feature builds, host launch and existing functional tests | Execution report with exact commands and results | Default/all-feature builds, full verification and 165 exact acceptance cases pass locally; native CI pending. |
+| Default and all-feature builds, host launch and existing functional tests | Execution report with exact commands and results | Default/all-feature builds, full verification and 165 exact acceptance cases pass locally; native CI pending on the corrected build-selector head. |
 | Credentials, persisted sessions, journals and external protocols retain existing identity | Scoped changes, legacy classifications and original-state hash comparison | Explicit adapters preserve former executable discovery; all protected source/state entries match; final closeout comparison remains required. |
 | Third-party dependency integrity and Rust 1.88 | Lockfile comparison, audit/deny and MSRV/native jobs | 523 third-party entries unchanged; `rustls` remains 0.23.46; local audit/deny and Rust 1.88 checks pass; exact-head security/platform CI pending. |
 | Mandatory exact-head security and platform checks | Thirteen protected PR contexts, trusted GitHub Actions source and normal merge | Pending; missing/skipped/cancelled jobs are not success. |

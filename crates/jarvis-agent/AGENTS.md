@@ -693,6 +693,8 @@ the multi-turn, tool-executing layer above it.
   settlement deadline; do not split that budget into scheduling-sensitive
   platform phases.
 
+- Lens browser launchers select the current Cargo package and relocated fixture;
+  example names, protocol fields and HTML fixture bytes remain compatibility contracts.
 - Run `cargo test -p jarvis-agent`.
 - Run `cargo xtask verify` (fmt + clippy + workspace tests + architecture).
 - `cargo run --package xtask --quiet -- architecture` must include

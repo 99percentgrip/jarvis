@@ -98,6 +98,11 @@ baseline. Only registry-approved technical tokens and directory moves receive
 scoped handling. A moved historical hit maps to its original path and reviewed
 technical-token bytes; unknown names, new prose and duplicate counts remain gated.
 
+Executed RRC build selectors, Windows governor artifact discovery and Lens browser
+example launchers use current Cargo identities. Regressions compare actual executed
+arguments and helper selectors against workspace metadata; review protocols and
+fixture bytes remain unchanged. No release command is executed by these tests.
+
 Offline version-only lockfile comparison uses package names read from actual
 workspace member manifests rather than a name prefix. Its negative test rejects an
 unowned package sharing the product prefix. Controller state, repository routing,

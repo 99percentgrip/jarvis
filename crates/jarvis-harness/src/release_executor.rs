@@ -4187,13 +4187,13 @@ fn local_gate_argv(name: &str) -> Option<(&'static str, &'static [&'static str])
                 "--locked",
                 "--release",
                 "--package",
-                "agent-vesper-acp",
+                "jarvis-acp",
                 "--package",
-                "agent-vesper-tui",
+                "jarvis-tui",
                 "--package",
-                "vesper-web-fetch",
+                "jarvis-web-fetch",
                 "--package",
-                "vesper-sandbox",
+                "jarvis-sandbox",
                 "--features",
                 "jarvis-acp/docker,jarvis-tui/docker,jarvis-acp/swarm,jarvis-tui/swarm,jarvis-acp/bridge,jarvis-tui/bridge,jarvis-tui/voice-kokoro,jarvis-tui/voice-flm",
             ],
@@ -10626,6 +10626,53 @@ fn actual_regression() {
         );
         assert!(normalized.contains("name = \"vesper-harness\"\nversion = \"0.24.5\""));
         assert!(normalized.contains("name = \"other\"\nversion = \"0.24.4\""));
+    }
+
+    #[test]
+    fn executed_local_gate_selectors_match_actual_workspace_metadata() {
+        let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let output = Command::new(env!("CARGO"))
+            .args([
+                "metadata",
+                "--locked",
+                "--offline",
+                "--no-deps",
+                "--format-version",
+                "1",
+            ])
+            .current_dir(workspace)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let metadata: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        let packages = metadata["packages"].as_array().unwrap();
+        for gate in production_local_gates() {
+            let (program, args) = local_gate_argv(&gate.name).unwrap();
+            assert_eq!(gate.command, format!("{program} {}", args.join(" ")));
+            for pair in args.windows(2) {
+                if pair[0] == "--package" {
+                    assert!(
+                        packages.iter().any(|p| p["name"] == pair[1]),
+                        "unknown executed package {}",
+                        pair[1]
+                    );
+                }
+                if pair[0] == "--features" {
+                    for selector in pair[1].split(',') {
+                        let (name, feature) = selector.split_once('/').unwrap();
+                        let package = packages.iter().find(|p| p["name"] == name).unwrap();
+                        assert!(
+                            package["features"].get(feature).is_some(),
+                            "unknown executed feature {selector}"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
