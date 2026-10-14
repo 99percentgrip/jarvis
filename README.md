@@ -1,3 +1,19 @@
+# Project J.A.R.V.I.S.
+
+**Status: Technical migration in progress — not yet released.**
+
+J.A.R.V.I.S. is an independent open-source AI agent project derived from Agent Vesper v0.24.14.
+
+The project is undergoing a complete technical identity migration covering Rust packages, executables, configuration, persistence, ACP integrations, installers, and release infrastructure.
+
+The documentation and commands below currently describe the original Agent Vesper implementation. They will be updated as the corresponding J.A.R.V.I.S. components are implemented and verified.
+
+**No independent J.A.R.V.I.S. release is available yet.**
+
+Original project: [Agent Vesper](https://github.com/99percentgrip/agent-vesper)
+
+---
+
 <div align="center">
 
 # Agent Vesper
