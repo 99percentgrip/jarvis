@@ -90,3 +90,20 @@ automatic build scripts. The environment census compares actual apps/crates/
 scripts/shipped-skill source symbols against all 109 registered input names.
 GLM_VENV_PATH and the two supported skill overrides are sensitive; a fixture-only
 voice input remains RequiresEvidence. No original source reader is renamed.
+
+## Hosted failure and scope-preserving correction
+
+Candidate f0836f2fb0c99f214dd513ca28728ca395779acc failed the unchanged
+repository_version_plan_covers_every_owned_manifest_and_lockfile test because
+the new identity package used a standalone version instead of inheriting the
+workspace version. Only the new package and its xtask dependency are corrected
+to the existing 0.24.14 workspace lifecycle. No existing version, controller or
+assertion changes; future independent v0.1.0 preparation remains unexecuted.
+Apple Silicon also failed the unchanged MessageJournal Show more PTY assertion
+while the displayed host was still RUNNING. Its assertion is preserved; a fresh
+complete matrix is required and no failed/old-head evidence is admitted.
+
+Focused immutable planning proof passed locally after the version correction:
+repository_version_plan_covers_every_owned_manifest_and_lockfile (1 selected,
+1 passed, no release worker or version mutation executed). Nine identity tests
+also pass. Existing workspace/controller behavior and PTY assertions are intact.

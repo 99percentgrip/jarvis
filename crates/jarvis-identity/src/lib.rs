@@ -51,6 +51,7 @@ pub const LEGACY_REPOSITORY: Repository = Repository {
 };
 pub const SOURCE_COMMIT: &str = "692985a1ceeb2740024c8a4b26770d5afb4ee889";
 pub const SOURCE_TAG_OBJECT: &str = "4f53195320e4a0a8439a933e9378655a0616cba4";
+pub const RESERVED_INITIAL_RELEASE: &str = "v0.1.0";
 pub const SOURCE_RELEASE: &str = "v0.24.14";
 pub const SOURCE_REFERENCE: &str = "upstream/vesper/v0.24.14";
 

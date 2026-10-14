@@ -12,8 +12,10 @@ those owner decisions concrete without claiming a missing prior artifact.
 ## Module and dependency direction
 
 `jarvis-identity` is a non-published, zero-production-dependency library. Its
-version 0.1.0 is an internal planned contract version, not a release tag or
-publication. The workspace and existing packages remain 0.24.14. Typed Product,
+version inherits baseline workspace 0.24.14 to preserve existing verification.
+The initial independent release reservation remains v0.1.0; no release/tag is
+created. Resetting the lifecycle belongs to later approved release preparation.
+The workspace and existing packages remain 0.24.14. Typed Product,
 Repository, PackageIdentity, Executable, Mapping, Classification, Platform,
 PlannedPaths, Distribution and ImportPolicy definitions have no side effects.
 Only xtask architecture verification links this library. Tests alone depend on
