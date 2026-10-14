@@ -7,6 +7,8 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- Jarvis Windows workspace tests run serially to avoid competing PowerShell startup fixtures; every test and fixed timing assertion remains required.
+
 - Jarvis PR verification checks out the exact PR head with persisted credentials
   disabled. `pr-verification.yml` and `verify_pr_matrix.py` own the fail-closed
   complete-matrix gate: exact head, repository, event, workflow path, current

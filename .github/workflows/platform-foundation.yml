@@ -118,7 +118,13 @@ jobs:
         shell: bash
         env:
           RUSTC_WRAPPER: ${{ steps.sccache_check.outputs.sccache_ready == 'true' && 'sccache' || '' }}
-        run: cargo test --workspace --all-features
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            # Preserve fixed timing assertions without concurrent PowerShell fixtures.
+            cargo test --workspace --all-features -- --test-threads=1
+          else
+            cargo test --workspace --all-features
+          fi
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'

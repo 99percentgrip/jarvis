@@ -50,3 +50,14 @@ filtered native checks under the conservative bootstrap, with no skipped check
 represented as success. GitHub Actions app identity does not pin a workflow's
 content; owner review of gate changes remains required. The readiness state is
 pending complete CI. Publishing and release tags remain blocked.
+
+## First hosted attempt and scoped correction
+
+PR 1 first head 24dd48eaced653417286e0e8d9c4de0dd0bd385a passed audit/deny
+and all three web-driver jobs. Foundation run 38513529452 Windows job
+115687140384 failed five command_settlement timing/startup assertions in the
+parallel workspace suite (8 passed, 5 failed). Exact log retained outside the
+repository. The existing dedicated settlement step already uses serial tests.
+Windows workspace execution now uses the same serial scheduling, retaining every
+case and timing assertion. This is CI execution policy only, not Rust repair.
+A fresh exact-head matrix is required; no old-head success will be reused.
