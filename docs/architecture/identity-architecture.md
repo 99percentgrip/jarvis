@@ -325,3 +325,13 @@ until divergence is intentional. No shared release epoch or automatic source pus
 See [Stage 1 PRD](../identity-stage1-prd.md),
 [execution report](../foundation/2026-10-14-identity-stage1.md) and
 [source provenance](../foundation/stage1-source-provenance.json).
+
+## Observed excluded-research security limitation
+
+Authenticated GitHub Dependabot alert 1 reports GHSA-2mjx-qc3c-rqvc
+(RUSTSEC-2026-0285) for rustls 0.23.42 in
+spikes/rust-sse-transport/Cargo.lock. The production Cargo.lock contains patched
+0.23.45. This existing excluded research dependency is not upgraded by Stage 1
+and is not a production/release dependency. Production audit/deny gates do not
+prove that every excluded research lockfile is clean. Remediation and a separate
+research-lock security policy remain follow-up decisions; no release is authorized.

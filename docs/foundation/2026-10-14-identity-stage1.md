@@ -69,3 +69,13 @@ initialization, migration, installation, version tag or release occurred.
 Local Stage 1 design is implemented; CI/merge evidence is pending. Stage 2 is not
 authorized. The [owning PRD](../identity-stage1-prd.md) and
 [full inventory](../architecture/identity-architecture.md) define the next boundary.
+
+## Observed excluded-research security limitation
+
+Authenticated GitHub Dependabot alert 1 reports GHSA-2mjx-qc3c-rqvc
+(RUSTSEC-2026-0285) for rustls 0.23.42 in
+spikes/rust-sse-transport/Cargo.lock. The production Cargo.lock contains patched
+0.23.45. This existing excluded research dependency is not upgraded by Stage 1
+and is not a production/release dependency. Production audit/deny gates do not
+prove that every excluded research lockfile is clean. Remediation and a separate
+research-lock security policy remain follow-up decisions; no release is authorized.
