@@ -1,6 +1,5 @@
 """Offline regression evidence for the actual publishing workflow's gate."""
 import copy
-import ast
 from pathlib import Path
 import re
 import unittest
@@ -85,70 +84,76 @@ class GateTests(unittest.TestCase):
 
 
 class WorkflowTriggerTests(unittest.TestCase):
-    """Keep report-only pushes out of suites without excluding release inputs."""
-
-    def exclusions(self, workflow, event):
-        path = Path(__file__).resolve().parents[1] / '.github' / 'workflows' / workflow
-        header = path.read_text().split('\npermissions:', 1)[0]
-        block = re.search(r'^  ' + event + r':\n((?:^    .*\n|^      .*\n)*)',
-                          header, re.MULTILINE)
-        self.assertIsNotNone(block, (workflow, event))
-        self.assertIn('    paths-ignore:\n', block.group(1))
-        return [ast.literal_eval(line.strip()[2:]) for line in block.group(1).splitlines()
-                if line.startswith('      - ')]
+    """Required checks must execute for prose and executable changes alike."""
 
     @staticmethod
-    def matches(pattern, path):
-        # These controlled patterns use only literals, * and **. A **/ segment
-        # also matches zero directories, as GitHub's documented glob syntax does.
-        regex = ''
-        while pattern:
-            if pattern.startswith('**/'):
-                regex += '(?:.*/)?'
-                pattern = pattern[3:]
-            elif pattern.startswith('**'):
-                regex += '.*'
-                pattern = pattern[2:]
-            elif pattern.startswith('*'):
-                regex += '[^/]*'
-                pattern = pattern[1:]
-            else:
-                regex += re.escape(pattern[0])
-                pattern = pattern[1:]
-        return re.fullmatch(regex, path) is not None
+    def trigger_block(text, event):
+        # Fail closed outside the deliberately simple trigger schema. Requiring
+        # unfiltered events avoids approximating GitHub glob or diff semantics.
+        header = re.search(r'^on:\n((?:^[ \t].*\n|^\n)*)',
+                           text, re.MULTILINE)
+        if not header:
+            raise ValueError('missing on mapping')
+        block = re.search(r'^  ' + event + r':([^\n]*)\n'
+                          r'((?:^    .*\n|^\n)*)',
+                          header.group(1), re.MULTILINE)
+        if not block:
+            raise ValueError('missing required event: ' + event)
+        if block.group(1).strip() not in ['', '{}']:
+            raise ValueError('unsupported event syntax')
+        body = block.group(2).strip()
+        allowed = '' if event == 'pull_request' else 'branches: [main]'
+        if body != allowed:
+            raise ValueError('required event filtered or unsupported: ' + event)
+        return True
 
-    def test_documentation_and_report_paths_are_excluded_consistently(self):
-        expected = ['README.md', 'AGENTS.md', '**/AGENTS.md', 'docs/**/*.md',
-                    'docs/foundation/*-evidence.json', 'docs/foundation/*-source.json',
-                    'docs/foundation/*-requirements.json',
-                    'docs/foundation/*-document-verification.json',
-                    'docs/foundation/*-receipts.tar.gz']
-        reports = ['README.md', 'AGENTS.md', 'docs/AGENTS.md',
-                   'docs/Agent_Vesper_Release_Recovery_Controller_PRD.md',
-                   'docs/foundation/2026-10-06-rrc-parity-production-release.md',
-                   *['docs/foundation/repair-' + suffix for suffix in
-                     ['evidence.json', 'source.json', 'requirements.json',
-                      'document-verification.json', 'receipts.tar.gz']]]
+    def test_required_workflows_cover_readme_docs_and_source(self):
+        root = Path(__file__).resolve().parents[1]
         for workflow in WORKFLOWS:
-            for event in ['push', 'pull_request']:
-                patterns = self.exclusions(workflow, event)
-                self.assertEqual(patterns, expected)
-                self.assertTrue(all(any(self.matches(p, name) for p in patterns)
-                                    for name in reports), (workflow, event))
+            text = (root / '.github/workflows' / workflow).read_text()
+            for event in ['pull_request', 'push']:
+                for changed in ['README.md', 'docs/installation.md',
+                                'docs/foundation/repair-evidence.json',
+                                'crates/vesper-agent/src/lib.rs']:
+                    with self.subTest(workflow=workflow, event=event, changed=changed):
+                        self.assertTrue(self.trigger_block(text, event))
 
-    def test_executable_release_inputs_still_require_workflows(self):
-        inputs = ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml',
-                  'crates/vesper-agent/tests/command_settlement.rs',
-                  'fixtures/routing/corpus.jsonl', 'fixtures/README.md',
-                  'skills/work-unit-reporting/SKILL.md',
-                  'docs/foundation/release-objective-provenance.json',
-                  '.github/workflows/ci.yml', '.cargo/config.toml',
-                  'scripts/release_gate.py', 'registry/agent.json']
-        for workflow in WORKFLOWS:
-            for event in ['push', 'pull_request']:
-                patterns = self.exclusions(workflow, event)
-                self.assertFalse(any(self.matches(p, name) for p in patterns for name in inputs),
-                                 (workflow, event))
+    def test_filters_and_missing_events_cannot_hide_required_checks(self):
+        good = 'on:\n  pull_request:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n'
+        for event in ['pull_request', 'push']:
+            for restriction in ["paths-ignore:\n      - 'README.md'",
+                                "paths-ignore:\n      - 'docs/**'",
+                                "paths-ignore:\n      - 'crates/**'",
+                                "paths:\n      - 'crates/**'",
+                                'branches-ignore: [main]',
+                                'types: [opened]']:
+                mutated = good.replace('  ' + event + ':\n',
+                                       '  ' + event + ':\n    ' + restriction + '\n')
+                with self.subTest(event=event, restriction=restriction):
+                    with self.assertRaises(ValueError):
+                        self.trigger_block(mutated, event)
+            with self.assertRaises(ValueError):
+                self.trigger_block(good.replace('  ' + event + ':', '  other:'), event)
+        with self.assertRaises(ValueError):
+            self.trigger_block(good.replace('[main]', '[other]'), 'push')
+
+    def test_all_thirteen_required_contexts_have_covered_producers(self):
+        import sys
+        root = Path(__file__).resolve().parents[1]
+        sys.path.insert(0, str(root / '.github'))
+        from verify_pr_matrix import EXPECTED
+        self.assertEqual(set(EXPECTED), set(WORKFLOWS))
+        self.assertEqual(set().union(*EXPECTED.values()), {
+            'quality', 'windows-installer', 'supply-chain', 'rust-1-88',
+            'linux-x86_64', 'linux-arm64', 'macos-intel',
+            'macos-apple-silicon', 'windows-x86_64',
+            'Contained browser linux-x86_64', 'Contained browser linux-aarch64',
+            'Native namespace Hive'})
+        aggregate = (root / '.github/workflows/pr-verification.yml').read_text()
+        self.assertTrue(self.trigger_block(aggregate, 'pull_request'))
+        self.assertIn('    name: Jarvis verification\n', aggregate)
+        self.assertIn('python3 scripts/test_release_gate.py',
+                      (root / '.github/workflows/ci.yml').read_text())
 
 
 if __name__ == '__main__': unittest.main()
