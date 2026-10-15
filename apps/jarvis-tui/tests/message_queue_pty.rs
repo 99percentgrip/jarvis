@@ -9,7 +9,7 @@ fn run_fixture(name: &str, binary: bool) {
     let script = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join(name);
-    let python = std::env::var_os("VESPER_TEST_PYTHON").unwrap_or_else(|| "python3".into());
+    let python = std::env::var_os("JARVIS_TEST_PYTHON").unwrap_or_else(|| "python3".into());
     let log = tempfile::NamedTempFile::new().unwrap();
     let stdout = log.reopen().unwrap();
     let stderr = stdout.try_clone().unwrap();

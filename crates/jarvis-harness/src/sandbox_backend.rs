@@ -234,17 +234,17 @@ pub(crate) fn shell_argv(command: &str, cwd: &Path) -> Argv {
     }
 }
 
-/// Values of `AGENT_VESPER_SANDBOX` selecting the Docker backend.
+/// Values of `JARVIS_SANDBOX` selecting the Docker backend.
 const DOCKER_VALUES: [&str; 2] = ["docker", "container"];
-/// Values of `AGENT_VESPER_SANDBOX` disabling the sandbox entirely.
+/// Values of `JARVIS_SANDBOX` disabling the sandbox entirely.
 const OFF_VALUES: [&str; 4] = ["off", "0", "false", "none"];
 
 /// One-process route resolution mirroring the firewall holder pattern.
 ///
-/// Reads `AGENT_VESPER_SANDBOX=docker|namespaces|off` plus the project
-/// scope's `[sandbox]` demand from `.agent-vesper/config.toml`. With no
+/// Reads `JARVIS_SANDBOX=docker|namespaces|off` plus the project
+/// scope's `[sandbox]` demand from `.jarvis/config.toml`. With no
 /// demand the holder stays `None` (the zero-cost legacy path), exactly as
-/// `AGENT_VESPER_FIREWALL=off` leaves the firewall holder empty.
+/// `JARVIS_FIREWALL=off` leaves the firewall holder empty.
 pub mod holder {
     use super::*;
     use jarvis_sandbox::LinuxNamespacesBackend;
@@ -259,7 +259,7 @@ pub mod holder {
     /// resolution wins, immutable for the process lifetime.
     #[must_use]
     pub fn install_from_env() -> Option<Arc<SandboxRoute>> {
-        let env_backend = std::env::var("AGENT_VESPER_SANDBOX").ok();
+        let env_backend = std::env::var("JARVIS_SANDBOX").ok();
         ROUTE_HOLDER
             .get_or_init(|| resolve_route(env_backend.as_deref()))
             .clone()
@@ -322,7 +322,7 @@ pub mod holder {
                             jarvis_sandbox::DockerSandboxConfig {
                                 docker_bin: Some(engine.binary),
                                 connection: engine.connection,
-                                image: std::env::var("VESPER_DOCKER_IMAGE")
+                                image: std::env::var("JARVIS_DOCKER_IMAGE")
                                     .ok()
                                     .or_else(|| crate::web_settings::bundled_image_id().ok()),
                                 ..Default::default()

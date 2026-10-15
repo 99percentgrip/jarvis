@@ -9,7 +9,7 @@ import sys
 def require_hosted_fixture(environment):
     if (
         environment.get("GITHUB_ACTIONS") != "true"
-        or environment.get("VESPER_NATIVE_CREDENTIAL_ACCEPTANCE")
+        or environment.get("JARVIS_NATIVE_CREDENTIAL_ACCEPTANCE")
         != "isolated-hosted-fixture"
         or environment.get("RUNNER_OS") not in {"Windows", "macOS", "Linux"}
     ):

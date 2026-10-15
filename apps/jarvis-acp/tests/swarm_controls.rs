@@ -10,6 +10,7 @@ fn native_settings_save_cancel_and_refusals_never_dispatch_a_provider() {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let cognition = tempfile::tempdir().unwrap();
+    jarvis_security::prepare_owned_directory(cognition.path()).unwrap();
     let global = tempfile::tempdir().unwrap();
     std::fs::write(
         cognition.path().join("embedding.json"),
@@ -19,14 +20,14 @@ fn native_settings_save_cancel_and_refusals_never_dispatch_a_provider() {
     let mut process = ProcessHarness::spawn_with_environment(
         listener.local_addr().unwrap(),
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 cognition.path().display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 global.path().display().to_string(),
             ),
         ],
@@ -60,7 +61,7 @@ fn native_settings_save_cancel_and_refusals_never_dispatch_a_provider() {
         );
         assert!(process.response(index).get("error").is_none());
     }
-    assert!(!root.join(".agent-vesper/swarm-settings.json").exists());
+    assert!(!root.join(".jarvis/swarm-settings.json").exists());
     for (index, command) in [
         (8, "/settings swarm enabled on"),
         (9, "/settings swarm save"),
@@ -77,7 +78,7 @@ fn native_settings_save_cancel_and_refusals_never_dispatch_a_provider() {
     assert!(text.contains("Open swarm settings before saving"), "{text}");
     assert!(text.contains("real embedding source"), "{text}");
     assert!(
-        !std::fs::read_dir(root.join(".agent-vesper"))
+        !std::fs::read_dir(root.join(".jarvis"))
             .unwrap()
             .any(|entry| entry
                 .unwrap()
@@ -101,6 +102,7 @@ fn acp_swarm_audit_surfaces_the_shared_lifecycle_renderer() {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let cognition = tempfile::tempdir().unwrap();
+    jarvis_security::prepare_owned_directory(cognition.path()).unwrap();
     let global = tempfile::tempdir().unwrap();
     std::fs::write(
         cognition.path().join("embedding.json"),
@@ -110,14 +112,14 @@ fn acp_swarm_audit_surfaces_the_shared_lifecycle_renderer() {
     let mut process = ProcessHarness::spawn_with_environment(
         listener.local_addr().unwrap(),
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 cognition.path().display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 global.path().display().to_string(),
             ),
         ],

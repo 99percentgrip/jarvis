@@ -738,23 +738,15 @@ impl ProviderCredentialPort for LmStudioFactory {
 
 #[cfg(not(test))]
 fn lmstudio_secure_store() -> jarvis_auth::SecureCredentialStore {
-    let path = std::env::var_os("AGENT_VESPER_LMSTUDIO_CREDENTIALS_PATH")
+    let path = std::env::var_os("JARVIS_LMSTUDIO_CREDENTIALS_PATH")
         .map(std::path::PathBuf::from)
         .or_else(|| {
-            std::env::var_os("XDG_CONFIG_HOME").map(|path| {
-                std::path::PathBuf::from(path).join("agent-vesper/lmstudio-credentials.json")
-            })
+            jarvis_config::JarvisPaths::from_environment()
+                .ok()
+                .map(|p| p.config.join("lmstudio-credentials.json"))
         })
-        .or_else(|| {
-            std::env::var_os("HOME")
-                .or_else(|| std::env::var_os("USERPROFILE"))
-                .map(|path| {
-                    std::path::PathBuf::from(path)
-                        .join(".config/agent-vesper/lmstudio-credentials.json")
-                })
-        })
-        .unwrap_or_else(|| std::path::PathBuf::from("agent-vesper-lmstudio-credentials.json"));
-    jarvis_auth::SecureCredentialStore::new("agent-vesper", path)
+        .unwrap_or_default();
+    jarvis_auth::SecureCredentialStore::new("99percentgrip.jarvis", path)
 }
 
 #[cfg_attr(test, allow(dead_code))]
@@ -815,8 +807,8 @@ fn extract_text(parts: &[ContentPart]) -> String {
 /// Builds the ACP composition's LM Studio factory from environment settings.
 ///
 /// Mirrors the TUI's `register_default_providers`: reads
-/// `$AGENT_VESPER_LMSTUDIO_ROOT/settings.json` when present (falling back to
-/// `.agent-vesper/lmstudio/settings.json`), defaults to
+/// `$JARVIS_LMSTUDIO_ROOT/settings.json` when present (falling back to
+/// `.jarvis/lmstudio/settings.json`), defaults to
 /// `http://localhost:1234/v1`, and applies the optional `LMSTUDIO_API_KEY`.
 pub(crate) fn factory_from_settings() -> LmStudioFactory {
     let settings = lmstudio_settings();
@@ -841,11 +833,11 @@ pub(crate) fn factory_from_settings() -> LmStudioFactory {
 
 /// Reads `(api_base_url, model)` from the shared LM Studio settings file.
 fn lmstudio_settings() -> (String, String) {
-    let root = std::env::var("AGENT_VESPER_LMSTUDIO_ROOT").map_or_else(
+    let root = std::env::var("JARVIS_LMSTUDIO_ROOT").map_or_else(
         |_| {
             std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                .join(".agent-vesper")
+                .join(".jarvis")
                 .join("lmstudio")
         },
         std::path::PathBuf::from,

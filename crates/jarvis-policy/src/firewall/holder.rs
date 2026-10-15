@@ -1,14 +1,14 @@
 //! Process-global firewall holder (VRO-13 PR-2).
 //!
 //! One [`Arc<CommandFirewall>`] per process, resolved once at host boot from
-//! `AGENT_VESPER_FIREWALL`. Both hosts (TUI and ACP) and the agent loop read
+//! `JARVIS_FIREWALL`. Both hosts (TUI and ACP) and the agent loop read
 //! the same Arc, which makes "same instance id" a structural property
 //! instead of a convention. The holder is a plain global slot: hosts set it
 //! exactly once during startup; nothing re-sets it later (a change requires
 //! a restart, which is exactly what the `/firewall` panel advertises).
 //!
 //! Envelope:
-//! - `AGENT_VESPER_FIREWALL=off` (or `0`/`false`, ASCII case-insensitive)
+//! - `JARVIS_FIREWALL=off` (or `0`/`false`, ASCII case-insensitive)
 //!   → [`FirewallState::Disabled`]: the holder keeps `None`, executors never
 //!   see a firewall, and the off path is structurally identical to the
 //!   pre-VRO-13 executor (one `Option` check).
@@ -32,7 +32,7 @@ pub enum FirewallState {
         /// Environment value that produced this state, when present.
         source: Option<String>,
     },
-    /// The firewall is off (`AGENT_VESPER_FIREWALL=off`).
+    /// The firewall is off (`JARVIS_FIREWALL=off`).
     Disabled {
         /// The exact environment value that disabled it.
         source: String,
@@ -41,17 +41,17 @@ pub enum FirewallState {
 
 static HOLDER: OnceLock<Option<Arc<CommandFirewall>>> = OnceLock::new();
 
-/// Disabling values for `AGENT_VESPER_FIREWALL` (ASCII case-insensitive).
+/// Disabling values for `JARVIS_FIREWALL` (ASCII case-insensitive).
 const OFF_VALUES: [&str; 3] = ["off", "0", "false"];
 
-/// Reads `AGENT_VESPER_FIREWALL` once and installs the process-global
+/// Reads `JARVIS_FIREWALL` once and installs the process-global
 /// firewall. Later calls are no-ops: the first resolution wins, so a host
 /// cannot flip the firewall mid-process.
 ///
 /// Returns the resolved state, including the shared Arc when enabled.
 #[must_use]
 pub fn install_from_env() -> FirewallState {
-    let raw = std::env::var("AGENT_VESPER_FIREWALL").ok();
+    let raw = std::env::var("JARVIS_FIREWALL").ok();
     let cell = HOLDER.get_or_init(|| {
         let disabled = raw
             .as_deref()

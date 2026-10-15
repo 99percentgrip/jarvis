@@ -25,8 +25,8 @@ an ``[unverified]`` marker rather than silently blended in.
 
 Ledger path resolution (first wins):
   --ledger PATH
-  $AGENT_VESPER_CITATION_LEDGER
-  $AGENT_VESPER_HOME/cache/citations/ledger.json
+  $JARVIS_CITATION_LEDGER
+  the platform application cache: citations/ledger.json
 """
 
 from __future__ import annotations
@@ -37,6 +37,9 @@ import os
 import re
 import sys
 import time
+import stat
+import tempfile
+import subprocess
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -44,10 +47,68 @@ from typing import Any, Iterable
 SCHEMA_VERSION = 1
 
 
-def _agent_vesper_home() -> Path:
-    return Path(
-        os.environ.get("AGENT_VESPER_HOME", str(Path.home() / ".agent-vesper"))
-    ).expanduser()
+def _private_cache() -> Path:
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Caches" / "Jarvis"
+    if os.name == "nt":
+        return Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Jarvis" / "Cache"
+    base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+    if not base.is_absolute():
+        raise SystemExit("error: application cache base must be absolute")
+    return base / "jarvis"
+
+
+def _validate_path(path: Path) -> Path:
+    path = path.expanduser().absolute()
+    if ".." in path.parts:
+        raise SystemExit("error: ledger traversal refused")
+    for part in path.parts:
+        if part.lower() in {".agent-vesper", ".glm-acp", "agent-vesper", "agent vesper"}:
+            raise SystemExit("error: Vesper-private ledger location refused")
+    for ancestor in [path, *path.parents]:
+        try:
+            metadata = ancestor.lstat()
+        except FileNotFoundError:
+            continue
+        if stat.S_ISLNK(metadata.st_mode) or getattr(metadata, "st_file_attributes", 0) & 0x400:
+            # macOS /var and /tmp are platform-owned aliases, not app redirects.
+            if sys.platform == "darwin" and str(ancestor) in {"/var", "/tmp"}:
+                continue
+            raise SystemExit("error: redirected ledger path refused")
+    return path
+
+
+def _check_storage(path: Path) -> None:
+    path = _validate_path(path)
+    cache = _validate_path(_private_cache())
+    if not path.is_relative_to(cache):
+        # Explicit user-owned ledger files remain usable outside private roots.
+        return
+    marker = cache / ".jarvis-owner"
+    _validate_path(marker)
+    if not marker.is_file() or marker.read_bytes() != b"99percentgrip.jarvis/runtime-v1\n":
+        raise SystemExit("error: application cache is not initialized; start the application first")
+    if os.name == "nt":
+        # Read-only native ACL inspection. Path is passed as data, never script text.
+        script = """$ErrorActionPreference='Stop';
+$p=$env:CITATION_CACHE_ACL_PATH;
+$acl=Get-Acl -LiteralPath $p;
+$user=[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value;
+$trusted=@($user,'S-1-5-18','S-1-5-32-544');
+$owner=$acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value;
+if($trusted -notcontains $owner){exit 1};
+foreach($ace in $acl.GetAccessRules($true,$true,[System.Security.Principal.SecurityIdentifier])){
+ if($ace.AccessControlType -eq 'Allow' -and $trusted -notcontains $ace.IdentityReference.Value){exit 1}
+}; exit 0"""
+        env = dict(os.environ, CITATION_CACHE_ACL_PATH=str(cache))
+        result = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+                                env=env, capture_output=True, timeout=15)
+        if result.returncode:
+            raise SystemExit("error: application cache ACL refused")
+    else:
+        metadata = cache.stat()
+        if metadata.st_uid != os.geteuid() or metadata.st_mode & 0o077:
+            raise SystemExit("error: application cache permissions refused")
 
 
 # A citation marker in prose: [12].  Markdown links ([text](url)) and
@@ -69,11 +130,11 @@ _UNVERIFIED_RE = re.compile(r"\[unverified\]", re.IGNORECASE)
 
 def resolve_ledger_path(explicit: str | None = None) -> Path:
     if explicit:
-        return Path(explicit).expanduser()
-    env = os.environ.get("AGENT_VESPER_CITATION_LEDGER", "").strip()
+        return _validate_path(Path(explicit))
+    env = os.environ.get("JARVIS_CITATION_LEDGER", "").strip()
     if env:
-        return Path(env).expanduser()
-    return _agent_vesper_home() / "cache" / "citations" / "ledger.json"
+        return _validate_path(Path(env))
+    return _validate_path(_private_cache() / "citations" / "ledger.json")
 
 
 def normalize_url(url: str) -> str:
@@ -91,6 +152,7 @@ def normalize_url(url: str) -> str:
 
 
 def load_ledger(path: Path) -> dict[str, Any]:
+    _check_storage(path)
     if not path.exists():
         return {"version": SCHEMA_VERSION, "sources": []}
     try:
@@ -103,10 +165,18 @@ def load_ledger(path: Path) -> dict[str, Any]:
 
 
 def save_ledger(path: Path, data: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + f".tmp{os.getpid()}")
-    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    _check_storage(path)
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=".citation-", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 class _LedgerLock:
@@ -124,20 +194,16 @@ class _LedgerLock:
         self.fd: int | None = None
 
     def __enter__(self) -> "_LedgerLock":
-        self.lock_path.parent.mkdir(parents=True, exist_ok=True)
+        _check_storage(self.lock_path)
+        self.lock_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         deadline = time.monotonic() + self.timeout
         while True:
             try:
-                self.fd = os.open(str(self.lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                self.fd = os.open(str(self.lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                 return self
             except FileExistsError:
                 if time.monotonic() >= deadline:
-                    # Assume a stale lock from a crashed run.
-                    try:
-                        self.lock_path.unlink()
-                    except OSError:
-                        return self
-                    continue
+                    raise SystemExit("error: citation ledger is locked; refusing to steal an active or unverifiable lock")
                 time.sleep(0.05)
 
     def __exit__(self, *_exc: object) -> None:
@@ -146,10 +212,11 @@ class _LedgerLock:
                 os.close(self.fd)
             except OSError:
                 pass
-        try:
-            self.lock_path.unlink()
-        except OSError:
-            pass
+        if self.fd is not None:
+            try:
+                self.lock_path.unlink()
+            except OSError:
+                pass
 
 
 # ---------------------------------------------------------------------------

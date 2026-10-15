@@ -273,8 +273,10 @@ impl ProviderFactory for OpenAiFactory {
                 },
                 AuthenticationMethodDescriptor {
                     method_id: BoundedString::new("openai-chatgpt").expect("static"),
-                    display_name: BoundedString::new("ChatGPT subscription (device sign-in)")
-                        .expect("static"),
+                    display_name: BoundedString::new(
+                        "ChatGPT subscription (independent authorization pending)",
+                    )
+                    .expect("static"),
                     secret_reference_fields: vec![],
                     external_runtime_owned: false,
                     key_url: Some(

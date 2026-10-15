@@ -10,7 +10,7 @@ case "${1:-}" in
   rm) [ ! -f "$base/cleanup-failed" ] ;;
   machine)
     case "${2:-}" in
-      list) if [ -f "$base/machine-created" ]; then printf '[{"Name":"agent-vesper"}]'; else printf '[]'; fi ;;
+      list) if [ -f "$base/machine-created" ]; then printf '[{"Name":"jarvis"}]'; else printf '[]'; fi ;;
       init) touch "$base/machine-created" ;;
       start) rm -f "$base/unhealthy" ;;
       *) exit 8 ;;

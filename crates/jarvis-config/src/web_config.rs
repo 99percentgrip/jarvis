@@ -1,4 +1,4 @@
-//! VRO-14 PR-5: `[web]` scope configuration from `.agent-vesper/config.toml`.
+//! VRO-14 PR-5: `[web]` scope configuration from `.jarvis/config.toml`.
 //!
 //! Same deliberately minimal, dependency-free TOML reader discipline as
 //! `sandbox_config` (bounded tables, tolerant of unknown keys, forward
@@ -111,7 +111,7 @@ impl WebScopeConfig {
     }
 }
 
-/// Reads `<root>/.agent-vesper/config.toml` and extracts the `[web]`
+/// Reads `<root>/.jarvis/config.toml` and extracts the `[web]`
 /// table. A missing file or a file without `[web]` yields the disabled
 /// default — configuring nothing is a valid, common, zero-cost state.
 ///
@@ -121,7 +121,17 @@ impl WebScopeConfig {
 /// - [`WebConfigError::DuplicateTable`] on a second `[web]`.
 /// - [`WebConfigError::MalformedValue`] on an unparseable known value.
 pub fn read_web_scope(root: &Path) -> Result<WebScopeConfig, WebConfigError> {
-    let settings = root.join(".agent-vesper/web-settings.json");
+    jarvis_security::validate_private_path(&root.join(".jarvis/config.toml")).map_err(|_| {
+        WebConfigError::Read {
+            path: "private application settings".into(),
+            reason: "ownership refused".into(),
+        }
+    })?;
+    let settings = root.join(".jarvis/web-settings.json");
+    jarvis_security::validate_private_path(&settings).map_err(|_| WebConfigError::Read {
+        path: "private application settings".into(),
+        reason: "ownership refused".into(),
+    })?;
     match std::fs::read(&settings) {
         Ok(bytes) => {
             let config: WebScopeConfig =
@@ -149,7 +159,7 @@ pub fn read_web_scope(root: &Path) -> Result<WebScopeConfig, WebConfigError> {
             });
         }
     }
-    let path = root.join(".agent-vesper").join("config.toml");
+    let path = root.join(".jarvis").join("config.toml");
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -399,7 +409,7 @@ mod tests {
     #[test]
     fn malformed_saved_settings_do_not_fall_back_to_enabled_toml() {
         let root = tempfile::tempdir().unwrap();
-        let dir = root.path().join(".agent-vesper");
+        let dir = root.path().join(".jarvis");
         std::fs::create_dir(&dir).unwrap();
         std::fs::write(dir.join("config.toml"), "[web]\nenabled = true\n").unwrap();
         for body in [

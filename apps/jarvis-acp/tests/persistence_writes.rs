@@ -20,12 +20,12 @@ mod support;
 use support::{ProcessHarness, read_http_request, write_sse};
 
 const CANARY: &str = "vesper-stage7-secret-canary";
-const READ_ENABLE: &str = "AGENT_VESPER_ENABLE_SESSION_READS";
-const VESPER_READ_ENABLE: &str = "AGENT_VESPER_ENABLE_VESPER_SESSION_READS";
-const READ_ROOT: &str = "AGENT_VESPER_SESSION_ROOT";
-const WRITE_ENABLE: &str = "AGENT_VESPER_ENABLE_SESSION_WRITES";
-const WRITE_ROOT: &str = "AGENT_VESPER_SESSION_WRITE_ROOT";
-const WRITE_MAX_BYTES: &str = "AGENT_VESPER_SESSION_WRITE_MAX_BYTES";
+const READ_ENABLE: &str = "JARVIS_ENABLE_SESSION_READS";
+const VESPER_READ_ENABLE: &str = "JARVIS_ENABLE_VESPER_SESSION_READS";
+const READ_ROOT: &str = "JARVIS_SESSION_ROOT";
+const WRITE_ENABLE: &str = "JARVIS_ENABLE_SESSION_WRITES";
+const WRITE_ROOT: &str = "JARVIS_SESSION_WRITE_ROOT";
+const WRITE_MAX_BYTES: &str = "JARVIS_SESSION_WRITE_MAX_BYTES";
 
 /// A deterministic single-shot SSE completion that the GLM adapter accepts as a
 /// finished turn. The assistant content (`answer`) is the fidelity marker the
@@ -118,7 +118,7 @@ fn prompt_persists_transactionally_and_resumes_across_processes() {
             (READ_ROOT, vesper_root.to_string_lossy().into_owned()),
             (WRITE_ENABLE, "1".into()),
             (WRITE_ROOT, vesper_root.to_string_lossy().into_owned()),
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
         ],
     );
 
@@ -170,7 +170,7 @@ fn prompt_persists_transactionally_and_resumes_across_processes() {
             (READ_ENABLE, "1".into()),
             (VESPER_READ_ENABLE, "1".into()),
             (READ_ROOT, vesper_root.to_string_lossy().into_owned()),
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
         ],
     );
 

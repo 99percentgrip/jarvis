@@ -59,8 +59,8 @@ fn check_root(root: &Path) -> Result<(), String> {
         return Err("Swarm settings require an existing absolute workspace root.".into());
     }
     for path in [
-        root.join(".agent-vesper"),
-        root.join(".agent-vesper/swarm-settings.json"),
+        root.join(".jarvis"),
+        root.join(".jarvis/swarm-settings.json"),
     ] {
         match path.symlink_metadata() {
             Ok(metadata) if metadata.file_type().is_symlink() => {
@@ -76,8 +76,12 @@ fn check_root(root: &Path) -> Result<(), String> {
 }
 
 pub fn load(root: &Path) -> Result<SwarmSettings, String> {
+    jarvis_security::validate_private_path(&root.join(".jarvis"))
+        .map_err(|_| "Private settings ownership refused")?;
     check_root(root)?;
-    let path = root.join(".agent-vesper/swarm-settings.json");
+    let path = root.join(".jarvis/swarm-settings.json");
+    jarvis_security::validate_private_path(&path)
+        .map_err(|_| "Private settings ownership refused")?;
     let file = match std::fs::File::open(path) {
         Ok(file) => file,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Default::default()),
@@ -101,14 +105,14 @@ pub fn load(root: &Path) -> Result<SwarmSettings, String> {
 pub fn save(root: &Path, settings: &SwarmSettings) -> Result<(), String> {
     settings.validate()?;
     check_root(root)?;
-    let directory = root.join(".agent-vesper");
-    std::fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
+    let directory = root.join(".jarvis");
+    jarvis_security::prepare_owned_directory(&directory).map_err(|error| error.to_string())?;
     let mut file = tempfile::NamedTempFile::new_in(directory).map_err(|error| error.to_string())?;
     serde_json::to_writer_pretty(&mut file, settings).map_err(|error| error.to_string())?;
     file.as_file()
         .sync_all()
         .map_err(|error| error.to_string())?;
-    file.persist(root.join(".agent-vesper/swarm-settings.json"))
+    file.persist(root.join(".jarvis/swarm-settings.json"))
         .map_err(|error| error.to_string())?;
     Ok(())
 }
@@ -290,8 +294,8 @@ mod tests {
                 .is_err()
         );
         assert!(controls.command(second.path(), "settings save").is_err());
-        assert!(!first.path().join(".agent-vesper").exists());
-        assert!(!second.path().join(".agent-vesper").exists());
+        assert!(!first.path().join(".jarvis").exists());
+        assert!(!second.path().join(".jarvis").exists());
         controls
             .command(second.path(), "settings enabled on")
             .unwrap();
@@ -310,9 +314,9 @@ mod tests {
         let mut draft = SwarmSettingsDraft::open(root.path()).unwrap();
         draft.apply("enabled on").unwrap();
         assert!(draft.settings.enabled);
-        assert!(!root.path().join(".agent-vesper").exists());
-        std::fs::create_dir(root.path().join(".agent-vesper")).unwrap();
-        let config = root.path().join(".agent-vesper/config.toml");
+        assert!(!root.path().join(".jarvis").exists());
+        jarvis_security::prepare_owned_directory(&root.path().join(".jarvis")).unwrap();
+        let config = root.path().join(".jarvis/config.toml");
         std::fs::write(&config, "[other]\nvalue = 7\n").unwrap();
         let mut draft = SwarmSettingsDraft::open(root.path()).unwrap();
         draft.apply("enabled on").unwrap();
@@ -330,7 +334,7 @@ mod tests {
     fn malformed_settings_fail_closed_without_rewrite() {
         let root = tempfile::tempdir().unwrap();
         save(root.path(), &Default::default()).unwrap();
-        let path = root.path().join(".agent-vesper/swarm-settings.json");
+        let path = root.path().join(".jarvis/swarm-settings.json");
         for invalid in ["{}".to_owned(), "x".repeat(4097)] {
             std::fs::write(&path, &invalid).unwrap();
             assert!(load(root.path()).is_err());
@@ -343,7 +347,7 @@ mod tests {
     fn settings_directory_alias_never_reads_or_writes_target() {
         let root = tempfile::tempdir().unwrap();
         let outside = tempfile::tempdir().unwrap();
-        std::os::unix::fs::symlink(outside.path(), root.path().join(".agent-vesper")).unwrap();
+        std::os::unix::fs::symlink(outside.path(), root.path().join(".jarvis")).unwrap();
         assert!(load(root.path()).is_err());
         assert!(save(root.path(), &Default::default()).is_err());
         assert_eq!(std::fs::read_dir(outside.path()).unwrap().count(), 0);

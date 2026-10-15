@@ -81,14 +81,14 @@ fn at01_enabled_bridge_startup_observes_no_extra_process_or_socket() {
     let mut enabled = ProcessHarness::spawn_with_environment(
         listener.local_addr().unwrap(),
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 cognition.path().display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 global.path().display().to_string(),
             ),
         ],
@@ -96,11 +96,9 @@ fn at01_enabled_bridge_startup_observes_no_extra_process_or_socket() {
     // The host's cwd is the isolated ROOT (spawn pins current_dir there),
     // so the enabled settings file must sit at the root's .agent-vesper/
     // for this pass to be non-vacuous.
-    std::fs::create_dir_all(enabled.isolated_root().join(".agent-vesper")).unwrap();
+    jarvis_security::prepare_owned_directory(&enabled.isolated_root().join(".jarvis")).unwrap();
     std::fs::write(
-        enabled
-            .isolated_root()
-            .join(".agent-vesper/bridge-settings.json"),
+        enabled.isolated_root().join(".jarvis/bridge-settings.json"),
         serde_json::json!({"enabled": true}).to_string(),
     )
     .unwrap();
@@ -137,14 +135,14 @@ fn at01_enabled_bridge_startup_observes_no_extra_process_or_socket() {
     let mut disabled = ProcessHarness::spawn_with_environment(
         listener.local_addr().unwrap(),
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 cognition.path().display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 global.path().display().to_string(),
             ),
         ],
@@ -189,10 +187,7 @@ fn at01_enabled_bridge_startup_observes_no_extra_process_or_socket() {
     );
     // Durable-state honesty: no durable bridge state outside the workspace.
     assert!(
-        !enabled_root
-            .join(".agent-vesper")
-            .join("bridge-state")
-            .exists(),
+        !enabled_root.join(".jarvis").join("bridge-state").exists(),
         "enabled idle Bridge must not create durable bridge state"
     );
 }

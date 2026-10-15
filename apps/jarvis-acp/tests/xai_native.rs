@@ -49,15 +49,12 @@ fn spawn(listener: &TcpListener) -> ProcessHarness {
     ProcessHarness::spawn_with_environment(
         address,
         [
-            ("AGENT_VESPER_PROVIDER", "xai".into()),
-            ("AGENT_VESPER_XAI_TEST_MODE", "grok-session".into()),
-            (
-                "AGENT_VESPER_XAI_TEST_URL",
-                format!("http://{address}/responses"),
-            ),
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
-            ("AGENT_VESPER_XAI_TEST_STALE_HOSTED", "1".into()),
+            ("JARVIS_PROVIDER", "xai".into()),
+            ("JARVIS_XAI_TEST_MODE", "grok-session".into()),
+            ("JARVIS_XAI_TEST_URL", format!("http://{address}/responses")),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
+            ("JARVIS_XAI_TEST_STALE_HOSTED", "1".into()),
         ],
     )
 }

@@ -45,9 +45,15 @@ overwritten or resurrected.
     references, long procedures, or any content the user asks about
     selectively). Keep one focused body when the whole skill is needed on
     every activation; chunks are for selectively-read knowledge.
-- Bodies must not reference foreign harness state directories or their
-  environment variables; resource paths must be absolute under
-  `~/.agent-vesper/memory/skills/<slug>/`.
+- Inherited resource prefixes are bound by `jarvis-memory::SkillStore` to the
+  selected, validated private skill store; loading never reads the old home.
+  Non-resource legacy-private instructions require an explicit reviewed mapping
+  or fail closed. Original on-disk bodies are not rewritten during loading.
+- Runtime helpers never read Vesper-private `.env`, OAuth tokens, or caches.
+  Google OAuth and legacy TouchDesigner setup remain explicitly inactive pending
+  independent authorization/storage and configuration adapters. Citation state
+  uses the initialized native application cache or an explicit user-owned ledger.
+  Standard user-provided GitHub credentials remain externally owned inputs.
 - Bundle files must reference only slugs present in `skills/`.
 - Body size ≤ 200 KB (`vesper-memory` `MAX_SKILL_BYTES`); file count ≤ 500
   (`MAX_SKILL_FILES`).
@@ -56,9 +62,8 @@ overwritten or resurrected.
 
 ## Work Guidance
 
-- Add or update a seed skill: edit here, then mirror to
-  `~/.agent-vesper/memory/skills/` for immediate local use (installers
-  only seed fresh homes or manifest-unseen slugs).
+- Stage 3 edits remain in this independent source checkout. Never mirror changes
+  into a Vesper installation or user home. Installer activation is deferred.
 - Never store secrets, credentials, or project-transient state here.
 
 ## Verification
@@ -68,6 +73,9 @@ overwritten or resurrected.
 - A case-insensitive grep for the foreign harness name over
   `skills/` returns no matches (kept verbatim-free here so this gate is
   self-checking).
+- `cargo xtask verify` includes the offline, real-filesystem helper isolation
+  suite at `skills/grounded-citations/scripts/test_runtime_isolation.py`.
+  Windows ACL/junction coverage additionally belongs to `jarvis-security`.
 - `cargo xtask verify` stays green after any change touching packaging.
 
 ## Child DOX Index

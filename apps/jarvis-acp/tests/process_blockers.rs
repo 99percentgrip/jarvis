@@ -40,6 +40,7 @@ fn full_harness_streams_ordered_content_once_before_end_turn() {
     });
 
     let cognition = tempfile::tempdir().unwrap();
+    jarvis_security::prepare_owned_directory(cognition.path()).unwrap();
     let global_cognition = tempfile::tempdir().unwrap();
     std::fs::write(
         cognition.path().join("embedding.json"),
@@ -49,14 +50,14 @@ fn full_harness_streams_ordered_content_once_before_end_turn() {
     let mut process = ProcessHarness::spawn_with_environment(
         address,
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".to_owned()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".to_owned()),
+            ("JARVIS_FULL_HARNESS", "1".to_owned()),
+            ("JARVIS_VRO_ENABLED", "0".to_owned()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 cognition.path().display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 global_cognition.path().display().to_string(),
             ),
         ],

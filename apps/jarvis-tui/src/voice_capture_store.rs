@@ -235,6 +235,11 @@ impl ManagedCapture {
                 path: "private voice data directory is unavailable".into(),
             });
         }
+        jarvis_security::validate_private_path(&root.join("captures")).map_err(|_| {
+            CaptureStoreError::Io {
+                reason: "Private capture ownership refused".into(),
+            }
+        })?;
         // 1. Destination filesystem must be measurable and have the
         //    reserve after the planned bounded allocation.
         let planned = CAPTURE_MAX_BYTES;
@@ -249,6 +254,9 @@ impl ManagedCapture {
             });
         }
         // 2. Recover provably-dead leases first, then measure aggregate.
+        jarvis_security::prepare_owned_directory(root).map_err(|_| CaptureStoreError::Io {
+            reason: "Private capture ownership refused".into(),
+        })?;
         recover_abandoned(root)?;
         let used = aggregate_bytes(root)?;
         if used + planned > AGGREGATE_MAX_BYTES {
@@ -260,7 +268,7 @@ impl ManagedCapture {
         // 3. Private owned directory + lease file.
         let id = format!("cap-{}-{}", std::process::id(), uuid::Uuid::new_v4());
         let dir = root.join("captures").join(id);
-        std::fs::create_dir_all(&dir).map_err(|error| CaptureStoreError::Io {
+        jarvis_security::prepare_owned_directory(&dir).map_err(|error| CaptureStoreError::Io {
             reason: error.to_string(),
         })?;
         set_private(&dir)?;
@@ -462,6 +470,11 @@ impl Drop for ManagedCapture {
 /// Recovers provably-abandoned captures (dead leases only). Never
 /// touches live leases, foreign files, or symlink targets.
 pub fn recover_abandoned(root: &Path) -> Result<u64, CaptureStoreError> {
+    jarvis_security::validate_new_or_owned_directory(root)
+        .and_then(|()| jarvis_security::validate_private_path(&root.join("captures")))
+        .map_err(|_| CaptureStoreError::Io {
+            reason: "Private capture ownership refused".into(),
+        })?;
     let captures = root.join("captures");
     if !captures.exists() {
         return Ok(0);
@@ -472,6 +485,9 @@ pub fn recover_abandoned(root: &Path) -> Result<u64, CaptureStoreError> {
     })?;
     for entry in entries.flatten() {
         let dir = entry.path();
+        if jarvis_security::validate_private_path(&dir).is_err() {
+            continue;
+        }
         if !dir.is_dir() || is_symlink(&dir) {
             continue;
         }
@@ -490,6 +506,7 @@ pub fn recover_abandoned(root: &Path) -> Result<u64, CaptureStoreError> {
 }
 
 fn read_lease(dir: &Path) -> Option<CaptureLease> {
+    jarvis_security::validate_private_path(&dir.join("lease.json")).ok()?;
     let bytes = std::fs::read(dir.join("lease.json")).ok()?;
     let value: [u64; 3] = serde_json::from_slice(&bytes).ok()?;
     Some(CaptureLease {
@@ -533,7 +550,7 @@ fn dir_size(path: &Path) -> u64 {
     };
     for entry in entries.flatten() {
         let child = entry.path();
-        if is_symlink(&child) {
+        if is_symlink(&child) || jarvis_security::validate_private_path(&child).is_err() {
             continue; // never follow links out of the managed root
         }
         if child.is_dir() {
@@ -587,13 +604,14 @@ mod tests {
                 .as_nanos()
         ));
         std::fs::create_dir_all(&dir).unwrap();
+        jarvis_security::prepare_owned_directory(&dir).unwrap();
         dir
     }
 
     #[test]
     fn first_capture_handles_a_not_yet_created_data_root() {
         let base = tempfile::tempdir().unwrap();
-        let root = base.path().join("data/agent-vesper");
+        let root = base.path().join("data/jarvis");
         let capture = ManagedCapture::start(&root).expect("fresh data root must be supported");
         capture.cleanup().unwrap();
     }

@@ -794,23 +794,15 @@ impl ProviderCredentialPort for LmStudioFactory {
 
 #[cfg(not(test))]
 fn lmstudio_secure_store() -> jarvis_auth::SecureCredentialStore {
-    let path = std::env::var_os("AGENT_VESPER_LMSTUDIO_CREDENTIALS_PATH")
+    let path = std::env::var_os("JARVIS_LMSTUDIO_CREDENTIALS_PATH")
         .map(std::path::PathBuf::from)
         .or_else(|| {
-            std::env::var_os("XDG_CONFIG_HOME").map(|path| {
-                std::path::PathBuf::from(path).join("agent-vesper/lmstudio-credentials.json")
-            })
+            jarvis_config::JarvisPaths::from_environment()
+                .ok()
+                .map(|p| p.config.join("lmstudio-credentials.json"))
         })
-        .or_else(|| {
-            std::env::var_os("HOME")
-                .or_else(|| std::env::var_os("USERPROFILE"))
-                .map(|path| {
-                    std::path::PathBuf::from(path)
-                        .join(".config/agent-vesper/lmstudio-credentials.json")
-                })
-        })
-        .unwrap_or_else(|| std::path::PathBuf::from("agent-vesper-lmstudio-credentials.json"));
-    jarvis_auth::SecureCredentialStore::new("agent-vesper", path)
+        .unwrap_or_default();
+    jarvis_auth::SecureCredentialStore::new("99percentgrip.jarvis", path)
 }
 
 #[cfg_attr(test, allow(dead_code))]

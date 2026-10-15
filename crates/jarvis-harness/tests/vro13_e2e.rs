@@ -71,7 +71,7 @@ use serde_json::json;
 // ---------------------------------------------------------------------------
 
 /// One isolated project scope: project root, global layer root, and the
-/// `.agent-vesper/` state directory carrying an active `[sandbox]` demand.
+/// `.jarvis/` state directory carrying an active `[sandbox]` demand.
 struct Fixture {
     #[allow(dead_code)]
     project: tempfile::TempDir,
@@ -83,7 +83,7 @@ impl Fixture {
     fn new() -> Self {
         let project = tempfile::tempdir().expect("project root");
         let global = tempfile::tempdir().expect("global layer root");
-        let state = project.path().join(".agent-vesper");
+        let state = project.path().join(".jarvis");
         std::fs::create_dir_all(&state).expect("create state dir");
         // PR-4 scope demand: the real config surface the hosts parse.
         std::fs::write(state.join("config.toml"), "[sandbox]\nfilesystem = true\n")
@@ -96,7 +96,7 @@ impl Fixture {
     }
 
     fn state_dir(&self) -> PathBuf {
-        self.root().join(".agent-vesper")
+        self.root().join(".jarvis")
     }
 }
 

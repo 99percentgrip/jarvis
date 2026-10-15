@@ -33,14 +33,14 @@ fn development_predictions_explain_selection_losses() {
             }
         })
         .collect();
-    if let Ok(path) = std::env::var("VESPER_ROUTING_METADATA_OUTPUT") {
+    if let Ok(path) = std::env::var("JARVIS_ROUTING_METADATA_OUTPUT") {
         let records:Vec<_>=entries.iter().map(|e|serde_json::json!({"slug":e.metadata.slug,"name":e.metadata.name,"description":e.metadata.description,"tags":e.metadata.tags,"triggers":e.metadata.triggers,"extensions":e.metadata.file_extensions})).collect();
         std::fs::write(path, serde_json::to_vec_pretty(&records).unwrap()).unwrap();
     }
     let index = RoutingIndex::build(&entries).unwrap();
     let corpus: serde_json::Value =
         serde_json::from_str(include_str!("routing_quality_cases.json")).unwrap();
-    if let Ok(path) = std::env::var("VESPER_ROUTING_TASK_OUTPUT") {
+    if let Ok(path) = std::env::var("JARVIS_ROUTING_TASK_OUTPUT") {
         let flags: BTreeMap<_, _> = corpus["cases"]
             .as_array()
             .unwrap()
@@ -72,7 +72,7 @@ fn development_predictions_explain_selection_losses() {
     let outcomes = BTreeMap::new();
     let mut options = RoutingOptions::default();
     options.preferences.mode = RoutingMode::Enhanced;
-    if let Ok(path) = std::env::var("VESPER_ROUTING_POLICY_OUTPUT") {
+    if let Ok(path) = std::env::var("JARVIS_ROUTING_POLICY_OUTPUT") {
         let policies: BTreeMap<_, _> = corpus["cases"]
             .as_array()
             .unwrap()

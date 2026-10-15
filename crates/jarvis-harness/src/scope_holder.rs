@@ -263,7 +263,7 @@ mod tests {
                 .expect("scope installs");
         assert!(!resolved.id().as_str().is_empty());
         assert!(
-            !root.path().join(".vesper-scope-id").exists(),
+            !root.path().join(".jarvis-scope-id").exists(),
             "ACP default must not create a project stamp"
         );
         holder::reset_for_tests();

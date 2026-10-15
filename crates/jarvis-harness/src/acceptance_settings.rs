@@ -14,8 +14,8 @@ fn location(root: &Path) -> Result<std::path::PathBuf, String> {
         return Err("acceptance settings require an existing workspace".into());
     }
     for path in [
-        root.join(".agent-vesper"),
-        root.join(".agent-vesper/acceptance-settings.json"),
+        root.join(".jarvis"),
+        root.join(".jarvis/acceptance-settings.json"),
     ] {
         match path.symlink_metadata() {
             Ok(m) if m.file_type().is_symlink() => {
@@ -27,7 +27,7 @@ fn location(root: &Path) -> Result<std::path::PathBuf, String> {
             _ => {}
         }
     }
-    Ok(root.join(".agent-vesper/acceptance-settings.json"))
+    Ok(root.join(".jarvis/acceptance-settings.json"))
 }
 
 impl AcceptanceSettings {

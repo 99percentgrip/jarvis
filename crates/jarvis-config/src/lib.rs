@@ -17,7 +17,8 @@ pub use app::{
 };
 pub use atomic::{AtomicWriteError, AtomicWriter};
 pub use paths::{
-    LegacyLocation, LegacyLocationKind, PathEnvironment, Platform, VesperPaths, VesperPathsError,
+    JarvisPaths, LegacyLocation, LegacyLocationKind, PathEnvironment, Platform, VesperPaths,
+    VesperPathsError,
 };
 pub use profile::{ProfileName, ProfileNameError};
 pub use sandbox_config::{

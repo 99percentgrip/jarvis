@@ -57,26 +57,17 @@ pub(crate) struct DispatchAuth {
 
 impl Default for Credentials {
     fn default() -> Self {
-        let path = std::env::var_os("AGENT_VESPER_OPENAI_CREDENTIALS_PATH")
+        let path = std::env::var_os("JARVIS_OPENAI_CREDENTIALS_PATH")
             .map(PathBuf::from)
             .or_else(|| {
-                std::env::var_os("XDG_CONFIG_HOME")
-                    .map(|p| PathBuf::from(p).join("agent-vesper/openai-credentials.json"))
+                jarvis_config::JarvisPaths::from_environment()
+                    .ok()
+                    .map(|p| p.config.join("openai-credentials.json"))
             })
-            .or_else(|| {
-                std::env::var_os("APPDATA")
-                    .map(|p| PathBuf::from(p).join("agent-vesper/openai-credentials.json"))
-            })
-            .unwrap_or_else(|| {
-                std::env::var_os("HOME")
-                    .or_else(|| std::env::var_os("USERPROFILE"))
-                    .map(PathBuf::from)
-                    .unwrap_or_default()
-                    .join(".config/agent-vesper/openai-credentials.json")
-            });
+            .unwrap_or_default();
         Self {
             lock_path: path.with_extension("lock"),
-            store: SecureCredentialStore::new("agent-vesper", path),
+            store: SecureCredentialStore::new("99percentgrip.jarvis", path),
             lock: LOCK.get_or_init(|| Arc::new(Mutex::new(()))).clone(),
             #[cfg(test)]
             test_store: None,
@@ -112,15 +103,9 @@ impl Credentials {
         #[cfg(not(test))]
         let path = self.lock_path.clone();
         let parent = path.parent().ok_or(CredentialError::Unavailable)?;
-        if !parent.exists() {
-            std::fs::create_dir_all(parent).map_err(|_| CredentialError::Unavailable)?;
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))
-                    .map_err(|_| CredentialError::Unavailable)?;
-            }
-        }
+        jarvis_security::validate_private_path(&path).map_err(|_| CredentialError::Unavailable)?;
+        jarvis_security::prepare_private_directory(parent)
+            .map_err(|_| CredentialError::Unavailable)?;
         if std::fs::symlink_metadata(&path).is_ok_and(|metadata| !metadata.is_file()) {
             return Err(CredentialError::Unavailable);
         }
@@ -409,6 +394,9 @@ impl Credentials {
                 account: None,
             });
         }
+        if !cfg!(test) {
+            return Err(CredentialError::Unavailable);
+        }
         let mut saved = tokens(&value)?;
         let expiry = jwt(saved.access_token()).and_then(|v| v.get("exp").and_then(Value::as_u64));
         let now = SystemTime::now()
@@ -508,6 +496,29 @@ fn account(tokens: &SubscriptionTokens) -> Result<SecretValue, CredentialError> 
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn operation_lock_preserves_existing_user_directory_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+        let fixture = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(fixture.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+        let credentials = Credentials {
+            test_store: Some(jarvis_auth::PrivateFileCredentialStore::new(
+                fixture.path().join("credentials.json"),
+            )),
+            lock: Arc::new(Mutex::new(())),
+            ..Credentials::default()
+        };
+        let _lease = credentials.try_process_lock().unwrap().unwrap();
+        assert_eq!(
+            std::fs::metadata(fixture.path())
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o755
+        );
+    }
 
     #[tokio::test]
     async fn scoped_api_key_has_api_metadata_without_overriding_selected_subscription_or_logout() {
@@ -622,7 +633,7 @@ mod tests {
 pub(crate) async fn verify_hosted_subscription_persistence(result: SubscriptionTokens) {
     assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
     assert_eq!(
-        std::env::var("VESPER_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
+        std::env::var("JARVIS_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
         Ok("isolated-hosted-fixture")
     );
     let temporary = tempfile::tempdir().unwrap();

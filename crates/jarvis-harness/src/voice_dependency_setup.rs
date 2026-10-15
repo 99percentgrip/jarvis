@@ -67,7 +67,7 @@ async fn prepare_windows_runtime(
     download(&VC_RUNTIME, &path, progress, cancel).await?;
     progress("Installing Microsoft C++ runtime · complete the Windows administrator prompt…");
     let mut command = Command::new("powershell.exe");
-    command.env("VESPER_SETUP_PACKAGE", &path).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $p = Start-Process -FilePath $env:VESPER_SETUP_PACKAGE -Verb RunAs -Wait -PassThru -ArgumentList @('/install', '/passive', '/norestart'); exit $p.ExitCode"]);
+    command.env("JARVIS_SETUP_PACKAGE", &path).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $p = Start-Process -FilePath $env:JARVIS_SETUP_PACKAGE -Verb RunAs -Wait -PassThru -ArgumentList @('/install', '/passive', '/norestart'); exit $p.ExitCode"]);
     run(command, 1200).await?;
     if !vc_runtime_present(&root) {
         return Err("Native speech runtime installation is unconfirmed. Complete any required restart, then Retry setup.".into());
@@ -404,7 +404,7 @@ async fn install_phonemizer(
             download(&ESPEAK, &path, progress, cancel).await?;
             progress("Installing pronunciation tools · complete the Windows administrator prompt…");
             let mut command = Command::new("powershell.exe");
-            command.env("VESPER_SETUP_PACKAGE", &path).env("VESPER_SETUP_REPAIR", if repair { "1" } else { "0" }).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $args = @('/i', ('\"' + $env:VESPER_SETUP_PACKAGE + '\"'), '/passive', '/norestart'); if ($env:VESPER_SETUP_REPAIR -eq '1') { $args += @('REINSTALL=ALL', 'REINSTALLMODE=amus') }; $p = Start-Process msiexec.exe -Verb RunAs -Wait -PassThru -ArgumentList $args; exit $p.ExitCode"]);
+            command.env("JARVIS_SETUP_PACKAGE", &path).env("JARVIS_SETUP_REPAIR", if repair { "1" } else { "0" }).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $args = @('/i', ('\"' + $env:JARVIS_SETUP_PACKAGE + '\"'), '/passive', '/norestart'); if ($env:JARVIS_SETUP_REPAIR -eq '1') { $args += @('REINSTALL=ALL', 'REINSTALLMODE=amus') }; $p = Start-Process msiexec.exe -Verb RunAs -Wait -PassThru -ArgumentList $args; exit $p.ExitCode"]);
             run(command, 1200).await?;
         }
         "macos" => {

@@ -38,6 +38,9 @@ Own manually invoked, non-shipped evaluation entry points that compose real adap
 
 ## Local Contracts
 
+- The inherited `voice_live_timing.py` execution path is inactive pending an
+  independent isolated launcher; even `--execute-live` cannot read/copy Vesper
+  state. No live evaluation is authorized by Stage 3.
 - Live execution requires separate user authorization. Foundation verification may
   compile this example but must never pass `--execute-live`.
 - Receipt launchers that build executable POSIX shell/player fixtures run only on

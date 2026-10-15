@@ -128,7 +128,7 @@ or types.
   drift instead of experiencing "the AI forgot everything".
 - **Provider-independent embedding layer** (`v0.20.14`, ADR 0016; refined
   `v0.20.15`): the embedding source is decoupled from the active chat
-  provider via `.agent-vesper/cognition/embedding.json`. Switching chat
+  provider via `.jarvis/cognition/embedding.json`. Switching chat
   providers (ZAI ↔ LM Studio ↔ future X) no longer changes the embedder —
   cosine cannot silently break. When the file is absent, the v0.20.13
   provider-routed behavior is the backward-compat fallback. Live

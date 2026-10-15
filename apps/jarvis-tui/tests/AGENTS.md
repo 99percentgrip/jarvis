@@ -255,6 +255,14 @@ Verify terminal interaction through the production TUI binary with isolated stat
 
 ## Local Contracts
 
+- Stage 3 fixtures seed current platform roots and explicitly declare synthetic
+  private directories before populating records. `settings_pty.py` supplies
+  signed-out provider vaults and a truthful unavailable optional-store fixture;
+  HOME isolation alone does not isolate native credential managers.
+- Voice cleanup counts no residual audio; the sole ownership-marker metadata is
+  validated byte-for-byte before exclusion from that metric. Unknown files still
+  count. Runtime roots and active settings use current independent namespaces.
+
 - Windows ConPTY cleanup accepts a failed taskkill only after bounded owned-child exit verification; live children, command timeouts and unsettled readers remain failures. `test_windows_child_cleanup.py` covers the race and refusal paths without native devices.
 
 - Use temporary HOME, workspace and global data roots plus synthetic credentials.

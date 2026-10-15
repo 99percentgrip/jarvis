@@ -37,7 +37,7 @@ Always show the plan before touching anything.
 | Rename the current session | `/rename <title>` |
 | Fork the current session | `/branch` |
 | Export a transcript before touching anything valuable | `/export` |
-| Inspect stored session files directly | `bash` + `list_directory` under `.agent-vesper/sessions/` (project-local) |
+| Inspect stored session files directly | `bash` + `list_directory` under the current host-resolved private session root |
 
 ## Procedure
 
@@ -59,7 +59,7 @@ be done directly.
 ④ **Act with the safest primitive.**
 - Prefer reversible actions: rename (`/rename`) and export (`/export`) are
   always safe.
-- Session files live under the project's `.agent-vesper/sessions/` directory;
+- Session files live under the current host-resolved private session directory;
   propose deletions as explicit `bash` commands and run them only after the
   user confirms the plan in this conversation.
 - Before deleting anything with meaningful content, offer `/export` as a
@@ -79,7 +79,7 @@ independently — then synthesize their summaries.
 - **Never delete without explicit confirmation in this conversation.** A
   standing "clean things up" is authority to *propose*, not to delete.
 - **`session_search` finds content, not metadata.** Age/size filters require
-  inspecting files under `.agent-vesper/sessions/` via `bash`.
+  inspecting files under the current host-resolved private session root via `bash`.
 - **Titles are identity for `/rename`.** Keep titles short, unique, and
   prefix-friendly.
 - **Sessions are project-local.** There is no cross-project session registry

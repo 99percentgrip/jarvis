@@ -26,13 +26,13 @@ def run(binary):
                 signed_out_vault(config / f"{provider}.json", provider, "native-auth")
             host = Host(binary, root, {
                 "ZAI_API_KEY": "", "Z_AI_API_KEY": "",
-                "AGENT_VESPER_HOME": str(root / "state"),
-                "AGENT_VESPER_PROVIDER": selected,
-                "AGENT_VESPER_CREDENTIALS_PATH": str(glm),
-                "AGENT_VESPER_OPENAI_CREDENTIALS_PATH": str(config / "openai.json"),
-                "AGENT_VESPER_XAI_CREDENTIALS_PATH": str(config / "xai.json"),
-                "AGENT_VESPER_LMSTUDIO_CREDENTIALS_PATH": str(config / "lmstudio.json"),
-                "AGENT_VESPER_VRO_ENABLED": "0",
+                "JARVIS_HOME": str(root / "state"),
+                "JARVIS_PROVIDER": selected,
+                "JARVIS_CREDENTIALS_PATH": str(glm),
+                "JARVIS_OPENAI_CREDENTIALS_PATH": str(config / "openai.json"),
+                "JARVIS_XAI_CREDENTIALS_PATH": str(config / "xai.json"),
+                "JARVIS_LMSTUDIO_CREDENTIALS_PATH": str(config / "lmstudio.json"),
+                "JARVIS_VRO_ENABLED": "0",
             })
             try:
                 host.wait("Start coding", timeout=10)

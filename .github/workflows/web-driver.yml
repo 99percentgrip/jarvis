@@ -39,17 +39,17 @@ jobs:
         run: docker build -f crates/jarvis-web-fetch/Dockerfile -t vesper-web-driver:validated .
       - name: Real pipe-browser acceptance
         run: |
-          export VESPER_WEB_TEST_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_WEB_TEST_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
           cargo test -p jarvis-web-fetch --all-features real_pipe_browser -- --ignored --nocapture
       - name: Native dependency readiness and cleanup
         run: |
-          export VESPER_DEPENDENCY_TEST_ENGINE="$(command -v docker)"
-          export VESPER_DEPENDENCY_TEST_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_DEPENDENCY_TEST_ENGINE="$(command -v docker)"
+          export JARVIS_DEPENDENCY_TEST_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
           cargo test -p jarvis-harness --all-features --lib real_dependency_browser_readiness -- --ignored --nocapture
       - name: Real scoped Hive lifecycle acceptance
         timeout-minutes: 15
         run: |
-          export VESPER_DOCKER_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_DOCKER_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
           cargo test -p jarvis-harness --all-features --test swarm_native_hive native_container_hive -- --ignored --nocapture
           cargo test -p jarvis-harness --all-features --test swarm_native_hive native_shared_service -- --ignored --nocapture
           cargo test -p jarvis-acp --all-features --test swarm_native_process -- --ignored --nocapture
@@ -99,8 +99,8 @@ jobs:
       - name: Real namespace permission and cleanup acceptance
         timeout-minutes: 5
         env:
-          VESPER_SANDBOX_INIT: ${{ github.workspace }}/target/debug/jarvis-sandbox-init
+          JARVIS_SANDBOX_INIT: ${{ github.workspace }}/target/debug/jarvis-sandbox-init
         run: |
-          "$VESPER_SANDBOX_INIT" probe
+          "$JARVIS_SANDBOX_INIT" probe
           cargo test --locked -p jarvis-sandbox --test namespaces namespace_security_and_timeout_acceptance -- --ignored --nocapture
           cargo test --locked -p jarvis-harness --features swarm --test swarm_native_hive native_scoped_hive -- --ignored --nocapture

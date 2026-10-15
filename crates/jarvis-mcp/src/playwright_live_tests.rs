@@ -32,9 +32,9 @@ fn text(result: Value, root: &std::path::Path) -> String {
 #[test]
 #[ignore = "requires explicitly supplied local Node and Playwright MCP CLI; launches isolated Chrome"]
 fn real_playwright_navigation_snapshot_click_isolation_close() {
-    let node = std::env::var("VESPER_TEST_NODE").expect("explicit Node executable required");
+    let node = std::env::var("JARVIS_TEST_NODE").expect("explicit Node executable required");
     let cli =
-        std::env::var("VESPER_TEST_PLAYWRIGHT_CLI").expect("explicit installed MCP CLI required");
+        std::env::var("JARVIS_TEST_PLAYWRIGHT_CLI").expect("explicit installed MCP CLI required");
     let output = tempfile::tempdir().unwrap();
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();

@@ -37,6 +37,8 @@ impl SyntheticStores {
         let legacy = root.join("legacy");
         fs::create_dir_all(&vesper).unwrap();
         fs::create_dir_all(&legacy).unwrap();
+        jarvis_security::prepare_owned_directory(&vesper).unwrap();
+        jarvis_security::prepare_owned_directory(&legacy).unwrap();
         let stores = Self {
             root,
             vesper,
@@ -121,18 +123,18 @@ impl SyntheticStores {
 
     fn environment(&self) -> Vec<(&'static str, String)> {
         vec![
-            ("AGENT_VESPER_ENABLE_SESSION_READS", "1".into()),
-            ("AGENT_VESPER_ENABLE_LEGACY_SESSION_READS", "1".into()),
+            ("JARVIS_ENABLE_SESSION_READS", "1".into()),
+            ("JARVIS_ENABLE_LEGACY_SESSION_READS", "1".into()),
             (
-                "AGENT_VESPER_SESSION_ROOT",
+                "JARVIS_SESSION_ROOT",
                 self.vesper.to_string_lossy().into_owned(),
             ),
             (
-                "AGENT_VESPER_LEGACY_SESSION_ROOT",
+                "JARVIS_LEGACY_SESSION_ROOT",
                 self.legacy.to_string_lossy().into_owned(),
             ),
-            ("AGENT_VESPER_SESSION_MAX_BYTES", (1024 * 1024).to_string()),
-            ("AGENT_VESPER_SESSION_MAX_ENTRIES", "128".into()),
+            ("JARVIS_SESSION_MAX_BYTES", (1024 * 1024).to_string()),
+            ("JARVIS_SESSION_MAX_ENTRIES", "128".into()),
         ]
     }
 
@@ -281,7 +283,7 @@ fn corrupt_unsupported_and_secret_bearing_records_fail_without_repair() {
 
 fn run_vector(stores: &SyntheticStores, name: &str, test: impl FnOnce(&mut ProcessHarness)) {
     let before = snapshot(stores.roots());
-    let mut process = ProcessHarness::spawn_with_environment(
+    let mut process = ProcessHarness::spawn_legacy_format_fixture(
         "127.0.0.1:9".parse().unwrap(),
         stores.environment(),
     );

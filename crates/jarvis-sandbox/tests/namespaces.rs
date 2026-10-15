@@ -19,7 +19,7 @@ use jarvis_security::CapabilityStatus;
 /// mutation and no unsafe code: workspace lints forbid `unsafe` in tests.
 fn ensure_supervisor() -> Option<PathBuf> {
     // A pre-set override always wins.
-    if let Ok(path) = std::env::var("VESPER_SANDBOX_INIT") {
+    if let Ok(path) = std::env::var("JARVIS_SANDBOX_INIT") {
         let path = PathBuf::from(path);
         if path.exists() {
             return Some(path);

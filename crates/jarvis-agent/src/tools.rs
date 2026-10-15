@@ -430,7 +430,7 @@ impl ToolExecutor for RunCommand {
             // VRO-13 PR-2: hard-denial firewall scan runs BEFORE the command
             // is cloned into `spawn_blocking`, so the legacy off-path keeps
             // its exact hot-path budget. `ctx.firewall` is `None` whenever
-            // the firewall is off (env `AGENT_VESPER_FIREWALL=off` or a
+            // the firewall is off (env `JARVIS_FIREWALL=off` or a
             // non-interactive host that never set one), which makes the off
             // path structurally identical to the pre-VRO-13 executor: no
             // scan, no allocation, no branch beyond this `Option` check.

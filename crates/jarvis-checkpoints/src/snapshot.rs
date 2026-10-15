@@ -46,6 +46,7 @@ const IGNORED_DIRS: &[&str] = &[
     "__pycache__",
     "target",
     ".agent-vesper",
+    ".jarvis",
     ".glm-acp",
 ];
 

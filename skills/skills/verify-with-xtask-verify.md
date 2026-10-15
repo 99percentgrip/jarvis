@@ -36,7 +36,7 @@ local-Linux-green alone for cross-platform-sensitive code.
 
 Workflow: Implement → `cargo fmt` → `cargo fmt --check` →
 `cargo xtask verify` (local) → fix gaps, rerun → update AGENTS.md/README →
-commit (stage explicit paths; exclude agent state dirs `.agent-vesper/`
+commit (stage explicit paths; exclude agent state dirs `.jarvis/` and `.agent-vesper/`
 and `.glm-acp/`) → push → `gh run watch <id> --exit-status` (confirm 5
 targets) → only THEN report done. Never weaken tests to pass.
 

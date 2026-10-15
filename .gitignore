@@ -30,3 +30,7 @@ Thumbs.db
 
 # Stray foreign-agent state dir (skills are rewritten to ~/.agent-vesper)
 .hermes/
+
+# Independent application-private runtime state; never source material.
+.jarvis/
+.jarvis-scope-id

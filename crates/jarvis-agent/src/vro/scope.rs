@@ -11,11 +11,11 @@
 //!
 //! ## Layers (qm's `WorkspaceLayer` model, single-user)
 //!
-//! - Layer 0 (always, RW): the project's own `.agent-vesper/`.
+//! - Layer 0 (always, RW): the project's own `.jarvis/`.
 //! - Layer 1 (always, RO): the global data root
-//!   (`$XDG_DATA_HOME/agent-vesper` else `~/.local/share/agent-vesper`).
+//!   (the native independent application data directory).
 //! - Layer 2 (opt-in, RO): explicit extra workspace roots from
-//!   [`AGENT_VESPER_EXTRA_SCOPES`](EXTRA_SCOPES_ENV) — **dormant by
+//!   [`JARVIS_EXTRA_SCOPES`](EXTRA_SCOPES_ENV) — **dormant by
 //!   default**: with the variable unset or empty, no extra layer is mounted
 //!   and resolution is byte-identical to the two-layer default.
 //!
@@ -27,7 +27,7 @@
 //! ## Scope identity
 //!
 //! [`ScopeId`] is what stores key on — never the path string (port of qm's
-//! `scopeStorageKey`). Identity comes from a `.vesper-scope-id` stamp file
+//! `scopeStorageKey`). Identity comes from a `.jarvis-scope-id` stamp file
 //! in the project root. When absent, a short SHA-256 of the canonical root
 //! is derived, stamped, and used, so renaming a project directory does not
 //! re-key its stores (PRD §6.3's mitigation, adopted).
@@ -36,8 +36,8 @@
 //!
 //! [`ScopedCognition`] derives the project and global cognition directories
 //! from the resolved layers and honors the two ADR-0021 environment
-//! overrides (`AGENT_VESPER_COGNITION_ROOT`,
-//! `AGENT_VESPER_GLOBAL_COGNITION_ROOT`) in **one** shared derivation used
+//! overrides (`JARVIS_COGNITION_ROOT`,
+//! `JARVIS_GLOBAL_COGNITION_ROOT`) in **one** shared derivation used
 //! by both hosts. Routing semantics (smart routing, promote/demote, store
 //! ownership) remain owned by ADR-0021's TUI implementation and are not
 //! duplicated or altered here.
@@ -58,23 +58,23 @@ use sha2::{Digest as _, Sha256};
 use crate::sandbox_route::SandboxDemand;
 
 /// Stamp file that pins a project's [`ScopeId`] across directory renames.
-pub const STAMP_FILE_NAME: &str = ".vesper-scope-id";
+pub const STAMP_FILE_NAME: &str = ".jarvis-scope-id";
 /// Per-project state directory name (Layer 0 root).
-pub const STATE_DIR_NAME: &str = ".agent-vesper";
+pub const STATE_DIR_NAME: &str = ".jarvis";
 /// Skills subdirectory of every layer's state dir.
 pub const SKILLS_DIR_NAME: &str = "skills";
 /// Cognition subdirectory (ADR-0021 layout).
 pub const COGNITION_DIR_NAME: &str = "cognition";
 /// Environment variable mounting Layer 2 (opt-in extra scopes).
-pub const EXTRA_SCOPES_ENV: &str = "AGENT_VESPER_EXTRA_SCOPES";
+pub const EXTRA_SCOPES_ENV: &str = "JARVIS_EXTRA_SCOPES";
 /// ADR-0021 override for the project cognition root.
-pub const PROJECT_COGNITION_ENV: &str = "AGENT_VESPER_COGNITION_ROOT";
+pub const PROJECT_COGNITION_ENV: &str = "JARVIS_COGNITION_ROOT";
 /// ADR-0021 override for the global cognition root.
-pub const GLOBAL_COGNITION_ENV: &str = "AGENT_VESPER_GLOBAL_COGNITION_ROOT";
+pub const GLOBAL_COGNITION_ENV: &str = "JARVIS_GLOBAL_COGNITION_ROOT";
 /// Opt-in environment variable that lets the auto-spawned ACP host persist
 /// the identity stamp (root contract: no durable state in arbitrary project
 /// directories by default). The interactive TUI never consults it.
-pub const ENABLE_STAMP_ENV: &str = "AGENT_VESPER_ENABLE_SCOPE_STAMP";
+pub const ENABLE_STAMP_ENV: &str = "JARVIS_ENABLE_SCOPE_STAMP";
 /// Hex characters in a derived [`ScopeId`] (48 bits — single-user scale).
 pub const SCOPE_ID_HEX_LEN: usize = 12;
 /// Maximum accepted length of a hand-written or derived stamp token.
@@ -165,7 +165,7 @@ pub enum ScopeError {
 /// Stable, short identity of one project scope.
 ///
 /// Derived once from the canonical root (or pinned by the
-/// `.vesper-scope-id` stamp file) and used as the store key so renaming the
+/// `.jarvis-scope-id` stamp file) and used as the store key so renaming the
 /// project directory does not re-key state.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ScopeId(String);
@@ -218,7 +218,7 @@ fn is_valid_stamp_token(token: &str) -> bool {
 
 /// Host policy for persisting the scope identity stamp.
 ///
-/// The stamp file (`root/.vesper-scope-id`) keeps a project's [`ScopeId`]
+/// The stamp file (`root/.jarvis-scope-id`) keeps a project's [`ScopeId`]
 /// stable across directory renames, but writing it is durable state in the
 /// project root — which the auto-spawned ACP process must not create by
 /// default (root AGENTS.md contract). Resolution is therefore honest about
@@ -232,7 +232,7 @@ fn is_valid_stamp_token(token: &str) -> bool {
 ///   stable for the process lifetime, and identical to what a writing boot
 ///   would have persisted — so cross-host `ScopeId` parity holds even when
 ///   only one host writes (the ACP's default, and its
-///   `AGENT_VESPER_ENABLE_SCOPE_STAMP=1` opt-in upgrade path).
+///   `JARVIS_ENABLE_SCOPE_STAMP=1` opt-in upgrade path).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum StampPolicy {
     /// Read the stamp; when absent derive and persist it (TUI default).
@@ -244,7 +244,7 @@ pub enum StampPolicy {
 
 /// Resolves (and per policy creates) the scope identity stamp.
 ///
-/// Order of operations (directive 1): read `<root>/.vesper-scope-id`; if a
+/// Order of operations (directive 1): read `<root>/.jarvis-scope-id`; if a
 /// valid token is present, use it (both policies — a stamp written by any
 /// previous boot wins). Otherwise derive [`ScopeId::from_canonical_root`];
 /// [`StampPolicy::Write`] persists the derived value, while
@@ -335,7 +335,7 @@ impl ScopeLayer {
         &self.root
     }
 
-    /// The layer's state directory (`.agent-vesper` shape, except the
+    /// The layer's state directory (`.jarvis` shape, except the
     /// global layer whose root *is* the state dir).
     #[must_use]
     pub fn state_dir(&self) -> &Path {
@@ -669,7 +669,7 @@ fn is_safe_slug_shape(slug: &str) -> bool {
         && !slug.contains('\0')
 }
 
-/// Parses an `AGENT_VESPER_EXTRA_SCOPES` value into extra workspace roots.
+/// Parses an `JARVIS_EXTRA_SCOPES` value into extra workspace roots.
 ///
 /// Uses the platform path-list separator (`:` unix, `;` windows) via
 /// [`std::env::split_paths`]; empty segments are dropped. An unset or empty
@@ -682,7 +682,7 @@ pub fn parse_extra_scope_roots(raw: &str) -> Vec<PathBuf> {
 }
 
 /// Resolves the global (Layer 1) data root: explicit override, else
-/// `$XDG_DATA_HOME/agent-vesper`, else `~/.local/share/agent-vesper`
+/// The injected Linux XDG/home application data root
 /// (ADR-0021's global layout, minus its cognition-specific override which
 /// [`ScopedCognition::derive`] handles separately).
 ///
@@ -698,23 +698,12 @@ pub fn resolve_global_root(
         return Ok(root.to_path_buf());
     }
     if let Some(xdg) = xdg_data_home {
-        return Ok(xdg.join("agent-vesper"));
+        return Ok(xdg.join("jarvis"));
     }
     if let Some(home) = home {
-        return Ok(home.join(".local/share/agent-vesper"));
+        return Ok(home.join(".local/share/jarvis"));
     }
     Err(ScopeError::GlobalRootUnresolvable)
-}
-
-/// The user's home directory from the platform environment variable.
-fn home_from_env() -> Option<PathBuf> {
-    #[cfg(unix)]
-    let value = std::env::var_os("HOME");
-    #[cfg(windows)]
-    let value = std::env::var_os("USERPROFILE");
-    #[cfg(not(any(unix, windows)))]
-    let value = None;
-    value.filter(|value| !value.is_empty()).map(PathBuf::from)
 }
 
 /// Boot inputs for [`WorkspaceScope::resolve`].
@@ -733,14 +722,14 @@ pub struct ScopeInputs {
     pub global_root: PathBuf,
     /// Layer 2 extra workspace roots (dormant when empty).
     pub extra_roots: Vec<PathBuf>,
-    /// ADR-0021 `AGENT_VESPER_COGNITION_ROOT` override, when set.
+    /// ADR-0021 `JARVIS_COGNITION_ROOT` override, when set.
     pub project_cognition_override: Option<PathBuf>,
-    /// ADR-0021 `AGENT_VESPER_GLOBAL_COGNITION_ROOT` override, when set.
+    /// ADR-0021 `JARVIS_GLOBAL_COGNITION_ROOT` override, when set.
     pub global_cognition_override: Option<PathBuf>,
-    /// Whether resolution may create the `.vesper-scope-id` stamp when
+    /// Whether resolution may create the `.jarvis-scope-id` stamp when
     /// absent. Hosts diverge here by launch context (root contract): the
     /// TUI is user-invoked so it writes; the auto-spawned ACP is read-only
-    /// unless `AGENT_VESPER_ENABLE_SCOPE_STAMP=1`.
+    /// unless `JARVIS_ENABLE_SCOPE_STAMP=1`.
     pub stamp_policy: StampPolicy,
 }
 
@@ -757,11 +746,9 @@ impl ScopeInputs {
     /// [`WorkspaceScope::resolve`].
     #[must_use = "boot inputs must be consumed by WorkspaceScope::resolve"]
     pub fn from_env(root: &Path) -> Result<Self, ScopeError> {
-        let global_root = resolve_global_root(
-            None,
-            std::env::var_os("XDG_DATA_HOME").as_deref().map(Path::new),
-            home_from_env().as_deref(),
-        )?;
+        let global_root = jarvis_config::JarvisPaths::from_environment()
+            .map_err(|_| ScopeError::GlobalRootUnresolvable)?
+            .data;
         Ok(Self {
             root: root.to_path_buf(),
             global_root,
@@ -839,7 +826,7 @@ impl WorkspaceScope {
     /// Resolves a scope from boot inputs (directive 1 + 2).
     ///
     /// 1. Canonicalizes the project root (must exist).
-    /// 2. Resolves/creates the `.vesper-scope-id` stamp.
+    /// 2. Resolves/creates the `.jarvis-scope-id` stamp.
     /// 3. Mounts Layer 0 (project RW), Layer 1 (global RO), and Layer 2
     ///    (each extra root, RO). Extras that duplicate the project root or
     ///    each other are skipped; a *missing* extra root is an honest error
@@ -871,6 +858,19 @@ impl WorkspaceScope {
                     path: inputs.root.display().to_string(),
                     reason: error.to_string(),
                 })?;
+        for path in [
+            canonical_root.join(STATE_DIR_NAME),
+            canonical_root.join(STAMP_FILE_NAME),
+            inputs.global_root.clone(),
+        ]
+        .into_iter()
+        .chain(inputs.project_cognition_override.iter().cloned())
+        .chain(inputs.global_cognition_override.iter().cloned())
+        {
+            jarvis_security::validate_private_path(&path).map_err(|_| {
+                ScopeError::InvalidSkillPath("private state ownership refused".into())
+            })?;
+        }
         let (id, id_persisted) = ensure_scope_id(&canonical_root, inputs.stamp_policy);
         let state_dir = canonical_root.join(STATE_DIR_NAME);
 
@@ -959,7 +959,7 @@ impl WorkspaceScope {
     }
 
     /// The mounted Layer 2 roots, in mount order. Empty by default —
-    /// `AGENT_VESPER_EXTRA_SCOPES` is completely dormant when unset.
+    /// `JARVIS_EXTRA_SCOPES` is completely dormant when unset.
     #[must_use]
     pub fn extra_roots(&self) -> Vec<&Path> {
         self.layers()
@@ -1003,7 +1003,7 @@ impl WorkspaceScope {
         &self.sandbox
     }
 
-    /// Attaches a sandbox demand resolved from `.agent-vesper/config.toml`
+    /// Attaches a sandbox demand resolved from `.jarvis/config.toml`
     /// `[sandbox]` by the host (the parser lives in `vesper-config`, which
     /// this crate intentionally does not depend on).
     #[must_use]
@@ -1173,7 +1173,7 @@ mod tests {
 
     #[test]
     fn default_resolution_mounts_exactly_project_and_global() {
-        // §3.4 criterion 4: AGENT_VESPER_EXTRA_SCOPES is dormant by default.
+        // §3.4 criterion 4: JARVIS_EXTRA_SCOPES is dormant by default.
         assert!(
             parse_extra_scope_roots("").is_empty(),
             "empty env value mounts nothing"
@@ -1614,11 +1614,11 @@ mod tests {
         );
         assert_eq!(
             resolve_global_root(None, Some(Path::new("/xdg")), None).unwrap(),
-            PathBuf::from("/xdg/agent-vesper")
+            PathBuf::from("/xdg").join("jarvis")
         );
         assert_eq!(
             resolve_global_root(None, None, Some(Path::new("/home/me"))).unwrap(),
-            PathBuf::from("/home/me/.local/share/agent-vesper")
+            PathBuf::from("/home/me/.local/share/jarvis")
         );
         assert!(matches!(
             resolve_global_root(None, None, None),

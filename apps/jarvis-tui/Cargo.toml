@@ -34,6 +34,7 @@ integration-test-harness = [
 ]
 
 [dependencies]
+jarvis-config = { path = "../../crates/jarvis-config", version = "=0.24.14" }
 jarvis-voice = { path = "../../crates/jarvis-voice", version = "=0.24.14", optional = true, features = ["stt-sidecar", "tts-subprocess"] }
 jarvis-voice-kokoro = { path = "../../crates/jarvis-voice-kokoro", version = "=0.24.14", optional = true, features = ["ort", "mock-synthesis"] }
 tempfile.workspace = true
@@ -191,3 +192,7 @@ required-features = ["voice-kokoro"]
 [[example]]
 name = "verify_repro"
 required-features = ["voice-flm"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Existing locked safe process handles prevent PID-reuse cleanup of foreign applications.
+rustix = { version = "=1.1.4", features = ["process"] }

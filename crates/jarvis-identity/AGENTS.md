@@ -15,6 +15,8 @@ J.A.R.V.I.S.; remain separate from active runtime composition.
 
 ## Local Contracts
 
+- `src/runtime.rs` records reviewed active runtime environment and path identifiers, independently of legacy/provenance mappings. Serialized format constants and synthetic canaries are not environment variables and remain preserved. Runtime behavior lives in config/security/compositions; this specification crate stays side-effect-free with zero production dependencies and no runtime consumers.
+
 - No filesystem, environment, process, network or credential access in `src/`.
   No custom build target; automatic build scripts remain disabled.
 - Package/import/manifest/executable registry entries reflect actual Stage 2 metadata.

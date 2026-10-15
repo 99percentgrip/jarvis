@@ -2,6 +2,10 @@
 use super::*;
 use std::path::Path;
 
+const fn independent_updates_enabled() -> bool {
+    false
+}
+
 pub(super) fn valid_version(tag: &str) -> bool {
     let parts: Vec<_> = tag.strip_prefix('v').unwrap_or(tag).split('.').collect();
     parts.len() == 3
@@ -38,6 +42,9 @@ pub(super) async fn install(
     tag: &str,
     theme: &str,
 ) -> Result<bool, String> {
+    if !independent_updates_enabled() {
+        return Err("Independent installation and updates are not enabled.".into());
+    }
     if !valid_version(tag) {
         return Err("Invalid update version".into());
     }

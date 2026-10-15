@@ -419,9 +419,9 @@ pub trait SandboxBackend: Send + Sync {
 /// Locates the supervisor binary next to the current executable.
 ///
 /// Production ships the supervisor beside the host binary; callers (tests,
-/// embedders) may override with `VESPER_SANDBOX_INIT`.
+/// embedders) may override with `JARVIS_SANDBOX_INIT`.
 pub(crate) fn supervisor_path() -> Result<PathBuf, SandboxError> {
-    if let Ok(from_env) = std::env::var("VESPER_SANDBOX_INIT") {
+    if let Ok(from_env) = std::env::var("JARVIS_SANDBOX_INIT") {
         return Ok(PathBuf::from(from_env));
     }
     let exe = std::env::current_exe()
@@ -434,7 +434,7 @@ pub(crate) fn supervisor_path() -> Result<PathBuf, SandboxError> {
         return Ok(sibling);
     }
     Err(SandboxError::Provision(format!(
-        "sandbox supervisor not found beside {} (set VESPER_SANDBOX_INIT to override)",
+        "sandbox supervisor not found beside {} (set JARVIS_SANDBOX_INIT to override)",
         exe.display()
     )))
 }

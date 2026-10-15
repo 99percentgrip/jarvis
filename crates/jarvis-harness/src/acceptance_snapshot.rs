@@ -41,7 +41,7 @@ impl SourceSnapshot {
                 let name = entry.file_name();
                 let name = name.to_str().ok_or("non-UTF8 source name")?;
                 // Include known runtime configuration, never credentials or session stores.
-                if dir.file_name().and_then(|n| n.to_str()) == Some(".agent-vesper")
+                if dir.file_name().and_then(|n| n.to_str()) == Some(".jarvis")
                     && !matches!(
                         name,
                         "config.toml"
@@ -55,7 +55,14 @@ impl SourceSnapshot {
                 // Fixed generated/private roots are disclosed to the reviewer.
                 if matches!(
                     name,
-                    ".git" | "target" | "node_modules" | ".venv" | "__pycache__" | ".agent"
+                    ".git"
+                        | "target"
+                        | "node_modules"
+                        | ".venv"
+                        | "__pycache__"
+                        | ".agent"
+                        | ".agent-vesper"
+                        | ".glm-acp"
                 ) {
                     continue;
                 }

@@ -143,10 +143,11 @@ fn native_acp_settings_run_executes_three_workers_and_captures_tool_continuation
         write!(stream, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
     });
     let cognition = tempfile::tempdir().unwrap();
+    jarvis_security::prepare_owned_directory(cognition.path()).unwrap();
     let global = tempfile::tempdir().unwrap();
     std::fs::write(cognition.path().join("embedding.json"), json!({"source":"lmstudio","endpoint":format!("http://{}/v1/embeddings",embedding.address),"model":"fixture-embedding","dimension":8}).to_string()).unwrap();
-    let cli = std::env::var("VESPER_DOCKER_BIN").unwrap_or_else(|_| "docker".into());
-    let selected = std::env::var("VESPER_DOCKER_IMAGE").expect("select the tested local image");
+    let cli = std::env::var("JARVIS_DOCKER_BIN").unwrap_or_else(|_| "docker".into());
+    let selected = std::env::var("JARVIS_DOCKER_IMAGE").expect("select the tested local image");
     let image = std::process::Command::new(&cli)
         .args(["image", "inspect", &selected, "--format", "{{.Id}}"])
         .output()
@@ -182,17 +183,17 @@ fn native_acp_settings_run_executes_three_workers_and_captures_tool_continuation
     let mut process = ProcessHarness::spawn_with_environment(
         provider.address,
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 cognition.path().display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 global.path().display().to_string(),
             ),
-            ("VESPER_DOCKER_BIN", wrapper.display().to_string()),
+            ("JARVIS_DOCKER_BIN", wrapper.display().to_string()),
         ],
     );
     let root = process.isolated_root().join("workspace");

@@ -929,10 +929,10 @@ fn apply_outcome(
             use crate::commands::SandboxControl;
             let line = match control {
                 SandboxControl::On => "sandbox: route is boot-resolved; set [sandbox] in \
-                     .agent-vesper/config.toml and restart"
+                     .jarvis/config.toml and restart"
                     .to_string(),
                 SandboxControl::Off => {
-                    "sandbox: off requires a restart with AGENT_VESPER_SANDBOX=off".to_string()
+                    "sandbox: off requires a restart with JARVIS_SANDBOX=off".to_string()
                 }
             };
             transcript.push(line);
@@ -1141,7 +1141,7 @@ fn render_context_view(
         ViewKind::Status => {
             let firewall_line = match holder::is_enabled() {
                 true => "firewall=on (hard deny; /firewall for detail)".to_string(),
-                false => "firewall=off (AGENT_VESPER_FIREWALL=off at boot)".to_string(),
+                false => "firewall=off (JARVIS_FIREWALL=off at boot)".to_string(),
             };
             let sandbox_line = match jarvis_harness::sandbox_backend::holder::shared() {
                 Some(route) => format!(
@@ -1200,12 +1200,12 @@ fn render_context_view(
             format!(
                 "firewall: {body} (ruleset instance {id})\n\
                  catches accidents and the obvious; never advertised as containment.\n\
-                 toggle: set AGENT_VESPER_FIREWALL=off and restart (no runtime switch)"
+                 toggle: set JARVIS_FIREWALL=off and restart (no runtime switch)"
             )
         }
         // VRO-13 PR-4: view-only sandbox panel. `on|off` at runtime would
         // contradict the route holder's once-only resolution; the demand
-        // lives in `.agent-vesper/config.toml` `[sandbox]`, so the honest
+        // lives in `.jarvis/config.toml` `[sandbox]`, so the honest
         // control surface is "edit config + restart", identical to the
         // ACP host's status surface.
         ViewKind::Sandbox => {
@@ -1225,13 +1225,13 @@ fn render_context_view(
                         satisfies
                     )
                 }
-                None => "off (no [sandbox] demand in .agent-vesper/config.toml)".to_string(),
+                None => "off (no [sandbox] demand in .jarvis/config.toml)".to_string(),
             };
             let id = jarvis_harness::sandbox_backend::holder::route_id();
             format!(
                 "sandbox: {body} (route instance {id:#x})\n\
                  feature: docker backend requires a build with --features docker\n\
-                 toggle: set AGENT_VESPER_SANDBOX=off or edit [sandbox] and restart (no runtime switch)"
+                 toggle: set JARVIS_SANDBOX=off or edit [sandbox] and restart (no runtime switch)"
             )
         }
     }

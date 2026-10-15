@@ -35,8 +35,8 @@ use jarvis_tui::voice_capture_store::{
 
 fn store_root(tag: &str) -> PathBuf {
     let base = tempfile::tempdir().unwrap();
-    let root = base.path().join("data/agent-vesper");
-    let _ = std::fs::create_dir_all(&root);
+    let root = base.path().join("data/jarvis");
+    jarvis_security::prepare_owned_directory(&root).unwrap();
     // Keep the tempdir alive for the test body.
     std::mem::forget(base);
     let _ = tag;
@@ -55,6 +55,13 @@ fn total_bytes(root: &Path) -> u64 {
         };
         for entry in entries.flatten() {
             let child = entry.path();
+            if entry.file_name() == ".jarvis-owner" {
+                assert_eq!(
+                    std::fs::read(&child).unwrap(),
+                    b"99percentgrip.jarvis/runtime-v1\n"
+                );
+                continue; // Required ownership metadata is not retained audio.
+            }
             if child.is_dir() {
                 total += walk(&child);
             } else if let Ok(meta) = entry.metadata() {

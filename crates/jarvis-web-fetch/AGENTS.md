@@ -93,7 +93,7 @@ implementation that provisions a backend demanding
 
 - `cargo test -p jarvis-web-fetch`
 - `cargo test -p jarvis-web-fetch --all-features real_pipe_browser_actions --
-  --ignored` with `VESPER_WEB_TEST_IMAGE` and a working container runtime;
+  --ignored` with `JARVIS_WEB_TEST_IMAGE` and a working container runtime;
   this explicit acceptance gate fails, rather than skips, missing prerequisites.
 - `cargo clippy -p jarvis-web-fetch --all-targets -- -D warnings`
 - `cargo run --package xtask --quiet -- architecture`

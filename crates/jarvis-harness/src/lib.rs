@@ -67,12 +67,11 @@ use jarvis_domain::{
 };
 
 fn session_root_path() -> PathBuf {
-    let root = match std::env::var("AGENT_VESPER_SESSION_ROOT") {
+    let root = match std::env::var("JARVIS_SESSION_ROOT") {
         Ok(value) => PathBuf::from(value),
-        Err(_) => std::env::current_dir()
-            .unwrap_or_else(|_| PathBuf::from("."))
-            .join(".agent-vesper")
-            .join("sessions"),
+        Err(_) => jarvis_config::JarvisPaths::from_environment()
+            .map(|p| p.data.join("sessions"))
+            .unwrap_or_default(),
     };
     if root.is_absolute() {
         root
@@ -1409,9 +1408,8 @@ async fn execute_worktree_worker(
                     reason: "base_ref must not begin with '-'".into(),
                 });
             }
-            let path_text = optional_string("worker_path").unwrap_or_else(|| {
-                format!(".agent-vesper/worktrees/worker-{}", std::process::id())
-            });
+            let path_text = optional_string("worker_path")
+                .unwrap_or_else(|| format!(".jarvis/worktrees/worker-{}", std::process::id()));
             if let Some(parent) = std::path::Path::new(&path_text).parent() {
                 let parent = if parent.is_absolute() {
                     parent.to_path_buf()
@@ -2169,6 +2167,7 @@ mod tests {
         // include the global skill layer exactly like the TUI composition.
         let local = tempfile::tempdir().unwrap();
         let global = tempfile::tempdir().unwrap();
+        jarvis_security::prepare_owned_directory(global.path()).unwrap();
         std::fs::create_dir_all(global.path().join("skills")).unwrap();
         std::fs::write(
             global.path().join("skills").join("cross-project.md"),
@@ -2546,23 +2545,17 @@ mod tests {
     }
 }
 
-/// Returns the cross-project global memory root: `AGENT_VESPER_GLOBAL_MEMORY_ROOT`
-/// when set, else `~/.agent-vesper/memory` (`USERPROFILE` on Windows). Never
+/// Returns the cross-project global memory root: `JARVIS_GLOBAL_MEMORY_ROOT`
+/// when set, else `~/.jarvis/memory` (`USERPROFILE` on Windows). Never
 /// created here; a missing directory simply disables the global skill read
 /// layer (mirror of the TUI composition's `home_memory_root`).
 fn global_memory_root() -> std::path::PathBuf {
-    if let Ok(value) = std::env::var("AGENT_VESPER_GLOBAL_MEMORY_ROOT") {
+    if let Ok(value) = std::env::var("JARVIS_GLOBAL_MEMORY_ROOT") {
         return std::path::PathBuf::from(value);
     }
-    let variable = if cfg!(target_os = "windows") {
-        "USERPROFILE"
-    } else {
-        "HOME"
-    };
-    let home = std::env::var(variable)
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| std::path::PathBuf::from("."));
-    home.join(".agent-vesper").join("memory")
+    jarvis_config::JarvisPaths::from_environment()
+        .map(|p| p.data.join("memory"))
+        .unwrap_or_default()
 }
 
 /// Drains one [`MemoryOp`] against the durable stores, pushing the result
@@ -2629,21 +2622,21 @@ impl MemoryStores {
         Some(output)
     }
 
-    /// Opens the bundle at `AGENT_VESPER_MEMORY_ROOT` (falling back to
-    /// `.agent-vesper/memory/` under the current directory). The skill
+    /// Opens the bundle at `JARVIS_MEMORY_ROOT` (falling back to
+    /// `.jarvis/memory/` under the current directory). The skill
     /// store additionally reads a cross-project global layer at
-    /// `AGENT_VESPER_GLOBAL_MEMORY_ROOT` (falling back to
-    /// `~/.agent-vesper/memory/`): global skills appear after local ones,
+    /// `JARVIS_GLOBAL_MEMORY_ROOT` (falling back to
+    /// `~/.jarvis/memory/`): global skills appear after local ones,
     /// local slugs shadow, and writes always stay project-local (parity
     /// with the TUI composition). If opening any store fails the bundle
     /// stays `None` for that store and memory commands surface a clear
     /// error rather than crashing the host.
     pub fn open_default() -> Self {
-        let root = match std::env::var("AGENT_VESPER_MEMORY_ROOT") {
+        let root = match std::env::var("JARVIS_MEMORY_ROOT") {
             Ok(value) => std::path::PathBuf::from(value),
             Err(_) => std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                .join(".agent-vesper")
+                .join(".jarvis")
                 .join("memory"),
         };
         Self::open_at(root, global_memory_root())
@@ -2660,7 +2653,16 @@ impl MemoryStores {
         let root = root.into();
         let global_memory_root = global_memory_root.into();
         // Ensure the root directory exists so the stores can open it.
-        let _ = std::fs::create_dir_all(&root);
+        if jarvis_security::prepare_owned_directory(&root).is_err()
+            || jarvis_security::validate_new_or_owned_directory(&global_memory_root).is_err()
+        {
+            return Self {
+                memory: None,
+                skills: None,
+                profile: None,
+                awareness: None,
+            };
+        }
         let memory = jarvis_memory::MemoryStore::open(&root).ok().map(Arc::new);
         let skills = jarvis_memory::SkillStore::open_with_global(&root, &global_memory_root)
             .ok()
@@ -3020,7 +3022,7 @@ impl HarnessToolService {
     /// command then answers with the opt-in notice instead of touching disk.
     /// Plugins and MCP stay fully functional either way. The ACP composition
     /// defaults this to OFF: Zed spawns the agent silently inside arbitrary
-    /// project directories, and an always-on store littered `.agent-vesper/`
+    /// project directories, and an always-on store littered `.jarvis/`
     /// state (and up to 50 × 10 MiB of snapshots per project) everywhere.
     #[must_use]
     pub fn new_with_checkpoint_gate(
@@ -3030,17 +3032,22 @@ impl HarnessToolService {
         worker_factory: Option<Arc<WorkerFactory>>,
         checkpoints_enabled: bool,
     ) -> Self {
-        let _ = std::fs::create_dir_all(&plugin_root);
+        let plugin_root_valid = jarvis_security::prepare_owned_directory(&plugin_root).is_ok();
         let session_root = session_root_path();
-        if checkpoints_enabled {
-            let _ = std::fs::create_dir_all(&cron_root);
-            let _ = std::fs::create_dir_all(&session_root);
-        }
-        let trusted_publishers = load_trusted_publishers(&plugin_root);
-        let plugin_loader =
-            jarvis_mcp::PluginLoader::open(&plugin_root, trusted_publishers.clone())
-                .ok()
-                .map(Arc::new);
+        let checkpoints_enabled = checkpoints_enabled
+            && jarvis_security::prepare_owned_directory(&cron_root).is_ok()
+            && jarvis_security::prepare_owned_directory(&session_root).is_ok();
+        let trusted_publishers = if plugin_root_valid {
+            load_trusted_publishers(&plugin_root)
+        } else {
+            jarvis_mcp::TrustedPublishers::default()
+        };
+        let plugin_loader = plugin_root_valid
+            .then(|| jarvis_mcp::PluginLoader::open(&plugin_root, trusted_publishers.clone()))
+            .transpose()
+            .ok()
+            .flatten()
+            .map(Arc::new);
         let cron_abort = if checkpoints_enabled {
             worker_factory.as_ref().and_then(|factory| {
                 tokio::runtime::Handle::try_current().ok().map(|handle| {
@@ -3115,7 +3122,7 @@ impl HarnessToolService {
     }
 
     /// VRO-14 PR-5: attaches the opt-in `[web]` scope. Called by both
-    /// hosts after reading `.agent-vesper/config.toml`; a `None`/disabled
+    /// hosts after reading `.jarvis/config.toml`; a `None`/disabled
     /// scope leaves the registry path byte-identical to the pre-web build
     /// (zero web tools, zero schema cost, zero advertisement surface).
     #[must_use]
@@ -3130,7 +3137,7 @@ impl HarnessToolService {
     /// the pre-bridge build (zero bridge tools, no bridge state).
     ///
     /// Adapter selection (Phase 3, evidence-based): when
-    /// `VESPER_BRIDGE_RESOLVE_IPC` points at a live Resolve worker IPC
+    /// `JARVIS_BRIDGE_RESOLVE_IPC` points at a live Resolve worker IPC
     /// directory, the file-IPC adapter is attached; otherwise, when an
     /// MPRIS player is live on the session bus, the MPRIS adapter binds
     /// to it. Neither condition holds → the truthful no-adapter
@@ -3141,7 +3148,7 @@ impl HarnessToolService {
     pub fn with_bridge(mut self, enabled: bool) -> Self {
         self.bridge = enabled.then(|| {
             let mut service = crate::bridge_service::BridgeToolService::no_adapter();
-            if let Ok(ipc_dir) = std::env::var("VESPER_BRIDGE_RESOLVE_IPC") {
+            if let Ok(ipc_dir) = std::env::var("JARVIS_BRIDGE_RESOLVE_IPC") {
                 let adapter =
                     std::sync::Arc::new(crate::bridge_adapters::FileIpcAdapter::new(ipc_dir));
                 service = service.with_adapter(adapter);

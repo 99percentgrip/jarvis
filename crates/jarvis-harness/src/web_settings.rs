@@ -16,14 +16,14 @@ pub fn save(root: &Path, config: &WebScopeConfig) -> Result<(), String> {
     {
         return Err("Driver image must be immutable (sha256 ID or registry digest).".into());
     }
-    let dir = root.join(".agent-vesper");
+    let dir = root.join(".jarvis");
     if dir
         .symlink_metadata()
         .is_ok_and(|metadata| metadata.file_type().is_symlink())
     {
         return Err("Refusing settings directory symlink.".into());
     }
-    std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    jarvis_security::prepare_owned_directory(&dir).map_err(|error| error.to_string())?;
     let mut file = tempfile::NamedTempFile::new_in(&dir).map_err(|error| error.to_string())?;
     serde_json::to_writer_pretty(&mut file, config).map_err(|error| error.to_string())?;
     file.as_file()
@@ -60,7 +60,7 @@ fn normalize_image_id(value: &str) -> Option<String> {
 
 fn bundled_driver_dir() -> Result<PathBuf, String> {
     let executable = std::env::current_exe().map_err(|error| error.to_string())?;
-    let root = std::env::var_os("AGENT_VESPER_BUNDLE_DIR")
+    let root = std::env::var_os("JARVIS_BUNDLE_DIR")
         .map(PathBuf::from)
         .or_else(|| executable.parent().map(Path::to_path_buf))
         .ok_or("Cannot locate the application bundle.")?;
@@ -482,9 +482,9 @@ mod tests {
     fn settings_round_trip_preserves_toml_and_is_explicit() {
         let root = tempfile::tempdir().unwrap();
         assert!(!load(root.path()).unwrap().enabled);
-        assert!(!root.path().join(".agent-vesper").exists());
-        std::fs::create_dir(root.path().join(".agent-vesper")).unwrap();
-        let path = root.path().join(".agent-vesper/config.toml");
+        assert!(!root.path().join(".jarvis").exists());
+        jarvis_security::prepare_owned_directory(&root.path().join(".jarvis")).unwrap();
+        let path = root.path().join(".jarvis/config.toml");
         let original = "[web]\nallowlist = [\"https://example.com\"]\n[other]\nvalue = 42\n";
         std::fs::write(&path, original).unwrap();
         let mut config = load(root.path()).unwrap();

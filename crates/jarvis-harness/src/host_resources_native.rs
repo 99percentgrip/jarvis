@@ -355,7 +355,7 @@ mod tests {
                 "host_resources::native_backend::tests::native_process_fixture",
                 "--nocapture",
             ])
-            .env("AGENT_VESPER_NATIVE_PROCESS_FIXTURE", "parent")
+            .env("JARVIS_NATIVE_PROCESS_FIXTURE", "parent")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null());
@@ -393,7 +393,7 @@ mod tests {
 
     #[test]
     fn native_process_fixture() {
-        let Ok(role) = std::env::var("AGENT_VESPER_NATIVE_PROCESS_FIXTURE") else {
+        let Ok(role) = std::env::var("JARVIS_NATIVE_PROCESS_FIXTURE") else {
             return;
         };
         use std::io::{Read, Write};
@@ -406,7 +406,7 @@ mod tests {
                         "host_resources::native_backend::tests::native_process_fixture",
                         "--nocapture",
                     ])
-                    .env("AGENT_VESPER_NATIVE_PROCESS_FIXTURE", "descendant")
+                    .env("JARVIS_NATIVE_PROCESS_FIXTURE", "descendant")
                     .stdin(Stdio::piped())
                     .spawn()
                     .unwrap(),
@@ -428,7 +428,7 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn windows_job_fixture() {
-        if std::env::var("AGENT_VESPER_WINDOWS_JOB_FIXTURE").as_deref() != Ok("1") {
+        if std::env::var("JARVIS_WINDOWS_JOB_FIXTURE").as_deref() != Ok("1") {
             return;
         }
         let temporary = tempfile::tempdir().unwrap();

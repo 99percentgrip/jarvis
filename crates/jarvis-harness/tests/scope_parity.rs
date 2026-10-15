@@ -15,9 +15,9 @@
 //!    cannot flip the process-global scope. A scope change requires a host
 //!    restart, exactly like the firewall and sandbox holders.
 //! 3. **Layer-2 dormancy by default (§3.4 criterion 4).** With
-//!    `AGENT_VESPER_EXTRA_SCOPES` absent, no extra layer is mounted and the
+//!    `JARVIS_EXTRA_SCOPES` absent, no extra layer is mounted and the
 //!    default skills surface is byte-identical to the two-layer default.
-//! 4. **Rename stability (§6.3).** The `.vesper-scope-id` stamp survives a
+//! 4. **Rename stability (§6.3).** The `.jarvis-scope-id` stamp survives a
 //!    directory rename: the renamed root resolves the *same* `ScopeId`
 //!    (this is why identity is a stamp file, not a path hash).
 //!
@@ -42,7 +42,7 @@ fn holder_lock() -> std::sync::MutexGuard<'static, ()> {
 
 /// Creates a project fixture directory with a skills file.
 fn project_fixture(dir: &Path, skill_slug: &str) {
-    let skills = dir.join(".agent-vesper").join("skills");
+    let skills = dir.join(".jarvis").join("skills");
     std::fs::create_dir_all(&skills).expect("create skills dir");
     std::fs::write(
         skills.join(format!("{skill_slug}.md")),
@@ -94,7 +94,7 @@ fn both_hosts_boot_paths_resolve_identical_scope_ids() {
         again.as_ref().expect("installed").id().to_string(),
         "stamp pins the id"
     );
-    assert!(tui_root.path().join(".vesper-scope-id").exists());
+    assert!(tui_root.path().join(".jarvis-scope-id").exists());
 
     holder::reset_for_tests();
 }
@@ -128,7 +128,7 @@ fn holder_is_first_resolution_wins() {
     holder::reset_for_tests();
 }
 
-/// 3: `AGENT_VESPER_EXTRA_SCOPES` is completely dormant by default — no
+/// 3: `JARVIS_EXTRA_SCOPES` is completely dormant by default — no
 /// env var ⇒ no extra layer ⇒ the advertised skills surface is exactly the
 /// project + global layers.
 #[test]
@@ -150,7 +150,7 @@ fn extra_scopes_completely_dormant_by_default() {
         .expect("scope resolves");
     assert!(
         scope.extra_roots().is_empty(),
-        "no AGENT_VESPER_EXTRA_SCOPES ⇒ no extra roots"
+        "no JARVIS_EXTRA_SCOPES ⇒ no extra roots"
     );
     assert!(
         !scope
@@ -178,7 +178,7 @@ fn rename_does_not_rekey_the_scope() {
     let _guard = holder_lock();
     let parent = tempfile::tempdir().expect("parent");
     let original = parent.path().join("original-name");
-    std::fs::create_dir_all(original.join(".agent-vesper").join("skills")).expect("skills dir");
+    std::fs::create_dir_all(original.join(".jarvis").join("skills")).expect("skills dir");
 
     let before = holder::install_for_root(&original)
         .expect("resolve before rename")
@@ -196,7 +196,7 @@ fn rename_does_not_rekey_the_scope() {
     assert_eq!(
         before_id,
         after.id().to_string(),
-        "the .vesper-scope-id stamp survives the rename: stores stay keyed"
+        "the .jarvis-scope-id stamp survives the rename: stores stay keyed"
     );
 
     holder::reset_for_tests();

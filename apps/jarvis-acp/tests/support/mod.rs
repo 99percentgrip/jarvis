@@ -79,8 +79,8 @@ impl ProcessHarness {
             env!("CARGO_BIN_EXE_jarvis-acp-test-driver"),
             address,
             [
-                ("AGENT_VESPER_TEST_DISPATCH_GATE", gate.to_string()),
-                ("AGENT_VESPER_FULL_HARNESS", "0".to_owned()),
+                ("JARVIS_TEST_DISPATCH_GATE", gate.to_string()),
+                ("JARVIS_FULL_HARNESS", "0".to_owned()),
             ],
         )
     }
@@ -99,8 +99,8 @@ impl ProcessHarness {
             env!("CARGO_BIN_EXE_jarvis-acp-test-driver"),
             address,
             [
-                ("AGENT_VESPER_TEST_DISPATCH_GATE", address.to_string()),
-                ("AGENT_VESPER_FULL_HARNESS", "1".to_owned()),
+                ("JARVIS_TEST_DISPATCH_GATE", address.to_string()),
+                ("JARVIS_FULL_HARNESS", "1".to_owned()),
             ]
             .into_iter()
             .chain(extra),
@@ -112,6 +112,22 @@ impl ProcessHarness {
         extra: impl IntoIterator<Item = (&'static str, String)>,
     ) -> Self {
         Self::spawn_binary(env!("CARGO_BIN_EXE_jarvis-acp"), address, extra)
+    }
+
+    pub fn spawn_legacy_format_fixture(
+        address: std::net::SocketAddr,
+        extra: impl IntoIterator<Item = (&'static str, String)>,
+    ) -> Self {
+        Self::spawn_binary(
+            env!("CARGO_BIN_EXE_jarvis-acp-test-driver"),
+            address,
+            [
+                ("JARVIS_TEST_DISPATCH_GATE", address.to_string()),
+                ("JARVIS_FULL_HARNESS", "0".to_owned()),
+            ]
+            .into_iter()
+            .chain(extra),
+        )
     }
 
     fn spawn_binary(
@@ -132,7 +148,7 @@ impl ProcessHarness {
         fs::write(
             &openai_fixture,
             serde_json::to_vec(&serde_json::json!({
-                "credentials": {
+                "application": "99percentgrip.jarvis", "credentials": {
                     "openai": {"native-auth": "{\"mode\":\"signed-out\"}"},
                     "xai": {"native-auth": "{\"mode\":\"signed-out\"}"}
                 }
@@ -154,16 +170,16 @@ impl ProcessHarness {
             .current_dir(&temp)
             .env_clear()
             .env("HOME", &temp)
-            .env("AGENT_VESPER_OPENAI_CREDENTIALS_PATH", &openai_fixture)
-            .env("AGENT_VESPER_XAI_CREDENTIALS_PATH", &openai_fixture)
+            .env("JARVIS_OPENAI_CREDENTIALS_PATH", &openai_fixture)
+            .env("JARVIS_XAI_CREDENTIALS_PATH", &openai_fixture)
             .env("XDG_CONFIG_HOME", temp.join("config"))
             .env("XDG_CACHE_HOME", temp.join("cache"))
             .env("XDG_DATA_HOME", temp.join("data"))
             .env("XDG_STATE_HOME", temp.join("state"))
             .env("ZAI_API_KEY", CANARY)
-            .env("AGENT_VESPER_GLM_BASE_URL", format!("http://{address}/v4"))
-            .env("AGENT_VESPER_ALLOW_INSECURE_LOOPBACK", "1")
-            .env("AGENT_VESPER_FULL_HARNESS", "0")
+            .env("JARVIS_GLM_BASE_URL", format!("http://{address}/v4"))
+            .env("JARVIS_ALLOW_INSECURE_LOOPBACK", "1")
+            .env("JARVIS_FULL_HARNESS", "0")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
@@ -491,7 +507,7 @@ pub fn signed_out_openai_fixture() -> tempfile::NamedTempFile {
     serde_json::to_writer(
         &mut file,
         &serde_json::json!({
-            "credentials": {"openai": {"native-auth": "{\"mode\":\"signed-out\"}"}}
+            "application": "99percentgrip.jarvis", "credentials": {"openai": {"native-auth": "{\"mode\":\"signed-out\"}"}}
         }),
     )
     .unwrap();

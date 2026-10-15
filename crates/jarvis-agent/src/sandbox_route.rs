@@ -31,7 +31,7 @@ pub use jarvis_security::{
 };
 
 /// The opt-in isolation demand a project scope declared for shell-class
-/// tools, parsed from `.agent-vesper/config.toml` `[sandbox]` (or supplied
+/// tools, parsed from `.jarvis/config.toml` `[sandbox]` (or supplied
 /// per-call by a tool that explicitly demands isolation).
 #[derive(Debug, Clone, PartialEq)]
 pub struct SandboxDemand {

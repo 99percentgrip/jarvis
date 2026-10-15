@@ -105,20 +105,11 @@ fn governance_settings_round_trip_requires_no_file_edits() {
     controls
         .command(root.path(), "settings governance gated")
         .unwrap();
-    assert!(
-        !root
-            .path()
-            .join(".agent-vesper/swarm-settings.json")
-            .exists()
-    );
+    assert!(!root.path().join(".jarvis/swarm-settings.json").exists());
 
     // Save persists once; a fresh load reads the same profile.
     controls.command(root.path(), "settings save").unwrap();
-    assert!(
-        root.path()
-            .join(".agent-vesper/swarm-settings.json")
-            .exists()
-    );
+    assert!(root.path().join(".jarvis/swarm-settings.json").exists());
     let saved = jarvis_harness::swarm_settings::load(root.path()).unwrap();
     assert_eq!(saved.governance, GovernanceSetting::Gated);
 

@@ -189,6 +189,9 @@ impl SkillStore {
                     entry.name
                 ));
             };
+            if jarvis_security::validate_private_path(&path).is_err() {
+                return Some(format!("chunk `{}`: private path refused", entry.name));
+            }
             let Ok(size) = std::fs::metadata(&path).map(|meta| meta.len()) else {
                 return Some(format!(
                     "chunk `{}`: unreadable (permission or metadata failure)",
@@ -216,12 +219,15 @@ impl SkillStore {
         }
         let local = self.chunks_dir(slug).join(format!("{name}.md"));
         if let Some(body) = read_bounded(&local, MAX_CHUNK_BYTES) {
-            return Ok(body);
+            return bind_resource_paths(body, &self.skills_dir());
         }
         if let Some(global) = self.global_chunks_dir(slug)
             && let Some(body) = read_bounded(&global.join(format!("{name}.md")), MAX_CHUNK_BYTES)
         {
-            return Ok(body);
+            return bind_resource_paths(
+                body,
+                &self.global_skills_dir().ok_or(MemoryError::InvalidRoot)?,
+            );
         }
         Err(MemoryError::NotFound(format!(
             "skill chunk: {}/{name}",
@@ -259,14 +265,17 @@ impl SkillStore {
     /// Returns [`MemoryError::NotFound`] when both layers miss.
     pub fn read(&self, slug: &SkillSlug) -> Result<String, MemoryError> {
         let path = self.skill_path(slug);
-        if let Ok(body) = std::fs::read_to_string(&path) {
-            return Ok(body);
+        if let Some(body) = read_bounded(&path, MAX_SKILL_BYTES) {
+            return bind_resource_paths(body, &self.skills_dir());
         }
         if let Some(body) = self
             .global_skill_path(slug)
-            .and_then(|path| std::fs::read_to_string(path).ok())
+            .and_then(|path| read_bounded(&path, MAX_SKILL_BYTES))
         {
-            return Ok(body);
+            return bind_resource_paths(
+                body,
+                &self.global_skills_dir().ok_or(MemoryError::InvalidRoot)?,
+            );
         }
         Err(MemoryError::NotFound(format!("skill:{}", slug.as_str())))
     }
@@ -345,6 +354,7 @@ impl SkillStore {
 
     fn routing_source_path(&self, slug: &SkillSlug) -> Result<PathBuf, MemoryError> {
         let local = self.skill_path(slug);
+        jarvis_security::validate_private_path(&local).map_err(|_| MemoryError::InvalidRoot)?;
         if local
             .try_exists()
             .map_err(|_| MemoryError::io("metadata"))?
@@ -352,7 +362,7 @@ impl SkillStore {
             return Ok(local);
         }
         self.global_skill_path(slug)
-            .filter(|p| p.is_file())
+            .filter(|p| jarvis_security::validate_private_path(p).is_ok() && p.is_file())
             .ok_or_else(|| MemoryError::NotFound(format!("skill:{}", slug.as_str())))
     }
 
@@ -367,6 +377,8 @@ impl SkillStore {
             .routing_source_path(slug)
             .map_err(|_| "catalog identity unavailable")?;
         let path = source.with_extension("routing.json");
+        jarvis_security::validate_private_path(&path)
+            .map_err(|_| "private descriptor path refused")?;
         if path
             .symlink_metadata()
             .is_ok_and(|m| !m.is_file() || m.file_type().is_symlink())
@@ -450,12 +462,12 @@ impl SkillStore {
     /// Reads one bundle by validated slug, falling back to the global layer.
     pub fn read_bundle(&self, name: &SkillSlug) -> Result<SkillBundle, MemoryError> {
         let path = self.bundles_dir().join(format!("{}.json", name.as_str()));
-        if let Ok(body) = std::fs::read_to_string(&path) {
+        if let Some(body) = read_bounded(&path, MAX_BUNDLE_BYTES) {
             return serde_json::from_str(&body).map_err(MemoryError::from);
         }
         if let Some(global_dir) = self.global_bundles_dir() {
             let global_path = global_dir.join(format!("{}.json", name.as_str()));
-            if let Ok(body) = std::fs::read_to_string(global_path) {
+            if let Some(body) = read_bounded(&global_path, MAX_BUNDLE_BYTES) {
                 return serde_json::from_str(&body).map_err(MemoryError::from);
             }
         }
@@ -615,6 +627,9 @@ fn extract_section(body: &str, heading: &str) -> Option<String> {
 
 /// Scans one `skills/` directory into `out`, respecting [`MAX_SKILL_FILES`].
 fn scan_skills_dir(dir: &Path, out: &mut Vec<SkillSummary>) {
+    if jarvis_security::validate_private_path(dir).is_err() {
+        return;
+    }
     let entries = match std::fs::read_dir(dir) {
         Ok(entries) => entries,
         Err(_) => return,
@@ -644,7 +659,41 @@ fn scan_skills_dir(dir: &Path, out: &mut Vec<SkillSummary>) {
     }
 }
 
+/// Bind inherited resource instructions to the selected store, without copying
+/// or opening any legacy application state. Other legacy-private instructions
+/// fail closed until their owning skill has an explicit isolation contract.
+fn bind_resource_paths(body: String, skills: &Path) -> Result<String, MemoryError> {
+    jarvis_security::validate_private_path(skills).map_err(|_| MemoryError::InvalidRoot)?;
+    let destination = format!("{}/", skills.to_string_lossy().replace('\\', "/"));
+    let memory = skills.parent().ok_or(MemoryError::InvalidRoot)?;
+    let data = memory.parent().ok_or(MemoryError::InvalidRoot)?;
+    let mut bound = body
+        .replace("~/.agent-vesper/memory/skills/", &destination)
+        .replace("$HOME/.agent-vesper/memory/skills/", &destination)
+        .replace("${HOME}/.agent-vesper/memory/skills/", &destination)
+        .replace(
+            "~/.agent-vesper/skills/maps/",
+            &format!("{destination}maps/"),
+        )
+        .replace("~/.agent-vesper/memory/", &format!("{}/", memory.display()));
+    for directory in ["competitor-watches", "price-watches"] {
+        bound = bound.replace(
+            &format!("~/.agent-vesper/{directory}/"),
+            &format!("{}/{directory}/", data.display()),
+        );
+    }
+    if bound.contains("~/.agent-vesper/")
+        || bound.contains("$HOME/.agent-vesper/")
+        || bound.contains("${HOME}/.agent-vesper/")
+        || bound.contains("AGENT_VESPER_HOME")
+    {
+        return Err(MemoryError::InvalidRoot);
+    }
+    Ok(bound)
+}
+
 fn read_prefix(path: &Path) -> Option<String> {
+    jarvis_security::validate_private_path(path).ok()?;
     let file = std::fs::File::open(path).ok()?;
     let mut bytes = Vec::with_capacity(MAX_SKILL_CATALOG_PREFIX_BYTES);
     file.take(MAX_SKILL_CATALOG_PREFIX_BYTES as u64)
@@ -656,6 +705,7 @@ fn read_prefix(path: &Path) -> Option<String> {
 /// Reads at most `limit` bytes from `path`. A file larger than the limit
 /// is rejected (None), never truncated — the fail-closed chunk byte cap.
 fn read_bounded(path: &Path, limit: usize) -> Option<String> {
+    jarvis_security::validate_private_path(path).ok()?;
     let file = std::fs::File::open(path).ok()?;
     let mut bytes = Vec::with_capacity(limit.min(64 * 1024));
     file.take((limit + 1) as u64).read_to_end(&mut bytes).ok()?;
@@ -667,6 +717,9 @@ fn read_bounded(path: &Path, limit: usize) -> Option<String> {
 
 /// Scans one `bundles/` directory into a vector of parsed bundles.
 fn scan_bundles_dir(dir: &Path) -> Vec<SkillBundle> {
+    if jarvis_security::validate_private_path(dir).is_err() {
+        return Vec::new();
+    }
     let Ok(entries) = std::fs::read_dir(dir) else {
         return Vec::new();
     };
@@ -722,6 +775,38 @@ mod tests {
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].slug, "rust-cargo-bump");
         assert_eq!(summaries[0].headline, "Rust Cargo Bump");
+    }
+
+    #[test]
+    fn inherited_skill_resources_bind_to_selected_store_without_legacy_reads() {
+        let temp = TempDir::new().unwrap();
+        let (root, store) = store_under(&temp);
+        let slug = SkillSlug::new("resource-test").unwrap();
+        let original = "Run ~/.agent-vesper/memory/skills/resource-test/scripts/run.py";
+        store.write(&slug, original).unwrap();
+        let body = store.read(&slug).unwrap();
+        assert!(body.contains(&format!(
+            "{}/skills/resource-test/scripts/run.py",
+            root.to_string_lossy().replace('\\', "/")
+        )));
+        assert!(!body.contains(".agent-vesper"));
+        assert_eq!(
+            std::fs::read_to_string(root.join("skills/resource-test.md")).unwrap(),
+            original
+        );
+        let global_store = SkillStore::open_with_global(&temp.path().join("local"), &root).unwrap();
+        assert_eq!(global_store.read(&slug).unwrap(), body);
+    }
+
+    #[test]
+    fn skill_cannot_instruct_implicit_use_of_unclassified_legacy_private_state() {
+        let temp = TempDir::new().unwrap();
+        let (_, store) = store_under(&temp);
+        let slug = SkillSlug::new("unsafe-resource").unwrap();
+        store
+            .write(&slug, "Read ~/.agent-vesper/private-tokens.json")
+            .unwrap();
+        assert!(store.read(&slug).is_err());
     }
 
     #[test]

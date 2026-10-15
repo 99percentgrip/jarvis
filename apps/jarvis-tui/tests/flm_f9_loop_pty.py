@@ -32,7 +32,7 @@ def run_production_verify(binary):
     """Runs the release binary's own real-model Verify composition via the
     standalone receipt example (same code path as the Settings action)."""
     import subprocess
-    env = dict(os.environ, AGENT_VESPER_PROVIDER='lmstudio',
+    env = dict(os.environ, JARVIS_PROVIDER='lmstudio',
                NO_PROXY='127.0.0.1,localhost',
                FLM_MODEL_PATH=str(Path.home() / '.config/flm'))
     example = Path(binary).parent.parent / 'examples/flm_stt_receipt'
@@ -218,11 +218,11 @@ def run(binary, python, voice="am_michael"):
                 os.link(source, destination)
     host = settings_pty.Host(str(Path(binary).resolve()), root, dict(
         PATH=str(commands) + os.pathsep + os.environ['PATH'],
-        VESPER_PYTHON_PATH=python, PYTHONPATH=str(root),
+        JARVIS_PYTHON_PATH=python, PYTHONPATH=str(root),
         VOICE_FIXTURE_ROOT=str(root), TMPDIR=str(root / 'audio'),
-        AGENT_VESPER_VOICE_VENV=str(root / 'voice-venv'),
+        JARVIS_VOICE_VENV=str(root / 'voice-venv'),
         # The FLM route resolves the real user cache (read-only).
-        AGENT_VESPER_PROVIDER='lmstudio', NO_PROXY='127.0.0.1,localhost',
+        JARVIS_PROVIDER='lmstudio', NO_PROXY='127.0.0.1,localhost',
         # Read-only reuse of the REAL installed FLM pack under the
         # isolated HOME. Vendor semantics: FLM_MODEL_PATH is the
         # PARENT of the pack root (flm appends 'models'), so pass

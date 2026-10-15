@@ -41,7 +41,7 @@ class Host:
         env = dict(PATH=os.environ['PATH'], HOME=str(home), USERPROFILE=str(home),
                    XDG_DATA_HOME=str(root / 'data'), XDG_CONFIG_HOME=str(root / 'config'),
                    TERM='xterm-256color', LANG='C.UTF-8', ZAI_API_KEY='fixture-not-a-real-key',
-                   AGENT_VESPER_PROVIDER='zai', AGENT_VESPER_SANDBOX='off',
+                   JARVIS_PROVIDER='zai', JARVIS_SANDBOX='off',
                    HTTP_PROXY='http://127.0.0.1:9', HTTPS_PROXY='http://127.0.0.1:9',
                    ALL_PROXY='http://127.0.0.1:9', NO_PROXY='')
         self.child = subprocess.Popen([binary], cwd=root, env=env, stdin=slave,

@@ -170,7 +170,7 @@ async fn real_browser_feedback_reaches_native_provider_continuation() {
     let browser = async {
         let url = rx.recv().await.unwrap();
         let status = tokio::process::Command::new(
-            std::env::var("VESPER_TEST_NODE").unwrap_or_else(|_| "node".into()),
+            std::env::var("JARVIS_TEST_NODE").unwrap_or_else(|_| "node".into()),
         )
         .arg(concat!(
             env!("CARGO_MANIFEST_DIR"),

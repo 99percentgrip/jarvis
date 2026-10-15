@@ -17,6 +17,7 @@ ort = ["dep:ort", "dep:fs2"]
 mock-synthesis = []
 
 [dependencies]
+jarvis-config = { path = "../jarvis-config", version = "=0.24.14" }
 futures-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true

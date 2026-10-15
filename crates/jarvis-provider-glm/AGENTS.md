@@ -43,7 +43,7 @@ quota normalization, and legacy GLM compatibility translation.
 ## Work Guidance
 
 - Keep exact GLM wire compatibility inside this crate.
-- Keep environment-variable precedence and legacy credential reads, but route
+- Keep external provider environment-variable precedence; refuse legacy application credential reads and route
   all new stored credentials through `jarvis-auth`.
 - Use loopback ephemeral servers and synthetic credential sources in tests.
 - ADR 0009: advertise **one** session-scoped reasoning dial (`zai:reasoning`,

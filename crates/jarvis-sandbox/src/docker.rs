@@ -7,7 +7,7 @@
 //!
 //! Lifecycle per provision:
 //!
-//! * **provision** — `docker run --rm -d --name agent-vesper-sbx-<slug>
+//! * **provision** — `docker run --rm -d --name jarvis-sbx-<slug>
 //!   --cpus <n> --memory <m> --pids-limit 512 --network none
 //!   --mount type=bind,source=<root>,target=/workspace -w /workspace
 //!   <image> sleep <timeout>`: a detached, network-less, resource-bounded
@@ -48,9 +48,9 @@ use crate::{
 const BACKEND_ID: &str = "docker";
 
 /// Env override for the docker binary (tests point this at a stub script).
-pub const DOCKER_BIN_OVERRIDE: &str = "VESPER_DOCKER_BIN";
+pub const DOCKER_BIN_OVERRIDE: &str = "JARVIS_DOCKER_BIN";
 /// Env override for the image tag.
-pub const DOCKER_IMAGE_OVERRIDE: &str = "VESPER_DOCKER_IMAGE";
+pub const DOCKER_IMAGE_OVERRIDE: &str = "JARVIS_DOCKER_IMAGE";
 
 /// Default container memory limit (2 GiB).
 pub const DEFAULT_MEMORY_LIMIT: &str = "2g";
@@ -59,7 +59,7 @@ pub const DEFAULT_CPU_LIMIT: &str = "2";
 /// Default image for ephemeral tool sandboxes.
 pub const DEFAULT_IMAGE: &str = "alpine:3.20";
 /// Container name prefix (PRD §2.2).
-pub const CONTAINER_NAME_PREFIX: &str = "agent-vesper-sbx-";
+pub const CONTAINER_NAME_PREFIX: &str = "jarvis-sbx-";
 /// Default PID ceiling inside one container.
 pub const DEFAULT_PIDS_LIMIT: &str = "512";
 /// Bounded wall-clock for the daemon liveness probe itself.
@@ -729,11 +729,7 @@ mod tests {
     #[test]
     fn run_args_enforce_limits_bind_and_no_network_by_default() {
         let backend = DockerBackend::new(config());
-        let args = backend.run_args(
-            "agent-vesper-sbx-tests",
-            std::path::Path::new("/tmp/ws"),
-            120,
-        );
+        let args = backend.run_args("jarvis-sbx-tests", std::path::Path::new("/tmp/ws"), 120);
         let joined = args.join(" ");
         // Limits (PRD §2.2 Backend B).
         assert!(joined.contains("--cpus 2"), "args: {joined}");
@@ -748,10 +744,7 @@ mod tests {
         assert!(joined.contains("--network none"), "args: {joined}");
         // Ephemeral.
         assert!(joined.contains("--rm"), "args: {joined}");
-        assert!(
-            joined.contains("--name agent-vesper-sbx-tests"),
-            "args: {joined}"
-        );
+        assert!(joined.contains("--name jarvis-sbx-tests"), "args: {joined}");
     }
 
     #[test]

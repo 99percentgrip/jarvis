@@ -28,12 +28,9 @@ fn driver_setup_preflight_exits_without_provider_or_workspace_state() {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jarvis-acp"));
     command
         .env_clear()
-        .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
-            openai_fixture.path(),
-        )
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", openai_fixture.path())
         .current_dir(root.path())
-        .env("AGENT_VESPER_BUNDLE_DIR", root.path())
+        .env("JARVIS_BUNDLE_DIR", root.path())
         .arg("--setup-web-driver");
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
     for key in critical_environment_keys() {
@@ -101,19 +98,16 @@ fn stdio_transcript_reaches_real_glm_adapter_with_protocol_pure_stdout() {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jarvis-acp"));
     command
         .env_clear()
-        .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
-            openai_fixture.path(),
-        )
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", openai_fixture.path())
         .env("HOME", &temp)
         .env("XDG_CONFIG_HOME", temp.join("config"))
         .env("XDG_CACHE_HOME", temp.join("cache"))
         .env("XDG_DATA_HOME", temp.join("data"))
         .env("XDG_STATE_HOME", temp.join("state"))
         .env("ZAI_API_KEY", CANARY)
-        .env("AGENT_VESPER_GLM_BASE_URL", format!("http://{address}/v4"))
-        .env("AGENT_VESPER_ALLOW_INSECURE_LOOPBACK", "1")
-        .env("AGENT_VESPER_FULL_HARNESS", "0")
+        .env("JARVIS_GLM_BASE_URL", format!("http://{address}/v4"))
+        .env("JARVIS_ALLOW_INSECURE_LOOPBACK", "1")
+        .env("JARVIS_FULL_HARNESS", "0")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -352,10 +346,7 @@ fn empty_prompt_and_slash_commands_never_dispatch_provider() {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jarvis-acp"));
     command
         .env_clear()
-        .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
-            openai_fixture.path(),
-        )
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", openai_fixture.path())
         .env("HOME", &temp)
         .env("XDG_CONFIG_HOME", temp.join("config"))
         .env("XDG_CACHE_HOME", temp.join("cache"))
@@ -555,6 +546,7 @@ fn host_owned_slash_commands_reach_real_stores_with_tui_parity() {
     let checkpoint_root = temp.join("checkpoints");
     let mcp_root = temp.join("mcp");
     let workspace = temp.join("workspace");
+    jarvis_security::prepare_owned_directory(&global_memory).unwrap();
     std::fs::create_dir_all(global_memory.join("skills")).unwrap();
     std::fs::create_dir_all(&project_memory).unwrap();
     std::fs::create_dir_all(&workspace).unwrap();
@@ -571,17 +563,14 @@ fn host_owned_slash_commands_reach_real_stores_with_tui_parity() {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jarvis-acp"));
     command
         .env_clear()
-        .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
-            openai_fixture.path(),
-        )
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", openai_fixture.path())
         .env("HOME", &temp)
         .env("XDG_CONFIG_HOME", temp.join("config"))
         .env("XDG_CACHE_HOME", temp.join("cache"))
-        .env("AGENT_VESPER_MEMORY_ROOT", &project_memory)
-        .env("AGENT_VESPER_GLOBAL_MEMORY_ROOT", &global_memory)
-        .env("AGENT_VESPER_CHECKPOINT_ROOT", &checkpoint_root)
-        .env("AGENT_VESPER_MCP_ROOT", &mcp_root)
+        .env("JARVIS_MEMORY_ROOT", &project_memory)
+        .env("JARVIS_GLOBAL_MEMORY_ROOT", &global_memory)
+        .env("JARVIS_CHECKPOINT_ROOT", &checkpoint_root)
+        .env("JARVIS_MCP_ROOT", &mcp_root)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -686,7 +675,7 @@ fn host_owned_slash_commands_reach_real_stores_with_tui_parity() {
 
     // Explicit web settings write only to the session workspace, without
     // credentials or provider dispatch; status itself must remain read-only.
-    let settings_path = workspace.join(".agent-vesper/web-settings.json");
+    let settings_path = workspace.join(".jarvis/web-settings.json");
     assert!(run_command("/web status").contains("enabled=false"));
     assert!(!settings_path.exists());
     assert!(run_command("/web enabled on").contains("Restart"));
@@ -717,10 +706,7 @@ fn malformed_input_exits_without_stdout_contamination() {
     command
         .env_clear()
         .current_dir(isolated_root.path())
-        .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
-            openai_fixture.path(),
-        )
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", openai_fixture.path())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -784,15 +770,12 @@ fn cancellation_after_reasoning_emits_no_post_cancel_content() {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jarvis-acp"));
     command
         .env_clear()
-        .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
-            openai_fixture.path(),
-        )
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", openai_fixture.path())
         .env("HOME", &temp)
         .env("ZAI_API_KEY", CANARY)
-        .env("AGENT_VESPER_GLM_BASE_URL", format!("http://{address}/v4"))
-        .env("AGENT_VESPER_ALLOW_INSECURE_LOOPBACK", "1")
-        .env("AGENT_VESPER_FULL_HARNESS", "0")
+        .env("JARVIS_GLM_BASE_URL", format!("http://{address}/v4"))
+        .env("JARVIS_ALLOW_INSECURE_LOOPBACK", "1")
+        .env("JARVIS_FULL_HARNESS", "0")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -870,17 +853,14 @@ fn session_new_with_client_mcp_servers_creates_session() {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jarvis-acp"));
     command
         .env_clear()
-        .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
-            openai_fixture.path(),
-        )
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", openai_fixture.path())
         .env("HOME", &temp)
         .env("XDG_CONFIG_HOME", temp.join("config"))
         .env("XDG_CACHE_HOME", temp.join("cache"))
         .env("XDG_DATA_HOME", temp.join("data"))
         .env("XDG_STATE_HOME", temp.join("state"))
         .env("ZAI_API_KEY", CANARY)
-        .env("AGENT_VESPER_FULL_HARNESS", "0")
+        .env("JARVIS_FULL_HARNESS", "0")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

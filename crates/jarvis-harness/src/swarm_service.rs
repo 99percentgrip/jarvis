@@ -41,7 +41,7 @@ pub fn parent_cancellation(
 pub async fn configured_backend(
     root: &std::path::Path,
 ) -> Result<(Arc<dyn SandboxBackend>, SandboxBackendChoice), String> {
-    let selection = std::env::var("AGENT_VESPER_SANDBOX").ok();
+    let selection = std::env::var("JARVIS_SANDBOX").ok();
     if backend_selection(selection.as_deref(), cfg!(feature = "docker"))?
         == SandboxBackendChoice::Default
     {
@@ -352,7 +352,7 @@ async fn run_owned(
     let shared_scope = settings.shared_scope;
     let (leases, artifacts) = tokio::task::spawn_blocking(move || {
         let root = root.canonicalize().map_err(|error| error.to_string())?;
-        let parent = root.join(".agent-vesper");
+        let parent = root.join(".jarvis");
         if parent
             .symlink_metadata()
             .is_ok_and(|m| m.file_type().is_symlink())

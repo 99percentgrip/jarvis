@@ -12,6 +12,11 @@ Z.ai and Playwright MCP server descriptors.
 
 ## Ownership
 
+- Inherited RRC lifecycle details below are offline/deferred contracts. Stage 3
+  ordinary admission, status and recovery have no release root and cannot load
+  old ledgers; only the explicit integration driver enables controlled fixtures.
+  No real release ownership or updater channel is activated.
+
 - `release_recovery` owns the provider-neutral RRC state machine, transactional
   reducer, retry/focused-proof budgets, exact-SHA settled workflow evidence,
   first-causal extraction, secret redaction and immutable last-green context.
@@ -524,7 +529,7 @@ Z.ai and Playwright MCP server descriptors.
   IDs to `sha256:`. Inspection spawn failures retain OS error kind/code without
   leaking executable paths or falsely diagnosing daemon availability.
   `setup_driver` reads only the executable-adjacent bundle
-  (or explicit `AGENT_VESPER_BUNDLE_DIR`), verifies SHA-256 before importing,
+  (or explicit `JARVIS_BUNDLE_DIR`), verifies SHA-256 before importing,
   caps import at 180 seconds, and verifies the exact bundled image ID after
   import. This explicit installer/settings operation is the exception to
   workspace-root I/O confinement; it is never a model-facing tool. Import-only
@@ -557,6 +562,8 @@ Z.ai and Playwright MCP server descriptors.
   session lifecycle; they inject a `WorkerFactory` when nested work is allowed.
 
 ## Local Contracts
+
+- Stage 3 ordinary release/status/recovery routes have no release root and cannot open a legacy ledger. Controlled process acceptance requires its explicit integration-driver seam; merely compiling test-support does not activate it. Runtime settings/stores use application-private roots and new environment names. The shared security foundation validates private paths; ordinary user project tools retain their permissions.
 
 - Rust build selections use current package names. Version-only lock comparison
   derives ownership from actual workspace manifests, not product-name prefixes;
@@ -656,21 +663,21 @@ Z.ai and Playwright MCP server descriptors.
   gated service never creates the checkpoint or lineage directories at
   construction, never spawns the cron scheduler, and answers the five
   checkpoint-family commands with the truthful
-  `AGENT_VESPER_ENABLE_CHECKPOINTS` opt-in notice. The ACP host builds
+  `JARVIS_ENABLE_CHECKPOINTS` opt-in notice. The ACP host builds
   gated-by-default (root AGENTS.md contract); `/ci` and `/export` remain
   available either way.
 - `MemoryStores::open_default` opens the project root
-  (`AGENT_VESPER_MEMORY_ROOT` → `.agent-vesper/memory/`) plus the
-  cross-project global skill layer (`AGENT_VESPER_GLOBAL_MEMORY_ROOT` →
-  `~/.agent-vesper/memory/`); `open_at` is the explicit-root constructor
+  (`JARVIS_MEMORY_ROOT` → `.jarvis/memory/`) plus the
+  cross-project global skill layer (`JARVIS_GLOBAL_MEMORY_ROOT` or
+  native application data plus `memory`); `open_at` is the explicit-root constructor
   compositions with their own root resolution share so the TUI and ACP can
   never drift on store-open semantics again.
 - Durable roots are supplied by the composition boundary and default to the
-  `.agent-vesper/` layout; no credentials are persisted by this crate.
+  `.jarvis/` layout; no credentials are persisted by this crate.
 - `src/scope_holder.rs` resolves the shared VRO workspace scope once at host
   boot. The TUI uses its default writing stamp policy; ACP must pass
-  `StampPolicy::ReadOnly` unless `AGENT_VESPER_ENABLE_SCOPE_STAMP=1`, so an
-  editor-spawned process never creates `.vesper-scope-id` in a project by
+  `StampPolicy::ReadOnly` unless `JARVIS_ENABLE_SCOPE_STAMP=1`, so an
+  editor-spawned process never creates `.jarvis-scope-id` in a project by
   default. The policy changes persistence only, never the resolved id.
 - The service exposes the same hosted tool definitions and behavior to ACP and
   TUI, avoiding frontend-specific parity drift.
@@ -739,7 +746,7 @@ Z.ai and Playwright MCP server descriptors.
 - `src/web_runtime.rs` lazily owns a single sandbox route used by fetch,
   ephemeral rendering, and persistent browser interaction. Initialization
   requires a digest-pinned driver image; no host HTTP/browser fallback exists.
-  `AGENT_VESPER_SANDBOX=off` refuses initialization, including web execution.
+  `JARVIS_SANDBOX=off` refuses initialization, including web execution.
   Browser interaction has a separate opt-in. A failed pipe invalidates the
   session, and render escalation never modifies the interactive session.
   Four shared runtime permits cap concurrent sandbox operations. Fetch and

@@ -329,7 +329,7 @@ pub const MAPPINGS: &[Mapping] = &[
         legacy: "AGENT_VESPER_CONFIG_DIR",
         planned: Some("JARVIS_CONFIG_DIR"),
         classification: CompatibilitySensitive,
-        source: "apps/jarvis-tui/src/main.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     Mapping {
         surface: Environment,
@@ -1029,7 +1029,7 @@ pub const MAPPINGS: &[Mapping] = &[
         legacy: "XDG_CONFIG_HOME",
         planned: None,
         classification: ThirdParty,
-        source: "crates/jarvis-provider-glm/src/auth.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     Mapping {
         surface: Provider,
@@ -1057,14 +1057,14 @@ pub const MAPPINGS: &[Mapping] = &[
         legacy: "APPDATA",
         planned: None,
         classification: ThirdParty,
-        source: "crates/jarvis-provider-glm/src/auth.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     Mapping {
         surface: Provider,
         legacy: "LOCALAPPDATA",
         planned: None,
         classification: ThirdParty,
-        source: "crates/jarvis-voice-kokoro/src/pack.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     Mapping {
         surface: Provider,
@@ -1078,7 +1078,7 @@ pub const MAPPINGS: &[Mapping] = &[
         legacy: "USERPROFILE",
         planned: None,
         classification: ThirdParty,
-        source: "crates/jarvis-agent/src/vro/scope.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     Mapping {
         surface: Browser,

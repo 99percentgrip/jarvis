@@ -4,8 +4,8 @@
 //! This module is the ACP composition of the shared cognition engine; the TUI
 //! owns its own host composition in `apps/jarvis-tui/src/main.rs`.
 //! Both hosts open the SAME durable
-//! stores — project-local `.agent-vesper/cognition/cognition.db` and the
-//! user-global `~/.local/share/agent-vesper/cognition/cognition.db` — with
+//! stores — project-local `.jarvis/cognition/cognition.db` and the
+//! user-global native application data plus `cognition/cognition.db` — with
 //! the same embedder selection (`embedding.json`, ADR 0016) and the same
 //! extraction routing, so a memory saved from the TUI is recalled by the
 //! ACP host and vice versa. Keeping the two copies behaviorally identical
@@ -252,14 +252,14 @@ impl jarvis_cognition::EmbeddingPort for LmStudioEmbedder {
 }
 
 /// Minimal persisted LM Studio settings reader
-/// (`.agent-vesper/lmstudio/settings.json` — same file the TUI hub edits).
+/// (`.jarvis/lmstudio/settings.json` — same file the TUI hub edits).
 fn lmstudio_persisted_endpoint_and_model() -> Option<(String, String)> {
-    let dir = std::env::var("AGENT_VESPER_LMSTUDIO_ROOT")
+    let dir = std::env::var("JARVIS_LMSTUDIO_ROOT")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| {
-            std::env::var("AGENT_VESPER_HOME")
+            std::env::var("JARVIS_HOME")
                 .map(std::path::PathBuf::from)
-                .unwrap_or_else(|_| std::path::PathBuf::from(".agent-vesper"))
+                .unwrap_or_else(|_| std::path::PathBuf::from(".jarvis"))
                 .join("lmstudio")
         });
     let text = std::fs::read_to_string(dir.join("settings.json")).ok()?;
@@ -272,7 +272,7 @@ fn lmstudio_persisted_endpoint_and_model() -> Option<(String, String)> {
         .get("model")
         .and_then(|m| m.as_str())
         .map(str::to_string)
-        .or_else(|| std::env::var("AGENT_VESPER_COGNITION_MODEL").ok())
+        .or_else(|| std::env::var("JARVIS_COGNITION_MODEL").ok())
         .unwrap_or_else(|| "local-model".into());
     Some((base, model))
 }
@@ -297,7 +297,7 @@ impl ZaiExtractionAdapter {
                 .build()
                 .expect("reqwest blocking client"),
             endpoint_url: format!("{}/chat/completions", endpoint.base_url()),
-            model: std::env::var("AGENT_VESPER_COGNITION_MODEL")
+            model: std::env::var("JARVIS_COGNITION_MODEL")
                 .unwrap_or_else(|_| String::from("glm-4.6")),
         }
     }
@@ -527,7 +527,11 @@ struct EmbeddingConfig {
 
 impl EmbeddingConfig {
     fn load(root: &std::path::Path) -> Self {
-        match std::fs::read_to_string(root.join("embedding.json")) {
+        let path = root.join("embedding.json");
+        if jarvis_security::validate_private_path(&path).is_err() {
+            return Self::default();
+        }
+        match std::fs::read_to_string(path) {
             Ok(text) => serde_json::from_str(&text).unwrap_or_default(),
             Err(_) => Self::default(),
         }
@@ -593,25 +597,12 @@ impl CognitionBundle {
 }
 
 pub fn global_cognition_root() -> std::path::PathBuf {
-    if let Ok(value) = std::env::var("AGENT_VESPER_GLOBAL_COGNITION_ROOT") {
+    if let Ok(value) = std::env::var("JARVIS_GLOBAL_COGNITION_ROOT") {
         return std::path::PathBuf::from(value);
     }
-    if let Ok(value) = std::env::var("XDG_DATA_HOME") {
-        return std::path::PathBuf::from(value)
-            .join("agent-vesper")
-            .join("cognition");
-    }
-    if let Ok(value) = std::env::var("HOME") {
-        return std::path::PathBuf::from(value)
-            .join(".local")
-            .join("share")
-            .join("agent-vesper")
-            .join("cognition");
-    }
-    std::env::current_dir()
-        .unwrap_or_else(|_| std::path::PathBuf::from("."))
-        .join(".agent-vesper")
-        .join("global-cognition")
+    jarvis_config::JarvisPaths::from_environment()
+        .map(|p| p.data.join("cognition"))
+        .unwrap_or_default()
 }
 
 fn build_independent_embedder(
@@ -674,7 +665,7 @@ fn build_provider_routed_embedder(
         return (
             Arc::new(LmStudioEmbedder::from_explicit_settings(
                 format!("{}/embeddings", base.trim_end_matches('/')),
-                std::env::var("AGENT_VESPER_COGNITION_EMBEDDING_MODEL")
+                std::env::var("JARVIS_COGNITION_EMBEDDING_MODEL")
                     .ok()
                     .unwrap_or_else(|| model.clone()),
                 std::env::var("LMSTUDIO_API_KEY").ok(),
@@ -684,9 +675,9 @@ fn build_provider_routed_embedder(
     }
     // TUI parity: the provider-routed default is the zero-network
     // LocalHashEmbedder; BigModel neural embeddings are opt-in via
-    // AGENT_VESPER_COGNITION_EMBEDDING_API=bigmodel (identical to the TUI's
+    // JARVIS_COGNITION_EMBEDDING_API=bigmodel (identical to the TUI's
     // default arm, so the two hosts never fight over the vector space).
-    if std::env::var("AGENT_VESPER_COGNITION_EMBEDDING_API").as_deref() == Ok("bigmodel")
+    if std::env::var("JARVIS_COGNITION_EMBEDDING_API").as_deref() == Ok("bigmodel")
         && jarvis_provider_glm::resolve_credential(credential_source.as_ref()).is_ok()
     {
         return (
@@ -709,11 +700,11 @@ impl CognitionBundle {
         credential_source: Arc<dyn jarvis_provider_glm::GlmCredentialSource>,
         active_provider: &str,
     ) -> Self {
-        let root = match std::env::var("AGENT_VESPER_COGNITION_ROOT") {
+        let root = match std::env::var("JARVIS_COGNITION_ROOT") {
             Ok(value) => std::path::PathBuf::from(value),
             Err(_) => std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                .join(".agent-vesper")
+                .join(".jarvis")
                 .join("cognition"),
         };
         Self::open_at(
@@ -750,7 +741,7 @@ impl CognitionBundle {
         credential_source: Arc<dyn jarvis_provider_glm::GlmCredentialSource>,
         active_provider: &str,
     ) -> Self {
-        let _ = std::fs::create_dir_all(&root);
+        let project_owned = jarvis_security::prepare_owned_directory(&root).is_ok();
         let db_path = root.join("cognition.db");
         let root_display = root.display().to_string();
         let project_display = std::env::current_dir()
@@ -759,11 +750,15 @@ impl CognitionBundle {
             .unwrap_or_else(|| std::path::PathBuf::from("."))
             .display()
             .to_string();
-        let _ = std::fs::create_dir_all(&global_root);
+        let global_owned = jarvis_security::prepare_owned_directory(&global_root).is_ok();
         let global_root_display = global_root.display().to_string();
         let global_db_path = global_root.join("cognition.db");
 
-        let embedding_config = EmbeddingConfig::load(&root);
+        let embedding_config = if project_owned {
+            EmbeddingConfig::load(&root)
+        } else {
+            EmbeddingConfig::default()
+        };
         let default_dim = jarvis_cognition::CognitiveConfig::default().embedding_dim;
         let (embedder, probed_dim, search_mode_hint) =
             if embedding_config.overrides_provider_routing() {
@@ -834,11 +829,17 @@ impl CognitionBundle {
             fusion_strategy: config.fusion_strategy,
             max_injection_tokens: config.max_injection_tokens,
         };
-        let engine = jarvis_cognition::open(&db_path, ports.clone(), config)
+        let engine = project_owned
+            .then(|| jarvis_cognition::open(&db_path, ports.clone(), config))
+            .transpose()
             .ok()
+            .flatten()
             .map(Arc::new);
-        let global_engine = jarvis_cognition::open(&global_db_path, ports, global_config)
+        let global_engine = global_owned
+            .then(|| jarvis_cognition::open(&global_db_path, ports, global_config))
+            .transpose()
             .ok()
+            .flatten()
             .map(Arc::new);
         if let Some(engine) = engine.as_ref() {
             engine.set_search_mode(search_mode_hint);
@@ -947,9 +948,7 @@ impl CognitionBundle {
 
 pub fn cognition_user_scope() -> jarvis_cognition::Scope {
     jarvis_cognition::Scope {
-        user_id: Some(
-            std::env::var("AGENT_VESPER_COGNITION_USER_ID").unwrap_or_else(|_| "local".into()),
-        ),
+        user_id: Some(std::env::var("JARVIS_COGNITION_USER_ID").unwrap_or_else(|_| "local".into())),
         ..Default::default()
     }
 }
@@ -1490,7 +1489,7 @@ fn embedding_set_text(bundle: &CognitionBundle, argument: &str) -> String {
     }
     let path = bundle.root.join("embedding.json");
     let body = serde_json::to_string_pretty(&config).unwrap_or_else(|_| "{}".into());
-    match std::fs::write(&path, body) {
+    match jarvis_security::write_private_atomic(&path, body.as_bytes()) {
         Ok(()) => match bundle.apply_embedding_config(&config) {
             Ok((memories, entities)) => format!(
                 "✓ Embedding config saved to {} and activated now; re-embedded \
@@ -1509,6 +1508,9 @@ fn embedding_set_text(bundle: &CognitionBundle, argument: &str) -> String {
 
 fn embedding_clear_text(bundle: &CognitionBundle) -> String {
     let path = bundle.root.join("embedding.json");
+    if jarvis_security::validate_private_path(&path).is_err() {
+        return "cognition: private embedding configuration ownership refused".into();
+    }
     match std::fs::remove_file(&path) {
         Ok(()) => format!(
             "✓ Removed {}. Provider-routed embedding selection resumes on the next start.",
@@ -1598,6 +1600,8 @@ mod tests {
     fn bundle_under_temp_root(source: &str) -> CognitionBundle {
         let project = tempfile::tempdir().unwrap().keep();
         let global = tempfile::tempdir().unwrap().keep();
+        jarvis_security::prepare_owned_directory(&project).unwrap();
+        jarvis_security::prepare_owned_directory(&global).unwrap();
         std::fs::write(
             project.join("embedding.json"),
             format!("{{\"source\": \"{source}\"}}"),

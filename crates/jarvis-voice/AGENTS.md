@@ -21,7 +21,7 @@ types, and deterministic in-memory fakes.
   CPU policy is structurally acceleration-blind. No device, runtime, or
   model knowledge lives here; hosts supply facts from bounded passive
   inspection. Evidence: `docs/foundation/voice-capability-gated-execution.md`.
-- Feature-gated adapters (default-off, zero production dependencies):
+- Feature-gated adapters (default-off, zero added production dependencies):
   `stt-sidecar` (Rust adapter driving the shipped Python sidecar —
   compatibility inference, truthfully labeled; embedded script is the
   single source of truth with the TUI dictation path; warm shared child
@@ -88,6 +88,8 @@ types, and deterministic in-memory fakes.
   the runtime's own cancellation path.
 
 ## Local Contracts
+
+- The sidecar obtains unique, ownership-checked audio directories from `jarvis-security`; the pure core does not perform I/O.
 
 - Canonical audio: i16 LE, 16 kHz, mono. `PcmFrame` is validated and
   sample-aligned; only `PcmReassembler` builds frames from transport

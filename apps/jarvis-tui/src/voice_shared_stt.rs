@@ -33,8 +33,7 @@ impl SharedSidecarStt {
             inner: SidecarStt::new(
                 SidecarConfig {
                     python,
-                    model: std::env::var("AGENT_VESPER_WHISPER_MODEL")
-                        .unwrap_or_else(|_| "base".into()),
+                    model: std::env::var("JARVIS_WHISPER_MODEL").unwrap_or_else(|_| "base".into()),
                     ..SidecarConfig::default()
                 },
                 shared_executor(),
@@ -67,19 +66,19 @@ impl VoiceStt for SharedSidecarStt {
 /// a second environment.
 fn shared_voice_python() -> std::path::PathBuf {
     // Same precedence tier the dictation F5 path resolves
-    // (`VESPER_PYTHON_PATH`, then `GLM_VENV_PATH`, then the harness
+    // (`JARVIS_PYTHON_PATH`, then `JARVIS_VOICE_VENV_PATH`, then the harness
     // voice venv): the FLM-integration rewiring of the conversation
     // CPU adapter dropped the env tiers, so isolated runs and explicit
     // overrides silently fell back to the installed venv. Existence
     // checks only — the child's model load happens lazily on first
     // transcription exactly as before.
-    if let Some(path) = std::env::var_os("VESPER_PYTHON_PATH") {
+    if let Some(path) = std::env::var_os("JARVIS_PYTHON_PATH") {
         let candidate = std::path::PathBuf::from(path);
         if candidate.is_file() {
             return candidate;
         }
     }
-    if let Some(venv) = std::env::var_os("GLM_VENV_PATH") {
+    if let Some(venv) = std::env::var_os("JARVIS_VOICE_VENV_PATH") {
         let candidate = crate::platform_voice::venv_python(std::path::Path::new(&venv));
         if candidate.is_file() {
             return candidate;

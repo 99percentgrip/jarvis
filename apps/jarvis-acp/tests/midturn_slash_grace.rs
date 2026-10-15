@@ -85,10 +85,8 @@ fn safe_slash_during_editor_interrupt_keeps_the_turn_running() {
         "slow-answer-complete",
     );
 
-    let mut process = ProcessHarness::spawn_with_environment(
-        address,
-        [("AGENT_VESPER_FULL_HARNESS", "1".to_owned())],
-    );
+    let mut process =
+        ProcessHarness::spawn_with_environment(address, [("JARVIS_FULL_HARNESS", "1".to_owned())]);
     let session = process.initialize_and_new_session();
 
     // Turn in flight (provider sleeps 1.5s).
@@ -136,10 +134,8 @@ fn usage_during_editor_interrupt_keeps_the_turn_running() {
         Duration::from_millis(1500),
         "usage-survivor-complete",
     );
-    let mut process = ProcessHarness::spawn_with_environment(
-        address,
-        [("AGENT_VESPER_FULL_HARNESS", "1".to_owned())],
-    );
+    let mut process =
+        ProcessHarness::spawn_with_environment(address, [("JARVIS_FULL_HARNESS", "1".to_owned())]);
     let session = process.initialize_and_new_session();
     process.prompt(
         40,
@@ -181,10 +177,8 @@ fn max_iterations_disable_during_work_keeps_the_turn_running() {
         Duration::from_millis(1500),
         "iteration-control-survivor",
     );
-    let mut process = ProcessHarness::spawn_with_environment(
-        address,
-        [("AGENT_VESPER_FULL_HARNESS", "1".to_owned())],
-    );
+    let mut process =
+        ProcessHarness::spawn_with_environment(address, [("JARVIS_FULL_HARNESS", "1".to_owned())]);
     let session = process.initialize_and_new_session();
     process.prompt(50, &session, "slow implementation", "slow-control-message");
     thread::sleep(Duration::from_millis(400));
@@ -222,10 +216,8 @@ fn cancel_without_follow_up_prompt_still_cancels_after_grace() {
     let _server =
         serve_one_slow_completion(listener, Duration::from_millis(2500), "should-not-complete");
 
-    let mut process = ProcessHarness::spawn_with_environment(
-        address,
-        [("AGENT_VESPER_FULL_HARNESS", "1".to_owned())],
-    );
+    let mut process =
+        ProcessHarness::spawn_with_environment(address, [("JARVIS_FULL_HARNESS", "1".to_owned())]);
     let session = process.initialize_and_new_session();
 
     process.prompt(20, &session, "cancel me for real", "cancel-message");
@@ -255,10 +247,8 @@ fn non_slash_prompt_during_grace_executes_the_cancel() {
         ],
     );
 
-    let mut process = ProcessHarness::spawn_with_environment(
-        address,
-        [("AGENT_VESPER_FULL_HARNESS", "1".to_owned())],
-    );
+    let mut process =
+        ProcessHarness::spawn_with_environment(address, [("JARVIS_FULL_HARNESS", "1".to_owned())]);
     let session = process.initialize_and_new_session();
 
     process.prompt(30, &session, "turn to interrupt", "interrupted-message");

@@ -179,7 +179,7 @@ fn worker_path() -> PathBuf {
     static MATERIALIZED: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
     MATERIALIZED
         .get_or_init(|| {
-            let dir = std::env::temp_dir().join(format!("vesper-flm-vad-{}", std::process::id()));
+            let dir = std::env::temp_dir().join(format!("jarvis-flm-vad-{}", std::process::id()));
             let _ = std::fs::create_dir_all(&dir);
             reclaim_stale_worker_dirs(&dir);
             let path = dir.join("voice_vad.py");
@@ -189,7 +189,7 @@ fn worker_path() -> PathBuf {
         .clone()
 }
 
-/// Removes `vesper-flm-vad-*` directories owned by processes that are
+/// Removes `jarvis-flm-vad-*` directories owned by processes that are
 /// provably no longer running (never another live process's copy).
 fn reclaim_stale_worker_dirs(current: &std::path::Path) {
     let Some(parent) = current.parent() else {
@@ -198,7 +198,7 @@ fn reclaim_stale_worker_dirs(current: &std::path::Path) {
     let Ok(entries) = std::fs::read_dir(parent) else {
         return;
     };
-    let prefix = "vesper-flm-vad-";
+    let prefix = "jarvis-flm-vad-";
     for entry in entries.flatten() {
         let name = entry.file_name();
         let Some(name) = name.to_str() else {
@@ -309,7 +309,7 @@ pub async fn preprocess(pcm: &[u8], cancel: &VoiceCancel) -> Result<Option<Vec<u
     }
     // Private managed directory (removed on drop; audio never persists).
     let dir = std::env::temp_dir().join(format!(
-        "vesper-flm-vad-work-{}-{}",
+        "jarvis-flm-vad-work-{}-{}",
         std::process::id(),
         WORK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     ));

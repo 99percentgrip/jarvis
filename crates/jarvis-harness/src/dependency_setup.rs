@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::process::Command;
 
-const MACHINE: &str = "agent-vesper";
+const MACHINE: &str = "jarvis";
 const MAX_OUTPUT: u64 = 64 * 1024;
 const LOCAL_RUNTIME_HEALTH_TIMEOUT_SECS: u64 = 15;
 
@@ -50,7 +50,7 @@ fn state_path() -> Result<PathBuf, String> {
         .map(PathBuf::from)
         .filter(|path| path.is_absolute())
         .ok_or("Cannot locate your user home for setup preferences.")?;
-    Ok(home.join(".agent-vesper").join("runtime.json"))
+    Ok(home.join(".jarvis").join("runtime.json"))
 }
 
 pub fn saved_engine() -> Result<Option<Engine>, String> {
@@ -253,7 +253,7 @@ async fn local_endpoint(engine: &Engine) -> Result<(), String> {
 
 /// Discovery is read-only. Explicit binary choices are never silently replaced.
 pub async fn discover() -> Result<Engine, String> {
-    if let Some(binary) = std::env::var_os("VESPER_DOCKER_BIN").filter(|v| !v.is_empty()) {
+    if let Some(binary) = std::env::var_os("JARVIS_DOCKER_BIN").filter(|v| !v.is_empty()) {
         let path = PathBuf::from(binary);
         let binary = if path.is_absolute() {
             path
@@ -359,7 +359,7 @@ pub async fn setup_cancellable(
     let mut engine = match discover().await {
         Ok(engine) => engine,
         Err(error) => {
-            if std::env::var_os("VESPER_DOCKER_BIN").is_some() || remote_override() {
+            if std::env::var_os("JARVIS_DOCKER_BIN").is_some() || remote_override() {
                 return Err(error);
             }
             if let Some(engine) = saved_engine()?
@@ -569,7 +569,7 @@ async fn install_desktop_package() -> Result<(), String> {
         run(command, 1200).await?;
     } else {
         let mut command = Command::new("powershell.exe");
-        command.env("VESPER_SETUP_PACKAGE", &path).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $p = Start-Process msiexec.exe -Verb RunAs -Wait -PassThru -ArgumentList @('/i', ('\"' + $env:VESPER_SETUP_PACKAGE + '\"'), '/passive', '/norestart'); exit $p.ExitCode"]);
+        command.env("JARVIS_SETUP_PACKAGE", &path).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $p = Start-Process msiexec.exe -Verb RunAs -Wait -PassThru -ArgumentList @('/i', ('\"' + $env:JARVIS_SETUP_PACKAGE + '\"'), '/passive', '/norestart'); exit $p.ExitCode"]);
         run(command, 1200).await?;
     }
     Ok(())
@@ -578,7 +578,7 @@ async fn install_desktop_package() -> Result<(), String> {
 async fn verify_browser(engine: &Engine, image: &str) -> Result<(), String> {
     // Unique name is generated locally; cleanup never addresses an existing workload.
     let id = tempfile::Builder::new()
-        .prefix("vesper-setup-")
+        .prefix("jarvis-setup-")
         .tempdir()
         .map_err(|_| "Cannot allocate setup probe identity.")?;
     let name = id
@@ -618,7 +618,7 @@ async fn verify_browser(engine: &Engine, image: &str) -> Result<(), String> {
 /// Called only on an actual opt-in tool path, never at application boot.
 /// Starting a machine is allowed only by the saved explicit setup choice.
 pub async fn runtime_ready() -> Result<Engine, String> {
-    if remote_override() || std::env::var_os("VESPER_DOCKER_BIN").is_some_and(|v| !v.is_empty()) {
+    if remote_override() || std::env::var_os("JARVIS_DOCKER_BIN").is_some_and(|v| !v.is_empty()) {
         // An operator's existing runtime choice is not automatic setup consent.
         // Preserve that choice, but never install/start anything on this path.
         let engine = runtime_snapshot()?;
@@ -629,7 +629,7 @@ pub async fn runtime_ready() -> Result<Engine, String> {
         && engine.managed_machine
         && engine.verified
         && !remote_override()
-        && std::env::var_os("VESPER_DOCKER_BIN").is_none()
+        && std::env::var_os("JARVIS_DOCKER_BIN").is_none()
     {
         ensure_engine(&engine).await?;
         return Ok(engine);
@@ -658,7 +658,7 @@ pub(crate) async fn ensure_engine(engine: &Engine) -> Result<(), String> {
 /// Read one consistent executable/connection pair without probing or starting it.
 /// Explicit operator configuration takes precedence over saved automatic setup.
 pub fn runtime_snapshot() -> Result<Engine, String> {
-    let explicit = std::env::var_os("VESPER_DOCKER_BIN").filter(|value| !value.is_empty());
+    let explicit = std::env::var_os("JARVIS_DOCKER_BIN").filter(|value| !value.is_empty());
     let endpoint_kind = if ["DOCKER_HOST", "DOCKER_CONTEXT"]
         .iter()
         .any(|key| std::env::var_os(key).is_some_and(|v| !v.is_empty()))
@@ -820,11 +820,11 @@ async fn start_docker(engine: &Engine) -> Result<(), String> {
             return Err("Docker Desktop is not installed.".into());
         }
         let mut command = Command::new("powershell.exe");
-        command.env("VESPER_DOCKER_DESKTOP", path).args([
+        command.env("JARVIS_DOCKER_DESKTOP", path).args([
             "-NoProfile",
             "-NonInteractive",
             "-Command",
-            "$ErrorActionPreference = 'Stop'; Start-Process -FilePath $env:VESPER_DOCKER_DESKTOP",
+            "$ErrorActionPreference = 'Stop'; Start-Process -FilePath $env:JARVIS_DOCKER_DESKTOP",
         ]);
         command
     } else {

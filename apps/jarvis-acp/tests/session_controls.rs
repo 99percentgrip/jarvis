@@ -71,10 +71,7 @@ fn footer_controls_are_advertised_and_settable_end_to_end() {
     let mut command = Command::new(env!("CARGO_BIN_EXE_jarvis-acp"));
     command
         .env_clear()
-        .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
-            openai_fixture.path(),
-        )
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", openai_fixture.path())
         .env("HOME", &temp)
         .env("XDG_CONFIG_HOME", temp.join("config"))
         .env("XDG_CACHE_HOME", temp.join("cache"))

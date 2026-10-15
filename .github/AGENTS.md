@@ -7,6 +7,12 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- Stage 3 fixtures use reviewed current private environment inputs and synthetic
+  owned runtime roots. Native credential acceptance keeps UUID-only OS namespaces;
+  contained browser/driver fixture paths remain explicit protocol compatibility.
+  Inherited publication descriptions below remain dormant: release workflows and
+  release tags stay disabled/frozen until separately authorized.
+
 - `test_workspace_tooling_identity.py` checks actual Cargo metadata against Windows
   governor package/library selectors and both Lens example launchers/fixture paths.
   Canonical verification executes it before the full build.

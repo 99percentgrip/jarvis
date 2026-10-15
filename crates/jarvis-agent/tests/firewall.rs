@@ -131,7 +131,7 @@ async fn firewall_none_does_not_scan_rule_matching_commands() {
 async fn shared_instance_is_process_global_and_first_wins() {
     // A test binary has no host boot step; resolve the holder once here so
     // the assertions exercise the real installed state rather than an
-    // empty process global. `AGENT_VESPER_FIREWALL` is unset in the test
+    // empty process global. `JARVIS_FIREWALL` is unset in the test
     // environment, so the expected state is Enabled with a stable id.
     let _boot = holder::install_from_env();
     let before = holder::instance_id();

@@ -545,22 +545,22 @@ pub(super) async fn open(
                             paths.push(jarvis_harness::skill_routing_settings::path(&root));
                         }
                         if acceptance != initial_acceptance {
-                            paths.push(root.join(".agent-vesper/acceptance-settings.json"));
+                            paths.push(root.join(".jarvis/acceptance-settings.json"));
                         }
                         if web != initial_web {
-                            paths.push(root.join(".agent-vesper/web-settings.json"));
+                            paths.push(root.join(".jarvis/web-settings.json"));
                         }
                         #[cfg(feature = "voice-conversation")]
                         if voice != initial_voice {
-                            paths.push(root.join(".agent-vesper/config.toml"));
+                            paths.push(root.join(".jarvis/config.toml"));
                         }
                         #[cfg(feature = "swarm")]
                         if swarm.settings != initial_swarm {
-                            paths.push(root.join(".agent-vesper/swarm-settings.json"));
+                            paths.push(root.join(".jarvis/swarm-settings.json"));
                         }
                         #[cfg(feature = "bridge")]
                         if bridge != initial_bridge {
-                            paths.push(root.join(".agent-vesper/bridge-settings.json"));
+                            paths.push(root.join(".jarvis/bridge-settings.json"));
                         }
                         let result = save_group(&paths, || {
                             if skills != initial_skills {

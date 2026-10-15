@@ -99,12 +99,12 @@ def run(binary):
         with tempfile.TemporaryDirectory(prefix="vesper-journal-ux-") as temporary:
             root = Path(temporary)
             env = {
-                "AGENT_VESPER_HOME": str(root / "state"),
-                "AGENT_VESPER_SESSION_ROOT": str(root / "sessions"),
-                "AGENT_VESPER_CHECKPOINT_ROOT": str(root / "checkpoints"),
-                "AGENT_VESPER_PROVIDER": "xai",
-                "AGENT_VESPER_XAI_TEST_URL": f"http://127.0.0.1:{port}/responses",
-                "AGENT_VESPER_VRO_ENABLED": "0",
+                "JARVIS_HOME": str(root / "state"),
+                "JARVIS_SESSION_ROOT": str(root / "sessions"),
+                "JARVIS_CHECKPOINT_ROOT": str(root / "checkpoints"),
+                "JARVIS_PROVIDER": "xai",
+                "JARVIS_XAI_TEST_URL": f"http://127.0.0.1:{port}/responses",
+                "JARVIS_VRO_ENABLED": "0",
                 "NO_PROXY": "127.0.0.1",
                 "no_proxy": "127.0.0.1",
             }

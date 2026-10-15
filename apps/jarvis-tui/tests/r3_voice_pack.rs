@@ -21,8 +21,8 @@ use jarvis_voice::ports::{SttDescriptor, SttTranscript, TranscriptProvenance, Vo
 /// Isolate before any native worker starts. A mutex around set_var cannot
 /// protect a detached worker from environment restoration or process teardown.
 fn run_isolated_case(name: &str) -> bool {
-    if std::env::var("VESPER_R3_PACK_CASE").as_deref() == Ok(name) {
-        let root = PathBuf::from(std::env::var_os("VESPER_R3_PACK_ROOT").expect("child root"));
+    if std::env::var("JARVIS_R3_PACK_CASE").as_deref() == Ok(name) {
+        let root = PathBuf::from(std::env::var_os("JARVIS_R3_PACK_ROOT").expect("child root"));
         assert_eq!(
             std::env::current_dir().unwrap().canonicalize().unwrap(),
             root
@@ -41,8 +41,8 @@ fn run_isolated_case(name: &str) -> bool {
     let mut child = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", name, "--nocapture", "--test-threads=1"])
         .current_dir(&case_root)
-        .env("VESPER_R3_PACK_CASE", name)
-        .env("VESPER_R3_PACK_ROOT", &case_root)
+        .env("JARVIS_R3_PACK_CASE", name)
+        .env("JARVIS_R3_PACK_ROOT", &case_root)
         .env("HOME", case_root.join("home"))
         .env("USERPROFILE", case_root.join("home"))
         .env("LOCALAPPDATA", case_root.join("local"))

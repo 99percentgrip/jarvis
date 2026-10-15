@@ -12,18 +12,18 @@ fn native_dependency_preview_and_failure_preserve_workspace_and_protocol() {
     let mut process = ProcessHarness::spawn_with_environment(
         listener.local_addr().unwrap(),
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 isolated.path().join("cognition").display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 isolated.path().join("global").display().to_string(),
             ),
             (
-                "VESPER_DOCKER_BIN",
+                "JARVIS_DOCKER_BIN",
                 isolated.path().join("missing-engine").display().to_string(),
             ),
         ],

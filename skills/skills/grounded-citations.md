@@ -47,8 +47,8 @@ None beyond the standard toolset. `~/.agent-vesper/memory/skills/grounded-citati
 Retrieval comes from whatever is configured: `web_search`, `web_reader`,
 or `bash` (curl, CLIs).
 
-Ledger location: `~/.agent-vesper/cache/citations/ledger.json` (profile-aware).
-Override per task with `--ledger <path>` or `AGENT_VESPER_CITATION_LEDGER`.
+Ledger location: the platform application cache, under `citations/ledger.json`.
+Override per task with `--ledger <path>` or `JARVIS_CITATION_LEDGER`.
 
 ## How to Run
 
@@ -203,7 +203,7 @@ and read the `info: stats:` line to see the counts before picking a number.
 - **Citing the ledger in code/config artifacts.** Source comments belong in
   prose deliverables and doc headers, not inside generated code.
 - **Parallel subagents.** Each subagent has its own working directory; point
-  them all at one ledger with `--ledger` (or `AGENT_VESPER_CITATION_LEDGER`) if their
+  them all at one ledger with `--ledger` (or `JARVIS_CITATION_LEDGER`) if their
   outputs get merged, otherwise their ids will collide.
 - **Quoting from a snippet instead of the page.** Evidence quotes must come
   from the extracted page text, not a search-result description — `web_reader`

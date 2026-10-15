@@ -33,9 +33,21 @@ from importlib.metadata import version as _distribution_version
 from pathlib import Path
 
 def _agent_vesper_home() -> Path:
-    return Path(
-        os.environ.get("AGENT_VESPER_HOME", str(Path.home() / ".agent-vesper"))
-    ).expanduser()
+    # Proposed storage only. No OAuth store is opened until independent
+    # authorization and native secure storage have been implemented.
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "Jarvis" / "Config"
+    if os.name == "nt":
+        return Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "Jarvis"
+    return Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "jarvis"
+
+
+def _require_independent_authorization():
+    raise RuntimeError(
+        "Bundled Google OAuth is unavailable pending independent authorization "
+        "and secure credential storage. Existing Vesper tokens are never read, "
+        "refreshed, revoked, or imported."
+    )
 
 
 AV_HOME = _agent_vesper_home()
@@ -481,6 +493,7 @@ def revoke():
 
 
 def main():
+    _require_independent_authorization()
     parser = argparse.ArgumentParser(description="Google Workspace OAuth setup for Agent Vesper")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true", help="Check if auth is valid (exit 0=yes, 1=no)")
@@ -509,4 +522,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        _require_independent_authorization()
+        main()
+    except RuntimeError as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(1)

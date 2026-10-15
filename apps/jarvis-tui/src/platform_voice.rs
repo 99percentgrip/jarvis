@@ -17,17 +17,12 @@ fn venv_python_for(root: &Path, windows: bool) -> PathBuf {
 /// Per-user application data; explicit XDG overrides remain usable for isolation.
 /// Missing native user paths return None; private audio never relocates to temp.
 pub fn data_root() -> Option<PathBuf> {
-    data_root_from(
-        cfg!(windows),
-        cfg!(target_os = "macos"),
-        std::env::var_os("XDG_DATA_HOME").as_deref(),
-        std::env::var_os("LOCALAPPDATA").as_deref(),
-        std::env::var_os("USERPROFILE").as_deref(),
-        std::env::var_os("HOME").as_deref(),
-    )
-    .map(|root| root.join("agent-vesper"))
+    jarvis_config::JarvisPaths::from_environment()
+        .ok()
+        .map(|p| p.data)
 }
 
+#[cfg(test)]
 fn data_root_from(
     windows: bool,
     macos: bool,

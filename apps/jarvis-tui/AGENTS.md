@@ -43,9 +43,9 @@ and composes the existing bounded atomic session writer.
   Welcome, Settings and Web tools share the active `ui::theme_palette`, including
   background, text, accent, border and selected-row colors. A saved theme change
   applies when returning to the welcome screen, without restarting. Native theme
-  choices persist user-wide in `~/.agent-vesper/ui/theme` (USERPROFILE on Windows,
-  HOME elsewhere), independent of the workspace. If no global choice exists, a
-  valid legacy `AGENT_VESPER_HOME/theme` (default `.agent-vesper/theme`) is imported
+  choices persist user-wide under native application configuration plus `ui/theme`,
+  independent of the workspace. If no global choice exists, a valid same-product
+  `JARVIS_HOME/theme` (default `.jarvis/theme`) is imported
   once. Global choices take precedence over stale project files. Missing user-home
   information fails visibly rather than silently saving a workspace-only choice;
   malformed values fall back to the default.
@@ -116,7 +116,7 @@ and composes the existing bounded atomic session writer.
 
 - VB-PRD-001 composition is behind the default-off `bridge` build
   feature. `bridge_enabled_from_settings()` resolves the explicit
-  user-owned `.agent-vesper/bridge-settings.json` once per process
+  user-owned `.jarvis/bridge-settings.json` once per process
   (fail-closed) and `with_bridge` attaches the harness Bridge service;
   the disabled build compiles zero bridge code. `/bridge` (status,
   discover, stop, disconnect) answers read-only at host level; connect
@@ -164,7 +164,7 @@ and composes the existing bounded atomic session writer.
   `auth_hub` pattern: the user adjusts the LAN/localhost `api_base_url` and
   optional pinned model **inside the TUI** (not a config file); the binary owns
   the terminal event loop and persists on `Save`. The settings file holds only
-  non-secret fields (`$AGENT_VESPER_LMSTUDIO_ROOT` or `.agent-vesper/lmstudio/
+  non-secret fields (`$JARVIS_LMSTUDIO_ROOT` or `.jarvis/lmstudio/
   settings.json`); the optional API key is read from the `LMSTUDIO_API_KEY`
   env var (surfaced as a screen hint) — moving it to the OS credential store is
   the security follow-up.
@@ -253,11 +253,10 @@ and composes the existing bounded atomic session writer.
   the shared usage error. `/status` surfaces `sandbox=on|off` alongside the
   firewall line.
   ADR 0021: cognitive memory is composed as two independent engines. The
-  existing project store remains at `AGENT_VESPER_COGNITION_ROOT` or
-  `.agent-vesper/cognition/`; the global store uses
-  `AGENT_VESPER_GLOBAL_COGNITION_ROOT`, then
-  `$XDG_DATA_HOME/agent-vesper/cognition/`, then
-  `~/.local/share/agent-vesper/cognition/`. `/remember` smart-routes stable
+  existing project store remains at `JARVIS_COGNITION_ROOT` or
+  `.jarvis/cognition/`; the global store uses
+  `JARVIS_GLOBAL_COGNITION_ROOT`, then
+  native application data plus `cognition`. `/remember` smart-routes stable
   identity/preferences globally and repository facts locally, conservatively
   defaults ambiguous text to the project, accepts `--global` / `--project`
   (`--local`) overrides, and always echoes the chosen scope and reason.
@@ -511,8 +510,8 @@ and composes the existing bounded atomic session writer.
   credential-free `RuntimeSupervisor` and drains `SessionState.pending_reasoning`
   into the runtime `UpdateSessionReasoning` command after each dispatch (ADR 0009).
   Owns the skill-store global read layer wiring: `MemoryStores::open_default`
-  roots `SkillStore` at `AGENT_VESPER_GLOBAL_MEMORY_ROOT` (default
-  `~/.agent-vesper/memory`, resolved via `USERPROFILE`/`HOME`; missing root
+  roots `SkillStore` at `JARVIS_GLOBAL_MEMORY_ROOT` (default
+  native application data plus `memory`; missing root
   disables the layer). Owns the hosted skill tool surface: `read_skill`
   accepts optional `section`/`offset`/`limit`; `learn_skill` writes
   frontmatter (name/description + optional `environments`/`requires_tools`/
@@ -780,7 +779,7 @@ and composes the existing bounded atomic session writer.
   cleared before dispatch rather than sent as stale provider configuration.
 - `integration-test-harness` may redirect xAI, and OpenAI model discovery, to a
   loopback endpoint solely for process-level composition tests. OpenAI uses
-  `AGENT_VESPER_OPENAI_TEST_URL` and accepts only the adapter's loopback
+  `JARVIS_OPENAI_TEST_URL` and accepts only the adapter's loopback
   policy. Normal builds contain no such route.
 - Unselected provider discovery does not run before the event loop. OpenAI
   startup must not wait on xAI account model discovery.
@@ -924,8 +923,8 @@ and composes the existing bounded atomic session writer.
   otherwise — one recognizer per process either way). A conversation-origin
   `Control::Stop` transcribes via that adapter and never spawns or consults a
   second CPU sidecar; the CPU path stays acceleration-blind. The shared
-  sidecar's interpreter resolution honors the same `VESPER_PYTHON_PATH` /
-  `GLM_VENV_PATH` / installed-venv precedence as dictation F5
+  sidecar's interpreter resolution honors the same `JARVIS_PYTHON_PATH` /
+  `JARVIS_VOICE_VENV_PATH` / installed-venv precedence as dictation F5
   (`shared_voice_python`; the silent drop of that precedence was the
   FLM-session regression the legacy PTY loop caught). Settings' readiness
   lines resolve through the shared `execution_rows` rule and report
@@ -1044,11 +1043,11 @@ and composes the existing bounded atomic session writer.
   model's catalog window. Persisted state separates display transcript from
   provider-working history and retains pressure, latest report, and bounded
   quality lineage; a 15-point coverage regression is surfaced visibly.
-- `AGENT_VESPER_TELEMETRY` opt-in enables the secret-safe trajectory recorder;
+- `JARVIS_TELEMETRY` opt-in enables the secret-safe trajectory recorder;
   prompts, tool payloads, reasoning, paths, commands, and credentials are
   excluded from JSONL events.
-- Provider selection first uses the saved preference under `AGENT_VESPER_HOME`
-  (default `.agent-vesper`), then `AGENT_VESPER_PROVIDER`, then `zai`.
+- Provider selection first uses the saved preference under `JARVIS_HOME`
+  (default `.agent-vesper`), then `JARVIS_PROVIDER`, then `zai`.
 - Missing credentials never intercept the native landing screen. Provider setup
   is the first Settings category, including when adapter controls exceed one
   viewport. Authentication is explicit through Settings or `/auth`; cancelling
@@ -1132,7 +1131,7 @@ and composes the existing bounded atomic session writer.
   resolve to `CommandOutcome::Memory(MemoryOp)`; `dispatch` records
   `SessionState.pending_memory_op`; the binary owns a `MemoryStores`
   bundle (`MemoryStore` + `SkillStore` + `UserProfile` + `AwarenessLedger`
-  under `AGENT_VESPER_MEMORY_ROOT` or `.agent-vesper/memory/`) and drains
+  under `JARVIS_MEMORY_ROOT` or `.jarvis/memory/`) and drains
   the op synchronously after dispatch (these are local filesystem
   reads/writes — fast enough not to block the UI).
 - Host-neutral command parity is declared by
@@ -1148,8 +1147,8 @@ and composes the existing bounded atomic session writer.
   `SessionState.pending_checkpoint_op`; the binary owns a
   `CheckpointStores` bundle (`CheckpointsLedger` + `SessionLineage` +
   `CronRegistry` + `SessionExporter` + `ClipboardPort` +
-  `CiStatusReader` under `AGENT_VESPER_CHECKPOINT_ROOT` or
-  `.agent-vesper/checkpoints/`) and drains the op synchronously after
+  `CiStatusReader` under `JARVIS_CHECKPOINT_ROOT` or
+  `.jarvis/checkpoints/`) and drains the op synchronously after
   dispatch. **Errno 24 prevention:** the `jarvis-checkpoints` crate uses
   strict RAII (`Drop`) file-handle discipline — no `File` is ever stored
   in a long-lived struct, no SQLite, no git refs, no auto-snapshotting.
@@ -1158,8 +1157,8 @@ and composes the existing bounded atomic session writer.
   are no longer deferred. They resolve to `CommandOutcome::Mcp(McpOp)`;
   `dispatch` records `SessionState.pending_mcp_op`; the binary owns an
   `McpStores` bundle (`McpRegistry` + `PluginLoader` +
-  `TrustedPublishers` under `AGENT_VESPER_MCP_ROOT` or
-  `.agent-vesper/mcp/`) and drains the op after dispatch. **No-Leak
+  `TrustedPublishers` under `JARVIS_MCP_ROOT` or
+  `.jarvis/mcp/`) and drains the op after dispatch. **No-Leak
   Guarantee:** `jarvis-mcp`'s unsigned-plugin loading code path is
   structurally erased from `--release` builds via
   `#[cfg(debug_assertions)]`; a release binary cannot load an unsigned
@@ -1292,7 +1291,7 @@ releases only pending turns. No rendering state grants execution authority.
   unrelated discovery remains stalled; post-render input bounds remain separate.
 - `tests/voice_pty.py` waits for actual elapsed-time and editor frames before
   assertions. `tests/voice_lifecycle.rs` is an explicitly invoked microphone-free
-  wrapper requiring `VESPER_TEST_PYTHON` with NumPy; its ignored default is not
+  wrapper requiring `JARVIS_TEST_PYTHON` with NumPy; its ignored default is not
   passing evidence. Canonical CI separately runs the same real PTY lifecycle.
 
 - `tui_host_registry_settles_large_command_output_and_recovers` exercises the
@@ -1305,7 +1304,7 @@ releases only pending turns. No rendering state grants execution authority.
 
 - `ui::output_upgrade_reference` checks report alignment and actual frame cells
   across six themes and 40/80/120 columns, including clock-driven dots and source
-  line numbers. `VESPER_OUTPUT_CAPTURE_DIR` optionally writes JSON frame captures
+  line numbers. `JARVIS_OUTPUT_CAPTURE_DIR` optionally writes JSON frame captures
   to an explicitly supplied temporary directory. Rendering tests stay beside source.
 
 - Run `python3 apps/jarvis-tui/tests/settings_pty.py target/debug/jarvis-tui`

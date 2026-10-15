@@ -36,7 +36,7 @@ def run(binary, python):
         audio = root/'audio'
         audio.mkdir()
         host = Host(binary, root, dict(PATH=str(commands)+os.pathsep+os.environ['PATH'],
-                    VESPER_PYTHON_PATH=python, PYTHONPATH=str(root),
+                    JARVIS_PYTHON_PATH=python, PYTHONPATH=str(root),
                     VOICE_FIXTURE_ROOT=str(root), TMPDIR=str(audio)))
         try:
             host.wait('Start coding')

@@ -124,9 +124,66 @@ impl SecureCredentialStore {
         }
     }
 
+    fn validate_application_owner(&self) -> Result<(), CredentialStoreError> {
+        if self.service != "99percentgrip.jarvis" {
+            return Ok(());
+        }
+        jarvis_security::validate_private_path(self.fallback.path())
+            .map_err(|_| CredentialStoreError::InvalidPath)?;
+        if self.fallback.path().exists() {
+            jarvis_security::validate_private_file(self.fallback.path())
+                .map_err(|_| CredentialStoreError::Unavailable)?;
+            if std::fs::metadata(self.fallback.path())
+                .map_err(|_| CredentialStoreError::Io)?
+                .len()
+                > MAX_VAULT_BYTES
+            {
+                return Err(CredentialStoreError::Unavailable);
+            }
+            let bytes =
+                std::fs::read(self.fallback.path()).map_err(|_| CredentialStoreError::Io)?;
+            if bytes.len() as u64 > MAX_VAULT_BYTES {
+                return Err(CredentialStoreError::Unavailable);
+            }
+            let record: Vault =
+                serde_json::from_slice(&bytes).map_err(|_| CredentialStoreError::Serialize)?;
+            if record.application.as_deref() != Some("99percentgrip.jarvis") {
+                return Err(CredentialStoreError::Unavailable);
+            }
+        }
+        Ok(())
+    }
+
+    /// Validate application ownership before an adapter creates its operation lock.
+    /// An explicit tagged vault can live in a user-selected directory without
+    /// adopting any other records in that directory.
+    pub fn prepare_operation_storage(&self) -> Result<(), CredentialStoreError> {
+        self.validate_application_owner()?;
+        let parent = self
+            .fallback
+            .path()
+            .parent()
+            .ok_or(CredentialStoreError::InvalidPath)?;
+        if self.service == "99percentgrip.jarvis" {
+            let empty = !parent.exists()
+                || std::fs::read_dir(parent)
+                    .map_err(|_| CredentialStoreError::Io)?
+                    .next()
+                    .is_none();
+            if empty || parent.join(".jarvis-owner").exists() {
+                jarvis_security::prepare_owned_directory(parent)
+                    .map_err(|_| CredentialStoreError::Unavailable)?;
+            } else if !self.fallback.path().exists() {
+                return Err(CredentialStoreError::Unavailable);
+            }
+        }
+        jarvis_security::prepare_private_directory(parent).map_err(|_| CredentialStoreError::Io)
+    }
+
     /// A retained fallback is authoritative: native writes remove it, while
     /// a newer fallback write must not resurrect an older keyring credential.
     pub fn load(&self, id: CredentialId) -> Result<Option<SecretValue>, CredentialStoreError> {
+        self.validate_application_owner()?;
         validate_identity(id)?;
         // Preserve read-only compatibility and retained-vault precedence.
         // Windows still cannot create or permission-verify a fallback write.
@@ -135,8 +192,12 @@ impl SecureCredentialStore {
         }
         #[cfg(windows)]
         {
+            let account = keyring_account(id);
+            if !native_records::has_stored_state(&NativeBackend(self.service), &account)? {
+                return Ok(None);
+            }
             let _lease = self.native_lease()?;
-            native_records::load(&NativeBackend(self.service), &keyring_account(id))
+            native_records::load(&NativeBackend(self.service), &account)
                 .map(|value| value.map(|value| SecretValue::new(value.as_str())))
         }
         #[cfg(not(windows))]
@@ -161,6 +222,7 @@ impl SecureCredentialStore {
     ) -> Result<StoreReceipt, CredentialStoreError> {
         validate_identity(id)?;
         let secret = validate_record(secret)?;
+        self.prepare_operation_storage()?;
         let account = keyring_account(id);
         #[cfg(windows)]
         {
@@ -201,6 +263,7 @@ impl SecureCredentialStore {
     /// A missing entry is success. An entry that is still readable after a
     /// failed native delete is reported as unavailable.
     pub fn remove(&self, id: CredentialId) -> Result<(), CredentialStoreError> {
+        self.validate_application_owner()?;
         validate_identity(id)?;
         let account = keyring_account(id);
         #[cfg(windows)]
@@ -225,9 +288,12 @@ impl SecureCredentialStore {
 
     #[cfg(windows)]
     fn native_lease(&self) -> Result<std::fs::File, CredentialStoreError> {
+        self.prepare_operation_storage()?;
         let path = self.fallback.path().with_extension("native-lock");
+        jarvis_security::validate_private_path(&path)
+            .map_err(|_| CredentialStoreError::InvalidPath)?;
         let parent = path.parent().ok_or(CredentialStoreError::InvalidPath)?;
-        std::fs::create_dir_all(parent).map_err(|_| CredentialStoreError::Io)?;
+        jarvis_security::prepare_private_directory(parent).map_err(|_| CredentialStoreError::Io)?;
         if std::fs::symlink_metadata(&path).is_ok_and(|m| !m.is_file()) {
             return Err(CredentialStoreError::Unavailable);
         }
@@ -310,6 +376,7 @@ impl PrivateFileCredentialStore {
             return Ok(());
         }
         let mut vault = self.load_vault()?;
+        vault.application = Some("99percentgrip.jarvis".into());
         let removed = vault
             .credentials
             .get_mut(id.provider)
@@ -352,6 +419,7 @@ impl PrivateFileCredentialStore {
         validate_identity(id)?;
         let secret = validate_record(secret)?;
         let mut vault = self.load_vault()?;
+        vault.application = Some("99percentgrip.jarvis".into());
         vault
             .credentials
             .entry(id.provider.to_owned())
@@ -378,6 +446,8 @@ impl PrivateFileCredentialStore {
 
 #[derive(Default, Deserialize, Serialize)]
 struct Vault {
+    #[serde(default)]
+    application: Option<String>,
     #[serde(default)]
     credentials: BTreeMap<String, BTreeMap<String, String>>,
 }
@@ -414,7 +484,7 @@ fn keyring_account(id: CredentialId) -> String {
 fn write_private_vault(path: &Path, vault: &Vault) -> Result<(), CredentialStoreError> {
     let parent = path.parent().ok_or(CredentialStoreError::InvalidPath)?;
     let parent_existed = parent.exists();
-    std::fs::create_dir_all(parent).map_err(|_| CredentialStoreError::Io)?;
+    jarvis_security::prepare_private_directory(parent).map_err(|_| CredentialStoreError::Io)?;
     if !parent_existed {
         set_private_directory_mode(parent)?;
     }
@@ -485,6 +555,50 @@ fn set_private_file_mode(path: &Path) -> Result<(), CredentialStoreError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn independent_service_refuses_unowned_oauth_records_without_native_access() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("old-credentials.json");
+        let old = br#"{"credentials":{"openai":{"native-auth":"synthetic-old-refresh-record"}}}"#;
+        std::fs::write(&path, old).unwrap();
+        let store = SecureCredentialStore::new("99percentgrip.jarvis", path.clone());
+        assert!(
+            store
+                .load(CredentialId::new("openai", "native-auth"))
+                .is_err()
+        );
+        assert!(
+            store
+                .remove(CredentialId::new("openai", "native-auth"))
+                .is_err()
+        );
+        assert_eq!(std::fs::read(path).unwrap(), old);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn new_owned_api_key_does_not_read_or_change_a_legacy_store() {
+        let root = tempfile::tempdir().unwrap();
+        let old = root.path().join(".agent-vesper");
+        std::fs::create_dir(&old).unwrap();
+        std::fs::write(old.join("credentials.json"), b"synthetic-old-key").unwrap();
+        let path = root.path().join(".jarvis/credentials.json");
+        let id = CredentialId::new("zai", "api-key");
+        PrivateFileCredentialStore::new(path.clone())
+            .store(id, "synthetic-new-key")
+            .unwrap();
+        let store = SecureCredentialStore::new("99percentgrip.jarvis", path);
+        assert_eq!(
+            store.load(id).unwrap().unwrap().expose().as_str(),
+            "synthetic-new-key"
+        );
+        assert_eq!(
+            std::fs::read(old.join("credentials.json")).unwrap(),
+            b"synthetic-old-key"
+        );
+    }
+
     #[cfg(unix)]
     use tempfile::TempDir;
 

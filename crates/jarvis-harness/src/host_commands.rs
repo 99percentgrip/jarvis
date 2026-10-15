@@ -8,7 +8,7 @@
 //! catalog command (`/checkpoint`, `/rollback`, `/undo`, `/export`,
 //! `/sessions`, `/lineage`, `/ci`, `/plugins`, `/mcp`) against
 //! `vesper-checkpoints` and `vesper-mcp` stores rooted at the same
-//! `.agent-vesper/` layout, using the exact response formats the TUI
+//! `.jarvis/` layout, using the exact response formats the TUI
 //! composition renders.
 //!
 //! Commands that mutate live conversation state (`/compact`,
@@ -70,8 +70,8 @@ impl HarnessToolService {
         {
             return format!(
                 "/{name}: session checkpoints and lineage are disabled by default in this \
-                 composition. Set AGENT_VESPER_ENABLE_CHECKPOINTS=1 (or \
-                 AGENT_VESPER_CHECKPOINT_ROOT) and restart the agent to enable them."
+                 composition. Set JARVIS_ENABLE_CHECKPOINTS=1 (or \
+                 JARVIS_CHECKPOINT_ROOT) and restart the agent to enable them."
             );
         }
         match name {
@@ -741,7 +741,7 @@ mod tests {
                 "/{command} should explain the opt-in, got: {output}"
             );
             assert!(
-                output.contains("AGENT_VESPER_ENABLE_CHECKPOINTS=1"),
+                output.contains("JARVIS_ENABLE_CHECKPOINTS=1"),
                 "/{command} should name the enabling variable, got: {output}"
             );
         }

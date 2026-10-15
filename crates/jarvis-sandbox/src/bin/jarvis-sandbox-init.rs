@@ -294,7 +294,7 @@ mod sys {
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|_| "clock before epoch")?
             .as_nanos();
-        let staging = root.join(format!(".vesper-ns-{}-{stamp}", std::process::id()));
+        let staging = root.join(format!(".jarvis-ns-{}-{stamp}", std::process::id()));
         fs::create_dir(&staging).map_err(|error| format!("create private root: {error}"))?;
         let jail = CString::new(staging.to_str().ok_or("root UTF-8")?).map_err(|_| "root NUL")?;
         mount_tmpfs(&jail)?;

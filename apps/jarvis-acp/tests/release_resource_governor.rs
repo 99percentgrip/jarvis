@@ -82,10 +82,7 @@ fn acp_release_rejection_and_unadvertised_approval_finish_without_mutation() {
         listener.set_nonblocking(true).unwrap();
         let mut process = ProcessHarness::spawn_resource_governor_test_driver(
             listener.local_addr().unwrap(),
-            [(
-                "AGENT_VESPER_RELEASE_ROOT",
-                state_root.display().to_string(),
-            )],
+            [("JARVIS_RELEASE_ROOT", state_root.display().to_string())],
         );
         let session = process.initialize_and_new_session_in(&workspace);
         // Keep the native default Ask; no fabricated approval or model call.
@@ -131,10 +128,7 @@ fn acp_release_pending_approval_cancel_ignores_late_allow() {
     listener.set_nonblocking(true).unwrap();
     let mut process = ProcessHarness::spawn_resource_governor_test_driver(
         listener.local_addr().unwrap(),
-        [(
-            "AGENT_VESPER_RELEASE_ROOT",
-            state_root.display().to_string(),
-        )],
+        [("JARVIS_RELEASE_ROOT", state_root.display().to_string())],
     );
     let session = process.initialize_and_new_session_in(&workspace);
     process.prompt(3, &session, "/release patch", "release-pending-cancel");
@@ -226,10 +220,7 @@ fn acp_completed_release_delivers_final_receipt_without_provider_or_new_release(
     listener.set_nonblocking(true).unwrap();
     let mut process = ProcessHarness::spawn_resource_governor_test_driver(
         listener.local_addr().unwrap(),
-        [(
-            "AGENT_VESPER_RELEASE_ROOT",
-            state_root.display().to_string(),
-        )],
+        [("JARVIS_RELEASE_ROOT", state_root.display().to_string())],
     );
     let session = process.initialize_and_new_session_in(&workspace);
     process.prompt(3, &session, "/release resume", "fixture-closeout-delivery");
@@ -292,10 +283,7 @@ fn acp_conflicting_published_target_returns_clarification_without_observing_old_
     listener.set_nonblocking(true).unwrap();
     let mut process = ProcessHarness::spawn_resource_governor_test_driver(
         listener.local_addr().unwrap(),
-        [(
-            "AGENT_VESPER_RELEASE_ROOT",
-            state_root.display().to_string(),
-        )],
+        [("JARVIS_RELEASE_ROOT", state_root.display().to_string())],
     );
     let session = process.initialize_and_new_session_in(&workspace);
     process.prompt(
@@ -338,10 +326,7 @@ fn governed_release_process(request: &str, ask: bool) {
     let mut process = ProcessHarness::spawn_resource_governor_test_driver(
         listener.local_addr().expect("listener address"),
         [
-            (
-                "AGENT_VESPER_RELEASE_ROOT",
-                release_root.display().to_string(),
-            ),
+            ("JARVIS_RELEASE_ROOT", release_root.display().to_string()),
             ("PATH", path),
         ],
     );

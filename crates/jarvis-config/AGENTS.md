@@ -2,12 +2,14 @@
 
 ## Purpose
 
-Own platform-aware Agent Vesper paths, profile validation, typed application
+Own independent platform runtime paths, explicit legacy path descriptors, profile validation, typed application
 configuration, provider envelopes, secret references, and persistence ports.
 
 ## Local Contracts
 
-- Stage 1 resolves and describes paths but never creates, migrates, or writes user state.
+- `JarvisPaths` implements the approved platform roots and explicit first-run ownership checks. `VesperPaths` remains a pure legacy specification for provenance/disjointness tests, not an active runtime resolver. Native roots, explicit private overrides and credential-file overrides are validated before startup writes. Project config readers use `.jarvis` and refuse redirected paths; no legacy fallback or import.
+
+- The legacy resolver remains descriptive; Stage 3 independently initializes only empty application-private runtime roots. Migration is not implemented.
 - Legacy Native GLM ACP locations are always read-only descriptors.
 - Config, data, cache, state, and logs remain distinct.
 - Provider values are opaque envelopes; raw secrets are prohibited.
@@ -20,7 +22,7 @@ configuration, provider envelopes, secret references, and persistence ports.
   deliberately dependency-free TOML-subset readers (no `toml` crate —
   see their module docs), missing files yield the inactive default, and
   unknown keys are ignored for forward compatibility.
-- An explicitly saved `.agent-vesper/web-settings.json` is the complete web
+- An explicitly saved `.jarvis/web-settings.json` is the complete web
   settings snapshot and takes precedence over `[web]` TOML. Missing snapshots
   fall back to TOML; malformed snapshots fail closed. This crate only reads
   them; explicit atomic persistence belongs to `jarvis-harness::web_settings`.

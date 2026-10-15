@@ -9,13 +9,13 @@ use std::{
 };
 
 pub fn path(root: &Path) -> PathBuf {
-    root.join(".agent-vesper/skill-routing.json")
+    root.join(".jarvis/skill-routing.json")
 }
 fn location(root: &Path) -> Result<PathBuf, String> {
     if !root.is_absolute() || !root.is_dir() {
         return Err("Skills settings require an existing workspace".into());
     }
-    for item in [root.join(".agent-vesper"), path(root)] {
+    for item in [root.join(".jarvis"), path(root)] {
         match item.symlink_metadata() {
             Ok(metadata) if metadata.file_type().is_symlink() => {
                 return Err("Skills settings symlinks are refused".into());
@@ -29,10 +29,15 @@ fn location(root: &Path) -> Result<PathBuf, String> {
     Ok(path(root))
 }
 pub fn load(root: &Path) -> Result<RoutingPreferences, String> {
+    jarvis_security::validate_private_path(&root.join(".jarvis"))
+        .map_err(|_| "Private settings ownership refused")?;
     if !root.is_absolute() || !root.exists() {
         return Ok(RoutingPreferences::default());
     }
-    let file = match std::fs::File::open(location(root)?) {
+    let target = location(root)?;
+    jarvis_security::validate_private_path(&target)
+        .map_err(|_| "Private settings ownership refused")?;
+    let file = match std::fs::File::open(target) {
         Ok(file) => file,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             return Ok(RoutingPreferences::default());
@@ -55,7 +60,8 @@ pub fn save(root: &Path, preferences: &RoutingPreferences) -> Result<(), String>
     preferences.validate()?;
     let target = location(root)?;
     let parent = target.parent().ok_or("Invalid Skills settings path")?;
-    std::fs::create_dir_all(parent).map_err(|_| "Cannot create Skills settings directory")?;
+    jarvis_security::prepare_owned_directory(parent)
+        .map_err(|_| "Cannot create Skills settings directory")?;
     let mut file =
         tempfile::NamedTempFile::new_in(parent).map_err(|_| "Cannot stage Skills settings")?;
     serde_json::to_writer(&mut file, preferences).map_err(|_| "Cannot encode Skills settings")?;
