@@ -1589,20 +1589,33 @@ mod tests {
             global.path().join(COGNITION_DIR_NAME)
         );
         // The ADR-0021 overrides flow through the same shared derivation.
+        let project_override = project.path().join("custom-project-cog");
+        let global_override = global.path().join("custom-global-cog");
         let overridden = WorkspaceScope::resolve(&ScopeInputs {
-            project_cognition_override: Some(PathBuf::from("/custom/project-cog")),
-            global_cognition_override: Some(PathBuf::from("/custom/global-cog")),
+            project_cognition_override: Some(project_override.clone()),
+            global_cognition_override: Some(global_override.clone()),
             ..inputs
         })
         .expect("resolve");
-        assert_eq!(
-            overridden.cognition().project(),
-            Path::new("/custom/project-cog")
-        );
-        assert_eq!(
-            overridden.cognition().global(),
-            Path::new("/custom/global-cog")
-        );
+        assert_eq!(overridden.cognition().project(), project_override);
+        assert_eq!(overridden.cognition().global(), global_override);
+    }
+
+    #[test]
+    fn relative_cognition_overrides_refuse_before_persisting_a_scope_stamp() {
+        let (project, _global, inputs) = project_with_global();
+        for (project_override, global_override) in [
+            (Some(PathBuf::from("relative-cognition")), None),
+            (None, Some(PathBuf::from("relative-cognition"))),
+        ] {
+            let result = WorkspaceScope::resolve(&ScopeInputs {
+                project_cognition_override: project_override,
+                global_cognition_override: global_override,
+                ..inputs.clone()
+            });
+            assert!(matches!(result, Err(ScopeError::InvalidSkillPath(_))));
+            assert!(!project.path().join(STAMP_FILE_NAME).exists());
+        }
     }
 
     #[test]

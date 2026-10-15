@@ -4,7 +4,8 @@
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
-Status: PR #5 corrective candidate passed final local verification; initial hosted matrix failed,
+Status: PR #5 corrective source passed final local verification; hosted Windows
+identified a further native-path fixture correction, now locally verified;
 normal protected merge and post-merge workflows remain pending.
 The [PRD](../runtime-identity-stage3-prd.md), [architecture](../architecture/runtime-identity-stage3.md)
 and [source inventory](runtime-identity-stage3-inventory.json) own the acceptance trace.
@@ -329,6 +330,26 @@ zero bypass, a read-only default token and three disabled publishing workflows.
 Vesper preservation checked 14,598 protected entries, 158 dirty paths and six older
 reports with zero differences; nine prior independent-project report hashes also match.
 These local receipts do not authorize integration before the fresh hosted matrix.
+
+## Native cognition fixture follow-up
+
+The second hosted head `492ca71d9c8b029e4be87c03dafc562beac17a56`
+failed Windows job 116705800694 in run 38817514427. The exact assertion was
+`cognition_binding_derives_layer_paths_and_honors_overrides`, resolving a fixture
+`/custom/...` override. Such a path is not absolute on Windows, so the existing
+private-path guard correctly returned ownership refusal. The saved native log
+records 428 passing agent cases and this one failure; it is not a passing lane.
+
+Only the test fixture now derives both override paths from native temporary
+roots. Both override equality assertions remain. A new regression refuses each
+relative override before a scope stamp can be persisted. Production scope
+resolution and private-path validation are unchanged. `native-cognition-scope-repair.log`
+passed 34 scope tests; `native-scope-agent-all.log` passed the complete all-feature
+agent suite; `native-scope-msrv.log` passed the 34 scope tests on Rust 1.88.
+Formatting and warnings-denied all-target/all-feature agent Clippy also passed.
+The previous full workspace/security/build receipts cover the unchanged production
+source; this test-only delta still requires a fresh complete thirteen-check head.
+No success or cancellation from the superseded head substitutes for that matrix.
 
 ## Dependency integrity
 

@@ -673,6 +673,9 @@ the multi-turn, tool-executing layer above it.
 
 ## Verification
 
+- Scope override fixtures use native absolute temporary paths on every platform;
+  relative cognition overrides must refuse before a scope stamp is written.
+
 - `tests/command_settlement.rs` exercises the production `RunCommand` boundary
   on every supported CI target under stdout/stderr pressure, the 64 KiB
   retention boundary, the historical 71,443-byte workload, timeout,

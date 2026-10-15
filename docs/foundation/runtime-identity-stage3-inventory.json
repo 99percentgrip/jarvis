@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "final corrective candidate passed complete local verification; fresh thirteen-context CI and protected integration pending",
+  "status": "production source passed full local gates; native cognition fixture corrected and focused tests passed; fresh thirteen-check integration pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -1612,6 +1612,7 @@
     "apps/jarvis-tui/tests/xai_plain_turn_pty.py",
     "apps/jarvis-tui/tests/xai_usage_pty.py",
     "crates/AGENTS.md",
+    "crates/jarvis-agent/AGENTS.md",
     "crates/jarvis-agent/Cargo.toml",
     "crates/jarvis-agent/src/agent_loop.rs",
     "crates/jarvis-agent/src/executor.rs",

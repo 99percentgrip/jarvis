@@ -49,7 +49,9 @@ build modes and shipping audit/deny; 43 ignored executions remain limitations.
 The first PR #5 candidate
 failed native fixture/voice-path checks and left macOS Intel cancelled; the linked
 report records exact causes and corrective evidence. Every required context must
-run successfully again on the updated head.
+run successfully again on the updated head. A subsequent native Windows
+cognition fixture failure was corrected using native absolute overrides, with
+a new relative-override no-write regression; production guards remain unchanged.
 
 ## Explicit limitations and next authority boundary
 
