@@ -117,7 +117,23 @@ user-installed runtimes, device access and external Bridge IPC retain their auth
 Ordinary updater and release/recovery routes refuse before adopting a ledger or
 contacting the old release channel. No independent publication infrastructure is
 implemented here. Offline acceptance preserves controlled controller behavior through
-an explicit test-driver seam, unavailable merely by enabling Cargo features.
+explicit non-shipping integration hosts, unavailable merely by enabling Cargo
+features. The TUI `offline_release_host` example requires explicit fixture authority,
+a workspace-local synthetic ledger and the fixed fixture repository remote; the
+ACP integration driver requires its existing explicit dispatch gate. Native CI
+first verifies ordinary shipping-feature hosts, then explicitly builds these test
+hosts for unchanged cross-host ledger assertions. The same fixture also proves
+ordinary TUI/ACP release status/control cannot touch the supplied ledger.
+
+Project settings refuse nonempty unowned state before parsing activation.
+Private UI preferences and trust metadata guard both leaves and ownership before
+read, write or grouped rollback. Editor drafts use owned temporary stores;
+screenshots retain private cache files for existing sixel-path consumers. Generic
+copied-project/probe/browser/setup workspaces are exclusive RAII allocations with
+native privacy secured before data writes; no marker is inserted into copied
+project trees. VAD executes the same embedded script directly and its audio
+workspace remains owned until blocking worker settlement. No foreign temporary
+directory is reclaimed by prefix.
 
 ## Verification and rollback
 

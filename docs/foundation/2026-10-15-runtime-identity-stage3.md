@@ -4,7 +4,8 @@
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
-Status: LOCAL GATES PASSED; protected PR/CI/merge and post-merge workflows pending.
+Status: PR #5 corrective candidate passed final local verification; initial hosted matrix failed,
+normal protected merge and post-merge workflows remain pending.
 The [PRD](../runtime-identity-stage3-prd.md), [architecture](../architecture/runtime-identity-stage3.md)
 and [source inventory](runtime-identity-stage3-inventory.json) own the acceptance trace.
 
@@ -29,7 +30,7 @@ never Vesper Git storage, build products, installations or user data.
 ## Methods, files and implementation
 
 The [reviewed source inventory](runtime-identity-stage3-inventory.json) contains
-22 resource groups with source symbols/lines, consumers, writers and regression
+26 resource groups with source symbols/lines, consumers, writers and regression
 entry points, 96 reviewed environment mappings, platform roots, compatibility
 exceptions and the complete changed/new file list. It includes Rust consumers,
 seed helpers, fixtures, verification tooling and nearest owning instructions.
@@ -149,6 +150,186 @@ fresh complete candidate verification required. The earlier full MSRV receipt
 likewise remains interim; a fresh Rust 1.88 all-target workspace check and focused
 pack tests passed, while exact-head CI separately requires the full MSRV suite.
 
+## First hosted candidate and corrective verification
+
+Destination repository `99percentgrip/jarvis`, PR #5, initial head
+`9bfbfe204e4150776c14715dc628f234008cd53e`, did not satisfy the merge gate.
+Supply-chain, Rust 1.88, both contained browsers and Native namespace Hive
+succeeded. Quality, Windows installer, Linux x86_64/ARM64, macOS Apple Silicon,
+Windows x86_64 and the exact-head aggregate failed; macOS Intel was cancelled.
+None of those failed/cancelled contexts authorizes merging.
+
+The retrieved job logs establish four fixture corrections:
+
+- Windows ACP used `/tmp` as a session cwd, which is not a native absolute Windows
+  path. Strict private-path validation correctly refused the skill store and
+  emitted a diagnostic before streamed reasoning. The process harness now uses
+  its actual private temporary workspace. Its shared environment restoration
+  also assigns synthetic HOME/USERPROFILE/roaming/local roots rather than
+  inheriting real Windows profile roots. A deterministic no-write regression
+  verifies all four explicit roots and excludes private roots from inherited keys.
+- The Windows installer built its real release executable successfully, then
+  signed-out authentication fixtures failed native privacy validation: chmod
+  cannot establish a Windows DACL. Synthetic vault parents now receive the
+  existing native inheritable protected ACL helper before records are written.
+  LM Studio has no subscription tombstone; an invalid synthetic vault refuses
+  native lookup without inventing an API key. Original terminal assertions remain.
+- Both Linux lanes and macOS Apple Silicon reached the old release-host test,
+  whose ordinary shipping hosts correctly refused the intentionally dormant
+  controller. CI now builds explicit non-shipping integration hosts for the
+  unchanged synthetic ledger status/retry/cancellation assertions. A separately
+  exercised ordinary-host branch additionally requires release-disabled responses,
+  unchanged supplied ledger bytes and zero provider connections. No worker-start,
+  publication, external GitHub mutation or real release ledger is exercised.
+- Canonical voice PTY still looked in `data/agent-vesper/captures`; it now uses
+  the common native J.A.R.V.I.S. data-root fixture resolver. The retained capture,
+  retry/discard, bounded long transcription and zero-residual assertions remain.
+
+macOS Intel reached the 90-minute job boundary without an assertion failure:
+workspace tests had succeeded after approximately 69 minutes; architecture/
+acceptance was still running. The verified Stage 2 baseline took approximately
+68 minutes for the complete same lane. This is incomplete evidence, not a pass
+or proof of a test defect. The macOS Intel outer job budget is now 120 minutes, based on that observed
+cold-compilation/complete-acceptance workload; other native lanes remain at 90.
+Individual test and step deadlines remain unchanged. The aggregate retains its
+170-minute bounded exact-head wait. All original cases must actually pass;
+increasing total scheduling capacity cannot turn a failed assertion into success.
+Fresh native CI must finish successfully before integration.
+
+Local corrective receipts include `acp-native-workspace-repair-repeat.log`
+(full all-target/all-feature ACP suite), `first-launch-fixture-repair.log`,
+`settings-auth-fixture-repair.log`, `voice-pty-path-repair.log`,
+`offline-host-parity-repair.log` (all four selected providers) and
+`clippy-ci-repair.log` (workspace/all targets/all features, warnings denied).
+The first ACP corrective run had one `ETXTBSY` spawn error in the unchanged
+controlled-Cargo fixture; five bounded exact-case repeats and the full ACP suite
+then passed without source/test relaxation. Its precise OS cause remains unproven.
+The registry guard also rejected a newly introduced fixture variable during
+corrective verification. The host now uses the already reviewed explicit test-gate
+input; no new identity or guard exemption was introduced. Final candidate
+verification and fresh thirteen-context CI remain mandatory.
+
+### Intermediate corrective local gate
+
+`verify-ci-repair-complete.log` passed the full `cargo xtask verify` command:
+3,635 passing test executions across 273 result blocks and all 165 exact acceptance
+cases (249,887 ms). Counts include repeated targeted suites, not unique tests.
+The 43 ignored executions remain disclosed; hardware, live providers and hosted
+native credentials are not inferred from them. This supersedes the corrective
+runs stopped by the registry/document naming guards. Both guards remain unchanged;
+all 36 naming hits are frozen and all current environment inputs are registered.
+The separate workflow guard suite passed 18 cases and the trigger/release contract
+suite passed 11 cases. No actual release workflow was invoked.
+
+Rust 1.88 workspace/all-target/all-feature checking, locked default and all-feature
+workspace builds and the final explicit offline host build passed. The final
+ordinary-host negative fixture initially over-constrained `/ci`; this is a
+legitimate read-only user-project integration, not release admission. Its corrected
+assertion requires truthful unavailable status without authentication and unchanged
+ledger bytes, while status/retry/cancel retain release-disabled assertions. The
+four-provider synthetic parity assertions remain unchanged and passed again in
+`offline-host-parity-final.log`. These receipts precede the final private-preference and temporary-resource audit
+below; that source delta requires fresh complete verification.
+
+### Final private-preference and temporary-resource audit
+
+An additional rendered Settings run exposed a fixture viewport assumption:
+only fourteen menu rows are visible, so hidden rows require the existing focus
+scroll handler before clicking. The original twenty-second observation deadline
+is retained. Restart execution choices are restored after leaving the landing
+screen; the fixture now opens Settings before checking the same saved model.
+No production menu, command, model value or preference assertion is removed.
+
+The follow-up source review found private leaf gaps beyond default-root separation.
+Settings choices/theme/provider preferences, keybindings, grouped-save snapshots/
+rollback and native plugin trust records now validate private paths and owned
+stores; writes use the shared same-directory atomic helper. Failed native trust
+persistence restores the previous in-memory authority and reports failure.
+Filesystem tests refuse unowned/public/redirected settings and publisher records,
+retain exact foreign bytes and prove read-only discovery of missing state.
+
+Editor drafts now use uniquely owned ephemeral directories; screenshot files
+live in the private native cache so existing sixel path rendering remains valid.
+The application-owned screenshot output is secured before queuing. User-selected
+project exports and arbitrary authorized project files retain ordinary authority.
+
+FLM VAD executes the unchanged embedded Python source directly: source inspection
+confirmed it has no file-relative imports. Predictable script materialization and
+prefix-based stale-directory deletion are gone. Its audio workspace is fresh and
+private, held by the blocking worker through settlement even after caller
+cancellation, preventing late output from recreating a deleted directory.
+The new filesystem test proves distinct workspaces, private canonical WAV data,
+owned cleanup and survival of foreign matching-prefix audio. No live Silero model
+or device integration is inferred from that test.
+
+All active generic snapshot/probe/browser/setup staging now uses a shared exclusive
+private temporary-workspace allocator. It validates the base before creation and
+secures native ACLs before writes; it never adopts an existing directory. A live
+RAII allocation is its ownership evidence and leaves copied project trees free of
+application metadata. Persistent stores still require ownership markers. Swarm
+artifacts initialize only owned project-private state and newly allocated run roots.
+A synthetic legacy-base test proves refusal before any entry is created. Dormant
+updater staging uses the same primitive without activating its ordinary route.
+
+Project Web/Sandbox/Skills/Swarm/Bridge/acceptance readers now refuse nonempty
+unowned project state before parsing it. The cross-subsystem filesystem regression
+generates valid records through real writers, copies only synthetic records without
+an ownership marker, and proves refusal with byte-for-byte preservation. This does
+not constrain ordinary user project files. Acceptance Save initializes owned state.
+
+The earlier logs above remain intermediate evidence. Final candidate receipts follow.
+The first complete run after this audit, `verify-private-final-source.log`,
+stopped at four sandbox integration cases: their shared positive fixture wrote
+settings without establishing private ownership. The fixture now uses the real
+owned-directory initializer before writing its unchanged sandbox demand.
+`sandbox-owned-fixture-final.log` passed all six end-to-end cases, preserving
+destructive-command denial, unattended approval refusal and unsatisfied-isolation
+assertions. The fresh full run below passed; the failed run is not passing evidence.
+
+Fresh terminal receipts `first-launch-private-final.log`,
+`settings-auth-private-final.log`, `offline-host-private-final.log` and
+`voice-private-final.log` passed against separately copied candidate binaries,
+avoiding concurrent compiler replacement. They cover all four signed-out providers,
+authentication cancellation, ordinary controller dormancy and synthetic parity,
+and unchanged capture/retry/discard/cleanup behavior. The Settings restart fixture
+also verifies the saved model's explicit `(current)` tag rather than menu focus;
+`settings-private-current-model-pty.log` passed. VAD protocol fixtures passed in
+`vad-protocol-private-final.log`; they do not establish live model/device behavior.
+The complete offline workflow guard suite passed 18 tests and trigger/release
+contracts passed 11 in `workflow-all-guards-private-final.log` and
+`trigger-contract-private-final.log`.
+
+External editor/screenshot programs and live VAD are not exercised against real
+user data or devices. Their private-storage wiring is source/compile evidence;
+existing media/voice and native platform regression suites remain mandatory.
+
+## Final corrective candidate local receipts
+
+`verify-private-candidate.log` passed complete `cargo xtask verify`: 3,645 passing
+executions across 275 result blocks, including repeated targeted suites, with
+43 ignored executions and all 165 exact acceptance cases (244,004 ms). This run
+includes the final private-leaf/workspace changes and owned sandbox fixture.
+Clippy denies warnings; formatting, 32-package architecture, identity contracts,
+unchanged frozen naming baseline and existing functional suites all passed.
+
+The seven-command serialized gate receipt `final-local-suite-results.json` records
+exit zero for that full verify; Rust 1.88 workspace/all-target/all-feature check;
+Rust 1.88 Windows MSVC auth/security all-target/all-feature cross-check; locked
+default and all-feature workspace builds; `cargo audit`; and all-feature
+`cargo deny check`. Cross-compilation is not native Windows execution. The audit
+reported no shipping vulnerability; deny advisories/bans/licenses/sources passed.
+Existing duplicate-version warnings remain visible.
+
+The final source hash receipt pins active changed sources/configuration and the
+four copied terminal-fixture binaries. JSON/Python parsing, owned-document links,
+lockfile comparison and whitespace checks passed. External additions are exactly
+windows-permissions 0.2.4 and bitflags 1.3.2; no existing dependency version changed.
+Authenticated readback still shows approved main, thirteen strict trusted checks,
+zero bypass, a read-only default token and three disabled publishing workflows.
+Vesper preservation checked 14,598 protected entries, 158 dirty paths and six older
+reports with zero differences; nine prior independent-project report hashes also match.
+These local receipts do not authorize integration before the fresh hosted matrix.
+
 ## Dependency integrity
 
 The only new external lockfile entries are pinned windows-permissions 0.2.4 and
@@ -217,3 +398,11 @@ private legacy state is neither discovered nor imported. No installation, regist
 publication, release tag or independent release is delivered. Stage 4 import requires
 separate explicit authorization and safe identity translation/no-replay design.
 Completion remains pending until final local, protected PR and post-merge evidence exists.
+
+### Excluded research alert readback
+
+Authenticated Dependabot alert #1, `GHSA-2mjx-qc3c-rqvc`, is open against
+`spikes/rust-sse-transport/Cargo.lock`. This excluded research workspace is outside
+Stage 3 and shipping builds; it must be remediated before any future inclusion.
+The active root lockfile retains rustls 0.23.46 and passed audit/deny. The alert
+has not been dismissed or suppressed.

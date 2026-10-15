@@ -84,7 +84,7 @@ impl Fixture {
         let project = tempfile::tempdir().expect("project root");
         let global = tempfile::tempdir().expect("global layer root");
         let state = project.path().join(".jarvis");
-        std::fs::create_dir_all(&state).expect("create state dir");
+        jarvis_security::prepare_owned_directory(&state).expect("own fixture state dir");
         // PR-4 scope demand: the real config surface the hosts parse.
         std::fs::write(state.join("config.toml"), "[sandbox]\nfilesystem = true\n")
             .expect("write sandbox demand");

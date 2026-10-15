@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from settings_pty import Host
+from settings_pty import Host, private_data_root
 
 
 def click_footer(host, label):
@@ -51,8 +51,8 @@ def run(binary, python):
             click_footer(host, 'Stop')
             host.wait('Retry voice')
             # R20 repair: captures live in the MANAGED store namespace
-            # (data/agent-vesper/captures/cap-*/capture.wav), not a tempdir.
-            captures = root/'data'/'agent-vesper'/'captures'
+            # (data/jarvis/captures/cap-*/capture.wav), not a tempdir.
+            captures = private_data_root(root)/'captures'
             assert list(captures.glob('cap-*/capture.wav')), 'managed capture must exist while retained'
             (root/'fail').unlink()
             click_footer(host, 'Retry voice')

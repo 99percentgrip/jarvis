@@ -30,7 +30,9 @@ impl BridgeSettings {
     /// a broken settings file must not enable a control surface
     /// (fail-closed).
     pub fn load(root: &Path) -> Self {
-        if jarvis_security::validate_private_path(&Self::path(root)).is_err() {
+        if jarvis_security::validate_new_or_owned_directory(&root.join(".jarvis")).is_err()
+            || jarvis_security::validate_private_path(&Self::path(root)).is_err()
+        {
             return Self::default();
         }
         let Ok(text) = std::fs::read_to_string(Self::path(root)) else {
@@ -179,7 +181,7 @@ mod tests {
     #[test]
     fn malformed_settings_fail_closed_to_disabled() {
         let root = tempfile::tempdir().unwrap();
-        std::fs::create_dir_all(root.path().join(".jarvis")).unwrap();
+        jarvis_security::prepare_owned_directory(&root.path().join(".jarvis")).unwrap();
         std::fs::write(BridgeSettings::path(root.path()), "{ not json").unwrap();
         assert!(!BridgeSettings::load(root.path()).enabled);
     }
@@ -187,7 +189,7 @@ mod tests {
     #[test]
     fn unknown_fields_are_refused_so_typos_cannot_silently_enable() {
         let root = tempfile::tempdir().unwrap();
-        std::fs::create_dir_all(root.path().join(".jarvis")).unwrap();
+        jarvis_security::prepare_owned_directory(&root.path().join(".jarvis")).unwrap();
         std::fs::write(BridgeSettings::path(root.path()), r#"{"enbled": true}"#).unwrap();
         assert!(
             !BridgeSettings::load(root.path()).enabled,

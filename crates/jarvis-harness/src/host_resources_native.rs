@@ -225,7 +225,7 @@ mod windows_job {
                 .ok_or_else(|| io::Error::other("Windows SystemRoot is unavailable"))?;
             let executable = std::path::PathBuf::from(system_root)
                 .join("System32/WindowsPowerShell/v1.0/powershell.exe");
-            let scratch = tempfile::tempdir()?;
+            let scratch = jarvis_security::private_temporary_workspace("jarvis-native-probe-")?;
             let mut child = Command::new(executable)
                 .args([
                     "-NoLogo",

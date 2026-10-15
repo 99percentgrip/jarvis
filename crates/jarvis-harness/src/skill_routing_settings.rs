@@ -29,7 +29,7 @@ fn location(root: &Path) -> Result<PathBuf, String> {
     Ok(path(root))
 }
 pub fn load(root: &Path) -> Result<RoutingPreferences, String> {
-    jarvis_security::validate_private_path(&root.join(".jarvis"))
+    jarvis_security::validate_new_or_owned_directory(&root.join(".jarvis"))
         .map_err(|_| "Private settings ownership refused")?;
     if !root.is_absolute() || !root.exists() {
         return Ok(RoutingPreferences::default());

@@ -9,7 +9,7 @@
 //! is configured), so it also proves the selected provider was actually wired.
 
 // Integration tests pull the shared process harness module, whose helpers are
-// consumed by different test binaries; only `critical_environment_keys` is
+// consumed by different test binaries; only isolated environment restoration is
 // needed here, so the rest of `support` is permitted to be dead code in this
 // test binary.
 #![allow(dead_code)]
@@ -33,7 +33,7 @@ use serde_json::{Value, json};
 
 mod support;
 
-use support::critical_environment_keys;
+use support::restore_isolated_environment;
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -90,11 +90,7 @@ fn synthetic_provider_serves_an_acp_prompt_lifecycle_without_network_io() {
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = OwnedChild(command.spawn().unwrap());
     let mut stdin = child.0.stdin.take().unwrap();
     let stdout = child.0.stdout.take().unwrap();

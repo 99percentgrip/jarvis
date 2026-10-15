@@ -24,6 +24,27 @@ impl PrivateTemporaryDirectory {
 }
 
 pub fn private_temporary_directory(prefix: &str) -> io::Result<PrivateTemporaryDirectory> {
+    private_temporary_directory_in(prefix, &std::env::temp_dir())
+}
+
+fn private_temporary_directory_in(
+    prefix: &str,
+    base: &Path,
+) -> io::Result<PrivateTemporaryDirectory> {
+    let directory = private_temporary_workspace_in(prefix, base)?;
+    prepare_owned_directory(directory.path())?;
+    Ok(PrivateTemporaryDirectory(directory))
+}
+
+/// Fresh capability-owned workspace, without metadata inside a copied project tree.
+/// The returned exclusive RAII allocation is its ownership evidence; it never opens
+/// or adopts an existing directory. Native ACLs are secured before caller writes.
+pub fn private_temporary_workspace(prefix: &str) -> io::Result<tempfile::TempDir> {
+    private_temporary_workspace_in(prefix, &std::env::temp_dir())
+}
+
+fn private_temporary_workspace_in(prefix: &str, base: &Path) -> io::Result<tempfile::TempDir> {
+    validate_private_path(base)?;
     if prefix.is_empty()
         || prefix.len() > 64
         || !prefix
@@ -32,9 +53,16 @@ pub fn private_temporary_directory(prefix: &str) -> io::Result<PrivateTemporaryD
     {
         return Err(denied());
     }
-    let directory = tempfile::Builder::new().prefix(prefix).tempdir()?;
-    prepare_owned_directory(directory.path())?;
-    Ok(PrivateTemporaryDirectory(directory))
+    let directory = tempfile::Builder::new().prefix(prefix).tempdir_in(base)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(directory.path(), fs::Permissions::from_mode(0o700))?;
+    }
+    #[cfg(windows)]
+    crate::private_state_windows::secure_empty(directory.path())?;
+    prepare_private_directory(directory.path())?;
+    Ok(directory)
 }
 
 /// Same-directory staged replacement for application-private configuration.
@@ -292,6 +320,42 @@ pub fn prepare_private_directory(path: &Path) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn temporary_allocation_refuses_legacy_roots_before_creating_any_entry() {
+        let fixture = tempfile::tempdir().unwrap();
+        let legacy = fixture.path().join(".agent-vesper");
+        std::fs::create_dir(&legacy).unwrap();
+        std::fs::write(legacy.join("canary"), b"private legacy state").unwrap();
+        assert!(private_temporary_directory_in("owned-fixture-", &legacy).is_err());
+        assert!(private_temporary_workspace_in("owned-fixture-", &legacy).is_err());
+        assert_eq!(std::fs::read_dir(&legacy).unwrap().count(), 1);
+        assert_eq!(
+            std::fs::read(legacy.join("canary")).unwrap(),
+            b"private legacy state"
+        );
+    }
+
+    #[test]
+    fn exclusive_temporary_workspace_keeps_project_contents_metadata_free() {
+        let base = tempfile::tempdir().unwrap();
+        let workspace = private_temporary_workspace_in("owned-verifier-", base.path()).unwrap();
+        let path = workspace.path().to_path_buf();
+        assert_eq!(std::fs::read_dir(&path).unwrap().count(), 0);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                std::fs::metadata(&path).unwrap().permissions().mode() & 0o077,
+                0
+            );
+        }
+        #[cfg(windows)]
+        crate::private_state_windows::verify(&path).unwrap();
+        drop(workspace);
+        assert!(!path.exists());
+        assert_eq!(std::fs::read_dir(base.path()).unwrap().count(), 0);
+    }
 
     #[test]
     fn empty_platform_legacy_roots_are_refused_before_first_run_mutation() {

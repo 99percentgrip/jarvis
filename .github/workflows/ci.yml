@@ -54,7 +54,8 @@ jobs:
         timeout-minutes: 5
         run: |
           cargo build -p jarvis-acp -p jarvis-tui --all-features --locked
-          python3 apps/jarvis-tui/tests/release_hosts_pty.py target/debug/jarvis-tui target/debug/jarvis-acp
+          cargo build --locked -p jarvis-tui --all-features --example offline_release_host
+          python3 apps/jarvis-tui/tests/release_hosts_pty.py target/debug/examples/offline_release_host target/debug/jarvis-acp-test-driver target/debug/jarvis-tui target/debug/jarvis-acp
       - name: Verify documentation structure
         run: |
           sh -n scripts/install.sh scripts/uninstall.sh

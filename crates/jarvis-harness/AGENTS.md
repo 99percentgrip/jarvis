@@ -12,9 +12,17 @@ Z.ai and Playwright MCP server descriptors.
 
 ## Ownership
 
+- Verifier snapshots, native observation probes, browser profiles and optional
+  setup staging use exclusive private temporary workspaces. Shared OS temporary
+  roots remain shared; fresh children receive native privacy before writes and
+  never adopt an existing directory. Swarm artifacts initialize only owned project
+  state and newly allocated run roots. No install or release is authorized by
+  allocating a staging workspace.
+
+
 - Inherited RRC lifecycle details below are offline/deferred contracts. Stage 3
   ordinary admission, status and recovery have no release root and cannot load
-  old ledgers; only the explicit integration driver enables controlled fixtures.
+  old ledgers; only explicit non-shipping integration hosts enable controlled fixtures.
   No real release ownership or updater channel is activated.
 
 - `release_recovery` owns the provider-neutral RRC state machine, transactional
@@ -563,6 +571,12 @@ Z.ai and Playwright MCP server descriptors.
 
 ## Local Contracts
 
+- Project settings readers refuse nonempty unowned state before parsing existing
+  activation. `tests/runtime_private_settings.rs` generates valid records through
+  actual writers, withholds their ownership and proves cross-subsystem refusal
+  without byte changes. Acceptance settings Save initializes only owned state.
+
+
 - Stage 3 ordinary release/status/recovery routes have no release root and cannot open a legacy ledger. Controlled process acceptance requires its explicit integration-driver seam; merely compiling test-support does not activate it. Runtime settings/stores use application-private roots and new environment names. The shared security foundation validates private paths; ordinary user project tools retain their permissions.
 
 - Rust build selections use current package names. Version-only lock comparison
@@ -794,6 +808,8 @@ Z.ai and Playwright MCP server descriptors.
   cross-feature fixture: watcher fire → bounded turn → composed
   firewall → opt-in sandbox route → scope-keyed slot ledger; run with
   `--features docker` to include the feature-gated cold-start arm).
+  Its positive project settings fixture establishes private ownership before
+  writing the sandbox demand; denial and unsatisfied-isolation assertions remain.
 - Run `cargo xtask architecture` and `cargo xtask verify`.
 
 - `src/bridge_service.rs` (behind the default-off `bridge` feature)

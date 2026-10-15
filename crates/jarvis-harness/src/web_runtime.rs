@@ -58,7 +58,8 @@ impl WebRuntime {
                 "sandbox disabled by JARVIS_SANDBOX=off".into(),
             ));
         }
-        let root = tempfile::tempdir().map_err(|e| FetchError::Sandbox(e.to_string()))?;
+        let root = jarvis_security::private_temporary_workspace("jarvis-browser-")
+            .map_err(|e| FetchError::Sandbox(e.to_string()))?;
         let image = self
             .scope
             .driver_image

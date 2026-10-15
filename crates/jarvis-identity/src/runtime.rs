@@ -489,6 +489,15 @@ pub const RUNTIME_ENVIRONMENT: &[RuntimeEnvironmentIdentity] = &[
 ];
 
 pub const RUNTIME_PATH_IDENTIFIERS: &[&str] = &[
+    "jarvis-keybinds-",
+    "jarvis-prompt-",
+    "jarvis-annotate-",
+    "jarvis-verifier-",
+    "jarvis-native-probe-",
+    "jarvis-voice-setup-",
+    "jarvis-browser-",
+    "jarvis-update-",
+    "jarvis-flm-vad-work-",
     "jarvis-voice-",
     "jarvis-setup-",
     ".jarvis-owner",

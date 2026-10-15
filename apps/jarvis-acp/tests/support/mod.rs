@@ -197,11 +197,7 @@ impl ProcessHarness {
         // None of these expose the user's real `ZAI_API_KEY` or any
         // `AGENT_VESPER_*` configuration; isolation of those secrets is
         // preserved because they are set explicitly above after env_clear.
-        for key in critical_environment_keys() {
-            if let Ok(value) = std::env::var(key) {
-                command.env(key, value);
-            }
-        }
+        restore_isolated_environment(&mut command);
         for (key, value) in extra {
             command.env(key, value);
         }
@@ -248,7 +244,7 @@ impl ProcessHarness {
             json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}),
         );
         assert_eq!(self.response(1)["result"]["protocolVersion"], 1);
-        self.send(json!({"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/tmp","mcpServers":[]}}));
+        self.send(json!({"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":self.temp.to_string_lossy(),"mcpServers":[]}}));
         self.response(2)["result"]["sessionId"]
             .as_str()
             .unwrap()
@@ -467,12 +463,33 @@ fn unique_suffix() -> u128 {
     nanos.wrapping_add(seq as u128)
 }
 
-/// Returns the platform-specific minimum env-var keys the spawned
-/// `agent-vesper-acp` process must inherit even after `env_clear()`, so the
-/// binary can initialize its platform runtime (Windows Winsock, DLL search
-/// paths; macOS temp/subprocess resolution; Linux defensive PATH). Tests
-/// still set `HOME`, `XDG_*`, `ZAI_API_KEY`, and `AGENT_VESPER_*` explicitly
-/// above, so secret isolation is not weakened by inheriting these keys.
+/// Preserve OS execution prerequisites without inheriting real private runtime roots.
+#[allow(dead_code)] // Shared across separately compiled integration test modules.
+pub fn restore_isolated_environment(command: &mut Command) {
+    let home = command
+        .get_envs()
+        .find(|(key, _)| *key == "HOME")
+        .and_then(|(_, value)| value)
+        .map(PathBuf::from)
+        .or_else(|| command.get_current_dir().map(PathBuf::from))
+        .expect("process fixture requires an explicit synthetic home or cwd");
+    assert!(
+        home.is_absolute(),
+        "fixture home must be native and absolute"
+    );
+    for key in critical_environment_keys() {
+        if let Ok(value) = std::env::var(key) {
+            command.env(key, value);
+        }
+    }
+    command
+        .env("HOME", &home)
+        .env("USERPROFILE", &home)
+        .env("APPDATA", home.join("roaming"))
+        .env("LOCALAPPDATA", home.join("local"));
+}
+
+/// OS execution inputs only; application-private roots are always synthetic.
 pub fn critical_environment_keys() -> &'static [&'static str] {
     if cfg!(target_os = "windows") {
         &[
@@ -483,9 +500,6 @@ pub fn critical_environment_keys() -> &'static [&'static str] {
             "TMP",
             "PATHEXT",
             "PATH",
-            "USERPROFILE",
-            "APPDATA",
-            "LOCALAPPDATA",
             "PROGRAMDATA",
             "COMSPEC",
         ]

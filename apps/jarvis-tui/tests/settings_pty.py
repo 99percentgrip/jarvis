@@ -119,7 +119,7 @@ class Host:
             if directory.exists():
                 fixture_owned_directory(directory)
         fixture_credentials = root / "fixture-credentials"
-        fixture_credentials.mkdir(mode=0o700, exist_ok=True)
+        fixture_owned_directory(fixture_credentials)
         for provider in ["openai", "xai"]:
             path = fixture_credentials / f"{provider}.json"
             path.write_text(json.dumps({"application": "99percentgrip.jarvis", "credentials": {
@@ -258,8 +258,21 @@ class Host:
     def key(self, value):
         self.write(value.encode())
         self.pump()
+    def reveal_menu_label(self, label):
+        # Settings renders at most fourteen rows and scrolls with the focus.
+        # Drive the existing native Down handler before clicking a hidden row;
+        # retain the original observation deadline and never activate a choice.
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            self.pump(.1)
+            if label in self.text():
+                return
+            if self.child.poll() is not None:
+                break
+            self.key('\x1b[B')
+        raise AssertionError(f'Missing menu item {label!r}\n{self.text()}')
     def choose(self, label):
-        self.wait(label)
+        self.reveal_menu_label(label)
         for _ in range(30):
             target = next((y for y, row in enumerate(self.screen)
                            if label in ''.join(row) and ''.join(row).strip().startswith('│')), None)
@@ -276,7 +289,7 @@ class Host:
             # ConPTY fixtures drive native key events; POSIX retains mouse proof.
             self.choose(label)
             return
-        self.wait(label)
+        self.reveal_menu_label(label)
         for y,row in enumerate(self.screen):
             line=''.join(row)
             if label in line and line.strip().startswith("│"):
@@ -362,9 +375,12 @@ def run(binary):
         host=Host(binary,root)
         try:
             host.wait('Start coding')
-            host.wait('glm-5.2')
             host.key('s')
             host.wait('current Bypass')
+            host.click('Primary model')
+            host.wait('glm-5.2 (current)')
+            host.key('\x1b')
+            host.reveal_menu_label('Session mode')
             host.wait('current Plan')
             host.click('Implementation acceptance')
             host.wait('Enforced completion: ON')

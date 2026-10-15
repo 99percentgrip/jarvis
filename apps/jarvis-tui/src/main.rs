@@ -110,7 +110,7 @@ mod update_host;
 type Backend = CrosstermBackend<io::Stdout>;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+pub(crate) async fn main() -> io::Result<()> {
     if let Some(success) = jarvis_harness::web_settings::handle_setup_flag().await {
         return if success {
             Ok(())
@@ -787,7 +787,8 @@ fn migrate_theme_preference(
 
 fn load_theme_preference(root: &std::path::Path) -> Option<String> {
     use std::io::Read;
-    jarvis_security::validate_private_path(&root.join("theme")).ok()?;
+    jarvis_security::validate_owned_directory(root).ok()?;
+    jarvis_security::validate_private_file(&root.join("theme")).ok()?;
     let file = std::fs::File::open(root.join("theme")).ok()?;
     let mut value = String::new();
     file.take(64).read_to_string(&mut value).ok()?;
@@ -800,9 +801,7 @@ fn load_theme_preference(root: &std::path::Path) -> Option<String> {
 }
 
 fn save_theme_preference(root: &std::path::Path, theme: &str) -> std::io::Result<()> {
-    jarvis_security::prepare_owned_directory(root)?;
-    jarvis_security::validate_private_path(&root.join("theme"))?;
-    std::fs::write(root.join("theme"), theme)
+    jarvis_security::write_private_atomic(&root.join("theme"), theme.as_bytes())
 }
 
 fn provider_name_from_env() -> String {
@@ -811,7 +810,10 @@ fn provider_name_from_env() -> String {
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default().join(".jarvis"))
         .join("provider");
-    if jarvis_security::validate_private_path(&pref_path).is_ok()
+    if pref_path
+        .parent()
+        .is_some_and(|parent| jarvis_security::validate_owned_directory(parent).is_ok())
+        && jarvis_security::validate_private_file(&pref_path).is_ok()
         && let Ok(text) = std::fs::read_to_string(&pref_path)
     {
         let trimmed = text.trim();
@@ -835,7 +837,8 @@ fn save_provider_preference(provider: &str) -> Result<(), String> {
     jarvis_security::prepare_owned_directory(&dir)
         .map_err(|e| format!("create provider dir: {e}"))?;
     let path = dir.join("provider");
-    std::fs::write(&path, provider).map_err(|e| format!("write provider preference: {e}"))
+    jarvis_security::write_private_atomic(&path, provider.as_bytes())
+        .map_err(|e| format!("write provider preference: {e}"))
 }
 
 async fn register_default_providers(
@@ -5379,7 +5382,11 @@ fn keybindings_path() -> std::path::PathBuf {
 
 fn load_keybindings() -> std::collections::BTreeMap<String, String> {
     let defaults = default_keybindings();
-    let Ok(bytes) = std::fs::read(keybindings_path()) else {
+    let path = keybindings_path();
+    if jarvis_security::validate_private_file(&path).is_err() {
+        return defaults;
+    }
+    let Ok(bytes) = std::fs::read(path) else {
         return defaults;
     };
     let Ok(overrides) =
@@ -5406,17 +5413,13 @@ fn edit_keybindings(
         let parent = path
             .parent()
             .ok_or_else(|| "invalid keybinding path".to_string())?;
-        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-        set_private_permissions(parent, true).map_err(|error| error.to_string())?;
-        let draft = std::env::temp_dir().join(format!(
-            "agent-vesper-keybinds-{}-{}.json",
-            std::process::id(),
-            reasoning_seq()
-        ));
+        jarvis_security::prepare_owned_directory(parent).map_err(|error| error.to_string())?;
+        let private_edit = jarvis_security::private_temporary_directory("jarvis-keybinds-")
+            .map_err(|error| error.to_string())?;
+        let draft = private_edit.path().join("keybindings.json");
         let bytes =
             serde_json::to_vec_pretty(&session.keybindings).map_err(|error| error.to_string())?;
-        std::fs::write(&draft, bytes).map_err(|error| error.to_string())?;
-        set_private_permissions(&draft, false).map_err(|error| error.to_string())?;
+        jarvis_security::write_private_atomic(&draft, &bytes).map_err(|error| error.to_string())?;
         let editor = std::env::var("VISUAL")
             .or_else(|_| std::env::var("EDITOR"))
             .unwrap_or_else(|_| "vi".into());
@@ -5433,6 +5436,7 @@ fn edit_keybindings(
             let _ = std::fs::remove_file(&draft);
             return Err(format!("editor exited with {status}"));
         }
+        jarvis_security::validate_private_path(&draft).map_err(|error| error.to_string())?;
         let edited = std::fs::read(&draft).map_err(|error| error.to_string())?;
         let mapping = serde_json::from_slice::<std::collections::BTreeMap<String, String>>(&edited)
             .map_err(|error| format!("keybindings must be a JSON object: {error}"))?;
@@ -5445,11 +5449,7 @@ fn edit_keybindings(
                 return Err(format!("unsupported key syntax `{key}`"));
             }
         }
-        let temporary = path.with_extension("json.tmp");
-        std::fs::write(&temporary, &edited).map_err(|error| error.to_string())?;
-        set_private_permissions(&temporary, false).map_err(|error| error.to_string())?;
-        std::fs::rename(&temporary, &path).map_err(|error| error.to_string())?;
-        let _ = std::fs::remove_file(&draft);
+        jarvis_security::write_private_atomic(&path, &edited).map_err(|error| error.to_string())?;
         session.keybindings = load_keybindings();
         session.state.status = Some("Keybindings updated and applied live.".into());
         Ok(())
@@ -5457,22 +5457,6 @@ fn edit_keybindings(
     enter_raw_mode(session.state.preferences.native_mouse).map_err(|error| error.to_string())?;
     terminal.clear().map_err(|error| error.to_string())?;
     result
-}
-
-fn set_private_permissions(path: &std::path::Path, directory: bool) -> std::io::Result<()> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(
-            path,
-            std::fs::Permissions::from_mode(if directory { 0o700 } else { 0o600 }),
-        )
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = (path, directory);
-        Ok(())
-    }
 }
 
 fn parse_keybinding(value: &str) -> Option<(KeyCode, KeyModifiers)> {
@@ -5821,14 +5805,13 @@ fn edit_prompt_in_external_editor(
     terminal: &mut Terminal<Backend>,
     session: &mut TuiSession,
 ) -> Result<(), String> {
+    let private_edit = jarvis_security::private_temporary_directory("jarvis-prompt-")
+        .map_err(|error| error.to_string())?;
+    let path = private_edit.path().join("prompt.md");
     leave_raw_mode().map_err(|error| error.to_string())?;
-    let path = std::env::temp_dir().join(format!(
-        "agent-vesper-prompt-{}-{}.md",
-        std::process::id(),
-        reasoning_seq()
-    ));
     let result = (|| {
-        std::fs::write(&path, session.input.as_bytes()).map_err(|error| error.to_string())?;
+        jarvis_security::write_private_atomic(&path, session.input.as_bytes())
+            .map_err(|error| error.to_string())?;
         let editor = std::env::var("VISUAL")
             .or_else(|_| std::env::var("EDITOR"))
             .unwrap_or_else(|_| "vi".into());
@@ -5844,6 +5827,7 @@ fn edit_prompt_in_external_editor(
         if !status.success() {
             return Err(format!("editor exited with {status}"));
         }
+        jarvis_security::validate_private_path(&path).map_err(|error| error.to_string())?;
         let prompt = std::fs::read_to_string(&path).map_err(|error| error.to_string())?;
         if prompt.len() > 1_048_576 {
             return Err("edited prompt exceeds 1 MiB".into());
@@ -5879,17 +5863,16 @@ fn annotate_diff_in_external_editor(
         return Err("working-tree diff exceeds the 1 MiB annotation bound".into());
     }
 
+    let private_edit = jarvis_security::private_temporary_directory("jarvis-annotate-")
+        .map_err(|error| error.to_string())?;
+    let path = private_edit.path().join("annotations.md");
     leave_raw_mode().map_err(|error| error.to_string())?;
-    let path = std::env::temp_dir().join(format!(
-        "agent-vesper-annotate-{}-{}.md",
-        std::process::id(),
-        reasoning_seq()
-    ));
     let result = (|| {
         let template = format!(
             "# Working-tree diff (read-only)\n# Add one or more lines beginning with `ANNOTATION ` after the diff.\n# Format: ANNOTATION path:line — requested change\n\n{diff}\n\n# Annotations\nANNOTATION "
         );
-        std::fs::write(&path, template).map_err(|error| error.to_string())?;
+        jarvis_security::write_private_atomic(&path, template.as_bytes())
+            .map_err(|error| error.to_string())?;
         let editor = std::env::var("VISUAL")
             .or_else(|_| std::env::var("EDITOR"))
             .unwrap_or_else(|_| "vi".into());
@@ -5905,6 +5888,7 @@ fn annotate_diff_in_external_editor(
         if !status.success() {
             return Err(format!("editor exited with {status}"));
         }
+        jarvis_security::validate_private_path(&path).map_err(|error| error.to_string())?;
         let edited = std::fs::read_to_string(&path).map_err(|error| error.to_string())?;
         let comments = edited
             .lines()
@@ -6914,11 +6898,17 @@ fn image_media_type(bytes: &[u8]) -> Option<&'static str> {
 }
 
 fn capture_screenshot(session: &mut TuiSession) -> Result<(), String> {
-    let path = std::env::temp_dir().join(format!(
-        "agent-vesper-screenshot-{}-{}.png",
-        std::process::id(),
-        reasoning_seq()
-    ));
+    let cache = jarvis_config::JarvisPaths::from_environment()
+        .map_err(|_| "private screenshot cache is unavailable")?
+        .cache
+        .join("screenshots");
+    jarvis_security::prepare_owned_directory(&cache).map_err(|error| error.to_string())?;
+    let capture = tempfile::Builder::new()
+        .prefix("capture-")
+        .suffix(".png")
+        .tempfile_in(&cache)
+        .map_err(|error| error.to_string())?;
+    let path = capture.path().to_path_buf();
     let candidates: &[(&str, &[&str])] =
         &[("gnome-screenshot", &["-f"]), ("grim", &[]), ("scrot", &[])];
     let mut last_error = None;
@@ -6928,7 +6918,21 @@ fn capture_screenshot(session: &mut TuiSession) -> Result<(), String> {
             .arg(&path)
             .status()
         {
-            Ok(status) if status.success() => return queue_image(&path, session),
+            Ok(status) if status.success() => {
+                jarvis_security::validate_private_path(&path).map_err(|error| error.to_string())?;
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
+                        .map_err(|error| error.to_string())?;
+                }
+                jarvis_security::validate_private_file(&path).map_err(|error| error.to_string())?;
+                let result = queue_image(&path, session);
+                if result.is_ok() {
+                    capture.keep().map_err(|error| error.to_string())?;
+                }
+                return result;
+            }
             Ok(status) => last_error = Some(format!("{program} exited with {status}")),
             Err(error) if error.kind() == io::ErrorKind::NotFound => {}
             Err(error) => last_error = Some(format!("{program}: {error}")),
@@ -14461,8 +14465,11 @@ fn persist_trusted_publishers(
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| tui_tool_failure("plugin_package", error))?
         .join("\n");
-    std::fs::write(root.join("publishers.jsonl"), format!("{body}\n"))
-        .map_err(|error| tui_tool_failure("plugin_package", error))
+    jarvis_security::write_private_atomic(
+        &root.join("publishers.jsonl"),
+        format!("{body}\n").as_bytes(),
+    )
+    .map_err(|error| tui_tool_failure("plugin_package", error))
 }
 
 fn execute_tui_tool(
@@ -15433,6 +15440,7 @@ fn scope_id_string() -> String {
         .ok()
         .map(|root| root.join(jarvis_agent::vro::scope::STAMP_FILE_NAME));
     if let Some(stamp) = stamp
+        && jarvis_security::validate_private_path(&stamp).is_ok()
         && let Ok(text) = std::fs::read_to_string(&stamp)
         && !text.trim().is_empty()
     {
@@ -16076,6 +16084,11 @@ impl McpStores {
 /// returns an empty registry when the file is absent).
 fn load_trusted_publishers(root: &std::path::Path) -> jarvis_mcp::TrustedPublishers {
     let path = root.join("publishers.jsonl");
+    if jarvis_security::validate_owned_directory(root).is_err()
+        || jarvis_security::validate_private_file(&path).is_err()
+    {
+        return jarvis_mcp::TrustedPublishers::new();
+    }
     let Ok(text) = std::fs::read_to_string(&path) else {
         return jarvis_mcp::TrustedPublishers::new();
     };
@@ -16343,20 +16356,23 @@ fn drain_mcp_op(op: jarvis_tui::commands::McpOp, stores: &mut McpStores, state: 
                 publisher: publisher.clone(),
                 public_key_hex: public_key_hex.clone(),
             };
+            let previous = stores
+                .trusted
+                .list()
+                .into_iter()
+                .find(|entry| entry.publisher == publisher);
             match stores.trusted.trust(entry.clone()) {
                 Ok(()) => {
-                    // Persist to publishers.jsonl (best-effort append).
-                    if let Ok(serialized) = serde_json::to_string(&entry) {
-                        let path =
-                            std::path::Path::new(&stores.root_display).join("publishers.jsonl");
-                        use std::io::Write;
-                        if let Ok(mut file) = std::fs::OpenOptions::new()
-                            .create(true)
-                            .append(true)
-                            .open(&path)
-                        {
-                            let _ = writeln!(file, "{serialized}");
+                    if let Err(error) = persist_trusted_publishers(
+                        std::path::Path::new(&stores.root_display),
+                        &stores.trusted,
+                    ) {
+                        let _ = stores.trusted.revoke(&publisher);
+                        if let Some(previous) = previous {
+                            let _ = stores.trusted.trust(previous);
                         }
+                        state.status = Some(format!("plugins trust could not be saved: {error:?}"));
+                        return;
                     }
                     state
                         .transcript
@@ -18352,6 +18368,35 @@ mod tests {
                 .as_deref(),
             Some("nord")
         );
+    }
+
+    #[test]
+    fn private_publisher_records_refuse_unowned_storage_and_reload_owned_state() {
+        let foreign = tempfile::tempdir().unwrap();
+        let entry = jarvis_mcp::TrustedPublisher {
+            publisher: "synthetic-publisher".into(),
+            public_key_hex: "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+                .into(),
+        };
+        let bytes = format!("{}\n", serde_json::to_string(&entry).unwrap());
+        let path = foreign.path().join("publishers.jsonl");
+        std::fs::write(&path, &bytes).unwrap();
+        assert!(load_trusted_publishers(foreign.path()).list().is_empty());
+        let trusted = jarvis_mcp::TrustedPublishers::from_records([entry]);
+        assert!(persist_trusted_publishers(foreign.path(), &trusted).is_err());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), bytes);
+        let owned = tempfile::tempdir().unwrap();
+        persist_trusted_publishers(owned.path(), &trusted).unwrap();
+        assert_eq!(load_trusted_publishers(owned.path()).list().len(), 1);
+        jarvis_security::validate_private_file(&owned.path().join("publishers.jsonl")).unwrap();
+        #[cfg(unix)]
+        {
+            std::fs::remove_file(owned.path().join("publishers.jsonl")).unwrap();
+            std::os::unix::fs::symlink(&path, owned.path().join("publishers.jsonl")).unwrap();
+            assert!(load_trusted_publishers(owned.path()).list().is_empty());
+            assert!(persist_trusted_publishers(owned.path(), &trusted).is_err());
+            assert_eq!(std::fs::read_to_string(path).unwrap(), bytes);
+        }
     }
 
     #[test]

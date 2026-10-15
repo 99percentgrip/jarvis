@@ -129,6 +129,9 @@ transport, stderr-only tracing, and orderly shutdown.
   must not be serialized into ordinary ACP response prose.
 - Contain no session, provider-wire, or ACP-mapping business logic.
 - Stdout is exclusively newline-delimited ACP JSON-RPC.
+- Process fixtures use native absolute temporary workspaces and explicitly private
+  HOME/USERPROFILE/roaming/local roots on every platform. Restoring OS execution
+  prerequisites must never inherit real application data roots.
 - Tests use loopback endpoints and synthetic credentials only. The shared process
   harness supplies explicit signed-out OpenAI and xAI vault records under its
   temporary root; environment/HOME isolation alone does not isolate an OS credential

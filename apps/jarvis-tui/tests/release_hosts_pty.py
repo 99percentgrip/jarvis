@@ -101,7 +101,7 @@ class Acp:
         self.child.stdout.close()
 
 
-def run_provider(tui_binary, acp_binary, selected):
+def run_provider(tui_binary, acp_binary, selected, dormant=False):
     with tempfile.TemporaryDirectory(prefix='vesper-release-hosts-') as temp:
         root=Path(temp).resolve()
         subprocess.run(['git','init','-q','-b','main'],cwd=root,check=True)
@@ -118,7 +118,8 @@ def run_provider(tui_binary, acp_binary, selected):
                    JARVIS_RELEASE_ROOT=str(ledger.parent),JARVIS_OPENAI_CREDENTIALS_PATH=str(vault),
                    JARVIS_XAI_CREDENTIALS_PATH=str(vault),JARVIS_FULL_HARNESS='1',JARVIS_VRO_ENABLED='0',
                    JARVIS_GLM_BASE_URL=f'http://127.0.0.1:{listener.getsockname()[1]}/v4',
-                   JARVIS_ALLOW_INSECURE_LOOPBACK='1')
+                   JARVIS_ALLOW_INSECURE_LOOPBACK='1',
+                   JARVIS_TEST_DISPATCH_GATE=f'127.0.0.1:{listener.getsockname()[1]}')
         host=Host(tui_binary,root,extra)
         env=dict(PATH=os.environ['PATH'],HOME=str(root/'home'),XDG_CONFIG_HOME=str(root/'config'),
                  XDG_DATA_HOME=str(root/'data'),XDG_STATE_HOME=str(root/'state'),
@@ -137,6 +138,20 @@ def run_provider(tui_binary, acp_binary, selected):
             session=acp.rpc(2,'session/new',dict(cwd=str(root),mcpServers=[]))['result']['sessionId']
             before=ledger.read_bytes()
             text=acp.prompt(3,session,'/release status')
+            if dormant:
+                assert 'release-disabled' in text, text
+                host.wait('Start coding');host.click('Start coding');host.key('/release status\r')
+                host.wait('release-disabled')
+                for identity, command in enumerate(('/release retry', '/release cancel'), 4):
+                    text=acp.prompt(identity,session,command)
+                    assert 'release-disabled' in text, text
+                text=acp.prompt(6,session,'/ci')
+                assert 'CI status unavailable' in text, text
+                assert ledger.read_bytes()==before, 'ordinary hosts altered a dormant ledger'
+                try: listener.accept();raise AssertionError('dormant hosts dispatched a request')
+                except socket.timeout: pass
+                print('PASS: ordinary TUI/ACP stay release-disabled with explicit synthetic ledger inputs; bytes unchanged; no provider calls.')
+                return
             assert 'WaitingForMatrix' in text and '1/5 terminal' in text and 'blocked' in text,text
             host.wait('Start coding');host.click('Start coding');host.key('/release status\r')
             host.wait('WaitingForMatrix');host.wait('1/5 terminal')
@@ -160,9 +175,10 @@ def run_provider(tui_binary, acp_binary, selected):
     print(f'PASS: signed-out {selected}: native TUI and ACP observed identical partial-matrix and Published/main-degraded state; blocked retry wrote nothing; ACP cancellation reached TUI with epoch/run/tag/assets retained; no provider calls.')
 
 
-def run(tui_binary, acp_binary):
+def run(tui_binary, acp_binary, ordinary_tui, ordinary_acp):
+    run_provider(ordinary_tui, ordinary_acp, 'zai', dormant=True)
     for selected in ('zai', 'openai', 'xai', 'lmstudio'):
         run_provider(tui_binary, acp_binary, selected)
 
 
-if __name__=='__main__': run(*(str(Path(arg).resolve()) for arg in sys.argv[1:3]))
+if __name__=='__main__': run(*(str(Path(arg).resolve()) for arg in sys.argv[1:5]))

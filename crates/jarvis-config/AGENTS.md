@@ -7,7 +7,7 @@ configuration, provider envelopes, secret references, and persistence ports.
 
 ## Local Contracts
 
-- `JarvisPaths` implements the approved platform roots and explicit first-run ownership checks. `VesperPaths` remains a pure legacy specification for provenance/disjointness tests, not an active runtime resolver. Native roots, explicit private overrides and credential-file overrides are validated before startup writes. Project config readers use `.jarvis` and refuse redirected paths; no legacy fallback or import.
+- `JarvisPaths` implements the approved platform roots and explicit first-run ownership checks. `VesperPaths` remains a pure legacy specification for provenance/disjointness tests, not an active runtime resolver. Native roots, explicit private overrides and credential-file overrides are validated before startup writes. Project config readers use `.jarvis`, require ownership for existing nonempty stores and refuse redirected paths; no legacy fallback or import.
 
 - The legacy resolver remains descriptive; Stage 3 independently initializes only empty application-private runtime roots. Migration is not implemented.
 - Legacy Native GLM ACP locations are always read-only descriptors.

@@ -13,6 +13,10 @@ fn location(root: &Path) -> Result<std::path::PathBuf, String> {
     if !root.is_absolute() || !root.is_dir() {
         return Err("acceptance settings require an existing workspace".into());
     }
+    jarvis_security::validate_new_or_owned_directory(&root.join(".jarvis"))
+        .map_err(|_| "acceptance settings private ownership refused")?;
+    jarvis_security::validate_private_path(&root.join(".jarvis/acceptance-settings.json"))
+        .map_err(|_| "acceptance settings private path refused")?;
     for path in [
         root.join(".jarvis"),
         root.join(".jarvis/acceptance-settings.json"),
@@ -80,7 +84,8 @@ impl AcceptanceSettings {
         self.validate(root)?;
         let path = location(root)?;
         let parent = path.parent().ok_or("invalid settings path")?;
-        std::fs::create_dir_all(parent).map_err(|_| "cannot create settings directory")?;
+        jarvis_security::prepare_owned_directory(parent)
+            .map_err(|_| "cannot create private settings directory")?;
         let mut file =
             tempfile::NamedTempFile::new_in(parent).map_err(|_| "cannot stage settings")?;
         serde_json::to_writer(&mut file, self).map_err(|_| "cannot encode settings")?;

@@ -533,7 +533,8 @@ async fn install_desktop_package() -> Result<(), String> {
         ),
         _ => return Err("Automatic Podman installation is unavailable on this platform.".into()),
     };
-    let temp = tempfile::tempdir().map_err(|_| "Cannot stage the runtime installer.")?;
+    let temp = jarvis_security::private_temporary_workspace("jarvis-setup-")
+        .map_err(|_| "Cannot stage the runtime installer.")?;
     let path = temp.path().join(name);
     let mut command = Command::new(if cfg!(windows) {
         "curl.exe"
@@ -577,9 +578,7 @@ async fn install_desktop_package() -> Result<(), String> {
 
 async fn verify_browser(engine: &Engine, image: &str) -> Result<(), String> {
     // Unique name is generated locally; cleanup never addresses an existing workload.
-    let id = tempfile::Builder::new()
-        .prefix("jarvis-setup-")
-        .tempdir()
+    let id = jarvis_security::private_temporary_workspace("jarvis-setup-")
         .map_err(|_| "Cannot allocate setup probe identity.")?;
     let name = id
         .path()

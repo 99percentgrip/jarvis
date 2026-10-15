@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "local gates passed; protected exact-head CI and post-merge verification pending",
+  "status": "final corrective candidate passed complete local verification; fresh thirteen-context CI and protected integration pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -278,7 +278,7 @@
       "symbol": "impl BridgeSettings",
       "source_lines": [
         23,
-        93
+        95
       ],
       "writers": "native settings and permission-gated bridge service",
       "consumers": "existing application-control behavior",
@@ -330,8 +330,13 @@
       ],
       "writers": "NONE in normal runtime; controlled offline fixtures only",
       "consumers": "TUI/ACP release routes and native updater",
-      "verification": "ordinary_release_commands_are_dormant_without_creating_ledger_state",
-      "stage": 3
+      "verification": "ordinary all-feature release refusal; release_hosts_pty ordinary-host no-write/no-network branch and unchanged synthetic parity through explicit non-shipping hosts",
+      "stage": 3,
+      "fixture_consumers": [
+        "apps/jarvis-tui/examples/offline_release_host.rs",
+        "apps/jarvis-acp/src/bin/jarvis-acp-test-driver.rs",
+        "apps/jarvis-tui/tests/release_hosts_pty.py"
+      ]
     },
     {
       "id": "legacy-private",
@@ -342,7 +347,7 @@
       "source": "crates/jarvis-security/src/private_state.rs",
       "symbol": "pub fn is_legacy_private_namespace",
       "source_lines": [
-        184
+        212
       ],
       "writers": "NONE authorized by Stage 3",
       "consumers": "only synthetic negative fixtures are used by verification",
@@ -364,6 +369,70 @@
       "consumers": "both voice readiness paths, production TTS and explicit diagnostic examples",
       "verification": "native_pack_discovery_refuses_unowned_and_redirected_private_storage; setup and asset integrity suites",
       "stage": 3
+    },
+    {
+      "id": "private-host-preferences",
+      "owner": "JarvisPrivate",
+      "resource": "Native UI choices, theme/provider preferences, keybindings, trusted-publisher records, editor drafts and screenshot cache",
+      "legacy_contract": "Inherited unguarded preference leaves and predictable shared temporary names",
+      "current_contract": "Owned guarded preference/trust files, atomic grouped rollback, unique editor stores and native cache/screenshots",
+      "source": "apps/jarvis-tui/src/settings_host.rs",
+      "symbol": "fn load(",
+      "writers": "save, save_group, save_theme_preference, save_provider_preference, persist_trusted_publishers, edit_keybindings and capture_screenshot",
+      "consumers": "native TUI Settings, plugin trust, editor and media commands",
+      "verification": "settings_host::tests; private_publisher_records_refuse_unowned_storage_and_reload_owned_state; settings_pty.py",
+      "stage": 3,
+      "source_lines": [
+        18
+      ]
+    },
+    {
+      "id": "vad-private-work",
+      "owner": "JarvisPrivate",
+      "resource": "FLM VAD worker source and per-request audio workspaces",
+      "legacy_contract": "Predictable materialized script and temporary audio; prefix-based stale-directory sweep",
+      "current_contract": "Unchanged embedded worker source via interpreter arguments; unique owned audio held until blocking settlement; no prefix sweep",
+      "source": "apps/jarvis-tui/src/voice_flm_vad.rs",
+      "symbol": "fn private_vad_work",
+      "writers": "preprocess and write_canonical_wav",
+      "consumers": "existing FLM voice preprocessing",
+      "verification": "vad_workspaces_are_unique_private_and_cleanup_only_their_own_audio; existing voice_vad_worker.py protocol regression",
+      "stage": 3,
+      "source_lines": [
+        173
+      ]
+    },
+    {
+      "id": "exclusive-ephemeral-workspaces",
+      "owner": "JarvisPrivate",
+      "resource": "Verifier snapshot, native observation, browser profile and optional setup staging directories",
+      "legacy_contract": "Generic exclusive tempfile directories without common legacy-base validation/native ACL initialization",
+      "current_contract": "Validated-before-create exclusive private_temporary_workspace; protected native ACLs; no application marker inside copied project trees",
+      "source": "crates/jarvis-security/src/private_state.rs",
+      "symbol": "pub fn private_temporary_workspace",
+      "writers": "fresh-allocation factory, acceptance_snapshot, native probe, web_runtime, dependency setup and dormant updater fixtures",
+      "consumers": "both hosts through shared harness; offline verifier processes",
+      "verification": "exclusive_temporary_workspace_keeps_project_contents_metadata_free; temporary_allocation_refuses_legacy_roots_before_creating_any_entry",
+      "stage": 3,
+      "source_lines": [
+        42
+      ]
+    },
+    {
+      "id": "project-settings-ownership",
+      "owner": "JarvisPrivate",
+      "resource": "Project Web/Sandbox/Skills/Swarm/Bridge/acceptance activation settings",
+      "legacy_contract": "Parsing project-private preferences without an explicit store-ownership check",
+      "current_contract": "Refuse nonempty unowned .jarvis stores before parsing; explicit Save initializes only owned state",
+      "source": "crates/jarvis-harness/src/acceptance_settings.rs",
+      "symbol": "fn location(",
+      "writers": "acceptance, Web, Skills, Swarm and Bridge native Save methods",
+      "consumers": "both hosts through shared settings/config readers",
+      "verification": "runtime_private_settings::unowned_project_settings_refuse_without_import_or_mutation; existing settings parser/save tests",
+      "stage": 3,
+      "source_lines": [
+        12
+      ]
     }
   ],
   "environment_mappings": [
@@ -1445,13 +1514,15 @@
     "Bundled legacy TouchDesigner setup and non-shipped live timing launcher remain inactive rather than writing Vesper state.",
     "Historical and third-party references are preserved; this is not a public documentation rebrand.",
     "Excluded research workspace and its separate advisory are not part of active shipping builds.",
-    "Linux orphan cleanup pins process generation; unsupported generation identification refuses orphan signals while retaining foreground owned-child teardown."
+    "Linux orphan cleanup pins process generation; unsupported generation identification refuses orphan signals while retaining foreground owned-child teardown.",
+    "User-requested vesper-block-* project exports are user-owned output, not automatic application-private storage; public export naming remains deferred."
   ],
   "changed_files": [
     ".github/AGENTS.md",
     ".github/test_verify_native_credentials.py",
     ".github/verify_native_credentials.py",
     ".github/verify_native_voice.py",
+    ".github/workflows/ci.yml",
     ".github/workflows/platform-foundation.yml",
     ".github/workflows/web-driver.yml",
     ".gitignore",
@@ -1488,6 +1559,7 @@
     "apps/jarvis-tui/AGENTS.md",
     "apps/jarvis-tui/Cargo.toml",
     "apps/jarvis-tui/examples/AGENTS.md",
+    "apps/jarvis-tui/examples/offline_release_host.rs",
     "apps/jarvis-tui/examples/r3_worker_device_check.rs",
     "apps/jarvis-tui/examples/voice_live_timing.py",
     "apps/jarvis-tui/src/auth_settings.rs",
@@ -1589,6 +1661,7 @@
     "crates/jarvis-harness/src/web_settings.rs",
     "crates/jarvis-harness/tests/dependency_cli_fixture.sh",
     "crates/jarvis-harness/tests/runtime_ownership.rs",
+    "crates/jarvis-harness/tests/runtime_private_settings.rs",
     "crates/jarvis-harness/tests/scope_parity.rs",
     "crates/jarvis-harness/tests/skill_routing_settings.rs",
     "crates/jarvis-harness/tests/swarm_adapter_tests.rs",

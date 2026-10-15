@@ -104,12 +104,12 @@ impl SandboxScopeConfig {
 /// - [`SandboxConfigError::DuplicateTable`] on a second `[sandbox]`.
 /// - [`SandboxConfigError::MalformedValue`] on an unparseable value.
 pub fn read_sandbox_scope(root: &Path) -> Result<SandboxScopeConfig, SandboxConfigError> {
-    jarvis_security::validate_private_path(&root.join(".jarvis/config.toml")).map_err(|_| {
-        SandboxConfigError::Read {
+    jarvis_security::validate_new_or_owned_directory(&root.join(".jarvis"))
+        .and_then(|()| jarvis_security::validate_private_path(&root.join(".jarvis/config.toml")))
+        .map_err(|_| SandboxConfigError::Read {
             path: "private application settings".into(),
             reason: "ownership refused".into(),
-        }
-    })?;
+        })?;
     let path = root.join(".jarvis").join("config.toml");
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,

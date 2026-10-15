@@ -21,7 +21,7 @@ use serde_json::{Value, json};
 
 mod support;
 
-use support::critical_environment_keys;
+use support::restore_isolated_environment;
 
 const CANARY: &str = "vesper-controls-secret-canary";
 
@@ -82,11 +82,7 @@ fn footer_controls_are_advertised_and_settable_end_to_end() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = command.spawn().unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();

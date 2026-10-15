@@ -131,7 +131,8 @@ impl SourceSnapshot {
     }
 
     pub fn materialize(&self) -> Result<tempfile::TempDir, String> {
-        let dir = tempfile::tempdir().map_err(|_| "cannot create verifier snapshot")?;
+        let dir = jarvis_security::private_temporary_workspace("jarvis-verifier-")
+            .map_err(|_| "cannot create verifier snapshot")?;
         for (path, (bytes, executable)) in &self.files {
             let destination = dir.path().join(path);
             std::fs::create_dir_all(destination.parent().ok_or("invalid snapshot path")?)

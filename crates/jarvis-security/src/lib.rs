@@ -21,8 +21,9 @@ pub use path::{PathCapability, RelativePath, RootIdentity};
 pub use private_state::write_private_atomic;
 pub use private_state::{
     PrivateTemporaryDirectory, is_legacy_private_namespace, prepare_owned_directory,
-    prepare_private_directory, private_temporary_directory, validate_new_or_owned_directory,
-    validate_owned_directory, validate_private_file, validate_private_path,
+    prepare_private_directory, private_temporary_directory, private_temporary_workspace,
+    validate_new_or_owned_directory, validate_owned_directory, validate_private_file,
+    validate_private_path,
 };
 pub use sandbox::{CapabilityStatus, IsolationRequirement, SandboxCapabilities, SecurityStrength};
 pub use scope::{SecretScope, SecretScopeError, is_multiplex_active, set_multiplex_active};

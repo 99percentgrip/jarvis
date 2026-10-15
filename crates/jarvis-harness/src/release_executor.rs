@@ -169,7 +169,7 @@ struct ActiveReleaseWorker {
 static ACTIVE_RELEASE_WORKERS: OnceLock<Mutex<HashMap<String, ActiveReleaseWorker>>> =
     OnceLock::new();
 
-// Only the integration-only ACP test driver can set this process-local seam.
+// Only explicitly invoked, non-shipping integration hosts set this process-local seam.
 // It removes host-pressure admission thresholds so the test can hold a fake
 // Cargo child deterministically on constrained CI machines. The test-support
 // governor uses a synthetic snapshot so shared-runner procfs/cgroup/disk timing

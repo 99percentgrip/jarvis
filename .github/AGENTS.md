@@ -63,8 +63,9 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   landing and all-provider setup before publication. Synthetic packages and developer-equipped runners never substitute
   for a real clean Windows release install.
 - The five-target prerequisite builds shipping-feature TUI/ACP and runs actual
-  signed-out landing, all-provider Settings authentication and cross-host RRC
-  ledger controls on every native runner. Relative executable arguments and
+  signed-out landing and all-provider Settings authentication on every native
+  runner. Cross-host synthetic RRC ledger controls use explicitly built,
+  non-shipping integration hosts; ordinary executables remain release-disabled. Relative executable arguments and
   explicit CP1252 redirected Python output exercise the shared path/UTF-8 receipt
   contract on every lane. Windows uses pinned, hash-verified
   Python 3.13 ConPTY; Linux/macOS use stdlib PTYs. Version/help and seeded-key
@@ -72,6 +73,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   cases run on all targets; Windows additionally runs a real constrained Job Object
   fixture against the production policy, proving unavailable/unsafe capacity is
   withheld without substituting synthetic lifecycle telemetry.
+- The macOS Intel job has a bounded 120-minute total budget for observed cold compilation plus the complete acceptance matrix; other native jobs retain 90 minutes. Individual test/step deadlines and all required checks remain unchanged.
 - Keep the five release-target families explicit in the matrix: linux-x86_64,
   linux-arm64, macos-intel, macos-apple-silicon, windows-x86_64.
 - Five-target foundation explicitly invokes ADR 0032 native credential

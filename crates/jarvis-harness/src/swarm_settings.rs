@@ -76,7 +76,7 @@ fn check_root(root: &Path) -> Result<(), String> {
 }
 
 pub fn load(root: &Path) -> Result<SwarmSettings, String> {
-    jarvis_security::validate_private_path(&root.join(".jarvis"))
+    jarvis_security::validate_new_or_owned_directory(&root.join(".jarvis"))
         .map_err(|_| "Private settings ownership refused")?;
     check_root(root)?;
     let path = root.join(".jarvis/swarm-settings.json");

@@ -29,6 +29,7 @@ swarm = ["jarvis-harness/swarm"]
 # VB-PRD-001 Phase 2: the hosted Bridge tool surface (default-off).
 bridge = ["jarvis-harness/bridge"]
 integration-test-harness = [
+    "jarvis-harness/test-support",
     "jarvis-provider-openai/integration-test-harness",
     "jarvis-provider-xai/integration-test-harness",
 ]
@@ -196,3 +197,7 @@ required-features = ["voice-flm"]
 [target.'cfg(target_os = "linux")'.dependencies]
 # Existing locked safe process handles prevent PID-reuse cleanup of foreign applications.
 rustix = { version = "=1.1.4", features = ["process"] }
+
+[[example]]
+name = "offline_release_host"
+required-features = ["integration-test-harness"]

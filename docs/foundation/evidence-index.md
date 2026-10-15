@@ -1,6 +1,6 @@
 # Foundation Evidence Index
 
-- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — local runtime/security/acceptance evidence, source inventory and preservation; exact-head protected integration pending.
+- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — runtime/security evidence, first hosted failure analysis, corrective fixtures and private-leaf/temporary-workspace audit; final local verification passed 165 exact acceptance cases, MSRV, builds and audit/deny; source inventory and preservation retained; fresh exact-head protected integration pending.
 
 - [Stage 2 Rust identity migration](2026-10-15-rust-identity-stage2.md) — complete reviewed workspace mapping, explicit legacy executable adapters, local verification and pending protected-merge evidence.
 

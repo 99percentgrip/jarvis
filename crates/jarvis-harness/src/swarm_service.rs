@@ -359,12 +359,13 @@ async fn run_owned(
         {
             return Err("Swarm state directory alias refused.".to_string());
         }
-        std::fs::create_dir_all(&parent).map_err(|error| error.to_string())?;
+        jarvis_security::prepare_owned_directory(&parent).map_err(|error| error.to_string())?;
         let run = tempfile::Builder::new()
             .prefix("swarm-run-")
             .tempdir_in(parent)
-            .map_err(|error| error.to_string())?
-            .keep();
+            .map_err(|error| error.to_string())?;
+        jarvis_security::prepare_owned_directory(run.path()).map_err(|error| error.to_string())?;
+        let run = run.keep();
         let demand = SandboxDemand {
             requirement: IsolationRequirement::Filesystem,
             allow_network: false,

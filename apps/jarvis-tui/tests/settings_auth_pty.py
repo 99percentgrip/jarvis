@@ -9,11 +9,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from settings_pty import Host
+from settings_pty import Host, fixture_owned_directory
 
 
 def signed_out_vault(path: Path, provider: str, account: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    fixture_owned_directory(path.parent)
     path.write_text(
         json.dumps(
             {

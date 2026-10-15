@@ -1,5 +1,5 @@
 // Integration tests pull the shared process harness module, whose helpers are
-// consumed by different test binaries; only `critical_environment_keys` is
+// consumed by different test binaries; only isolated environment restoration is
 // needed here, so the rest of `support` is permitted to be dead code in this
 // test binary.
 #![allow(dead_code)]
@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 
 mod support;
 
-use support::critical_environment_keys;
+use support::restore_isolated_environment;
 
 const CANARY: &str = "vesper-stage4-secret-canary";
 
@@ -33,11 +33,7 @@ fn driver_setup_preflight_exits_without_provider_or_workspace_state() {
         .env("JARVIS_BUNDLE_DIR", root.path())
         .arg("--setup-web-driver");
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let output = command.output().unwrap();
     assert!(!output.status.success());
     assert!(
@@ -115,11 +111,7 @@ fn stdio_transcript_reaches_real_glm_adapter_with_protocol_pure_stdout() {
     // macOS temp/subprocess resolution, Linux PATH). ZAI_API_KEY and
     // AGENT_VESPER_* are set explicitly above, so secret isolation is intact.
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = command.spawn().unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
@@ -354,11 +346,7 @@ fn empty_prompt_and_slash_commands_never_dispatch_provider() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = command.spawn().unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
@@ -575,11 +563,7 @@ fn host_owned_slash_commands_reach_real_stores_with_tui_parity() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = command.spawn().unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
@@ -711,11 +695,7 @@ fn malformed_input_exits_without_stdout_contamination() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = command.spawn().unwrap();
     child
         .stdin
@@ -780,11 +760,7 @@ fn cancellation_after_reasoning_emits_no_post_cancel_content() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = command.spawn().unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
@@ -865,11 +841,7 @@ fn session_new_with_client_mcp_servers_creates_session() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     support::set_signed_out_xai_credentials(&mut command, &openai_fixture);
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = command.spawn().unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();

@@ -15,7 +15,7 @@ The [architecture](architecture/runtime-identity-stage3.md),
 | --- | --- | --- |
 | 1. Five native platform path strategies | Shared config `JarvisPaths`; identity contract compares real resolver to approved plans | Local injected-platform proof; native CI pending |
 | 2. Non-overlapping private roots | Config first-run test retains synthetic legacy roots and user files | Local proof; final matrix pending |
-| 3. Safe first-run creation | Security owned-root marker; concurrent/idempotent initialization tests | Local filesystem proof |
+| 3. Safe first-run creation | Security owned-root marker; concurrent/idempotent initialization; exclusive private-workspace and pre-allocation legacy-base tests | Local filesystem proof |
 | 4. Credential namespace separation | Auth independent service/application-tag tests and API-key canary | Local proof; native managers pending CI |
 | 5. OAuth token non-transfer | Auth rejects unowned tokens; normal provider subscription paths refuse before HTTP | Securely inactive; independent live authorization unavailable |
 | 6. Environment precedence/no legacy fallback | Explicit runtime registry; config override validation and ordinary ACP environment regression | Local source/process proof |
@@ -27,7 +27,7 @@ The [architecture](architecture/runtime-identity-stage3.md),
 | 12. Browser/Lens ownership | Private container names/config; unchanged contained driver adapter and Lens wire protocols | Local mocks/protocol proof; contained CI pending |
 | 13. Voice/Bridge private state | Owned capture/settings/logs, unique sidecar temp roots, Bridge settings and IPC checks | Local regression proof; native CI pending |
 | 14. User-owned external resources | Real user-project fixture named agent-vesper remains writable under existing authority | Local filesystem proof |
-| 15. No automatic import/replay | Ordinary ACP rejects old inputs and lists only current owned sessions | Local real-process proof |
+| 15. No automatic import/replay | Ordinary ACP rejects old inputs; cross-subsystem settings fixture refuses valid unowned stores without mutation | Local real-process proof |
 | 16. No updater/RRC side effects | Ordinary all-feature release command negative test; dormant updater entry points | Local proof; no real RRC executed |
 | 17. Existing protocol compatibility | Frozen serialized/wire fixtures, provider and host-parity acceptance | Existing suites retained; final matrix pending |
 | 18. Crash-safe atomic persistence | Session temp/sidecar recovery; atomic private record and capture lease tests | Local filesystem proof |
@@ -43,7 +43,13 @@ regressions are mandatory. All thirteen trusted exact-head checks must succeed,
 followed by normal protected merge, integrated-tree verification and all four
 exact-merge push workflows. Missing, ignored, skipped, cancelled or failing checks
 never count as success. Final receipts remain in the linked report; candidate
-hosted evidence is pending until actually observed.
+hosted evidence is pending until actually observed. Final local verification passed
+3,645 test executions and all 165 exact acceptance cases, plus Rust 1.88, both
+build modes and shipping audit/deny; 43 ignored executions remain limitations.
+The first PR #5 candidate
+failed native fixture/voice-path checks and left macOS Intel cancelled; the linked
+report records exact causes and corrective evidence. Every required context must
+run successfully again on the updated head.
 
 ## Explicit limitations and next authority boundary
 

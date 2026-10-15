@@ -87,7 +87,8 @@ async fn install_confirmed(
     theme: &str,
     bundle: &Path,
 ) -> Result<bool, String> {
-    let temp = tempfile::tempdir().map_err(|_| "Cannot stage updater")?;
+    let temp = jarvis_security::private_temporary_workspace("jarvis-update-")
+        .map_err(|_| "Cannot stage updater")?;
     let script = temp.path().join("install.sh");
     std::fs::write(&script, include_str!("../../../scripts/install.sh"))
         .map_err(|_| "Cannot stage installer")?;
@@ -182,7 +183,8 @@ async fn install_confirmed(
     use std::os::windows::process::CommandExt;
     // Windows locks running executables. A separate installer console waits for
     // this host to exit before replacing payloads, and displays the actual result.
-    let temp = tempfile::tempdir().map_err(|_| "Cannot stage updater")?;
+    let temp = jarvis_security::private_temporary_workspace("jarvis-update-")
+        .map_err(|_| "Cannot stage updater")?;
     let script = temp.path().join("install.ps1");
     std::fs::write(&script, include_str!("../../../scripts/install.ps1"))
         .map_err(|_| "Cannot stage installer")?;

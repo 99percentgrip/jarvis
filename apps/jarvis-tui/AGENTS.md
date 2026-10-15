@@ -766,6 +766,21 @@ and composes the existing bounded atomic session writer.
 
 ## Local Contracts
 
+- UI choices/theme/provider preferences, keybindings and trusted-publisher metadata
+  validate private leaves and owned stores; grouped-save snapshots and rollback
+  use the same guards. User projects remain outside this storage policy.
+- External-editor drafts use unique owned temporary directories. Screenshot files
+  remain in the private native cache for existing sixel-path compatibility.
+- FLM VAD runs the unchanged embedded worker source directly, with no materialized
+  predictable script or prefix-based stale-directory deletion. Per-request audio
+  stays owned by the blocking worker until settlement, including cancellation.
+
+
+- Ordinary runtime release/recovery remains dormant, including all-feature builds.
+  `examples/offline_release_host.rs` reuses the entrypoint only for explicitly
+  authorized synthetic-ledger acceptance; it is never a shipped executable.
+
+
 - Authentication storage/operation failures must not claim that nothing changed
   or a previous credential was preserved without a receipt proving that outcome.
   Report unconfirmed saved state; credential inventory remains adapter-owned.
