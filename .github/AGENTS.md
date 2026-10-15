@@ -200,6 +200,10 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Verification
 
+- Windows installer verification executes `runtime_credentials` against the exact
+  release profile before the unchanged first-launch terminal checks. It isolates
+  synthetic vault ownership/ACL/read failures without granting native-user access.
+
 - Every native first-launch lane runs the six offline ConPTY cleanup guards before actual terminal fixtures; a nonzero kill result never substitutes for observed child exit.
 
 - `.github/verify_native_voice.py` requires a disposable native runner, installs

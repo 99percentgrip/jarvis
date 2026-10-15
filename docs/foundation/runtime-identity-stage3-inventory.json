@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "production source passed full local gates; native cognition fixture corrected and focused tests passed; fresh thirteen-check integration pending",
+  "status": "Windows release authentication inventory unresolved; focused exact-fixture ownership regression passed locally; native and full integration pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -1598,6 +1598,7 @@
     "apps/jarvis-tui/tests/r3_loop_pty.py",
     "apps/jarvis-tui/tests/r3_voice_pack.rs",
     "apps/jarvis-tui/tests/release_hosts_pty.py",
+    "apps/jarvis-tui/tests/runtime_credentials.rs",
     "apps/jarvis-tui/tests/settings_auth_pty.py",
     "apps/jarvis-tui/tests/settings_pty.py",
     "apps/jarvis-tui/tests/skill_routing_pty.py",

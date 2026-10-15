@@ -6,6 +6,12 @@ Verify terminal interaction through the production TUI binary with isolated stat
 
 ## Ownership
 
+- `runtime_credentials.rs` verifies the exact Python signed-out terminal fixture
+  through production directory/file ownership guards and the native-first reader.
+  A UUID fixture account must already exist in the fallback before that read;
+  no real provider/keyring entry or secret is used. Native failures must identify
+  setup, directory ownership, file confidentiality or record-read boundaries.
+
 - `message_queue_pty.py` owns a held loopback provider and real terminal proof of
   mixed literal terminal paste ordering (including existing image-file paths),
   Enter queue/FIFO, command bypass, pending drop, complete

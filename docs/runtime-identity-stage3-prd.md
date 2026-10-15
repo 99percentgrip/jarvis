@@ -51,7 +51,9 @@ failed native fixture/voice-path checks and left macOS Intel cancelled; the link
 report records exact causes and corrective evidence. Every required context must
 run successfully again on the updated head. A subsequent native Windows
 cognition fixture failure was corrected using native absolute overrides, with
-a new relative-override no-write regression; production guards remain unchanged.
+a new relative-override no-write regression; production guards remain unchanged. Windows release first-launch inventory
+subsequently failed; the exact fixture now has a native ownership/read regression,
+and its storage failure remains unresolved until native proof and the full matrix pass.
 
 ## Explicit limitations and next authority boundary
 

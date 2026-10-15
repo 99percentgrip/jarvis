@@ -6,6 +6,7 @@ Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
 Status: PR #5 corrective source passed final local verification; hosted Windows
 identified a further native-path fixture correction, now locally verified;
+Windows release first-launch inventory remains under investigation;
 normal protected merge and post-merge workflows remain pending.
 The [PRD](../runtime-identity-stage3-prd.md), [architecture](../architecture/runtime-identity-stage3.md)
 and [source inventory](runtime-identity-stage3-inventory.json) own the acceptance trace.
@@ -350,6 +351,27 @@ Formatting and warnings-denied all-target/all-feature agent Clippy also passed.
 The previous full workspace/security/build receipts cover the unchanged production
 source; this test-only delta still requires a fresh complete thirteen-check head.
 No success or cancellation from the superseded head substitutes for that matrix.
+
+## Windows release inventory investigation — unresolved
+
+Head `deb8350a68781d27b91c42556c5815752dd33801` failed installer job
+116709785790 after successfully compiling its Windows release executables.
+The unchanged signed-out terminal case reached OpenAI management and reported
+`Authentication status is unavailable`; it did not render the required panel.
+The failure is retained in `deb8350a-windows-installer.log`. Its precise storage
+boundary is not yet established; no timing or transient explanation is asserted.
+
+`apps/jarvis-tui/tests/runtime_credentials.rs` now generates the exact Python
+terminal tombstone using a UUID-only synthetic account. It separately requires
+production directory ownership, file confidentiality, a present matching fallback
+and a successful native-first read without changing bytes. The fallback precondition
+prevents any need for a user/native credential lookup. This focused test passed on
+Linux with both default Rust and Rust 1.88; Clippy and formatting passed. Its native
+Windows result is pending and is diagnostic evidence, not a claimed repair.
+The Windows installer workflow executes this real regression in the release profile
+before the unchanged first-launch gate, with a separate bounded step. No existing
+assertion, test timeout, platform or required context is removed or relaxed.
+Offline workflow guards and trigger contracts still passed 18 and 11 cases.
 
 ## Dependency integrity
 

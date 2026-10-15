@@ -101,6 +101,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
+      - name: Verify Windows private credential fixture ownership
+        shell: bash
+        timeout-minutes: 15
+        run: cargo test --locked --release --package jarvis-tui --test runtime_credentials --features docker,swarm,bridge,voice-kokoro,voice-flm --target x86_64-pc-windows-msvc -- --nocapture
       - name: Verify real Windows release first launch and provider Settings
         shell: bash
         timeout-minutes: 5
