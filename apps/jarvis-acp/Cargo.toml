@@ -1,0 +1,61 @@
+[package]
+name = "jarvis-acp"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+integration-test-harness = ["dep:jarvis-provider-synthetic", "jarvis-provider-openai/integration-test-harness", "jarvis-provider-xai/integration-test-harness", "jarvis-harness/test-support"]
+# VRO-13 PR-4: forwards to the harness/sandbox docker backend so release
+# builds can enable it; zero new mandatory dependencies for default builds.
+docker = ["jarvis-harness/docker"]
+swarm = ["jarvis-harness/swarm"]
+# VB-PRD-001 Phase 2: the hosted Bridge tool surface (default-off).
+bridge = ["jarvis-harness/bridge"]
+
+[dependencies]
+jarvis-provider-openai = { path = "../../crates/jarvis-provider-openai", version = "=0.24.14" }
+jarvis-provider-xai = { path = "../../crates/jarvis-provider-xai", version = "=0.24.14" }
+base64.workspace = true
+futures-util.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+sha2.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde_json.workspace = true
+jarvis-acp-protocol = { path = "../../crates/jarvis-acp-protocol", version = "=0.24.14" }
+jarvis-agent = { path = "../../crates/jarvis-agent", version = "=0.24.14" }
+jarvis-cognition = { path = "../../crates/jarvis-cognition", version = "=0.24.14" }
+jarvis-config = { path = "../../crates/jarvis-config", version = "=0.24.14" }
+jarvis-policy = { path = "../../crates/jarvis-policy", version = "=0.24.14" }
+jarvis-domain = { path = "../../crates/jarvis-domain", version = "=0.24.14" }
+jarvis-harness = { path = "../../crates/jarvis-harness", version = "=0.24.14" }
+jarvis-provider = { path = "../../crates/jarvis-provider", version = "=0.24.14" }
+jarvis-auth = { path = "../../crates/jarvis-auth", version = "=0.24.14" }
+zeroize.workspace = true
+jarvis-provider-glm = { path = "../../crates/jarvis-provider-glm", version = "=0.24.14" }
+jarvis-provider-synthetic = { path = "../../crates/jarvis-provider-synthetic", version = "=0.24.14", optional = true }
+jarvis-runtime = { path = "../../crates/jarvis-runtime", version = "=0.24.14" }
+jarvis-sessions = { path = "../../crates/jarvis-sessions", version = "=0.24.14" }
+
+[dev-dependencies]
+sha2.workspace = true
+tempfile.workspace = true
+jarvis-security = { path = "../../crates/jarvis-security", version = "=0.24.14" }
+
+[[bin]]
+name = "jarvis-acp"
+path = "src/main.rs"
+
+[[bin]]
+name = "jarvis-acp-test-driver"
+path = "src/bin/jarvis-acp-test-driver.rs"
+required-features = ["integration-test-harness"]
+
+[lints]
+workspace = true

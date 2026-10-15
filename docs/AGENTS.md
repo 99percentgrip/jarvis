@@ -6,6 +6,8 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `rust-identity-stage2-prd.md` owns the authorized Rust workspace/executable migration and protected-merge acceptance; architecture/foundation children own its mapping and evidence.
+
 - `identity-stage1-prd.md` owns the authorized first-party identity architecture,
   ten acceptance contracts and Stage 2 boundary; architecture/foundation children
   own its specification, provenance and execution evidence.
@@ -300,7 +302,6 @@ Own durable project documentation and evidence-backed engineering records.
 ## Child DOX Index
 
 - `foundation/AGENTS.md` — Stage 0 decisions, fixture/oracle evidence, and technical-spike reports.
-- `vro19/AGENTS.md` — adopted VRO-19 reference material and the explicit initiative hold contract.
 - `architecture/AGENTS.md` — first-party identity specifications and read-only external-repo pattern reconnaissance.
 - `recon/AGENTS.md` — Agent Vesper migration reconnaissance records and quality gates.
 - `adr/AGENTS.md` — accepted production decisions and verification obligations.

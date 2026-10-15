@@ -15,7 +15,7 @@ serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 tempfile.workspace = true
-vesper-testkit = { path = "../crates/vesper-testkit", version = "=0.24.14" }
+jarvis-testkit = { path = "../crates/jarvis-testkit", version = "=0.24.14" }
 
 [lints]
 workspace = true

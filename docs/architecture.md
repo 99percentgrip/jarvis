@@ -5,7 +5,7 @@ Current status: [migration ledger](migration-status.md).
 ## Current native provider composition
 
 Both production hosts compose the shared agent loop and hosted services with
-Z.ai, LM Studio, and native OpenAI. `vesper-provider-openai` owns API-key/device
+Z.ai, LM Studio, and native OpenAI. `jarvis-provider-openai` owns API-key/device
 authentication, credential refresh, catalog, Responses/SSE, and tool-free
 auxiliary extraction. No shared foundation depends on a concrete adapter, and
 no Codex process is installed or launched. Tool calls/results retain their

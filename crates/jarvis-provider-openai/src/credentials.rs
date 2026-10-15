@@ -1,0 +1,699 @@
+//! Vesper-owned credentials: never reads another application's authentication.
+use crate::auth::{AuthenticationMode, NativeAuthClient, SubscriptionTokens};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use jarvis_auth::{CredentialId, SecureCredentialStore};
+use jarvis_provider::{CancellationSignal, CredentialError};
+use jarvis_security::{SecretScope, SecretValue};
+use serde_json::{Value, json};
+use std::{
+    path::PathBuf,
+    sync::{Arc, OnceLock},
+    time::{SystemTime, UNIX_EPOCH},
+};
+use tokio::sync::Mutex;
+use zeroize::{Zeroize, Zeroizing};
+
+struct Stored(Value);
+impl std::ops::Deref for Stored {
+    type Target = Value;
+    fn deref(&self) -> &Value {
+        &self.0
+    }
+}
+impl Drop for Stored {
+    fn drop(&mut self) {
+        fn clear(value: &mut Value) {
+            match value {
+                Value::String(text) => text.zeroize(),
+                Value::Array(values) => values.iter_mut().for_each(clear),
+                Value::Object(values) => values.values_mut().for_each(clear),
+                _ => {}
+            }
+        }
+        clear(&mut self.0);
+    }
+}
+
+const ID: CredentialId = CredentialId::new("openai", "native-auth");
+static LOCK: OnceLock<Arc<Mutex<()>>> = OnceLock::new();
+
+/// Provider-owned storage and refresh coordinator shared across sessions.
+#[derive(Clone)]
+pub struct Credentials {
+    store: SecureCredentialStore,
+    lock_path: PathBuf,
+    lock: Arc<Mutex<()>>,
+    #[cfg(test)]
+    test_store: Option<jarvis_auth::PrivateFileCredentialStore>,
+}
+
+/// Dispatch-only credentials; formatting is redacted.
+#[derive(Clone, Debug)]
+pub(crate) struct DispatchAuth {
+    pub mode: AuthenticationMode,
+    pub bearer: SecretValue,
+    pub account: Option<SecretValue>,
+}
+
+impl Default for Credentials {
+    fn default() -> Self {
+        let path = std::env::var_os("AGENT_VESPER_OPENAI_CREDENTIALS_PATH")
+            .map(PathBuf::from)
+            .or_else(|| {
+                std::env::var_os("XDG_CONFIG_HOME")
+                    .map(|p| PathBuf::from(p).join("agent-vesper/openai-credentials.json"))
+            })
+            .or_else(|| {
+                std::env::var_os("APPDATA")
+                    .map(|p| PathBuf::from(p).join("agent-vesper/openai-credentials.json"))
+            })
+            .unwrap_or_else(|| {
+                std::env::var_os("HOME")
+                    .or_else(|| std::env::var_os("USERPROFILE"))
+                    .map(PathBuf::from)
+                    .unwrap_or_default()
+                    .join(".config/agent-vesper/openai-credentials.json")
+            });
+        Self {
+            lock_path: path.with_extension("lock"),
+            store: SecureCredentialStore::new("agent-vesper", path),
+            lock: LOCK.get_or_init(|| Arc::new(Mutex::new(()))).clone(),
+            #[cfg(test)]
+            test_store: None,
+        }
+    }
+}
+
+impl Credentials {
+    async fn operation_lock(
+        &self,
+        cancel: &dyn CancellationSignal,
+    ) -> Result<tokio::sync::MutexGuard<'_, ()>, CredentialError> {
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
+        loop {
+            if cancel.is_cancelled() || tokio::time::Instant::now() >= deadline {
+                return Err(CredentialError::Unavailable);
+            }
+            if let Ok(guard) = self.lock.try_lock() {
+                return Ok(guard);
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+        }
+    }
+    // OS advisory locks survive neither process exit nor a dropped operation;
+    // TUI and ACP cannot rotate the same refresh token concurrently.
+    fn try_process_lock(&self) -> Result<Option<std::fs::File>, CredentialError> {
+        #[cfg(test)]
+        let path = self
+            .test_store
+            .as_ref()
+            .map(|store| store.path().with_extension("lock"))
+            .unwrap_or_else(|| self.lock_path.clone());
+        #[cfg(not(test))]
+        let path = self.lock_path.clone();
+        let parent = path.parent().ok_or(CredentialError::Unavailable)?;
+        if !parent.exists() {
+            std::fs::create_dir_all(parent).map_err(|_| CredentialError::Unavailable)?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))
+                    .map_err(|_| CredentialError::Unavailable)?;
+            }
+        }
+        if std::fs::symlink_metadata(&path).is_ok_and(|metadata| !metadata.is_file()) {
+            return Err(CredentialError::Unavailable);
+        }
+        let mut options = std::fs::OpenOptions::new();
+        options.read(true).write(true).create(true).truncate(false);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let file = options
+            .open(path)
+            .map_err(|_| CredentialError::Unavailable)?;
+        match fs2::FileExt::try_lock_exclusive(&file) {
+            Ok(()) => Ok(Some(file)),
+            Err(error)
+                if error.kind() == std::io::ErrorKind::WouldBlock
+                    || error.raw_os_error() == fs2::lock_contended_error().raw_os_error() =>
+            {
+                Ok(None)
+            }
+            Err(_) => Err(CredentialError::Unavailable),
+        }
+    }
+    fn process_lock(&self) -> Result<std::fs::File, CredentialError> {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        loop {
+            if let Some(file) = self.try_process_lock()? {
+                return Ok(file);
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err(CredentialError::Unavailable);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+    }
+    async fn process_lock_async(
+        &self,
+        cancel: &dyn CancellationSignal,
+    ) -> Result<std::fs::File, CredentialError> {
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
+        loop {
+            if cancel.is_cancelled() || tokio::time::Instant::now() >= deadline {
+                return Err(CredentialError::Unavailable);
+            }
+            let this = self.clone();
+            if let Some(file) = tokio::task::spawn_blocking(move || this.try_process_lock())
+                .await
+                .map_err(|_| CredentialError::Unavailable)??
+            {
+                return Ok(file);
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+        }
+    }
+    fn read(&self) -> Result<Stored, CredentialError> {
+        #[cfg(test)]
+        if let Some(store) = &self.test_store {
+            return Self::decode(store.load(ID).map_err(|_| CredentialError::Unavailable)?);
+        }
+        Self::decode(
+            self.store
+                .load(ID)
+                .map_err(|_| CredentialError::Unavailable)?,
+        )
+    }
+    fn decode(value: Option<SecretValue>) -> Result<Stored, CredentialError> {
+        match value {
+            Some(value) => serde_json::from_str(value.expose().as_str())
+                .map(Stored)
+                .map_err(|_| CredentialError::InvalidSecret),
+            None => Ok(Stored(Value::Null)),
+        }
+    }
+    fn write(&self, value: Value) -> Result<(), CredentialError> {
+        let value = Stored(value);
+        let encoded =
+            Zeroizing::new(serde_json::to_string(&value.0).map_err(|_| CredentialError::Failed)?);
+        #[cfg(test)]
+        if let Some(store) = &self.test_store {
+            store
+                .store(ID, &encoded)
+                .map_err(|_| CredentialError::Unavailable)?;
+            return Ok(());
+        }
+        self.store
+            .store(ID, &encoded)
+            .map_err(|_| CredentialError::Unavailable)?;
+        Ok(())
+    }
+    /// Locally checks only the selected mode; never opens a network connection.
+    pub fn authentication_method(&self) -> Result<Option<String>, CredentialError> {
+        let value = self.read()?;
+        match value.get("mode").and_then(Value::as_str) {
+            Some("chatgpt") => Ok(Some("openai-chatgpt".into())),
+            Some("api-key") => Ok(Some("openai-api-key".into())),
+            None if api_key(&value).is_some() => Ok(Some("openai-api-key".into())),
+            Some("signed-out") | None => Ok(None),
+            _ => Err(CredentialError::InvalidSecret),
+        }
+    }
+    /// Locally checks only the selected mode; never opens a network connection.
+    pub fn present(&self) -> Result<bool, CredentialError> {
+        let value = self.read()?;
+        match value.get("mode").and_then(Value::as_str) {
+            Some("chatgpt") => Ok(tokens(&value).is_ok()),
+            Some("signed-out") => Ok(false),
+            Some("api-key") | None => Ok(api_key(&value).is_some()),
+            _ => Err(CredentialError::InvalidSecret),
+        }
+    }
+    /// Explicitly selects API billing and stores the key in Vesper's vault.
+    pub fn store_api_key(&self, key: &str) -> Result<(), CredentialError> {
+        self.store_method("openai-api-key", key)
+    }
+    pub(crate) fn store_method(&self, method_id: &str, key: &str) -> Result<(), CredentialError> {
+        if method_id != "openai-api-key" {
+            return Err(CredentialError::Unavailable);
+        }
+        jarvis_auth::validate_secret(key).map_err(|_| CredentialError::InvalidSecret)?;
+        let _guard = self.lock.blocking_lock();
+        let _process = self.process_lock()?;
+        let mut value = object(self.read()?.0.clone());
+        value["mode"] = json!("api-key");
+        value["api_key"] = json!(key);
+        self.write(value)
+    }
+    pub(crate) fn select_method(&self, method_id: &str) -> Result<(), CredentialError> {
+        let _guard = self.lock.blocking_lock();
+        let _process = self.process_lock()?;
+        let mut value = object(self.read()?.0.clone());
+        match method_id {
+            "openai-api-key" => {
+                if api_key(&value).is_none() {
+                    return Err(CredentialError::Absent);
+                }
+                value["mode"] = json!("api-key");
+            }
+            "openai-chatgpt" => {
+                tokens(&value)?;
+                value["mode"] = json!("chatgpt");
+            }
+            _ => return Err(CredentialError::Unavailable),
+        }
+        self.write(value)
+    }
+    pub(crate) fn clear_method(&self, method_id: &str) -> Result<(), CredentialError> {
+        let _guard = self.lock.blocking_lock();
+        let _process = self.process_lock()?;
+        let mut value = object(self.read()?.0.clone());
+        match method_id {
+            "openai-api-key" => {
+                value.as_object_mut().map(|map| map.remove("api_key"));
+                let environment =
+                    SecretScope::current("OPENAI_API_KEY")
+                        .ok()
+                        .is_some_and(|secret| {
+                            jarvis_auth::validate_secret(secret.expose().as_str()).is_ok()
+                        });
+                if value.get("mode").and_then(Value::as_str) == Some("api-key") && !environment {
+                    value["mode"] = json!("signed-out");
+                }
+            }
+            "openai-chatgpt" => {
+                if let Some(map) = value.as_object_mut() {
+                    map.remove("access_token");
+                    map.remove("refresh_token");
+                    map.remove("id_token");
+                }
+                if value.get("mode").and_then(Value::as_str) == Some("chatgpt") {
+                    value["mode"] = json!("signed-out");
+                }
+            }
+            _ => return Err(CredentialError::Unavailable),
+        }
+        self.write(value)
+    }
+    pub(crate) fn inventory(
+        &self,
+    ) -> Result<jarvis_provider::AuthenticationInventory, CredentialError> {
+        use jarvis_provider::{AuthenticationMethodState, CredentialSource};
+        let value = self.read()?;
+        let stored_key = value
+            .get("api_key")
+            .and_then(Value::as_str)
+            .is_some_and(|key| jarvis_auth::validate_secret(key).is_ok());
+        let environment_key = SecretScope::current("OPENAI_API_KEY")
+            .ok()
+            .is_some_and(|secret| jarvis_auth::validate_secret(secret.expose().as_str()).is_ok());
+        let subscription = tokens(&value).is_ok();
+        let api_source = if environment_key {
+            CredentialSource::Environment
+        } else if stored_key {
+            CredentialSource::Stored
+        } else {
+            CredentialSource::Absent
+        };
+        let selected = match value.get("mode").and_then(Value::as_str) {
+            Some("chatgpt") if subscription => Some("openai-chatgpt".to_owned()),
+            Some("api-key") if api_source != CredentialSource::Absent => {
+                Some("openai-api-key".to_owned())
+            }
+            Some("signed-out") => None,
+            None if api_source != CredentialSource::Absent => Some("openai-api-key".to_owned()),
+            _ => None,
+        };
+        Ok(jarvis_provider::AuthenticationInventory {
+            selected_method: selected,
+            methods: vec![
+                AuthenticationMethodState {
+                    method_id: "openai-api-key".into(),
+                    source: api_source,
+                },
+                AuthenticationMethodState {
+                    method_id: "openai-chatgpt".into(),
+                    source: if subscription {
+                        CredentialSource::Stored
+                    } else {
+                        CredentialSource::Absent
+                    },
+                },
+            ],
+        })
+    }
+    /// Writes a tombstone so an environment key cannot silently re-enable billing.
+    pub fn logout(&self) -> Result<(), CredentialError> {
+        let _guard = self.lock.blocking_lock();
+        let _process = self.process_lock()?;
+        self.write(json!({"mode":"signed-out"}))
+    }
+    /// Completes native user-initiated sign-in, persisting only after success.
+    pub async fn login(
+        &self,
+        cancel: Arc<dyn CancellationSignal>,
+        on_challenge: Arc<dyn Fn(String, String) + Send + Sync>,
+    ) -> Result<(), CredentialError> {
+        // Hold the operation lock so a logout or concurrent rotation cannot be
+        // overwritten by an older in-flight login completion.
+        let _guard = self.operation_lock(cancel.as_ref()).await?;
+        let _process = self.process_lock_async(cancel.as_ref()).await?;
+        let client = NativeAuthClient::new().map_err(|_| CredentialError::Failed)?;
+        let login = client
+            .begin_device_login(cancel.as_ref())
+            .await
+            .map_err(|_| CredentialError::Failed)?;
+        on_challenge(login.verification_url(), login.user_code());
+        let result = client
+            .complete_device_login(login, cancel.as_ref())
+            .await
+            .map_err(|_| CredentialError::Failed)?;
+        if cancel.is_cancelled() {
+            return Err(CredentialError::Failed);
+        }
+        account(&result)?;
+        let existing = self.read()?;
+        let value = token_value_preserving_api_key(&result, &existing);
+        let this = self.clone();
+        tokio::task::spawn_blocking(move || this.write(value))
+            .await
+            .map_err(|_| CredentialError::Failed)?
+    }
+    pub(crate) async fn dispatch(
+        &self,
+        cancel: Arc<dyn CancellationSignal>,
+        force_refresh: bool,
+    ) -> Result<DispatchAuth, CredentialError> {
+        let _guard = self.operation_lock(cancel.as_ref()).await?;
+        let _process = self.process_lock_async(cancel.as_ref()).await?;
+        if cancel.is_cancelled() {
+            return Err(CredentialError::Failed);
+        }
+        let this = self.clone();
+        let value = tokio::task::spawn_blocking(move || this.read())
+            .await
+            .map_err(|_| CredentialError::Failed)??;
+        if value.get("mode").and_then(Value::as_str) != Some("chatgpt") {
+            if value.get("mode").and_then(Value::as_str) == Some("signed-out") {
+                return Err(CredentialError::Absent);
+            }
+            if !value.is_null() && value.get("mode").and_then(Value::as_str) != Some("api-key") {
+                return Err(CredentialError::InvalidSecret);
+            }
+            return Ok(DispatchAuth {
+                mode: AuthenticationMode::ApiKey,
+                bearer: api_key(&value).ok_or(CredentialError::Absent)?,
+                account: None,
+            });
+        }
+        let mut saved = tokens(&value)?;
+        let expiry = jwt(saved.access_token()).and_then(|v| v.get("exp").and_then(Value::as_u64));
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| CredentialError::Failed)?
+            .as_secs();
+        if force_refresh || expiry.is_none_or(|exp| exp <= now.saturating_add(60)) {
+            saved = NativeAuthClient::new()
+                .map_err(|_| CredentialError::Failed)?
+                .refresh(&saved, cancel.as_ref())
+                .await
+                .map_err(|_| CredentialError::Failed)?;
+            let next = token_value_preserving_api_key(&saved, &value);
+            let this = self.clone();
+            tokio::task::spawn_blocking(move || this.write(next))
+                .await
+                .map_err(|_| CredentialError::Failed)??;
+        }
+        Ok(DispatchAuth {
+            mode: AuthenticationMode::ChatGpt,
+            bearer: saved.access_token.clone(),
+            account: Some(account(&saved)?),
+        })
+    }
+}
+
+fn api_key(value: &Value) -> Option<SecretValue> {
+    SecretScope::current("OPENAI_API_KEY")
+        .ok()
+        .filter(|v| jarvis_auth::validate_secret(v.expose().as_str()).is_ok())
+        .or_else(|| {
+            value
+                .get("api_key")
+                .and_then(Value::as_str)
+                .filter(|s| jarvis_auth::validate_secret(s).is_ok())
+                .map(SecretValue::new)
+        })
+}
+fn tokens(value: &Value) -> Result<SubscriptionTokens, CredentialError> {
+    let get = |key| {
+        value
+            .get(key)
+            .and_then(Value::as_str)
+            .filter(|s| jarvis_auth::validate_secret(s).is_ok())
+            .map(SecretValue::new)
+            .ok_or(CredentialError::InvalidSecret)
+    };
+    Ok(SubscriptionTokens {
+        access_token: get("access_token")?,
+        refresh_token: get("refresh_token")?,
+        id_token: get("id_token")?,
+    })
+}
+fn token_value_preserving_api_key(tokens: &SubscriptionTokens, existing: &Value) -> Value {
+    let mut value = json!({"mode":"chatgpt","access_token":tokens.access_token().expose().as_str(),"refresh_token":tokens.refresh_token().expose().as_str(),"id_token":tokens.id_token().expose().as_str()});
+    if let Some(key) = existing
+        .get("api_key")
+        .and_then(Value::as_str)
+        .filter(|key| jarvis_auth::validate_secret(key).is_ok())
+    {
+        value["api_key"] = json!(key);
+    }
+    value
+}
+fn object(value: Value) -> Value {
+    if value.is_object() { value } else { json!({}) }
+}
+fn jwt(token: &SecretValue) -> Option<Value> {
+    let exposed = token.expose();
+    let part = exposed.as_str().split('.').nth(1)?;
+    if part.len() > 16_384 {
+        return None;
+    }
+    let bytes = Zeroizing::new(URL_SAFE_NO_PAD.decode(part).ok()?);
+    serde_json::from_slice(&bytes).ok()
+}
+fn account(tokens: &SubscriptionTokens) -> Result<SecretValue, CredentialError> {
+    let id = jwt(tokens.id_token())
+        .or_else(|| jwt(tokens.access_token()))
+        .ok_or(CredentialError::InvalidSecret)?;
+    let value = id
+        .get("https://api.openai.com/auth")
+        .and_then(|v| v.get("chatgpt_account_id"))
+        .and_then(Value::as_str)
+        .ok_or(CredentialError::InvalidSecret)?;
+    if value.is_empty()
+        || value.len() > 256
+        || !value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
+    {
+        return Err(CredentialError::InvalidSecret);
+    }
+    Ok(SecretValue::new(value))
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn scoped_api_key_has_api_metadata_without_overriding_selected_subscription_or_logout() {
+        let temp = tempfile::tempdir().unwrap();
+        let credentials = Credentials {
+            test_store: Some(jarvis_auth::PrivateFileCredentialStore::new(
+                temp.path().join("credentials.json"),
+            )),
+            lock: Arc::new(Mutex::new(())),
+            ..Credentials::default()
+        };
+        SecretScope::empty()
+            .with("OPENAI_API_KEY", SecretValue::new("fixture-api-key"))
+            .install(async {
+                assert_eq!(
+                    credentials.authentication_method().unwrap().as_deref(),
+                    Some("openai-api-key")
+                );
+                credentials.write(json!({"mode":"chatgpt"})).unwrap();
+                assert_eq!(
+                    credentials.authentication_method().unwrap().as_deref(),
+                    Some("openai-chatgpt")
+                );
+                credentials.write(json!({"mode":"signed-out"})).unwrap();
+                assert_eq!(credentials.authentication_method().unwrap(), None);
+                assert!(!credentials.present().unwrap());
+            })
+            .await;
+    }
+
+    #[test]
+    fn isolated_storage_switches_modes_and_logout_cannot_restore_a_key() {
+        let temp = tempfile::tempdir().unwrap();
+        let credentials = Credentials {
+            test_store: Some(jarvis_auth::PrivateFileCredentialStore::new(
+                temp.path().join("credentials.json"),
+            )),
+            lock: Arc::new(Mutex::new(())),
+            ..Credentials::default()
+        };
+        credentials.store_api_key("fixture-key").unwrap();
+        let process_lock = credentials.try_process_lock().unwrap().unwrap();
+        assert!(credentials.try_process_lock().unwrap().is_none());
+        drop(process_lock);
+        assert!(credentials.try_process_lock().unwrap().is_some());
+        assert!(credentials.present().unwrap());
+        assert_eq!(credentials.read().unwrap()["mode"], "api-key");
+        credentials.write(json!({"mode":"chatgpt","access_token":"fixture-access","refresh_token":"fixture-refresh","id_token":"fixture-id"})).unwrap();
+        assert!(credentials.present().unwrap());
+        assert!(credentials.read().unwrap().get("api_key").is_none());
+        credentials.logout().unwrap();
+        assert!(!credentials.present().unwrap());
+        let vault = std::fs::read_to_string(temp.path().join("credentials.json")).unwrap();
+        for old in [
+            "fixture-key",
+            "fixture-access",
+            "fixture-refresh",
+            "fixture-id",
+        ] {
+            assert!(!vault.contains(old));
+        }
+        credentials
+            .store_api_key("replacement-fixture-key")
+            .unwrap();
+        assert!(credentials.present().unwrap());
+    }
+
+    #[test]
+    fn refreshed_subscription_record_preserves_the_saved_api_key() {
+        let existing = json!({
+            "mode": "chatgpt",
+            "api_key": "fixture-api-key",
+            "access_token": "old-access",
+            "refresh_token": "old-refresh",
+            "id_token": "old-id"
+        });
+        let refreshed = SubscriptionTokens {
+            access_token: SecretValue::new("new-access"),
+            refresh_token: SecretValue::new("new-refresh"),
+            id_token: SecretValue::new("new-id"),
+        };
+        let value = token_value_preserving_api_key(&refreshed, &existing);
+        assert_eq!(value["mode"], "chatgpt");
+        assert_eq!(value["api_key"], "fixture-api-key");
+        assert_eq!(value["refresh_token"], "new-refresh");
+    }
+
+    #[test]
+    fn account_claims_are_bounded_and_dispatch_debug_is_redacted() {
+        let claim = json!({"https://api.openai.com/auth":{"chatgpt_account_id":"fixture-account"}});
+        let jwt = format!("e30.{}.fixture", URL_SAFE_NO_PAD.encode(claim.to_string()));
+        let tokens = SubscriptionTokens {
+            access_token: SecretValue::new("fixture-access"),
+            refresh_token: SecretValue::new("fixture-refresh"),
+            id_token: SecretValue::new(jwt),
+        };
+        let auth = DispatchAuth {
+            mode: AuthenticationMode::ChatGpt,
+            bearer: tokens.access_token.clone(),
+            account: Some(account(&tokens).unwrap()),
+        };
+        let debug = format!("{auth:?}");
+        assert!(!debug.contains("fixture-access"));
+        assert!(!debug.contains("fixture-account"));
+    }
+}
+
+// Explicit native persistence acceptance owns a private native namespace on a
+// disposable hosted runner. This bypasses only the service identity, not the
+// production secure store or adapter serialization/mode-selection paths.
+#[cfg(test)]
+pub(crate) async fn verify_hosted_subscription_persistence(result: SubscriptionTokens) {
+    assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
+    assert_eq!(
+        std::env::var("VESPER_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
+        Ok("isolated-hosted-fixture")
+    );
+    let temporary = tempfile::tempdir().unwrap();
+    let path = temporary.path().join("fixture.json");
+    let service = format!("vesper-ci-openai-{}", uuid::Uuid::new_v4().simple());
+    let store = SecureCredentialStore::new(Box::leak(service.into_boxed_str()), path.clone());
+    struct Cleanup(SecureCredentialStore);
+    impl Drop for Cleanup {
+        fn drop(&mut self) {
+            let _ = self.0.remove(ID);
+        }
+    }
+    let cleanup = Cleanup(store.clone());
+    let credentials = Credentials {
+        store,
+        lock_path: path.with_extension("lock"),
+        lock: Arc::new(Mutex::new(())),
+        test_store: None,
+    };
+    let process_lock = credentials.try_process_lock().unwrap().unwrap();
+    assert!(credentials.try_process_lock().unwrap().is_none());
+    drop(process_lock);
+    let this = credentials.clone();
+    tokio::task::spawn_blocking(move || this.store_api_key("synthetic-preserved-api-key"))
+        .await
+        .unwrap()
+        .unwrap();
+    account(&result).unwrap();
+    let value = token_value_preserving_api_key(&result, &credentials.read().unwrap());
+    let encoded = serde_json::to_string(&value).unwrap();
+    assert!(encoded.len() > 16 * 1024);
+    let this = credentials.clone();
+    tokio::task::spawn_blocking(move || this.write(value))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        credentials.authentication_method().unwrap().as_deref(),
+        Some("openai-chatgpt")
+    );
+    assert!(credentials.present().unwrap());
+    // A newly composed adapter must restore the selected subscription and all
+    // tokens from the native store; it cannot depend on an in-memory result.
+    let reopened = Credentials {
+        lock: Arc::new(Mutex::new(())),
+        ..credentials.clone()
+    };
+    assert_eq!(
+        reopened.read().unwrap()["access_token"].as_str().unwrap(),
+        result.access_token().expose().as_str()
+    );
+    assert_eq!(
+        reopened.read().unwrap()["api_key"],
+        "synthetic-preserved-api-key"
+    );
+    let this = reopened.clone();
+    tokio::task::spawn_blocking(move || {
+        this.select_method("openai-api-key").unwrap();
+        this.select_method("openai-chatgpt").unwrap();
+        assert_eq!(
+            this.authentication_method().unwrap().as_deref(),
+            Some("openai-chatgpt")
+        );
+        this.logout().unwrap();
+        assert!(!this.present().unwrap());
+        assert_eq!(this.authentication_method().unwrap(), None);
+    })
+    .await
+    .unwrap();
+    if cfg!(windows) {
+        assert!(!path.exists());
+    }
+    drop(cleanup);
+}

@@ -104,7 +104,7 @@ text=' '.join(s.text.strip() for s in segments)
 assert text.strip(), 'real library/VAD produced no speech'
 print('REAL RECOGNIZER LIBRARY/VAD VERIFIED')
 """, str(model), str(canonical)], env=speech_env, timeout=180)
-    script = Path(__file__).resolve().parent.parent / "apps/agent-vesper-tui/src/voice_transcribe.py"
+    script = Path(__file__).resolve().parent.parent / "apps/jarvis-tui/src/voice_transcribe.py"
     request = json.dumps({"wav": str(canonical), "skip": 0}) + "\n"
     output = run([python, "-u", str(script)], env=speech_env, timeout=180,
                  input_data=request * 2)
@@ -146,7 +146,7 @@ def main():
             destination = root / key
             destination.mkdir()
             env[key] = str(destination)
-        output = run(["cargo", "run", "--locked", "-p", "vesper-harness", "--example",
+        output = run(["cargo", "run", "--locked", "-p", "jarvis-harness", "--example",
                       "voice_setup_receipt", "--", str(root)], env=env)
         if output.count("NATIVE VOICE DEPENDENCIES VERIFIED") != 1:
             raise RuntimeError("missing exact production dependency receipt")
@@ -155,11 +155,11 @@ def main():
         if len(tools) != 1:
             raise RuntimeError("missing verified native speech executable receipt")
         real_recognition(root, tools[0], env)
-        output = run(["cargo", "run", "--locked", "-p", "vesper-voice-kokoro", "--features",
+        output = run(["cargo", "run", "--locked", "-p", "jarvis-voice-kokoro", "--features",
                       "ort", "--example", "real_setup_receipt"], env=env)
         if "POST-INSTALL ASSESSMENT: Ready" not in output:
             raise RuntimeError("production pack did not verify")
-        output = run(["cargo", "run", "--locked", "-p", "vesper-voice-kokoro", "--features",
+        output = run(["cargo", "run", "--locked", "-p", "jarvis-voice-kokoro", "--features",
                       "ort", "--example", "signal_receipt"], env=env)
         if output.count("voice=am_michael ") != 1 or output.count("voice=af_heart ") != 1:
             raise RuntimeError("missing real signal receipt for a shipped voice")

@@ -118,7 +118,7 @@ When the user requests a durable behavior change, record it here or in the relev
   `evidence-index.md` and the owning PRD, AND a full summary presented in
   the conversation at delivery. Neither alone closes a work unit.
   (Productized: both hosts inject the shared
-  `vesper-harness::COMPLETION_REPORTING_INSTRUCTION` mandate and the
+  `jarvis-harness::COMPLETION_REPORTING_INSTRUCTION` mandate and the
   `work-unit-reporting` seed skill ships in the library — installed
   agents follow this rule by default, not just in this workspace.)
 - PRD completion claims must trace every required behavior to current,
@@ -180,14 +180,18 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Project Contracts
 
-- Stage 1 identity specifications live in `jarvis-identity`; only verification
-  consumes them. Existing packages, runtime paths, credentials, protocol fields,
-  installers and release controllers remain unchanged until their separate stage
-  approval. The separately authorized Stage 1 blocker repair permits only the
-  patched TLS lockfile resolution and proven voice completion synchronization
-  correction, with unchanged identity/runtime state ownership and security gates.
-  The naming embargo retains its frozen baseline; reviewed quoted
-  first-party declarations are allowed only in the owned Stage 1 scope.
+- Stage 2 Rust packages, crate imports, source directories and compiled executable
+  identities follow the explicit `jarvis-identity` registry. The terminal executable
+  is `jarvis-tui`; `xtask` keeps its existing identity. The specification library
+  remains side-effect-free and unwired into production state resolution.
+- Runtime environment variables, credential services, persisted markers, project
+  state, ACP registration, browser protocols, installer destinations, download
+  routes and RRC epoch ownership remain legacy contracts until separately approved.
+  New compiled filenames use explicit discovery/private-fixture compatibility;
+  no automatic data import, installation, release or Stage 3 work is authorized.
+- Naming verification admits only registered technical identifiers in owned active
+  source/developer docs. Approved directory moves retain canonical historical hit
+  identities; all thirteen upstream patterns and the frozen baseline stay intact.
 
 
 - J.A.R.V.I.S. solo-maintainer governance requires feature-branch PRs, resolved review
@@ -222,7 +226,7 @@ When the user requests a durable behavior change, record it here or in the relev
   restriction. Provider ID `xai` means xAI / Grok and never grants Z.ai tools.
   Preserve independent MCP servers, native web tools, and provider-owned search.
 - Z.ai model metadata has one production source of truth in
-  `vesper-provider-glm`; ACP and TUI must derive their model lists, limits, and
+  `jarvis-provider-glm`; ACP and TUI must derive their model lists, limits, and
   capability gates from that catalog. Undocumented model-list endpoints or
   identifier-only discovery must not infer vision, reasoning, plan, or limit
   capabilities.
@@ -242,7 +246,7 @@ When the user requests a durable behavior change, record it here or in the relev
   frozen oracle and current primary documentation and recording concrete
   technical evidence. Missing dependencies must fail truthfully; placeholders
   and mocked production behavior are prohibited.
-- Production crates never depend on `vesper-testkit`, frontend crates, or
+- Production crates never depend on `jarvis-testkit`, frontend crates, or
   disposable packages under `spikes/`.
 - No live provider calls or user-state writes are permitted in foundation
   verification.
@@ -261,7 +265,7 @@ When the user requests a durable behavior change, record it here or in the relev
   for that commit, then create its immutable release tag. Never tag first and
   use the release matrix to discover platform failures.
 - Release and CI recovery progression is owned by the provider-neutral Release
-  Recovery Controller in `vesper-harness`, not a free-form `/release` prompt.
+  Recovery Controller in `jarvis-harness`, not a free-form `/release` prompt.
   Wait for complete exact-SHA matrices, capture and fingerprint first causal
   failures, require focused proof plus a relevant state change, and enforce the
   persisted retry budget. RRC must autonomously diagnose and repair admitted

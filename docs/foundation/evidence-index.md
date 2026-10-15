@@ -1,5 +1,7 @@
 # Foundation Evidence Index
 
+- [Stage 2 Rust identity migration](2026-10-15-rust-identity-stage2.md) — complete reviewed workspace mapping, explicit legacy executable adapters, local verification and pending protected-merge evidence.
+
 - [Security and MessageJournal release mission](2026-10-13-security-messagejournal-release-mission.md) — verified PR #42 patch/merge, exact-source CI and pending native RRC publication.
 
 - [quinn-proto security remediation](2026-10-13-quinn-proto-security-remediation.md) — lockfile-only update from 0.11.16 to 0.11.18 for the five RustSec advisories on PR #42.

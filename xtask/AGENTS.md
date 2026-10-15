@@ -8,14 +8,15 @@ architecture, MSRV, and source-oracle checks.
 ## Local Contracts
 
 - Architecture verifies all current first-party packages/binaries/import targets
-  against the explicit Stage 1 registry. Only verification may consume the new
+  against the explicit current Stage 2 registry. Only verification may consume the
   pure identity module. Runtime consumer or production-dependency drift fails.
 - `src/identity_purity.rs` admits only pure standard-library data/path operations
   and rejects I/O, clock, grouped/aliased imports, path filesystem methods,
   output and external code boundaries. Identity custom-build targets are refused.
-- `src/identity_naming.rs` permits only reviewed quoted first-party identifiers
-  within the new identity crate and named Stage 1 owner documents. Bare upstream
-  branding, unknown identifiers and historical-scope additions stay embargoed;
+- `src/identity_naming.rs` permits only registered technical identifiers in active source and
+  reviewed quoted identity declarations in owning documents. Registered directory
+  moves resolve to original frozen-hit paths; new upstream prose, unknown
+  identifiers and historical-scope additions stay embargoed;
   the frozen naming baseline and all thirteen upstream patterns remain intact.
 
 
@@ -109,22 +110,22 @@ architecture, MSRV, and source-oracle checks.
   Resource pauses preserve proof, source evidence and admissions; cancellation,
   permission, watchdog and uncertain-mutation outcomes cannot disprove a repair.
 
-- `xtask` may depend on `vesper-testkit`; production crates may not depend on it.
+- `xtask` may depend on `jarvis-testkit`; production crates may not depend on it.
 - Commands must not call providers or mutate source/user state.
 - Verification failures return nonzero and never fabricate success.
 - Platform status distinguishes local execution from CI-pending evidence.
 - The architecture allowlist is explicit: composition applications may depend
-  on `vesper-agent`, the TUI may use bounded session search and observability,
-  and only `vesper-mcp` may use its bounded HTTP client; runtime/domain/provider
+  on `jarvis-agent`, the TUI may use bounded session search and observability,
+  and only `jarvis-mcp` may use its bounded HTTP client; runtime/domain/provider
   foundations retain their HTTP and frontend bans.
-- `vesper-provider-openai` is a concrete HTTP adapter boundary with no
+- `jarvis-provider-openai` is a concrete HTTP adapter boundary with no
   process-runtime or frontend dependencies; both hosts may compose it.
-- `vesper-provider-xai` is a concrete HTTP adapter boundary with no
+- `jarvis-provider-xai` is a concrete HTTP adapter boundary with no
   process-runtime or frontend dependencies; both hosts may compose it after
   the VRO-18 host-parity gate established the shared registry/AgentLoop route.
-- `vesper-harness` may depend on `vesper-web-fetch` to compose the shared
-  sandbox-only helper transport and on pure `vesper-policy` for native RRC
-  firewall enforcement; `vesper-web` remains pure.
+- `jarvis-harness` may depend on `jarvis-web-fetch` to compose the shared
+  sandbox-only helper transport and on pure `jarvis-policy` for native RRC
+  firewall enforcement; `jarvis-web` remains pure.
 
 - `src/swarm_gate.rs` validates Cargo metadata: production swarm dependencies
   must be optional, activated through `swarm`, and excluded from transitive

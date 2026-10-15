@@ -70,87 +70,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "agent-vesper-acp"
-version = "0.24.14"
-dependencies = [
- "base64",
- "futures-util",
- "reqwest",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "vesper-acp",
- "vesper-agent",
- "vesper-auth",
- "vesper-cognition",
- "vesper-config",
- "vesper-domain",
- "vesper-harness",
- "vesper-policy",
- "vesper-provider",
- "vesper-provider-glm",
- "vesper-provider-openai",
- "vesper-provider-synthetic",
- "vesper-provider-xai",
- "vesper-runtime",
- "vesper-security",
- "vesper-sessions",
- "zeroize",
-]
-
-[[package]]
-name = "agent-vesper-tui"
-version = "0.24.14"
-dependencies = [
- "arboard",
- "base64",
- "cpal",
- "crossterm",
- "fs2",
- "futures-util",
- "image",
- "libc",
- "qrcode",
- "rand 0.8.7",
- "ratatui",
- "reqwest",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uuid",
- "vesper-agent",
- "vesper-auth",
- "vesper-checkpoints",
- "vesper-cognition",
- "vesper-domain",
- "vesper-harness",
- "vesper-mcp",
- "vesper-memory",
- "vesper-observability",
- "vesper-policy",
- "vesper-provider",
- "vesper-provider-glm",
- "vesper-provider-openai",
- "vesper-provider-synthetic",
- "vesper-provider-xai",
- "vesper-runtime",
- "vesper-security",
- "vesper-sessions",
- "vesper-voice",
- "vesper-voice-kokoro",
- "zeroize",
-]
-
-[[package]]
 name = "ahash"
 version = "0.8.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1932,11 +1851,540 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
+name = "jarvis-acp"
+version = "0.24.14"
+dependencies = [
+ "base64",
+ "futures-util",
+ "jarvis-acp-protocol",
+ "jarvis-agent",
+ "jarvis-auth",
+ "jarvis-cognition",
+ "jarvis-config",
+ "jarvis-domain",
+ "jarvis-harness",
+ "jarvis-policy",
+ "jarvis-provider",
+ "jarvis-provider-glm",
+ "jarvis-provider-openai",
+ "jarvis-provider-synthetic",
+ "jarvis-provider-xai",
+ "jarvis-runtime",
+ "jarvis-security",
+ "jarvis-sessions",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "zeroize",
+]
+
+[[package]]
+name = "jarvis-acp-protocol"
+version = "0.24.14"
+dependencies = [
+ "agent-client-protocol",
+ "jarvis-domain",
+ "jarvis-runtime",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "jarvis-agent"
+version = "0.24.14"
+dependencies = [
+ "base64",
+ "command-group",
+ "futures-util",
+ "glob",
+ "jarvis-domain",
+ "jarvis-policy",
+ "jarvis-provider",
+ "jarvis-runtime",
+ "jarvis-security",
+ "jarvis-testkit",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "jarvis-auth"
+version = "0.24.14"
+dependencies = [
+ "fs2",
+ "jarvis-security",
+ "keyring",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
+name = "jarvis-bridge"
+version = "0.24.14"
+dependencies = [
+ "jarvis-domain",
+ "jarvis-security",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-checkpoints"
+version = "0.24.14"
+dependencies = [
+ "jarvis-domain",
+ "jarvis-security",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-cognition"
+version = "0.24.14"
+dependencies = [
+ "chrono",
+ "jarvis-domain",
+ "jarvis-security",
+ "md-5",
+ "regex",
+ "rusqlite",
+ "rust-stemmers",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+ "uuid",
+]
+
+[[package]]
+name = "jarvis-config"
+version = "0.24.14"
+dependencies = [
+ "jarvis-domain",
+ "jarvis-security",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-domain"
+version = "0.24.14"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-harness"
+version = "0.24.14"
+dependencies = [
+ "base64",
+ "chrono",
+ "command-group",
+ "fs2",
+ "futures-util",
+ "jarvis-agent",
+ "jarvis-bridge",
+ "jarvis-checkpoints",
+ "jarvis-config",
+ "jarvis-domain",
+ "jarvis-mcp",
+ "jarvis-memory",
+ "jarvis-policy",
+ "jarvis-provider",
+ "jarvis-provider-synthetic",
+ "jarvis-runtime",
+ "jarvis-sandbox",
+ "jarvis-sessions",
+ "jarvis-swarm",
+ "jarvis-testkit",
+ "jarvis-web",
+ "jarvis-web-fetch",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "sysinfo",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "jarvis-identity"
 version = "0.24.14"
 dependencies = [
+ "jarvis-config",
  "serde_json",
- "vesper-config",
+]
+
+[[package]]
+name = "jarvis-mcp"
+version = "0.24.14"
+dependencies = [
+ "ed25519-dalek",
+ "jarvis-domain",
+ "jarvis-security",
+ "rand 0.8.7",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-memory"
+version = "0.24.14"
+dependencies = [
+ "jarvis-domain",
+ "jarvis-security",
+ "rust-stemmers",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-observability"
+version = "0.24.14"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-policy"
+version = "0.24.14"
+dependencies = [
+ "jarvis-domain",
+ "jarvis-security",
+ "regex",
+ "serde",
+]
+
+[[package]]
+name = "jarvis-provider"
+version = "0.24.14"
+dependencies = [
+ "chrono",
+ "futures-core",
+ "jarvis-domain",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-provider-glm"
+version = "0.24.14"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "httpdate",
+ "jarvis-auth",
+ "jarvis-config",
+ "jarvis-domain",
+ "jarvis-provider",
+ "jarvis-security",
+ "jarvis-testkit",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "url",
+]
+
+[[package]]
+name = "jarvis-provider-openai"
+version = "0.24.14"
+dependencies = [
+ "base64",
+ "fs2",
+ "futures-core",
+ "futures-util",
+ "httpdate",
+ "jarvis-auth",
+ "jarvis-domain",
+ "jarvis-provider",
+ "jarvis-security",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "url",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
+name = "jarvis-provider-synthetic"
+version = "0.24.14"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "jarvis-domain",
+ "jarvis-provider",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "jarvis-provider-xai"
+version = "0.24.14"
+dependencies = [
+ "base64",
+ "fs2",
+ "futures-core",
+ "futures-util",
+ "jarvis-auth",
+ "jarvis-domain",
+ "jarvis-provider",
+ "jarvis-security",
+ "jsonwebtoken",
+ "rand 0.8.7",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "tokio-tungstenite",
+ "url",
+ "zeroize",
+]
+
+[[package]]
+name = "jarvis-runtime"
+version = "0.24.14"
+dependencies = [
+ "futures-util",
+ "jarvis-domain",
+ "jarvis-provider",
+ "jarvis-sessions",
+ "jarvis-testkit",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
+name = "jarvis-sandbox"
+version = "0.24.14"
+dependencies = [
+ "jarvis-security",
+ "libc",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "jarvis-security"
+version = "0.24.14"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tokio",
+ "url",
+ "zeroize",
+]
+
+[[package]]
+name = "jarvis-sessions"
+version = "0.24.14"
+dependencies = [
+ "jarvis-config",
+ "jarvis-domain",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
+name = "jarvis-swarm"
+version = "0.24.14"
+dependencies = [
+ "arc-swap",
+ "futures-util",
+ "jarvis-domain",
+ "jarvis-security",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
+name = "jarvis-testkit"
+version = "0.24.14"
+dependencies = [
+ "futures-core",
+ "jarvis-bridge",
+ "jarvis-config",
+ "jarvis-domain",
+ "jarvis-policy",
+ "jarvis-provider",
+ "jarvis-security",
+ "jsonschema",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "thiserror 2.0.19",
+]
+
+[[package]]
+name = "jarvis-tui"
+version = "0.24.14"
+dependencies = [
+ "arboard",
+ "base64",
+ "cpal",
+ "crossterm",
+ "fs2",
+ "futures-util",
+ "image",
+ "jarvis-agent",
+ "jarvis-auth",
+ "jarvis-checkpoints",
+ "jarvis-cognition",
+ "jarvis-domain",
+ "jarvis-harness",
+ "jarvis-mcp",
+ "jarvis-memory",
+ "jarvis-observability",
+ "jarvis-policy",
+ "jarvis-provider",
+ "jarvis-provider-glm",
+ "jarvis-provider-openai",
+ "jarvis-provider-synthetic",
+ "jarvis-provider-xai",
+ "jarvis-runtime",
+ "jarvis-security",
+ "jarvis-sessions",
+ "jarvis-voice",
+ "jarvis-voice-kokoro",
+ "libc",
+ "qrcode",
+ "rand 0.8.7",
+ "ratatui",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
+name = "jarvis-voice"
+version = "0.24.14"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "jarvis-domain",
+ "jarvis-security",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
+name = "jarvis-voice-kokoro"
+version = "0.24.14"
+dependencies = [
+ "fs2",
+ "futures-core",
+ "futures-util",
+ "jarvis-domain",
+ "jarvis-security",
+ "jarvis-voice",
+ "ort",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
+name = "jarvis-web"
+version = "0.24.14"
+dependencies = [
+ "quick-xml",
+ "rust-stemmers",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "url",
+]
+
+[[package]]
+name = "jarvis-web-fetch"
+version = "0.24.14"
+dependencies = [
+ "flate2",
+ "jarvis-sandbox",
+ "jarvis-security",
+ "jarvis-web",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "url",
 ]
 
 [[package]]
@@ -4472,453 +4920,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
-name = "vesper-acp"
-version = "0.24.14"
-dependencies = [
- "agent-client-protocol",
- "serde",
- "serde_json",
- "thiserror 2.0.19",
- "tokio",
- "tokio-util",
- "tracing",
- "vesper-domain",
- "vesper-runtime",
-]
-
-[[package]]
-name = "vesper-agent"
-version = "0.24.14"
-dependencies = [
- "base64",
- "command-group",
- "futures-util",
- "glob",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "tracing",
- "uuid",
- "vesper-domain",
- "vesper-policy",
- "vesper-provider",
- "vesper-runtime",
- "vesper-security",
- "vesper-testkit",
-]
-
-[[package]]
-name = "vesper-auth"
-version = "0.24.14"
-dependencies = [
- "fs2",
- "keyring",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "uuid",
- "vesper-security",
- "zeroize",
-]
-
-[[package]]
-name = "vesper-bridge"
-version = "0.24.14"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.19",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-checkpoints"
-version = "0.24.14"
-dependencies = [
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-cognition"
-version = "0.24.14"
-dependencies = [
- "chrono",
- "md-5",
- "regex",
- "rusqlite",
- "rust-stemmers",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.19",
- "uuid",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-config"
-version = "0.24.14"
-dependencies = [
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.19",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-domain"
-version = "0.24.14"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.19",
-]
-
-[[package]]
-name = "vesper-harness"
-version = "0.24.14"
-dependencies = [
- "base64",
- "chrono",
- "command-group",
- "fs2",
- "futures-util",
- "regex",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "sysinfo",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "url",
- "vesper-agent",
- "vesper-bridge",
- "vesper-checkpoints",
- "vesper-config",
- "vesper-domain",
- "vesper-mcp",
- "vesper-memory",
- "vesper-policy",
- "vesper-provider",
- "vesper-provider-synthetic",
- "vesper-runtime",
- "vesper-sandbox",
- "vesper-sessions",
- "vesper-swarm",
- "vesper-testkit",
- "vesper-web",
- "vesper-web-fetch",
-]
-
-[[package]]
-name = "vesper-mcp"
-version = "0.24.14"
-dependencies = [
- "ed25519-dalek",
- "rand 0.8.7",
- "reqwest",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-memory"
-version = "0.24.14"
-dependencies = [
- "rust-stemmers",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-observability"
-version = "0.24.14"
-dependencies = [
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.19",
-]
-
-[[package]]
-name = "vesper-policy"
-version = "0.24.14"
-dependencies = [
- "regex",
- "serde",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-provider"
-version = "0.24.14"
-dependencies = [
- "chrono",
- "futures-core",
- "serde",
- "serde_json",
- "thiserror 2.0.19",
- "vesper-domain",
-]
-
-[[package]]
-name = "vesper-provider-glm"
-version = "0.24.14"
-dependencies = [
- "futures-core",
- "futures-util",
- "httpdate",
- "reqwest",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "url",
- "vesper-auth",
- "vesper-config",
- "vesper-domain",
- "vesper-provider",
- "vesper-security",
- "vesper-testkit",
-]
-
-[[package]]
-name = "vesper-provider-openai"
-version = "0.24.14"
-dependencies = [
- "base64",
- "fs2",
- "futures-core",
- "futures-util",
- "httpdate",
- "reqwest",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "url",
- "uuid",
- "vesper-auth",
- "vesper-domain",
- "vesper-provider",
- "vesper-security",
- "zeroize",
-]
-
-[[package]]
-name = "vesper-provider-synthetic"
-version = "0.24.14"
-dependencies = [
- "futures-core",
- "futures-util",
- "serde_json",
- "tokio",
- "vesper-domain",
- "vesper-provider",
-]
-
-[[package]]
-name = "vesper-provider-xai"
-version = "0.24.14"
-dependencies = [
- "base64",
- "fs2",
- "futures-core",
- "futures-util",
- "jsonwebtoken",
- "rand 0.8.7",
- "reqwest",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "tokio-tungstenite",
- "url",
- "vesper-auth",
- "vesper-domain",
- "vesper-provider",
- "vesper-security",
- "zeroize",
-]
-
-[[package]]
-name = "vesper-runtime"
-version = "0.24.14"
-dependencies = [
- "futures-util",
- "serde",
- "serde_json",
- "thiserror 2.0.19",
- "tokio",
- "tokio-util",
- "vesper-domain",
- "vesper-provider",
- "vesper-sessions",
- "vesper-testkit",
-]
-
-[[package]]
-name = "vesper-sandbox"
-version = "0.24.14"
-dependencies = [
- "libc",
- "tokio",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-security"
-version = "0.24.14"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.19",
- "tokio",
- "url",
- "zeroize",
-]
-
-[[package]]
-name = "vesper-sessions"
-version = "0.24.14"
-dependencies = [
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "thiserror 2.0.19",
- "tokio",
- "vesper-config",
- "vesper-domain",
-]
-
-[[package]]
-name = "vesper-swarm"
-version = "0.24.14"
-dependencies = [
- "arc-swap",
- "futures-util",
- "serde",
- "serde_json",
- "thiserror 2.0.19",
- "tokio",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-testkit"
-version = "0.24.14"
-dependencies = [
- "futures-core",
- "jsonschema",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "thiserror 2.0.19",
- "vesper-bridge",
- "vesper-config",
- "vesper-domain",
- "vesper-policy",
- "vesper-provider",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-voice"
-version = "0.24.14"
-dependencies = [
- "futures-core",
- "futures-util",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "vesper-domain",
- "vesper-security",
-]
-
-[[package]]
-name = "vesper-voice-kokoro"
-version = "0.24.14"
-dependencies = [
- "fs2",
- "futures-core",
- "futures-util",
- "ort",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "vesper-domain",
- "vesper-security",
- "vesper-voice",
-]
-
-[[package]]
-name = "vesper-web"
-version = "0.24.14"
-dependencies = [
- "quick-xml",
- "rust-stemmers",
- "serde",
- "serde_json",
- "thiserror 2.0.19",
- "url",
-]
-
-[[package]]
-name = "vesper-web-fetch"
-version = "0.24.14"
-dependencies = [
- "flate2",
- "reqwest",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "url",
- "vesper-sandbox",
- "vesper-security",
- "vesper-web",
-]
-
-[[package]]
 name = "vsimd"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5533,11 +5534,11 @@ version = "0.24.14"
 dependencies = [
  "clap",
  "jarvis-identity",
+ "jarvis-testkit",
  "serde",
  "serde_json",
  "sha2 0.11.0",
  "tempfile",
- "vesper-testkit",
 ]
 
 [[package]]

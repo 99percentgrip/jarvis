@@ -1,0 +1,715 @@
+# jarvis-agent — Tier C agent loop and tool execution
+
+## Purpose
+
+Own the multi-turn, tool-executing agent loop that composes `jarvis-runtime`'s
+single-turn provider dispatch into a ReAct loop (ADR 0010). Provide the tool
+registry, the `ToolExecutor` contract, the permission gate, and the loop
+mechanics. The runtime stays provider-neutral and single-turn; this crate is
+the multi-turn, tool-executing layer above it.
+
+## Ownership
+
+- `src/executor.rs` — `ToolExecutor`/`ToolService` traits, hosted subsystem
+  adapters, `ToolContext`, `ToolResult`, `ToolError`, and the schema-definition
+  helper. `ToolResult` carries a `text` field, an optional bounded
+  `FileChangePreview`, plus an `injected_tools` channel
+  (deferred-loading Phase 2): a tool may return additional `ToolDefinition`s
+  that the agent loop splices into its advertised pool for the next
+  iteration. `ToolResult` derives only `PartialEq` (not `Eq`) because
+  `Vec<ToolDefinition>` is not `Eq`-derivable.
+- `src/confinement.rs` — path-confinement *enforcement* (`confine`). `jarvis-security`
+  ships only authority descriptors, so the executor layer owns the
+  canonicalize/boundary enforcement here (symlinks followed; escapes fail closed).
+- `src/tools.rs` — the nine core parity-critical **real** executors (`read_file`,
+  `write_file`, `edit_file`, `apply_patch`, `list_directory`, `search_files`,
+  `grep`, `run_command`, `update_plan`) with confined filesystem/shell I/O.
+  Successful write/edit/patch calls compute exact before/after line totals
+  and a bounded preview with its real starting source line only after the mutation
+  succeeds. Shell nonzero exits and timeouts are failed tool results, including
+  the sandbox timeout route; bounded diagnostics stay available to both hosts.
+  Unix command settlement re-signals the owned process group while leader
+  reaping and pipe draining remain incomplete, then stops before an unnecessary
+  final signal. Darwin `killpg` `EPERM` is accepted only as its documented
+  no-signalable-member result; verified settlement still requires a reaped leader
+  and EOF on both inherited pipes. Other signal failures remain fail-closed.
+- `src/registry.rs` — `ToolRegistry`: name → executor routing plus mode- and
+  provider-filtered production advertisement through `definitions_for_provider`.
+  `definitions_for` remains provider-free for schema inspection and legacy tests.
+  Deferred definitions stay hidden until injected; provider-ineligible definitions
+  are rejected again at execution so forged/stale calls cannot bypass advertising.
+  `restricted_to` creates a worker execution allowlist, removing
+  unnamed registrations and all prefix gateways; it never mutates the source
+  registry. This host-neutral primitive does not change either host unless
+  explicitly composed for a restricted worker.
+- `src/permission.rs` — pure `check_tool_permission(mode, permission, class)`
+  plus the host-owned asynchronous `PermissionPort`; `Ask` never authorizes
+  by itself and the default port fails closed.
+- `src/project_context.rs` — bounded, symlink-safe progressive discovery of
+  project instruction files with secret-assignment redaction.
+- `src/compaction.rs` — provider-neutral token estimation, 60/75/85 pressure
+  tiers, semantic evidence extraction, secret scrubbing, complete recent tool
+  transaction partitioning, bounded summary/source envelopes, transactional
+  commit validation, and persisted coverage-quality lineage. System
+  instructions stay outside replaceable history. `AgentLoop` automatically
+  compacts at 85% including a response reserve and routes summarization through
+  auxiliary → main → deterministic evidence fallback; an irreducible suffix
+  fails before ordinary provider dispatch. Hosts may explicitly prefer the
+  provider-neutral native-compaction port for unfocused compaction; the port
+  receives only the replaceable prefix, commits atomically as opaque provider
+  state plus the untouched recent suffix, marks semantic quality unmeasured,
+  and falls back before commit. Focused `/compact` stays on the inspectable
+  semantic path. Compaction retains bounded prior
+  `vesper:skills` identities as audit metadata marked `reactivate: false`;
+  skill bodies never enter summaries and later turns rerun ADR 0024 routing.
+- `src/vro/scope.rs` — scoped workspace identity, layers, skills, firewall,
+  and sandbox-demand resolution. Skill-relative paths reject Unix-rooted,
+  Windows-rooted/drive-prefixed, parent-traversal, NUL, and empty forms on
+  every host rather than relying on platform-specific `Path` semantics.
+- Bounded advisory callers may set `with_maximum_output_tokens`; ordinary turns
+  keep adapter defaults. `with_text_only_response_bound` rejects tool/non-text
+  events before aggregation and bounds all text/reasoning bytes and event count.
+  This does not add tools, permissions or a routing dependency.
+- `src/agent_loop.rs` — `AgentLoop::run_prompt` and
+  `AgentLoop::run_prompt_with_history`: dispatch turn → collect tool calls →
+  gate → execute → append `role: Tool` results → repeat, bounded by
+  `max_tool_iterations`. Captures `update_plan` output into
+  `AgentTurnOutcome::plan` so callers drive the Phase 5 PLANNING → REVIEW
+  transition. `AgentProgressPort` emits bounded in-memory provider/tool/plan
+  activity with whitelisted argument hints (48 chars; commands 512) and result
+  summaries. `tool_output_preview` supplies shell excerpts only: at most 16,384
+  input characters, 60 lines, 512 chars per line, plus a truncation notice. It strips
+  ANSI/control sequences and scrubs known credential patterns; this is not a
+  guarantee against arbitrary sensitive command output. File reads remain summary-only.
+  Both hosts and TUI ReAct use this shared presentation helper. Successful
+  filesystem mutations may attach the executor-produced bounded
+  `FileChangePreview`; hosts must not infer diffs from prose.
+  `AgentHistoryPort` checkpoints complete in-memory transaction boundaries for
+  native worker ownership; cancellation or compaction failure cannot erase prior
+  safe history. Observers must be nonblocking and never write durable user state.
+  `AgentSteeringPort` is a non-blocking host inbox drained only between
+  complete provider/tool operations; injected user guidance joins the current
+  history in submission order and cannot cancel an in-flight operation. Hosts
+  may also clone a loop with per-turn provider/model configuration. As of
+  deferred-loading Phase 2, the `advertised_tools` binding is mutable per
+  turn: when an executor returns `ToolResult.injected_tools`, the loop
+  merges them (deduplicated by `ToolId` or `harness_name`) into the
+  advertised pool so the next iteration advertises them to the model.
+  Before every provider request it scans the bounded complete outgoing
+  payload through an injected capability advisor. User/history images and
+  image parts returned by tools produce one typed `CapabilityRequired`
+  outcome without stripping content. Adapter-classified unsupported content
+  maps to the same outcome only before visible output.
+  Tool-free requests use `ToolChoice::None` and omit tool capability demands;
+  real adapters must accept navigator decomposition/synthesis without tool metadata.
+  Provider terminal outcomes other than a normal `Stop` are classified as
+  `AgentLoopError::Incomplete` and must never be reported by a host as a
+  completed implementation. `AgentLoopError::ProviderTurn` displays only the
+  provider's bounded safe message; its typed `ProviderError` retains structured
+  diagnostics for hosts to record through a separate diagnostic channel. Cancellation and visible EOF/stream errors are
+  converted into a classified `StreamInterrupted` terminal too; buffered text
+  and complete tool transactions survive and pending tool fragments never replay.
+  A typed `StreamInterrupted` terminal returns `AgentTurnOutcome::Interrupted`
+  with partial assistant content, cause, tool-call ambiguity, completed
+  results, and current plan; returned history commits the partial assistant
+  message so hosts cannot display output the engine subsequently forgets. A
+  normal `Stop` while the latest native plan
+  still contains pending or in-progress tasks triggers a bounded internal
+  continuation turn. Interactive hosts seed their retained active plan into
+  each new loop invocation, so a resume turn cannot lose continuation merely
+  because it stops before calling `update_plan` again; the synthetic
+  continuation is removed from returned host history. Reaching an ordinary iteration segment with open items extends
+  autonomously for at most four total segments; the ultimate cap returns the
+  unfinished plan explicitly. Unplanned loops retain the single-segment cap. The
+  bounded request-history window must begin on a complete conversation turn;
+  compaction skips leading orphan tool-result messages so strict providers do
+  not reject long tool-heavy sessions as structurally invalid requests. The
+  same bounded VRO-12 result-aware loop guard
+  used by ReAct also protects this direct path: warnings are fed back through
+  tool results, persistent exact repeats are blocked, and only a saturated
+  exact-repeat window fails truthfully with `LoopDetected`. Differently
+  argued read-only probes with equal output are advisory-only: one warning
+  per bounded evidence window, never a host-visible failure.
+- `src/vro/mod.rs` — Vesper Reasoning Orchestrator (VRO) scaffolding.
+  `VroOrchestrator` holds a `ReasoningConfig` (from `jarvis-domain`), a
+  `TaskProfiler`, and a shared `VerifierRegistry` (behind an `Arc` so the
+  orchestrator stays `Clone`). `route(user_message, mode)` →
+  `VroRoutingDecision` profiles the request and returns **`Orchestrate`** for
+  non-`Direct` strategies when the flag is on (VRO-2.3), or `Direct` when
+  disabled / in `Off` mode / the profile is `Direct` — the host then uses the
+  unchanged `agent_loop.rs` direct path. `execute(request, generator,
+  workspace_root)` runs the strategy loop via a caller-supplied
+  [`CandidateGenerator`](crate::vro::orchestrator::CandidateGenerator) (the
+  provider seam — the orchestrator never makes a provider call itself).
+  `execute_with_judge(request, generator, workspace_root, judge, seed)` is the
+  VRO-4 extension that supplies an optional `CandidateJudge` plus a
+  deterministic shuffle `seed` for `ParallelCandidatesJudge`. Dispatch:
+  `GenerateVerifyRepair` → `run_generate_verify_repair` (VRO-2.3),
+  `ParallelCandidatesConsensus` → `run_parallel_candidates_consensus` (VRO-4),
+  `ParallelCandidatesJudge` → `run_parallel_candidates_judge` (VRO-4) or
+  degrades to consensus when no judge is supplied.
+  `execute_react(request, agent, invoker, workspace_root)` is the VRO-5.1
+  entry point for `ToolGroundedReact` (PRD §11.6); it is the only public
+  method that supplies the `ReactAgent` + `ToolInvoker` seams.
+  `execute_with_critic_adjudicator(request, generator, workspace_root, judge,
+  critic, adjudicator, seed, criteria)` is the VRO-6 entry point for
+  `ProposerCriticAdjudicator` (PRD §11.8); it is the only public method that
+  supplies the `CandidateCritic` + `Adjudicator` seams. Dispatch:
+  `GenerateVerifyRepair` → `run_generate_verify_repair` (VRO-2.3),
+  `ParallelCandidatesConsensus` → `run_parallel_candidates_consensus` (VRO-4),
+  `ParallelCandidatesJudge` → `run_parallel_candidates_judge` (VRO-4) or
+  degrades to consensus when no judge is supplied,
+  `BoundedTreeSearch` → `run_bounded_tree_search` (VRO-6),
+  `ProposerCriticAdjudicator` → `run_proposer_critic_adjudicator` (VRO-6) or
+  degrades to consensus when no critic + adjudicator is supplied (via
+  `execute_with_judge`) / when critic or adjudicator is `None` (via
+  `execute_with_critic_adjudicator`). **VRO-7 entry point:**
+  `execute_with_learning(request, generator, workspace_root, judge, critic,
+  adjudicator, agent, invoker, seed, criteria, sink, extractor,
+  extracted_at)` is the single composition-boundary method that fans in
+  every optional strategy seam AND layers Verified Workflow Learning
+  (PRD §11.9) on top. It dispatches to `run_tool_grounded_react_with_trajectory`
+  for `ToolGroundedReact`, to `execute_with_critic_adjudicator` for PCA, or
+  to `execute_with_judge` for everything else; on `Succeeded` AND a
+  learning-eligible strategy it runs the `WorkflowExtractor` and persists
+  the resulting `ProceduralMemory` through the optional
+  `ProceduralMemorySink`. **Zero-breakage guarantee:** extraction errors
+  surface as one extra `unresolved_risks` entry ("workflow-learning
+  skipped: …"); sink errors surface as "workflow-learning persistence
+  skipped: …"; `sink == None` still records the extraction ("workflow-
+  learning extracted (no sink): …"). The orchestrator never panics from a
+  learning error and never modifies the underlying turn outcome.
+  **VRO-5.1 dispatch guard:** `execute` and
+  `execute_with_judge` deliberately return `Failed` (with a clear "use
+  `execute_react`" risk message) when the profiled strategy is
+  `ToolGroundedReact`, so callers cannot silently run a tool-grounded prompt
+  through the GenerateVerifyRepair baseline. This module performs no I/O,
+  holds no provider handles, and never touches `AgentLoopConfig`,
+  `AgentLoop`, the tool registry, or the permission gate.
+- `src/vro/react.rs` — VRO-5.1 Tool-Grounded ReAct loop (PRD §11.6).
+  `ReactAgent` trait (async object-safe via boxed `Send` future — single
+  branch, no `boxed_clone` needed) is the provider seam: `next_action(prompt,
+  trajectory)` returns either `CallTool { name, arguments }` or `Finish {
+  output }`. `TrajectoryEntry` (Action | Observation) is the append-only
+  per-turn transcript the agent consults. `ToolInvoker` trait (async
+  object-safe) is the executor + permission seam: `class_of(name)` returns
+  the `ToolExecutionClass` for Read-Before-Write, and `invoke(name, args)`
+  routes through the existing permission gate and executor.
+  `RegistryToolInvoker` is the production impl — wraps the same `ToolRegistry`
+  + `check_tool_permission` + `PermissionPort` as
+  `AgentLoop::gate_and_execute`, so operating mode and one-time approval are
+  honored identically to the direct path. `run_tool_grounded_react(prompt,
+  agent, invoker, budget, requires_grounding)` is the canonical entry point;
+  `run_tool_grounded_react_with_trajectory(...)` (added VRO-7) is the
+  sibling that ALSO returns the accumulated `TrajectoryEntry` sequence on
+  every terminal path (Succeeded AND BudgetExceeded), so the
+  `WorkflowExtractor` can summarize whatever progress was made. The
+  canonical `run_tool_grounded_react` is a thin wrapper that discards the
+  trajectory for callers that do not need VRO-7 learning. Both functions
+  drive the loop: THINK (ask agent for next action) → ACT (route through
+  invoker) → OBSERVE (append result text or structured failure). Halts on
+  `Finish` (Succeeded), `max_model_calls` exhausted (BudgetExceeded), or
+  `max_tool_calls` exhausted when the agent still wants tools
+  (BudgetExceeded). **Read-Before-Write policy:** when
+  `requires_grounding == true` and the agent attempts a mutating tool before
+  any `ReadOnly` observation exists, the loop synthesizes a rejection
+  observation and continues — the rejected attempt does NOT consume a
+  `max_tool_calls` unit (it never reached the executor). **Tool errors
+  become observations:** `ToolInvocationError` variants (UnknownTool,
+  InvalidArguments, PermissionDenied, ExecutionFailed) are converted to
+  structured failure text and fed back to the model so the loop can
+  self-correct. Zero-breakage: only invoked via `execute_react` /
+  `execute_with_learning`; `Direct`, `GenerateVerifyRepair`, and parallel
+  paths never reach this code.
+- `src/vro/loop_detector.rs` — VRO-12 deterministic result-aware loop guard.
+  Retains at most five successful `(tool, args hash, result hash)` records and
+  detects exact repeats, tool ping-pong, and differently-argued probes that
+  return identical results. ReAct and the shared direct `AgentLoop` both use
+  its exact-repeat/ping-pong warning/block/break protection; no-progress is
+  a one-warning advisory so legitimate exploratory searches cannot abort a
+  host turn. Failed tools and policy rejections are not recorded. Public
+  surface: `LoopDetector`, `LoopGuardAction`
+  (`Clear`/`Warn`/`Block`/`Break`), `LoopBreak` (typed circuit-breaker
+  payload: `pattern` + `message`), `LoopPattern`, `LoopWarning`, and the
+  threshold constants. Hosts and tests classify a Break by the typed
+  `LoopBreak::pattern`, never by matching message text; the direct loop
+  tracks a Block as a typed flag rather than re-parsing the output prefix.
+- `src/vro/orchestrator.rs` — VRO-2.3 Generate-Verify-Repair loop (PRD §11.3,
+  §10.9). `CandidateGenerator` trait (async object-safe via boxed `Send`
+  future; **`boxed_clone` is required** so VRO-4's parallel executor can give
+  each `tokio::task::spawn` branch an owned `'static` generator handle),
+  `GeneratedCandidate`, and `run_generate_verify_repair(...)`: generate
+  → verify all mandatory verifiers → halt on all-pass (`Succeeded`) / any
+  `VerificationStatus::Error` (`Inconclusive`) / `max_repairs` exhausted
+  (`Failed`) / `max_model_calls` safety bound (`BudgetExceeded`) / non-repairable
+  failure (`Failed`); otherwise consume one repair unit, feed the failed
+  verifiers' findings back to the generator as corrections, and re-generate.
+  **VRO-9 strict budget enforcement (PRD §10.4 "Budget Manager"):** the loop
+  captures `started_at: Instant` at entry and checks all THREE ceilings —
+  (a) `max_wall_time_ms` is checked BEFORE every Generate (a tight ceiling
+  fires before any model call), (b) `max_total_output_tokens` is checked
+  AFTER every Generate against the cumulative `cost.total_tokens` (catches
+  a runaway repair loop), (c) `max_model_calls` is checked after the
+  verify pass. Each breach returns `OutcomeStatus::BudgetExceeded` with the
+  breached-ceiling name in the `unresolved_risks` note (PRD §10.4: "Emit
+  budget-exhaustion reasons"). Tested with fakes (no real provider / no
+  real cargo) for deterministic halt-condition coverage including the new
+  token-budget and wall-clock test cases.
+- `src/vro/executor.rs` — VRO-4 Parallel Candidate Executor (PRD §10.6 +
+  §11.4/§11.5). `CandidateExecutor::fan_out(generator, prompt, requested,
+  budget)` spawns N concurrent `tokio::task::spawn` branches, each receiving a
+  deeply-cloned isolated `BranchContext` (mutations in one branch never leak
+  into siblings), assigns deterministic monotonic `CandidateId`s
+  (`cand-0000`, `cand-0001`, …), and returns the aggregated outcomes sorted by
+  ID. The requested branch count is **capped** at `budget.max_parallel_branches`
+  (zero-cap errors clearly). `XorShiftRng` is a tiny deterministic seedable
+  PRNG (xorshift32) used by the Judge strategy to shuffle candidates without
+  adding a `rand` dependency on `jarvis-agent`. **VRO-9 race-aware fan-out
+  (PRD §10.6 "Branch cancellation" + "Early stopping"):**
+  `fan_out_with_early_stop(generator, prompt, requested, budget, early_stop)`
+  is the opt-in extension that races branches with `tokio::select!` over
+  their `JoinHandle`s and calls `early_stop(&outcome)` on each completion.
+  When the predicate fires, the executor `JoinHandle::abort`s every
+  still-pending sibling and returns the partial outcome set (PRD §10.4:
+  "Respect cancellation immediately"; §10.4: "Stop low-value branches").
+  The plain `fan_out` delegates to this with `|_| false` (zero-behavior-
+  change backward-compat). The aborted siblings never reach their post-yield
+  completion counter — verified by the
+  `early_stop_aborts_pending_sibling_branches` test. **VRO-9 cross-model
+  racing (PRD §10.6 "Cross-model candidates"):**
+  `MultiModelCandidateGenerator::new(Vec<Box<dyn CandidateGenerator>>)`
+  is a generator wrapper that round-robins each call across the configured
+  provider pool (`provider_for_index(n) = providers[n % len]`). It exposes
+  `generate` + `boxed_clone` like every `CandidateGenerator` and shares an
+  `Arc<AtomicUsize>` call counter across clones so spawned branches route
+  deterministically under VRO-4 parallel fan-out. Rejects an empty pool
+  with `MultiModelError::EmptyProviderPool`. Zero-breakage: only invoked
+  by the parallel-strategy handlers; `Direct` and `GenerateVerifyRepair`
+  paths never reach it. **VRO-10 candidate-specific branch prompts (PRD
+  §10.6 "Candidate-specific prompts"):** the new `BranchDiversification`
+  enum (`None` | `SystemPromptVariants(Vec<String>)`) is applied by
+  `fan_out_diverse(generator, prompt, requested, budget, diversification,
+  early_stop)`. Each branch receives `diversification.prompt_prefix_for(i)`
+  prepended to its prompt (the canonical `diverse_branches()` constructor
+  ships the four-variant conservative → balanced → creative → highly
+  creative stance ladder the directive names). `BranchDiversification::None`
+  preserves byte-identical VRO-4 behavior; the existing `fan_out` /
+  `fan_out_with_early_stop` are unchanged (zero-breakage). PRD §10.6:
+  "Candidate diversity must not be simulated merely by asking for 'three
+  alternatives' in one completion."
+- `src/vro/repair.rs` — **VRO-10 Repair Controller heuristics (PRD §10.9).**
+  Pure classification + hint surface: `classify_finding(&VerificationFinding)
+  -> RepairHeuristic` matches against the finding's `message`, `severity`,
+  and `location` to classify it as `JsonParse` / `SchemaMismatch` /
+  `FileNotFound` / `CompilationError` / `TestFailure` / `ConstraintViolation`
+  / `Generic`. Each non-Generic class carries a class-specific correction
+  hint (`RepairHeuristic::correction_hint()`) the orchestrator injects into
+  the next Generate's corrections vector. `RepairController::new()` holds
+  the previous repair attempt's finding-message signature so
+  `is_repeated_attempt(&[VerificationFinding])` can detect an identical
+  retry (PRD §10.9: "Avoid repeating an identical failed attempt") — the
+  orchestrator escalates to `Failed` rather than re-issuing the same
+  prompt. Stateless, allocation-only, no I/O. Zero-breakage: the GVR loop
+  consults the controller only when a repair is about to happen; a `Generic`
+  finding injects no hint, preserving VRO-9 behavior for unclassifiable
+  failures.
+- `src/vro/rate_limit.rs` — **VRO-10 provider rate-limit accounting (PRD
+  §10.4).** `RateLimitTracker` is a thread-safe atomic-backed accounting
+  struct (`Arc<RateLimitTracker>` is shared between the provider adapter
+  and the orchestrator). `record_429(retry_after_ms: Option<u64>)` is
+  called by the provider adapter on HTTP 429; `status()` returns
+  `Available` or `Blocked { retry_after_ms }` (auto-clearing past the
+  deadline). The default `untracked()` tracker never blocks, so the GVR
+  loop's behavior is byte-identical to VRO-9 when no tracker is wired.
+  The GVR loop's pre-Generate check halts with
+  `OutcomeStatus::RateLimitExceeded` when the tracker reports `Blocked`
+  (PRD §10.4: "account for provider rate limits"). PRD §10.9
+  "Avoid repeating an identical failed attempt" is enforced via the
+  controller's signature comparison; rate-limit halts are NOT a repair —
+  they are a hard stop until the operator clears the tracker.
+- `tests/live_react_integration.rs` — **VRO-9 Directive 3** live HTTP
+  integration tests for the Tool-Grounded ReAct loop (PRD §22.2 "Real LM
+  Studio process"). Every test is `#[ignore]`-marked (skipped by default
+  in standard CI) and the `endpoint_reachable()` skip-helper early-returns
+  a clear message when LM Studio is offline at `localhost:1234`. The
+  `LiveLmStudioReactAgent` impl is a self-contained SSE client backed by
+  `reqwest` (declared as a **dev-dependency only** — `src/` never references
+  `reqwest`, so the architecture scan passes); it mirrors the TUI's
+  production LM Studio provider's OpenAI-compatible `data: <json>` /
+  `[DONE]` parsing. Run locally with `cargo test -p jarvis-agent --test
+  live_react_integration -- --ignored`. Zero-breakage: the binary is
+  never built by the canonical `cargo xtask verify` gate's
+  `cargo test --workspace --all-features` unless explicitly invoked.
+- `tests/soak_test.rs` — **VRO-10 Directive §22.4** soak tests (PRD §22.4
+  "Long sessions / Repeated Deep-mode requests / Memory growth / Parallel
+  sessions"). Five `#[ignore]`-marked tests loop the orchestrator through
+  50+ back-to-back synthetic requests (in-process fakes, not network) to
+  prove memory safety, thread-leak prevention, repair-controller signature
+  boundedness, rate-limit-tracker atomic-counter integrity, and
+  cross-turn state non-corruption. Standard `cargo test` skips them;
+  developers run them with `cargo test -p jarvis-agent --test soak_test
+  -- --ignored --nocapture`. Zero-breakage: the binary is never built by
+  the canonical `cargo xtask verify` gate's
+  `cargo test --workspace --all-features` unless explicitly invoked.
+  **Architecture boundary note (advanced-context-paging PR-3):**
+  `jarvis-agent` remains skill-unaware; the AC-3 composition proofs for
+  skill-chunk envelopes live in `crates/jarvis-harness/tests/
+  context_paging_composition.rs` because the architecture gate forbids a
+  `jarvis-agent → jarvis-memory` dependency edge (dev-scope included).
+  The harness is the composition boundary owning both dependencies.
+- `src/vro/strategies.rs` — VRO-4 + VRO-6 strategy handlers (PRD §11.4 +
+  §11.5 + §11.7 + §11.8). `normalize_output` strips whitespace + sorts JSON
+  keys for canonical comparison (PRD §11.4). `quorum_threshold(n) =
+  n.div_ceil(2)`. `run_parallel_candidates_consensus(...)` (VRO-4) fans out
+  → consensus_winner → on quorum `Succeeded`, else `Inconclusive`.
+  `CandidateJudge` trait (async object-safe) is the model-based judge seam;
+  `run_parallel_candidates_judge(...)` (VRO-4) fans out → **shuffles** via
+  `XorShiftRng` → asks the judge for a shuffled-index pick → maps back to the
+  original `CandidateId`. `run_bounded_tree_search(...)` (VRO-6, PRD §11.7)
+  expands a level-by-level tree of partial candidates up to
+  `budget.max_search_depth`, fanning out `budget.max_parallel_branches`
+  children per node. Each node is verified against the profile's mandatory
+  verifiers: a **passing** node is a candidate best leaf (early-stop the
+  entire search — PRD §10.6); a **Failed** verifier result (ran and found
+  problems) is **pruned** (PRD §11.7 "aggressive pruning" + directive
+  "abandoning a branch if a deterministic verifier fails early"); an
+  **Error** result (verifier could not run — cargo missing, crash, or
+  unregistered verifier like `clippy`) does NOT prune (PRD §10.8: Error is
+  distinct from Failed — the candidate might be fine, we just couldn't
+  check it); a **non-definitive** outcome (Error/Inconclusive/Skipped) at
+  depth < max_depth is **expanded further** (refined prompt carries the
+  parent's output forward). The total candidate
+  count is bounded by `budget.max_model_calls` (PRD §22.3: no infinite
+  search loop). `CandidateCritic` + `Adjudicator` traits (async
+  object-safe) are the VRO-6 model-based seams;
+  `run_proposer_critic_adjudicator(...)` (VRO-6, PRD §11.8) enforces strict
+  role separation: **propose** (fan out via VRO-4 executor) → **critique**
+  (per-candidate objective critique from `CandidateCritic`, anchored to
+  explicit criteria) → **adjudicate** (`Adjudicator` selects from the
+  (candidate, critique, criteria) triple, NOT from persuasive prose — PRD
+  §11.8: "The adjudicator must evaluate explicit criteria, not select the
+  most persuasive prose"). Zero-breakage: only invoked when the profiled
+  strategy is `BoundedTreeSearch` or `ProposerCriticAdjudicator`.
+- `src/vro/profiler.rs` — VRO-2.1 deterministic `TaskProfiler`: converts a
+  user prompt (or `ReasoningRequest`) into a `TaskProfile` using pure
+  keyword/substring heuristics (**no LLM call**, no `regex` dependency — the
+  workspace `regex` lacks `unicode-perl`, so `\b`/`\w` reject; keyword
+  detection uses case-insensitive `str::contains`). Pipeline: chat bypass
+  (short + no code + no action verb + **no grounding signal** → `chat`/`Direct`;
+  VRO-5.1 added the grounding-signal guard so prompts like "what does the
+  main.rs file do?" no longer bypass to Direct) → **VRO-6 advanced-strategy
+  detection** (BoundedTreeSearch keywords: "root cause", "debug complex",
+  "migration sequence", "competing hypotheses", "irreversible consequences",
+  "constraint-heavy", "tree/beam search", etc. → `BoundedTreeSearch`;
+  ProposerCriticAdjudicator keywords: "high-consequence", "weak verifiers",
+  "adjudicate", "high-stakes architecture/design", etc. →
+  `ProposerCriticAdjudicator` with forced `High` risk floor) → **VRO-4
+  parallel-strategy detection** (trade-off/alternatives → Judge; verify-claim
+  → Consensus) → domain mapping → risk → grounding + verifiers →
+  complexity/ambiguity → §12 strategy ladder (**VRO-5.1:** the Low/Low →
+  Direct shortcut now yields when `requires_grounding == true`).
+  `profile_request` honors a caller `risk_hint` override.
+- `src/vro/verifiers.rs` — VRO-2.2 deterministic verifier registry (PRD §10.8).
+  Async object-safe `Verifier` trait (boxed `Send` future — the workspace has
+  no `async_trait`/`trait-variant` dep, so the trait returns
+  `Pin<Box<dyn Future + Send>>` directly), `VerificationContext`
+  (workspace root + evidence refs), and `VerifierRegistry` keyed by
+  `verifier_id` (`register`/`contains`/`ids`/`run`; `default_cargo()` preloads
+  `cargo_check` + `cargo_test`). `CargoCheckVerifier` runs
+  `cargo check --message-format=json` and parses compiler diagnostics into
+  `VerificationFinding`s (pure `parse_findings` is unit-testable without
+  cargo); `CargoTestVerifier` runs `cargo test` and maps failures. Both shell
+  out via `std::process::Command` offloaded to `tokio::task::spawn_blocking`.
+  Compiler/test failures are `repairable: true`; a verifier that cannot run
+  (cargo missing, crash) returns `VerificationStatus::Error` (distinct from
+  `Failed`). No new dependencies.
+- `src/vro/learning.rs` — VRO-7 Verified Workflow Learning (PRD §11.9).
+  Pure extraction + sanitization logic — no `jarvis-cognition` dependency,
+  no SQLite, no network I/O. (The architecture rule that `jarvis-agent`
+  depends only on domain/provider/runtime means cognition is a peer crate;
+  persistence is delegated to a trait port supplied at the composition
+  boundary, mirroring the VRO-4/5.1/6 pattern of `CandidateJudge` /
+  `ToolInvoker` / `CandidateCritic`.) Public types:
+  - `SecretScrubber` — compiles a priority-ordered pattern set ONCE at
+    construction and reuses it across calls. Detects (1) AWS access keys
+    (`AKIA[0-9A-Z]{16}`), (2) JWTs (three base64url segments starting with
+    `eyJ`), (3) bearer tokens (`[Bb]earer\s+<token>`), (4) generic
+    credential assignments
+    (`(api[_-]?key|apikey|token|secret|password|passwd|auth_token|access_key)\s*[=:]\s*['"]?<value>`),
+    (5) AWS secret access keys (40-char base64 after an `aws_secret` hint),
+    (6) IPv4 addresses, and (7) high-entropy 32+ char base64/url-safe
+    strings (Shannon entropy > 4.0 bits/char). Each match becomes a
+    deterministic `[REDACTED:<KIND>]` placeholder. The high-entropy pass
+    runs LAST so the deterministic placeholders (which contain only `[`, `]`,
+    `:`, letters, underscore) cannot themselves trip the entropy threshold.
+    `scrub_json` recursively redacts string values in `serde_json::Value`
+    trees. **Regex feature contract:** the workspace `regex` dependency uses
+    `default-features = false`; this crate therefore declares `unicode-perl`
+    for `\b`/`\s`/`\w` and `unicode-case` for its `(?i)` credential-keyword
+    patterns explicitly. Both must remain enabled in the production manifest;
+    test-only transitive feature unification is not release evidence.
+  - `ProceduralMemory` + `ProceduralStep` — the persisted artifact. Each
+    step is a *generalized* observation (`Invoke tool \`read_file\` with
+    sanitized arguments.`, plus a sanitized JSON argument excerpt and a
+    bounded 240-char observation excerpt). The `id` is a deterministic
+    SHA-256 over the normalized `(objective, strategy, steps)` triple so
+    two trajectories that generalize to the same procedure produce the
+    same id (cognitive-memory dedupe). Round-trips through `serde_json`.
+  - `WorkflowExtractor` — two entry points:
+    `extract_from_trajectory(request, outcome, trajectory, strategy,
+    extracted_at)` (ReAct path — walks each `Action`/`Observation` pair) and
+    `extract_from_outcome(request, outcome, strategy, extracted_at)` (non-
+    ReAct path — synthesizes a `generate` step from `final_output`, plus a
+    `verify` step when verifiers ran). Both reject non-`Succeeded` outcomes,
+    empty objectives, and empty trajectories with `LearningError`.
+  - `ProceduralMemorySink` — async object-safe persistence port
+    (`save_procedure(&ProceduralMemory) -> Result<String, LearningError>`).
+    The composition boundary supplies the cognition-backed impl (which
+    forwards to `jarvis_cognition::pipeline::CognitiveMemory::add_procedural`
+    behind the scenes). Tests use a `RecordingSink` fake.
+  - `LearningError` — non-fatal error variants: `OutcomeNotSucceeded`,
+    `PrivateRequestRejected` (PRD §17: PrivacyMode::Private requests must
+    NOT be persisted; the extractor refuses BEFORE building the procedure so
+    no scrubbed-but-still-private bytes can leak through a future sink bug),
+    `NoStepsToExtract`, `EmptyObjective`, `SinkRejected`. The orchestrator
+    converts every variant into one `unresolved_risks` entry; the turn
+    itself never fails because of a learning error.
+  - `is_learning_eligible(strategy)` — true for every complex strategy
+    except `Direct` (no procedure to memorize for plain chat).
+- `src/providers/mod.rs` — VRO-3.1 provider adapters that implement the
+  `jarvis-agent`-owned [`CandidateGenerator`](crate::vro::CandidateGenerator)
+  seam. Lives in `jarvis-agent` (not a `vesper-provider-*` crate) because the
+  generation seam is a `jarvis-agent` trait; a provider implementing it would
+  otherwise invert the crate dependency direction.
+- `src/providers/lmstudio/` — VRO-3.1 LM Studio local/LAN model-server adapter
+  (PRD §13). `config.rs` (`LmStudioConfig`: `api_base_url` + an opaque
+  `LmStudioApiKey` newtype + optional model; the key is `#[serde(skip)]` and
+  wrapped to satisfy the secret-shape xtask guard); `client.rs` (pure HTTP
+  request builders — `build_models_request` / `build_chat_request` — plus the
+  async `LmStudioTransport` trait port, mockable in tests; NO HTTP client crate
+  imported — the real transport is the composition-boundary concern);
+  `discovery.rs` (`/models` discovery + `probe_capabilities` +
+  `CapabilityRegistry`); `generator.rs` (`LmStudioCandidateGenerator`
+  implementing `CandidateGenerator`, mapping `(prompt, corrections)` → chat
+  messages with the failed verifiers' findings fed back as a corrections
+  message, bearer-auth injected). `react.rs` (VRO-5.2
+  `LmStudioReactAgent` implementing the VRO-5.1 `ReactAgent` seam —
+  `next_action(prompt, trajectory)` builds the ReAct prompting contract
+  [`REACT_SYSTEM_PROMPT`] + user prompt + trajectory replayed as
+  `assistant`/`user` message pairs, sends `/chat/completions` via the shared
+  `LmStudioTransport`, and parses the response with the infallible
+  `parse_react_decision`. The parser uses precedence: `action.tool` JSON →
+  `CallTool`, `answer`/`final_answer`/`final` JSON → `Finish`, prose without
+  JSON → `Finish` (graceful exit), JSON-shaped text that fails to parse or has
+  an unrecognized shape → a synthesized `CallTool` with the sentinel
+  `MALFORMED_TOOL_NAME` so the loop's `ToolInvoker` returns `UnknownTool` and
+  feeds the failure back to the model as an observation for self-correction.
+  The transport is `Arc<dyn LmStudioTransport>` (shared, cheap clone) so the
+  agent mirrors `LmStudioCandidateGenerator`'s shape exactly). No live LM
+  Studio integration in VRO-3.1 (per execution constraints). **VRO-11.5:**
+  `REACT_SYSTEM_PROMPT` carries rule 5 — artifact-generation requests MUST
+  execute `write_file` within the same turn. `request_human_review` is
+  conditional and HTML-only: use it for requested or materially useful visual
+  inspection, never ordinary source code. Plan-only yielding is forbidden,
+  and printing artifact content without `write_file` is a FAILED turn.
+
+## Local Contracts
+
+- Bounded composition roles may use `with_tool_iteration_ceiling` to tighten the
+  total turn allowance, including planned continuation. Zero clamps to one;
+  this port cannot raise the shared absolute ceiling. Ordinary hosts retain
+  their existing behavior unless their composition explicitly supplies it.
+
+- One `AgentLoop` owns one random, bounded, non-secret cache-routing identity
+  and carries it across ordinary turns, tool continuations and provider-native
+  compaction requests. Providers that do not support cache affinity ignore it.
+
+- ADR 0028: `src/acceptance.rs` owns pure acceptance policy and `CompletionPort`. An
+  enrolled objective retains authority outside model history. AgentLoop withholds
+  provider prose, preserves complete tool transactions, feeds gaps into bounded repair
+  and returns `AgentTurnOutcome::Acceptance`; plan checkmarks never certify it.
+  Delegated results return through `finish_delegated_acceptance`; worker contexts cannot
+  publish parent completion.
+
+- Compose `jarvis-runtime::ProviderRegistry` for turn dispatch; do NOT add
+  multi-turn state or tool execution to the runtime itself.
+- Hosts own conversation history and may inject memory, MCP, plugin, worker,
+  or automation tools through `ToolService`; the core loop remains unaware of
+  those concrete subsystems.
+- Working history contains the complete assistant `ToolCall` and a typed
+  `ToolResult` with the same call ID, including bounded denial/failure output.
+  Never silently discard linkage through an invalid extension key. A typed
+  interruption returns before executing any collected calls.
+- Hosts should populate `AgentLoopConfig.system_instructions` at their
+  composition boundary with `project_instructions`; the helper is bounded and
+  does not persist or mutate project files.
+- `ToolContext` carries the current visible conversation for context-aware
+  hosted tools. Provider requests use the validated semantic working history;
+  token pressure, not message count, triggers compaction. Hosts retain the
+  returned provider history and may separately preserve a complete display
+  transcript.
+- Depends on `jarvis-domain`, `jarvis-provider`, `jarvis-runtime` (+
+  `command-group` for safe POSIX process-group/Windows Job Object ownership, `glob`,
+  `regex` for search; `sha2` for VRO-7 deterministic procedure IDs; workspace
+  `uuid` for VesperLens session tokens; `tempfile` dev-only). Must NOT depend
+  on `jarvis-acp-protocol`, `jarvis-sessions`, SQLite, MCP,
+  frontends, or any disposable spike. **VRO-7 per-crate `regex` override:**
+  `crates/jarvis-agent/Cargo.toml` declares
+  `regex = { version = "1", default-features = false, features = ["std",
+  "unicode-perl", "unicode-case"] }` (NOT `regex.workspace = true`) so the
+  `SecretScrubber`'s character classes and case-insensitive patterns compile
+  in release binaries; this does NOT leak to other crates, which keep using
+  the workspace's minimal regex feature set.
+- Every path-bearing tool routes its argument through `confinement::confine`
+  against the session's primary workspace root before any I/O. `run_command`
+  runs in the workspace root via the platform shell (`sh -c` / `cmd /C`) with a
+  bounded timeout. Its stdout and stderr readers drain concurrently for the
+  command lifetime while sharing a 64 KiB retained-output budget; truncation
+  never stops transport draining. The executor owns a distinct process group,
+  settles leader status and pipe EOF separately, and performs bounded exact-tree
+  cleanup on timeout, cancellation, caller drop, and leader completion. Any
+  uncertain cleanup, reader failure, timeout, cancellation, or nonzero exit is a
+  failed tool result with truthful bounded partial output; commands are never
+  replayed automatically.
+- `update_plan` writes only `.agent/plan.md` (confined) and returns the rendered
+  markdown so the loop surfaces it for the TUI REVIEW transition.
+- The permission gate is the single authority checkpoint before any executor
+  runs; `ReadOnly` tools always pass, `Mutating`/`Shell`/`Process`/
+  `NestedWorkflow` require `Code` mode, `Bypass`, or a host-approved `Ask`
+  decision. `Ask` without a `PermissionPort` fails closed.
+- `PermissionRequest::is_pending` exposes only whether its approval waiter is
+  still alive. Hosts retire closed requests and their approval capabilities;
+  checking liveness never grants authority or cancels another request.
+- The advertised tool pool starts as `definitions_for_provider(mode,
+  provider_id)` (which excludes deferred and provider-ineligible tools) and is
+  **mutable** across turns. When an executor returns
+  `ToolResult.injected_tools`, the loop rejects scopes ineligible for the active
+  provider before deduplicating by `ToolId` or `harness_name`; execution repeats
+  the same provider-scope gate. This is the
+  provider-neutral deferred-loading seam — the loop never re-references
+  the registry between turns, so injected schemas live only inside the
+  per-turn advertised list (Phase 2 does not register them for execution;
+  that is a future phase's concern).
+- **Phase 3 gateway routing.** `ToolRegistry` carries an optional list of
+  `(prefix, executor)` gateways registered via `with_gateway`. When a tool
+  name is not in `entries` but matches a registered prefix, `execute()`
+  routes to the longest-matching gateway executor. `gate_and_execute`
+  looks up definitions from the loop's live advertised pool (covering
+  injected schemas) and falls back to `ToolRegistry::definition()` (so a
+  hallucinated call to a registered-but-mode-filtered tool like
+  `write_file` in Plan mode is still denied by the permission gate rather
+  than reported as "unknown tool"). The composition boundary wires the
+  `McpGatewayExecutor` under the `mcp__` prefix so dynamically discovered
+  MCP tools can be executed after they are injected and advertised.
+- `#![forbid(unsafe_code)]`, workspace MSRV 1.88, workspace lints, and
+  `-D warnings` Clippy apply.
+- **VRO-9 dev-only `reqwest` exception.** `crates/jarvis-agent/Cargo.toml`
+  declares `reqwest.workspace = true` under **`[dev-dependencies]` only** so
+  the live ReAct integration test binary (`tests/live_react_integration.rs`)
+  can talk to a real LM Studio endpoint. The production `src/` tree MUST NOT
+  reference `reqwest` — `cargo xtask architecture`'s `scan_production_sources`
+  scans `src/` only and would fail with "forbidden foundational reference
+  `reqwest`" if the term appeared there. This is the same dev-only carve-out
+  pattern TUI uses for `reqwest.workspace = true` in its production deps.
+- **ADR 0017–0020 VesperLens.** `src/planning/vesper_lens/` owns the native
+  loopback review server and typed feedback. ADR 0020 supersedes the original
+  same-document/single-turn boundary: trusted top-level chrome contains a
+  sandboxed artifact iframe without `allow-same-origin`; only the trusted
+  chrome can submit feedback. Every session has a UUIDv4 route token and
+  feedback additionally requires exact loopback Host, same Origin, JSON content
+  type, and `X-Vesper-Lens-Token`. The server retains the 64 KiB request cap and
+  never binds outside `127.0.0.1:0`.
+- File review is confined to the primary workspace, `.html`/`.htm`, and 8 MiB.
+  Sibling assets are served up to 16 MiB only after lexical and canonical
+  symlink containment beneath the artifact directory. Canonical file paths
+  reuse an in-process session; queued feedback survives cancelled tool waits,
+  browser drafts survive reloads, and revision polling live-reloads the iframe.
+- Interview submission uses typed `Action::Answer` (`"answer"`), distinct from
+  artifact `Modify`; context says planning answers were submitted, not that a
+  plan was rejected. Overall notes and structured choices are preserved together.
+  Answer submission alone grants no execution/tool permission. The shared
+  formatter applies in all provider paths; current ACP browser-UX exclusion
+  remains documented by its owning app, not silently removed here.
+- Annotations carry stable IDs, editable comments/replacement HTML, and typed
+  element or text-range targets. Planning questions support descriptions,
+  required/optional state, recommendations, and Other while ADR 0019 retains
+  the fixed/auto 1–12 policy. Bounded overflow/clipping diagnostics remain
+  passive until the reviewer selects them. The Playwright E2E fixtures under
+  `tests/` verify artifact review and interview behavior in real Chrome with
+  console/network assertions.
+- `LensReviewPort` exists only for the explicit TUI tools. ADR 0020 removes the
+  unused `VroOrchestrator::maybe_review_html_artifact`/`with_lens_port` path;
+  no implicit or final-output interception remains.
+
+## Work Guidance
+
+- The user-configurable `max_tool_iterations` cap is disabled by default
+  (`0`); explicit values bound ordinary turns, while every turn retains the
+  non-configurable 4,000-iteration ultimate safety ceiling. An active
+  unfinished native plan may consume at most four configured segments without
+  user intervention, bounded by that ultimate ceiling.
+  Every iteration is exactly one `ProviderSession::start`. Multi-turn conversation state is supplied and
+  returned by the host through `run_prompt_with_history`; it never lives in
+  provider session state.
+- Permission denials and unknown/failed tools are fed back to the model as
+  bounded `role: Tool` text so the turn can recover (mirrors the oracle).
+- `provider_output` is the shared safe projection for provider annotations.
+  Both hosts may render validated citations; every other provider-opaque item,
+  including encrypted reasoning and compaction state, remains hidden.
+- `AgentLoopConfig.hosted_tools` carries explicit provider-hosted selections
+  into ordinary turns. It is empty by default and stays distinct from the
+  Vesper client-function registry.
+- When adding a tool: add the executor in `tools.rs`, register it in
+  `ToolRegistry::parity_default` when it is provider-neutral core behavior.
+  Host-owned memory, checkpoint, MCP, plugin, worker, and automation tools
+  are injected through `ToolService::with_service`; set their
+  `ToolExecutionClass` in the host definition and add a mode-eligibility
+  test for the composition boundary. To opt a tool into
+  deferred loading (hide it from the initial advertisement while keeping it
+  executable), set `ToolDefinition.defer_loading = true` on the registered
+  definition; `definitions_for(mode)` will then exclude it from both `Plan`
+  and `Code` mode advertisement, but `contains`/`definition`/`execute` keep
+  working by name.
+
+## Verification
+
+- `tests/command_settlement.rs` exercises the production `RunCommand` boundary
+  on every supported CI target under stdout/stderr pressure, the 64 KiB
+  retention boundary, the historical 71,443-byte workload, timeout,
+  cancellation, dropped callers, nonzero exit, descendant-held pipes,
+  delayed-marker descendant cleanup, and post-failure recovery.
+- Readiness-based command fixtures allow bounded shell startup for 15 seconds,
+  report early command termination with its actual result, and abort a timed-out
+  fixture task. This allowance never extends post-signal settlement or cleanup
+  assertions; slow-start and early-failure regressions exercise the helper.
+  Leader/descendant fixtures use the shared 20-second overall invocation budget,
+  including that startup phase. Their delayed descendant markers wait for
+  `settlement.ready` before starting the two-second cleanup probe. Both slow-start
+  regressions must execute; a five-second overall timeout contradicts readiness.
+- Descendant-after-leader fixture timing begins at its explicit leader-exit
+  marker, excluding Windows PowerShell startup. It retains the three-second
+  settlement assertion and delayed-marker cleanup proof.
+- Post-signal leader reaping and stdout/stderr EOF observation share one bounded
+  settlement deadline; do not split that budget into scheduling-sensitive
+  platform phases.
+
+- Lens browser launchers select the current Cargo package and relocated fixture;
+  example names, protocol fields and HTML fixture bytes remain compatibility contracts.
+- Run `cargo test -p jarvis-agent`.
+- Run `cargo xtask verify` (fmt + clippy + workspace tests + architecture).
+- `cargo run --package xtask --quiet -- architecture` must include
+  `jarvis-agent` and validate its dependency direction.
+
+## Child DOX Index
+
+- `src/planning/vesper_lens/` — ADR 0017–0020 native human-in-the-loop HTML
+  review. Owns trusted chrome, sandbox SDK injection, authenticated HTTP,
+  confined file/assets, reusable in-process sessions, typed annotations and
+  planning interviews. Browser verification lives at
+  `tests/vesper_lens_browser.mjs`; its deterministic assets are under
+  `tests/fixtures/vesper-lens/`. This subtree remains governed here.
+- `examples/vesper_lens_fixture.rs` — bounded manual/browser-E2E launcher that
+  reviews one workspace HTML file and prints machine-readable URL/feedback
+  lines; it is not a production binary.
+- `tests/vesper_lens_browser.mjs` and `tests/fixtures/vesper-lens/` — real
+  Playwright/Chrome review flow and deterministic sibling-resource fixture.

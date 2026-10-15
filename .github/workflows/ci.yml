@@ -32,6 +32,7 @@ jobs:
           python3 scripts/test_release_gate.py
           python3 .github/test_verify_pr_matrix.py
           python3 .github/test_prepare_linux_apt.py
+          python3 .github/test_workspace_tooling_identity.py
       - name: Verify inherited naming policy before full build
         run: cargo xtask naming-guard
       - name: Verify workspace
@@ -43,17 +44,17 @@ jobs:
       - name: Verify native voice lifecycle without a microphone
         timeout-minutes: 6
         run: |
-          cargo build -p agent-vesper-tui --all-features
+          cargo build -p jarvis-tui --all-features
           python3 -m venv "$RUNNER_TEMP/voice-test-python"
           "$RUNNER_TEMP/voice-test-python/bin/pip" install --only-binary=:all: numpy==2.5.3
-          "$RUNNER_TEMP/voice-test-python/bin/python" apps/agent-vesper-tui/tests/voice_chunks.py
-          python3 apps/agent-vesper-tui/tests/voice_pty.py target/debug/agent-vesper-tui "$RUNNER_TEMP/voice-test-python/bin/python"
-          python3 apps/agent-vesper-tui/tests/xai_usage_pty.py target/debug/agent-vesper-tui
+          "$RUNNER_TEMP/voice-test-python/bin/python" apps/jarvis-tui/tests/voice_chunks.py
+          python3 apps/jarvis-tui/tests/voice_pty.py target/debug/jarvis-tui "$RUNNER_TEMP/voice-test-python/bin/python"
+          python3 apps/jarvis-tui/tests/xai_usage_pty.py target/debug/jarvis-tui
       - name: Verify native release control parity
         timeout-minutes: 5
         run: |
-          cargo build -p agent-vesper-acp -p agent-vesper-tui --all-features --locked
-          python3 apps/agent-vesper-tui/tests/release_hosts_pty.py target/debug/agent-vesper-tui target/debug/agent-vesper-acp
+          cargo build -p jarvis-acp -p jarvis-tui --all-features --locked
+          python3 apps/jarvis-tui/tests/release_hosts_pty.py target/debug/jarvis-tui target/debug/jarvis-acp
       - name: Verify documentation structure
         run: |
           sh -n scripts/install.sh scripts/uninstall.sh
@@ -95,7 +96,7 @@ jobs:
         run: rustup toolchain install 1.95.0 --profile minimal --target x86_64-pc-windows-msvc
       - name: Build exact-candidate Windows release executables
         shell: bash
-        run: cargo build --locked --release --package agent-vesper-acp --package agent-vesper-tui --package vesper-web-fetch --package vesper-sandbox --features agent-vesper-acp/docker,agent-vesper-tui/docker,agent-vesper-acp/swarm,agent-vesper-tui/swarm,agent-vesper-acp/bridge,agent-vesper-tui/bridge,agent-vesper-tui/voice-kokoro,agent-vesper-tui/voice-flm --target x86_64-pc-windows-msvc
+        run: cargo build --locked --release --package jarvis-acp --package jarvis-tui --package jarvis-web-fetch --package jarvis-sandbox --features jarvis-acp/docker,jarvis-tui/docker,jarvis-acp/swarm,jarvis-tui/swarm,jarvis-acp/bridge,jarvis-tui/bridge,jarvis-tui/voice-kokoro,jarvis-tui/voice-flm --target x86_64-pc-windows-msvc
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
@@ -103,13 +104,13 @@ jobs:
         shell: bash
         timeout-minutes: 5
         run: |
-          python -m pip install --only-binary=:all: --require-hashes -r apps/agent-vesper-tui/tests/windows-terminal-requirements.txt
-          python apps/agent-vesper-tui/tests/first_launch_pty.py target/x86_64-pc-windows-msvc/release/agent-vesper-tui.exe
+          python -m pip install --only-binary=:all: --require-hashes -r apps/jarvis-tui/tests/windows-terminal-requirements.txt
+          python apps/jarvis-tui/tests/first_launch_pty.py target/x86_64-pc-windows-msvc/release/jarvis-tui.exe
       - name: Reject external VC runtime dependencies
         shell: bash
         run: |
           python scripts/test_windows_package_audit.py
-          python scripts/windows_package_audit.py target/x86_64-pc-windows-msvc/release
+          python scripts/windows_package_audit.py target/x86_64-pc-windows-msvc/release --build-targets
       - name: Real release install (Windows PowerShell 5.1 Desktop)
         shell: cmd
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test_install_windows_release.ps1 -BinaryDir target\x86_64-pc-windows-msvc\release

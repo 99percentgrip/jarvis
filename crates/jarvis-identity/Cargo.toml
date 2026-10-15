@@ -11,7 +11,7 @@ build = false
 
 [dev-dependencies]
 serde_json.workspace = true
-vesper-config = { path = "../vesper-config", version = "=0.24.14" }
+jarvis-config = { path = "../jarvis-config", version = "=0.24.14" }
 
 [lints]
 workspace = true

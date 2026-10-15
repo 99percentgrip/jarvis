@@ -1,0 +1,26 @@
+[package]
+name = "jarvis-runtime"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+futures-util.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-provider = { path = "../jarvis-provider", version = "=0.24.14" }
+jarvis-sessions = { path = "../jarvis-sessions", version = "=0.24.14" }
+
+[dev-dependencies]
+serde_json.workspace = true
+jarvis-testkit = { path = "../jarvis-testkit", version = "=0.24.14" }
+
+[lints]
+workspace = true

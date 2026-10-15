@@ -1,0 +1,24 @@
+[package]
+name = "jarvis-acp-protocol"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+agent-client-protocol.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-runtime = { path = "../jarvis-runtime", version = "=0.24.14" }
+
+[dev-dependencies]
+tokio-util.workspace = true
+
+[lints]
+workspace = true

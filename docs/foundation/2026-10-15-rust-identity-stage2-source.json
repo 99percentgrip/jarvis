@@ -1,0 +1,5009 @@
+{
+  "scope": "Stage 2 Rust workspace and executable identities; no release or state migration",
+  "baseline": "653a5213cd3fbdafa75b7261991b2d74590148e8",
+  "package_mapping": [
+    {
+      "before": "jarvis-identity",
+      "after": "jarvis-identity",
+      "old_directory": "crates/jarvis-identity",
+      "new_directory": "crates/jarvis-identity",
+      "old_import": "jarvis_identity",
+      "new_import": "jarvis_identity",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-config"
+      ]
+    },
+    {
+      "before": "vesper-config",
+      "after": "jarvis-config",
+      "old_directory": "crates/vesper-config",
+      "new_directory": "crates/jarvis-config",
+      "old_import": "vesper_config",
+      "new_import": "jarvis_config",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-domain",
+      "after": "jarvis-domain",
+      "old_directory": "crates/vesper-domain",
+      "new_directory": "crates/jarvis-domain",
+      "old_import": "vesper_domain",
+      "new_import": "jarvis_domain",
+      "binaries": [],
+      "workspace_dependencies": []
+    },
+    {
+      "before": "vesper-security",
+      "after": "jarvis-security",
+      "old_directory": "crates/vesper-security",
+      "new_directory": "crates/jarvis-security",
+      "old_import": "vesper_security",
+      "new_import": "jarvis_security",
+      "binaries": [],
+      "workspace_dependencies": []
+    },
+    {
+      "before": "agent-vesper-acp",
+      "after": "jarvis-acp",
+      "old_directory": "apps/agent-vesper-acp",
+      "new_directory": "apps/jarvis-acp",
+      "old_import": "agent_vesper_acp",
+      "new_import": "jarvis_acp",
+      "binaries": [
+        {
+          "before": "agent-vesper-acp",
+          "after": "jarvis-acp"
+        },
+        {
+          "before": "agent-vesper-acp-test-driver",
+          "after": "jarvis-acp-test-driver"
+        }
+      ],
+      "workspace_dependencies": [
+        "vesper-acp",
+        "vesper-agent",
+        "vesper-auth",
+        "vesper-cognition",
+        "vesper-config",
+        "vesper-domain",
+        "vesper-harness",
+        "vesper-policy",
+        "vesper-provider",
+        "vesper-provider-glm",
+        "vesper-provider-openai",
+        "vesper-provider-synthetic",
+        "vesper-provider-xai",
+        "vesper-runtime",
+        "vesper-sessions",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-acp",
+      "after": "jarvis-acp-protocol",
+      "old_directory": "crates/vesper-acp",
+      "new_directory": "crates/jarvis-acp-protocol",
+      "old_import": "vesper_acp",
+      "new_import": "jarvis_acp_protocol",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-runtime"
+      ]
+    },
+    {
+      "before": "vesper-runtime",
+      "after": "jarvis-runtime",
+      "old_directory": "crates/vesper-runtime",
+      "new_directory": "crates/jarvis-runtime",
+      "old_import": "vesper_runtime",
+      "new_import": "jarvis_runtime",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-provider",
+        "vesper-sessions",
+        "vesper-testkit"
+      ]
+    },
+    {
+      "before": "vesper-provider",
+      "after": "jarvis-provider",
+      "old_directory": "crates/vesper-provider",
+      "new_directory": "crates/jarvis-provider",
+      "old_import": "vesper_provider",
+      "new_import": "jarvis_provider",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain"
+      ]
+    },
+    {
+      "before": "vesper-sessions",
+      "after": "jarvis-sessions",
+      "old_directory": "crates/vesper-sessions",
+      "new_directory": "crates/jarvis-sessions",
+      "old_import": "vesper_sessions",
+      "new_import": "jarvis_sessions",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-config",
+        "vesper-domain"
+      ]
+    },
+    {
+      "before": "vesper-testkit",
+      "after": "jarvis-testkit",
+      "old_directory": "crates/vesper-testkit",
+      "new_directory": "crates/jarvis-testkit",
+      "old_import": "vesper_testkit",
+      "new_import": "jarvis_testkit",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-bridge",
+        "vesper-config",
+        "vesper-domain",
+        "vesper-policy",
+        "vesper-provider",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-bridge",
+      "after": "jarvis-bridge",
+      "old_directory": "crates/vesper-bridge",
+      "new_directory": "crates/jarvis-bridge",
+      "old_import": "vesper_bridge",
+      "new_import": "jarvis_bridge",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-policy",
+      "after": "jarvis-policy",
+      "old_directory": "crates/vesper-policy",
+      "new_directory": "crates/jarvis-policy",
+      "old_import": "vesper_policy",
+      "new_import": "jarvis_policy",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-agent",
+      "after": "jarvis-agent",
+      "old_directory": "crates/vesper-agent",
+      "new_directory": "crates/jarvis-agent",
+      "old_import": "vesper_agent",
+      "new_import": "jarvis_agent",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-policy",
+        "vesper-provider",
+        "vesper-runtime",
+        "vesper-security",
+        "vesper-testkit"
+      ]
+    },
+    {
+      "before": "vesper-auth",
+      "after": "jarvis-auth",
+      "old_directory": "crates/vesper-auth",
+      "new_directory": "crates/jarvis-auth",
+      "old_import": "vesper_auth",
+      "new_import": "jarvis_auth",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-cognition",
+      "after": "jarvis-cognition",
+      "old_directory": "crates/vesper-cognition",
+      "new_directory": "crates/jarvis-cognition",
+      "old_import": "vesper_cognition",
+      "new_import": "jarvis_cognition",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-harness",
+      "after": "jarvis-harness",
+      "old_directory": "crates/vesper-harness",
+      "new_directory": "crates/jarvis-harness",
+      "old_import": "vesper_harness",
+      "new_import": "jarvis_harness",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-agent",
+        "vesper-bridge",
+        "vesper-checkpoints",
+        "vesper-config",
+        "vesper-domain",
+        "vesper-mcp",
+        "vesper-memory",
+        "vesper-policy",
+        "vesper-provider",
+        "vesper-runtime",
+        "vesper-sandbox",
+        "vesper-sessions",
+        "vesper-swarm",
+        "vesper-web",
+        "vesper-web-fetch",
+        "vesper-provider",
+        "vesper-provider-synthetic",
+        "vesper-testkit"
+      ]
+    },
+    {
+      "before": "vesper-checkpoints",
+      "after": "jarvis-checkpoints",
+      "old_directory": "crates/vesper-checkpoints",
+      "new_directory": "crates/jarvis-checkpoints",
+      "old_import": "vesper_checkpoints",
+      "new_import": "jarvis_checkpoints",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-mcp",
+      "after": "jarvis-mcp",
+      "old_directory": "crates/vesper-mcp",
+      "new_directory": "crates/jarvis-mcp",
+      "old_import": "vesper_mcp",
+      "new_import": "jarvis_mcp",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-memory",
+      "after": "jarvis-memory",
+      "old_directory": "crates/vesper-memory",
+      "new_directory": "crates/jarvis-memory",
+      "old_import": "vesper_memory",
+      "new_import": "jarvis_memory",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-sandbox",
+      "after": "jarvis-sandbox",
+      "old_directory": "crates/vesper-sandbox",
+      "new_directory": "crates/jarvis-sandbox",
+      "old_import": "vesper_sandbox",
+      "new_import": "jarvis_sandbox",
+      "binaries": [
+        {
+          "before": "sandbox_init",
+          "after": "jarvis-sandbox-init"
+        }
+      ],
+      "workspace_dependencies": [
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-swarm",
+      "after": "jarvis-swarm",
+      "old_directory": "crates/vesper-swarm",
+      "new_directory": "crates/jarvis-swarm",
+      "old_import": "vesper_swarm",
+      "new_import": "jarvis_swarm",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-web",
+      "after": "jarvis-web",
+      "old_directory": "crates/vesper-web",
+      "new_directory": "crates/jarvis-web",
+      "old_import": "vesper_web",
+      "new_import": "jarvis_web",
+      "binaries": [],
+      "workspace_dependencies": []
+    },
+    {
+      "before": "vesper-web-fetch",
+      "after": "jarvis-web-fetch",
+      "old_directory": "crates/vesper-web-fetch",
+      "new_directory": "crates/jarvis-web-fetch",
+      "old_import": "vesper_web_fetch",
+      "new_import": "jarvis_web_fetch",
+      "binaries": [
+        {
+          "before": "vesper-web-fetch",
+          "after": "jarvis-web-fetch"
+        }
+      ],
+      "workspace_dependencies": [
+        "vesper-sandbox",
+        "vesper-security",
+        "vesper-web"
+      ]
+    },
+    {
+      "before": "vesper-provider-synthetic",
+      "after": "jarvis-provider-synthetic",
+      "old_directory": "crates/vesper-provider-synthetic",
+      "new_directory": "crates/jarvis-provider-synthetic",
+      "old_import": "vesper_provider_synthetic",
+      "new_import": "jarvis_provider_synthetic",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-provider"
+      ]
+    },
+    {
+      "before": "vesper-provider-glm",
+      "after": "jarvis-provider-glm",
+      "old_directory": "crates/vesper-provider-glm",
+      "new_directory": "crates/jarvis-provider-glm",
+      "old_import": "vesper_provider_glm",
+      "new_import": "jarvis_provider_glm",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-auth",
+        "vesper-config",
+        "vesper-domain",
+        "vesper-provider",
+        "vesper-security",
+        "vesper-testkit"
+      ]
+    },
+    {
+      "before": "vesper-provider-openai",
+      "after": "jarvis-provider-openai",
+      "old_directory": "crates/vesper-provider-openai",
+      "new_directory": "crates/jarvis-provider-openai",
+      "old_import": "vesper_provider_openai",
+      "new_import": "jarvis_provider_openai",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-auth",
+        "vesper-domain",
+        "vesper-provider",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-provider-xai",
+      "after": "jarvis-provider-xai",
+      "old_directory": "crates/vesper-provider-xai",
+      "new_directory": "crates/jarvis-provider-xai",
+      "old_import": "vesper_provider_xai",
+      "new_import": "jarvis_provider_xai",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-auth",
+        "vesper-domain",
+        "vesper-provider",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "agent-vesper-tui",
+      "after": "jarvis-tui",
+      "old_directory": "apps/agent-vesper-tui",
+      "new_directory": "apps/jarvis-tui",
+      "old_import": "agent_vesper_tui",
+      "new_import": "jarvis_tui",
+      "binaries": [
+        {
+          "before": "agent-vesper-tui",
+          "after": "jarvis-tui"
+        }
+      ],
+      "workspace_dependencies": [
+        "vesper-agent",
+        "vesper-auth",
+        "vesper-checkpoints",
+        "vesper-cognition",
+        "vesper-domain",
+        "vesper-harness",
+        "vesper-mcp",
+        "vesper-memory",
+        "vesper-observability",
+        "vesper-policy",
+        "vesper-provider",
+        "vesper-provider-glm",
+        "vesper-provider-openai",
+        "vesper-provider-xai",
+        "vesper-runtime",
+        "vesper-security",
+        "vesper-sessions",
+        "vesper-voice",
+        "vesper-voice-kokoro",
+        "vesper-provider-synthetic"
+      ]
+    },
+    {
+      "before": "vesper-observability",
+      "after": "jarvis-observability",
+      "old_directory": "crates/vesper-observability",
+      "new_directory": "crates/jarvis-observability",
+      "old_import": "vesper_observability",
+      "new_import": "jarvis_observability",
+      "binaries": [],
+      "workspace_dependencies": []
+    },
+    {
+      "before": "vesper-voice",
+      "after": "jarvis-voice",
+      "old_directory": "crates/vesper-voice",
+      "new_directory": "crates/jarvis-voice",
+      "old_import": "vesper_voice",
+      "new_import": "jarvis_voice",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security"
+      ]
+    },
+    {
+      "before": "vesper-voice-kokoro",
+      "after": "jarvis-voice-kokoro",
+      "old_directory": "crates/vesper-voice-kokoro",
+      "new_directory": "crates/jarvis-voice-kokoro",
+      "old_import": "vesper_voice_kokoro",
+      "new_import": "jarvis_voice_kokoro",
+      "binaries": [],
+      "workspace_dependencies": [
+        "vesper-domain",
+        "vesper-security",
+        "vesper-voice"
+      ]
+    },
+    {
+      "before": "xtask",
+      "after": "xtask",
+      "old_directory": "xtask",
+      "new_directory": "xtask",
+      "old_import": null,
+      "new_import": null,
+      "binaries": [
+        {
+          "before": "xtask",
+          "after": "xtask"
+        }
+      ],
+      "workspace_dependencies": [
+        "jarvis-identity",
+        "vesper-testkit"
+      ]
+    }
+  ],
+  "third_party_lock_entries_unchanged": 523,
+  "rustls": "0.23.46",
+  "inventory_self_hash_excluded": true,
+  "files": [
+    {
+      "change": "M",
+      "path": ".github/AGENTS.md",
+      "sha256": "1f581207376c756c8da939e0f66d404d389d5c19514db7a14c51a55f94af7331"
+    },
+    {
+      "change": "A",
+      "path": ".github/test_workspace_tooling_identity.py",
+      "sha256": "0fb11609a8b714bcd2ecda2c14cd590b24229352af5371ad15336462bbe0f61d"
+    },
+    {
+      "change": "M",
+      "path": ".github/verify_native_credentials.py",
+      "sha256": "87b8ae63bbc1ebb0da3f02823e29304f5c605f0462a8e63b8e937a4d1fb249db"
+    },
+    {
+      "change": "M",
+      "path": ".github/verify_native_voice.py",
+      "sha256": "4a9ca96ac72e33918713cc2fa50b68cb4d0addee5d4d55de6e3d592dd2cb1316"
+    },
+    {
+      "change": "M",
+      "path": ".github/workflows/ci.yml",
+      "sha256": "ef64ac619020082b4f09e50b451eb1b179d804bc2ab6260b8686d97c63259168"
+    },
+    {
+      "change": "M",
+      "path": ".github/workflows/platform-foundation.yml",
+      "sha256": "394daa1bc483de82a83642a49765e1281cd9a5faecc94abd7858b7262296be30"
+    },
+    {
+      "change": "M",
+      "path": ".github/workflows/web-driver.yml",
+      "sha256": "e1653540b1fd8f57235f1f0368c5601018baf5860619441b5bf6d7d8f3e93790"
+    },
+    {
+      "change": "M",
+      "path": "AGENTS.md",
+      "sha256": "90232774437be8f1f0e39487c07216f6b56d541b1b52cd40e21fc45d26e7b421"
+    },
+    {
+      "change": "M",
+      "path": "Cargo.lock",
+      "sha256": "c36b85544815ab35de46eca2b2863d6b47957d30ddd0dfa97857ca79e8a781f6"
+    },
+    {
+      "change": "M",
+      "path": "Cargo.toml",
+      "sha256": "eee67a4682a4d35c8b1bf860346ce248c927eec6b6dd45142fef4ae73a41cbf4"
+    },
+    {
+      "change": "M",
+      "path": "apps/AGENTS.md",
+      "sha256": "c8b8847ea7e9ef4e5c70bfb84973e2cddaabf5676e98875a525e94a728c67803"
+    },
+    {
+      "change": "D",
+      "path": "apps/agent-vesper-acp/Cargo.toml"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-acp/AGENTS.md",
+      "from": "apps/agent-vesper-acp/AGENTS.md",
+      "sha256": "75863299d4a5aa666250281d917ece8f8dc9e2405bf428adc1f27080f1bcc5fc"
+    },
+    {
+      "change": "A",
+      "path": "apps/jarvis-acp/Cargo.toml",
+      "sha256": "c4322b097bea3d01249c8fa1b020e3f9bb02d637f76f8e80d808f5d7346cd58e"
+    },
+    {
+      "change": "R091",
+      "path": "apps/jarvis-acp/src/bin/jarvis-acp-test-driver.rs",
+      "from": "apps/agent-vesper-acp/src/bin/agent-vesper-acp-test-driver.rs",
+      "sha256": "c06b83b0682eeef9ec97e457ac08856dbdc6e8ec62bed933eefa04f0d1193337"
+    },
+    {
+      "change": "R090",
+      "path": "apps/jarvis-acp/src/bridge_host.rs",
+      "from": "apps/agent-vesper-acp/src/bridge_host.rs",
+      "sha256": "78cb8287efc6744792d4f050662f96450d2441d37662b4c184b0fe12cb40497c"
+    },
+    {
+      "change": "R087",
+      "path": "apps/jarvis-acp/src/cognition.rs",
+      "from": "apps/agent-vesper-acp/src/cognition.rs",
+      "sha256": "84ee77324b73d5f21e59f26aea1ac7828562e3469a4e8c7063ea63fbf02a7d9a"
+    },
+    {
+      "change": "R095",
+      "path": "apps/jarvis-acp/src/controls.rs",
+      "from": "apps/agent-vesper-acp/src/controls.rs",
+      "sha256": "670effb98b136a7f9a708b4b07e0c29ce253aee6ba6562268417cb9d616d20b5"
+    },
+    {
+      "change": "R087",
+      "path": "apps/jarvis-acp/src/lib.rs",
+      "from": "apps/agent-vesper-acp/src/lib.rs",
+      "sha256": "d0446b589f8c54ac4eb99e37780f4aeb9b986ac58a563184944c9e3e2be05e3d"
+    },
+    {
+      "change": "R094",
+      "path": "apps/jarvis-acp/src/lmstudio_provider.rs",
+      "from": "apps/agent-vesper-acp/src/lmstudio_provider.rs",
+      "sha256": "8cd17e394fff188be04df3e9f288a6a4efd21cf870b619d74ff924382844ae4e"
+    },
+    {
+      "change": "R089",
+      "path": "apps/jarvis-acp/src/main.rs",
+      "from": "apps/agent-vesper-acp/src/main.rs",
+      "sha256": "7d44044bfb4aec29cf2fdd4d8c6ddfb572213b63bf29a9c62ced4c4a6820587a"
+    },
+    {
+      "change": "R088",
+      "path": "apps/jarvis-acp/src/swarm_host.rs",
+      "from": "apps/agent-vesper-acp/src/swarm_host.rs",
+      "sha256": "45f945dbe350edd40b5624baf18eea297c3e6cb121fdd0025e3bdea24e116498"
+    },
+    {
+      "change": "R096",
+      "path": "apps/jarvis-acp/tests/acceptance_controls.rs",
+      "from": "apps/agent-vesper-acp/tests/acceptance_controls.rs",
+      "sha256": "26e1b409b209cfb216bf6aa9bc2ee4256df35a4f5599c06192f26bc5b45c5cfd"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/bridge_at01_os_observation.rs",
+      "from": "apps/agent-vesper-acp/tests/bridge_at01_os_observation.rs",
+      "sha256": "6e6437c578d8a6b32ac14ad04b8f14a284f418e85547ef0f13b6b1f6ffaf95ba"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/dependency_setup_controls.rs",
+      "from": "apps/agent-vesper-acp/tests/dependency_setup_controls.rs",
+      "sha256": "3c51a32762e8a88a2752f6a0b3f57503b9037afb706215fa301b729d14d53d4d"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/midturn_slash_grace.rs",
+      "from": "apps/agent-vesper-acp/tests/midturn_slash_grace.rs",
+      "sha256": "f9b1fb72a21f1116aeacda03842d6a5dcaf4a910eadaff94657d58a88cdda8ba"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/openai_native.rs",
+      "from": "apps/agent-vesper-acp/tests/openai_native.rs",
+      "sha256": "05e6f54e1744e2148570b3514dadaddbd2ac612e3db8ba6e7cc78b769ba00e30"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/openai_rejection.rs",
+      "from": "apps/agent-vesper-acp/tests/openai_rejection.rs",
+      "sha256": "8165e0a10a6222c9486b7c3e84183b518d6e540b10378a08126e7ddcea3a09cb"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/persistence_writes.rs",
+      "from": "apps/agent-vesper-acp/tests/persistence_writes.rs",
+      "sha256": "6894e407ac9d0ce0c53f0ed2c4c103a08c15a3ed47589b7839cb78d992ee49a1"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/process_blockers.rs",
+      "from": "apps/agent-vesper-acp/tests/process_blockers.rs",
+      "sha256": "c54dd880c31668853b8e2528ed9c28d0fd08942fd7b69356e3adbeef0c7242e0"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-acp/tests/process_transcript.rs",
+      "from": "apps/agent-vesper-acp/tests/process_transcript.rs",
+      "sha256": "62b89fce3d55be1b63f4122eacbf7b17368d558ccf7dbaf1b217ca070e762797"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-acp/tests/provider_selection.rs",
+      "from": "apps/agent-vesper-acp/tests/provider_selection.rs",
+      "sha256": "f844126ecfb31484b123192f1db1246fe0c780d7d63b03ec1ea094f202723f85"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-acp/tests/release_resource_governor.rs",
+      "from": "apps/agent-vesper-acp/tests/release_resource_governor.rs",
+      "sha256": "0148889de6e7e4c8d8cc46592825a16fb4c71a5098f8dee7d70a987609463b65"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-acp/tests/session_controls.rs",
+      "from": "apps/agent-vesper-acp/tests/session_controls.rs",
+      "sha256": "2d223c53511d94de81fc167cb22f83a452bc44519f52f2ef29426ab25dd763e2"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-acp/tests/skill_routing_controls.rs",
+      "from": "apps/agent-vesper-acp/tests/skill_routing_controls.rs",
+      "sha256": "fec55bdefb44610181aafdec03f046d7d7ea03c6a17de9a23fc14669e9b28ca0"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/support/credentials.rs",
+      "from": "apps/agent-vesper-acp/tests/support/credentials.rs",
+      "sha256": "de8d48d8dae1e5efdc824e4fc153823c2c376d03b6d57074616fd6de942bc2c6"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-acp/tests/support/mod.rs",
+      "from": "apps/agent-vesper-acp/tests/support/mod.rs",
+      "sha256": "9ac715d8db87c51f24f48161786e3452e9f30312b1ded8357e4c588c619fafff"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-acp/tests/support/persistence_vectors.rs",
+      "from": "apps/agent-vesper-acp/tests/support/persistence_vectors.rs",
+      "sha256": "f45a677f9dd799bbaff596e3af4c428dbdc6b30546186e056ba1674e4f25044d"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-acp/tests/swarm_controls.rs",
+      "from": "apps/agent-vesper-acp/tests/swarm_controls.rs",
+      "sha256": "288deb647ad987045fcf4a6962ec160ed41fc51072e33e2cc5773f6727f66a3a"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-acp/tests/swarm_native_process.rs",
+      "from": "apps/agent-vesper-acp/tests/swarm_native_process.rs",
+      "sha256": "7ccd6870f56e6d7d60218692c213e7c9fdd530290b92d079cade2a213b624f59"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-acp/tests/xai_native.rs",
+      "from": "apps/agent-vesper-acp/tests/xai_native.rs",
+      "sha256": "df6219e3dac7e202701fcec2b3107c6293dee6e9e8e0a3021ecde9d22aa38a40"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/AGENTS.md",
+      "from": "apps/agent-vesper-tui/AGENTS.md",
+      "sha256": "ad480d7bf4d3d9933a1396bde73fce1a126f0dfb317d6e398be2df6c25f5d9e5"
+    },
+    {
+      "change": "R075",
+      "path": "apps/jarvis-tui/Cargo.toml",
+      "from": "apps/agent-vesper-tui/Cargo.toml",
+      "sha256": "20f5437c80a42e6adeec38cc26cba746a8a07fd20b64d258664bc9fc60ac8238"
+    },
+    {
+      "change": "R095",
+      "path": "apps/jarvis-tui/examples/AGENTS.md",
+      "from": "apps/agent-vesper-tui/examples/AGENTS.md",
+      "sha256": "dff23194bf238a6b0ad5694150c692c1986b6c40a45ae1e775b1f300f9c50edb"
+    },
+    {
+      "change": "R086",
+      "path": "apps/jarvis-tui/examples/cold_warm_starvation.rs",
+      "from": "apps/agent-vesper-tui/examples/cold_warm_starvation.rs",
+      "sha256": "ef765cb7ad8cf93743b5a4ae30d3fa24702bfd6c6d97d1d7fb852f12785fedbf"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/examples/continuity_pause_receipt.rs",
+      "from": "apps/agent-vesper-tui/examples/continuity_pause_receipt.rs",
+      "sha256": "19fabc659015cd2ca1b106d065a78f82f18fdb2e99ca839614159a6edb2d6ec7"
+    },
+    {
+      "change": "R095",
+      "path": "apps/jarvis-tui/examples/continuity_turn_receipt.rs",
+      "from": "apps/agent-vesper-tui/examples/continuity_turn_receipt.rs",
+      "sha256": "c316306a621e2bf3f673a281fabb14b2776c7a53c878c8e1fc0abd99a905edfc"
+    },
+    {
+      "change": "R088",
+      "path": "apps/jarvis-tui/examples/first_speech_receipt.rs",
+      "from": "apps/agent-vesper-tui/examples/first_speech_receipt.rs",
+      "sha256": "efb0aca5330baf30ea94612dfa116fbc9824301b1a62de5bd29c4c496bd0eb6d"
+    },
+    {
+      "change": "R093",
+      "path": "apps/jarvis-tui/examples/flm_stt_receipt.rs",
+      "from": "apps/agent-vesper-tui/examples/flm_stt_receipt.rs",
+      "sha256": "48b5367ae9ed4e86cdc2579b7f8ec2bd00bca5a77ec08bee041b925d596f9af3"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/examples/preview_first_pcm_receipt.rs",
+      "from": "apps/agent-vesper-tui/examples/preview_first_pcm_receipt.rs",
+      "sha256": "58c86c478de9e2b4d1c5b781bb3378e1f36db7bd188d9641930790d1c386a096"
+    },
+    {
+      "change": "R075",
+      "path": "apps/jarvis-tui/examples/preview_latency_receipt.rs",
+      "from": "apps/agent-vesper-tui/examples/preview_latency_receipt.rs",
+      "sha256": "7f5879462f3318826a85d07a08f5eabe0825f0620d0bd0c6d339721e0a315e36"
+    },
+    {
+      "change": "R081",
+      "path": "apps/jarvis-tui/examples/r3_full_path_repro.rs",
+      "from": "apps/agent-vesper-tui/examples/r3_full_path_repro.rs",
+      "sha256": "c2da9a5668eff7b998d2ac68708a9744adb5b05ce3f348b47d09315779cf8e38"
+    },
+    {
+      "change": "R078",
+      "path": "apps/jarvis-tui/examples/r3_worker_device_check.rs",
+      "from": "apps/agent-vesper-tui/examples/r3_worker_device_check.rs",
+      "sha256": "ab1e284e6362c8a68260632d80d215a0f27e637a9d04777cf96b27bac2d757f5"
+    },
+    {
+      "change": "R094",
+      "path": "apps/jarvis-tui/examples/short_reply_boundary_receipt.rs",
+      "from": "apps/agent-vesper-tui/examples/short_reply_boundary_receipt.rs",
+      "sha256": "1605bdb3053680444ee8de19d81a02e52b8c64c59ea06e2ca843e3b1b1b2afee"
+    },
+    {
+      "change": "R090",
+      "path": "apps/jarvis-tui/examples/skill_routing_eval.rs",
+      "from": "apps/agent-vesper-tui/examples/skill_routing_eval.rs",
+      "sha256": "bbafeae71e1ef8c8708149c86105fbf129d514fec732b1143b1e32ada535dbb1"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/examples/speech_pipeline_receipt.rs",
+      "from": "apps/agent-vesper-tui/examples/speech_pipeline_receipt.rs",
+      "sha256": "ca35a1fa1ac008b4350c3f0eb123fbcb51dbfda6cd6218e32180c7733e877cde"
+    },
+    {
+      "change": "R087",
+      "path": "apps/jarvis-tui/examples/verify_repro.rs",
+      "from": "apps/agent-vesper-tui/examples/verify_repro.rs",
+      "sha256": "8592ccf9acbb2483c5a3ee4594ca2abd1cd4789478146eeba2d9cd557866ef85"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/examples/voice_live_timing.py",
+      "from": "apps/agent-vesper-tui/examples/voice_live_timing.py",
+      "sha256": "6a7b3fdc596337680e14ef673f45c69e9b602fa071aa776a8864cd1074744fc1"
+    },
+    {
+      "change": "R094",
+      "path": "apps/jarvis-tui/src/acceptance_host.rs",
+      "from": "apps/agent-vesper-tui/src/acceptance_host.rs",
+      "sha256": "6502ac0218377ca805b2150875052b3495632f3357c6732e73ae1d37eedea55a"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/activity.rs",
+      "from": "apps/agent-vesper-tui/src/activity.rs",
+      "sha256": "a97b263b0c6a049caae4998856ba6fbbc4e030fb6fd94d4c186e60dd0716a384"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/src/auth_hub.rs",
+      "from": "apps/agent-vesper-tui/src/auth_hub.rs",
+      "sha256": "29da99fdd66111e7e4f0a50fac4d4a9358b4542e37d078c176d604f6d31c8cb4"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/src/auth_settings.rs",
+      "from": "apps/agent-vesper-tui/src/auth_settings.rs",
+      "sha256": "6b44597401bf03318ec42b2041ad2a68e07db0837f4c0dc83f3cf99445e55bdb"
+    },
+    {
+      "change": "R077",
+      "path": "apps/jarvis-tui/src/capabilities.rs",
+      "from": "apps/agent-vesper-tui/src/capabilities.rs",
+      "sha256": "caec42847b8024ffde9b15eb1f8de3a126c454c37c40f6140d86acade6991027"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/src/commands.rs",
+      "from": "apps/agent-vesper-tui/src/commands.rs",
+      "sha256": "4a2edcb2377c78f93a4fd3d0bfb2ce64ad4a20e16b2e963c44c327d94e5a1068"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/src/dispatch.rs",
+      "from": "apps/agent-vesper-tui/src/dispatch.rs",
+      "sha256": "266d12147518167aae2a8ef4fb7c451631561f8deb98cd132d90d0eac0ec36d1"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/landing.rs",
+      "from": "apps/agent-vesper-tui/src/landing.rs",
+      "sha256": "499f3763d10933e953eead91b85a0a91102fd4f06c66847382a4e2ece5257dcf"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/src/landing_host.rs",
+      "from": "apps/agent-vesper-tui/src/landing_host.rs",
+      "sha256": "418876a78743370c6c0cbaff14d6b5544dec463c83d150a0b82c3a3b0b940167"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/src/lib.rs",
+      "from": "apps/agent-vesper-tui/src/lib.rs",
+      "sha256": "4d366dae28513c00890c0bc1eb0aba1f495fa1a197affc18158385808c7304c2"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/lmstudio_hub.rs",
+      "from": "apps/agent-vesper-tui/src/lmstudio_hub.rs",
+      "sha256": "3634fc51123cc19580056037fe36330303c6b3a31d3b45862dcddf3509d11b74"
+    },
+    {
+      "change": "R093",
+      "path": "apps/jarvis-tui/src/lmstudio_provider.rs",
+      "from": "apps/agent-vesper-tui/src/lmstudio_provider.rs",
+      "sha256": "edd1cae00d3141cbe07c0443dc3184d227849e54078c4042cfffd7e7526a43b3"
+    },
+    {
+      "change": "R091",
+      "path": "apps/jarvis-tui/src/main.rs",
+      "from": "apps/agent-vesper-tui/src/main.rs",
+      "sha256": "5d7155a5ac621b6b6ab62bc3d2c0ee76634579c1d2fea92164e2fd119f2006af"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/markdown.rs",
+      "from": "apps/agent-vesper-tui/src/markdown.rs",
+      "sha256": "1698e080c33d21587e49fd4d51ae6beaedf93e1ae72ceb0174eab896bbf3bf91"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/src/messages.rs",
+      "from": "apps/agent-vesper-tui/src/messages.rs",
+      "sha256": "d961c294e04f91e453282ef9688db7b772ca57b686ee0f91a5599f888c4ca711"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/mobile.rs",
+      "from": "apps/agent-vesper-tui/src/mobile.rs",
+      "sha256": "3a2ca7fa9c95031ab5d1bd437c6be47e2052c54ff961f4b429d433873e5b6474"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/src/plan_mode.rs",
+      "from": "apps/agent-vesper-tui/src/plan_mode.rs",
+      "sha256": "06f69c90d8034a87af3f155bcb143688dd605fe2160196f34b09f9eb5d541088"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/platform_voice.rs",
+      "from": "apps/agent-vesper-tui/src/platform_voice.rs",
+      "sha256": "65005bdd8902c81b4cc28be556043fbb8ab4649388471bcba81b6998dfdf399c"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/presentation.rs",
+      "from": "apps/agent-vesper-tui/src/presentation.rs",
+      "sha256": "3f74a96653e4258cc627da32eb41700352e1ea9133dbde35a1d8d7c0e0a03d02"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/provider_hub.rs",
+      "from": "apps/agent-vesper-tui/src/provider_hub.rs",
+      "sha256": "d5c442c2699366155a6e0752e21f4f41b5107e3e282268af6a7ad51a0dc1752b"
+    },
+    {
+      "change": "R090",
+      "path": "apps/jarvis-tui/src/settings_host.rs",
+      "from": "apps/agent-vesper-tui/src/settings_host.rs",
+      "sha256": "f0545319cb36f16eafe21690c04d3f361a62c466d4ad419b89b9c3d443460f72"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/src/settings_menu.rs",
+      "from": "apps/agent-vesper-tui/src/settings_menu.rs",
+      "sha256": "7473d41b425a46618ec42598224ec56f901bca303861213ce2fafb3975ccbada"
+    },
+    {
+      "change": "R092",
+      "path": "apps/jarvis-tui/src/settings_voice_save.rs",
+      "from": "apps/agent-vesper-tui/src/settings_voice_save.rs",
+      "sha256": "f387b9767a5a45554b057986a9509a13bbc5cf046a3aa7ac28f920cd911590b2"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/src/superpowers.rs",
+      "from": "apps/agent-vesper-tui/src/superpowers.rs",
+      "sha256": "0b4b78e8e8aa42f59614f65adf711ac257fb1d4e124223f88d8a689d46914702"
+    },
+    {
+      "change": "R089",
+      "path": "apps/jarvis-tui/src/swarm_host.rs",
+      "from": "apps/agent-vesper-tui/src/swarm_host.rs",
+      "sha256": "b30bac37cdf3f06193255d3ee8f5e94b7da1ffe729e8ea0627b050c820a19c09"
+    },
+    {
+      "change": "R096",
+      "path": "apps/jarvis-tui/src/swarm_host_tests.rs",
+      "from": "apps/agent-vesper-tui/src/swarm_host_tests.rs",
+      "sha256": "6d1120dd3f6a16321be71918c81ac3dd4cc4a7a54fa9e7c97df991f3d953367c"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/src/swarm_hub.rs",
+      "from": "apps/agent-vesper-tui/src/swarm_hub.rs",
+      "sha256": "7076d1c050c8accd4de5eff1b87b63762aa7cfc6a1b441698eacf743e6b6d463"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/src/ui.rs",
+      "from": "apps/agent-vesper-tui/src/ui.rs",
+      "sha256": "91ab2c76677677cfa4456395d70c3dff6e11780289431a7503f9a0982d48eec4"
+    },
+    {
+      "change": "R092",
+      "path": "apps/jarvis-tui/src/update_host.rs",
+      "from": "apps/agent-vesper-tui/src/update_host.rs",
+      "sha256": "fb0fe965a98cd64882075e6c7e8f6e45af6aef993f6df2a97e0f1c41342dd9d0"
+    },
+    {
+      "change": "R095",
+      "path": "apps/jarvis-tui/src/voice.rs",
+      "from": "apps/agent-vesper-tui/src/voice.rs",
+      "sha256": "ca557c48f26a4d06d584bff7f57617b69c83369f9c7aa11b587260a5b55e1392"
+    },
+    {
+      "change": "R093",
+      "path": "apps/jarvis-tui/src/voice_accel.rs",
+      "from": "apps/agent-vesper-tui/src/voice_accel.rs",
+      "sha256": "a821d0847be335fb9967c4b11ebc73e3060bb3bea3ce78bc2f4cdc7675ad8439"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/voice_capture_store.rs",
+      "from": "apps/agent-vesper-tui/src/voice_capture_store.rs",
+      "sha256": "79331706151e630e57755a01aec99a8f48b3d43803bb168d20406e04dcf486ac"
+    },
+    {
+      "change": "R091",
+      "path": "apps/jarvis-tui/src/voice_conversation.rs",
+      "from": "apps/agent-vesper-tui/src/voice_conversation.rs",
+      "sha256": "bab2177b3d8538b286ce6ec5ea1123bdae04c2362a86bf13ce5256ed2dbfb60f"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/src/voice_flm.rs",
+      "from": "apps/agent-vesper-tui/src/voice_flm.rs",
+      "sha256": "713418c1b53a388cdf024e15f5f70a9b6f0d5d32450148562699b6e011bc7d45"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/src/voice_flm_assets.rs",
+      "from": "apps/agent-vesper-tui/src/voice_flm_assets.rs",
+      "sha256": "576c3dc03d6a7749a127fc7ad21319d541d2ab44ef9a47d24e044dd555e24c04"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/src/voice_flm_vad.rs",
+      "from": "apps/agent-vesper-tui/src/voice_flm_vad.rs",
+      "sha256": "a51400b8d6d39e2023a13cbef294477455415189b9f1d2d5adc4e72721b465fe"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/voice_native_audio.rs",
+      "from": "apps/agent-vesper-tui/src/voice_native_audio.rs",
+      "sha256": "59f5003111650adbc9d79f6f2e0b2b987fe0c90ee51ca6602d5f06ce4c31d362"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/voice_pcm.rs",
+      "from": "apps/agent-vesper-tui/src/voice_pcm.rs",
+      "sha256": "45a3e24d8b569186378ec118134bc00bb6f238b22470e76127d1d00dce909ca3"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/voice_playback.rs",
+      "from": "apps/agent-vesper-tui/src/voice_playback.rs",
+      "sha256": "b994ee06bd9ddde6416f4514c88f72d8882bee2d881867dec6cadff48c1df072"
+    },
+    {
+      "change": "R093",
+      "path": "apps/jarvis-tui/src/voice_readiness.rs",
+      "from": "apps/agent-vesper-tui/src/voice_readiness.rs",
+      "sha256": "19e5c4d7114420b44f4c191550bb5313f79e0c49798e7dd286712e3f161adb21"
+    },
+    {
+      "change": "R090",
+      "path": "apps/jarvis-tui/src/voice_shared_stt.rs",
+      "from": "apps/agent-vesper-tui/src/voice_shared_stt.rs",
+      "sha256": "3b863ac487f5ec413344d86f9e6c7b3c3961356a569798fb74eb8095ce33c37f"
+    },
+    {
+      "change": "R096",
+      "path": "apps/jarvis-tui/src/voice_speech_worker.rs",
+      "from": "apps/agent-vesper-tui/src/voice_speech_worker.rs",
+      "sha256": "58fed946e75cfbe355b926d220d5c3915795aecbf57a2e42e43a69ce6fb89fda"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/voice_transcribe.py",
+      "from": "apps/agent-vesper-tui/src/voice_transcribe.py",
+      "sha256": "16f5524aa7e89116b54cb49031b9b544601ec54e47ef258aabf8dbe9cf7588d1"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/voice_turn_instruction.rs",
+      "from": "apps/agent-vesper-tui/src/voice_turn_instruction.rs",
+      "sha256": "42998978e8cf5f24cf320c1cb8378a023b813ee104ad36014a902dd0a9543d53"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/src/voice_vad.py",
+      "from": "apps/agent-vesper-tui/src/voice_vad.py",
+      "sha256": "e38ddffde038f5c5680126d23d982e4fedd4066783658f7bdf0d1cac91ff3c8d"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/src/web_hub.rs",
+      "from": "apps/agent-vesper-tui/src/web_hub.rs",
+      "sha256": "1517cb95f98bdee146c75bcc069178d6cb01c546dc076fe7f07a3d973580d6e6"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/tests/AGENTS.md",
+      "from": "apps/agent-vesper-tui/tests/AGENTS.md",
+      "sha256": "cc0354fafcaa289f846b7862fa1e8a8b716d26ad05668e0b9466ef2ccdf95146"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/tests/bridge_at01_pty.py",
+      "from": "apps/agent-vesper-tui/tests/bridge_at01_pty.py",
+      "sha256": "c6e34239c4e759cdcfdfb76c3164fc122841aa3aba331630983bbd01b4d4d91f"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/dependency_setup_pty.py",
+      "from": "apps/agent-vesper-tui/tests/dependency_setup_pty.py",
+      "sha256": "ec0c2afe9a6c1565cb4cf6df615377d380787256e00a1c28f383dcc5e8df9abb"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/first_launch_pty.py",
+      "from": "apps/agent-vesper-tui/tests/first_launch_pty.py",
+      "sha256": "8e212cff0383ec2c8b154fb79995adc6049693a9320a802bc67347f2996aa9ba"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/tests/flm_f9_loop_pty.py",
+      "from": "apps/agent-vesper-tui/tests/flm_f9_loop_pty.py",
+      "sha256": "52cbd1929fd4e1fc4e6f70251ae11e65fc97f6657bcb9b203b6419a4c92fa2f2"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/message_journal_ux_pty.py",
+      "from": "apps/agent-vesper-tui/tests/message_journal_ux_pty.py",
+      "sha256": "070058eec08b6e390dd18615196b4eeea906fd3401a8c565ea721912299a6549"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/message_queue_pty.py",
+      "from": "apps/agent-vesper-tui/tests/message_queue_pty.py",
+      "sha256": "7768a7d2299737895601b85d967f6aa6548ad561cfa8f96d7b53c003e753bed5"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/tests/message_queue_pty.rs",
+      "from": "apps/agent-vesper-tui/tests/message_queue_pty.rs",
+      "sha256": "41fa03f4c50c681ef19c03e522a262cc677810e5a430bcaa3eab0f69bf12cdcb"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/tests/openai_startup_responsiveness.rs",
+      "from": "apps/agent-vesper-tui/tests/openai_startup_responsiveness.rs",
+      "sha256": "5889365d3a6f4a4c0fc5aca5413cb70254f941767f5e782848e13c87d34b0a38"
+    },
+    {
+      "change": "R091",
+      "path": "apps/jarvis-tui/tests/pr4_f9_gate.rs",
+      "from": "apps/agent-vesper-tui/tests/pr4_f9_gate.rs",
+      "sha256": "4a772e33306ae9ce16d6d01a641c157bd57e648a981aa92510d66594e23293b2"
+    },
+    {
+      "change": "R080",
+      "path": "apps/jarvis-tui/tests/pr4_wiring.rs",
+      "from": "apps/agent-vesper-tui/tests/pr4_wiring.rs",
+      "sha256": "d09a0cc4f29789a1d237e920c890dc669221354ad667daa01223484f64d9765d"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/tests/r3_loop_pty.py",
+      "from": "apps/agent-vesper-tui/tests/r3_loop_pty.py",
+      "sha256": "714c7bb5c771dbf7f278ce4fa6c85b8f953185fa6ce841662769d6c771e6809c"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/tests/r3_repro_pty.py",
+      "from": "apps/agent-vesper-tui/tests/r3_repro_pty.py",
+      "sha256": "3de53058311d993068107fa2dfc6c070e5519609c4de03ff11e76e2ab4c9a09c"
+    },
+    {
+      "change": "R091",
+      "path": "apps/jarvis-tui/tests/r3_speech_worker.rs",
+      "from": "apps/agent-vesper-tui/tests/r3_speech_worker.rs",
+      "sha256": "d33fc09215d6b812f3e895229cc21bdd29e24d120e8783cbd1596f50f7b74803"
+    },
+    {
+      "change": "R080",
+      "path": "apps/jarvis-tui/tests/r3_voice_pack.rs",
+      "from": "apps/agent-vesper-tui/tests/r3_voice_pack.rs",
+      "sha256": "f56c641ac96c1a4d381c7d9df1dba090d11b3e2f5d1fcd30891a565fe9de1bf7"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/release_hosts_pty.py",
+      "from": "apps/agent-vesper-tui/tests/release_hosts_pty.py",
+      "sha256": "e45f67ba2c9d7d4a6e6561663a2f161f188464b98a64732e3c7582e0cc829799"
+    },
+    {
+      "change": "R099",
+      "path": "apps/jarvis-tui/tests/rrc_terminal_pty.rs",
+      "from": "apps/agent-vesper-tui/tests/rrc_terminal_pty.rs",
+      "sha256": "db0047e13e5b67b455eb9cc5dc71f289720232ae5c1c2a95cf7f9c839affe953"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/settings_auth_pty.py",
+      "from": "apps/agent-vesper-tui/tests/settings_auth_pty.py",
+      "sha256": "82e7b7c451bda76abdc5b9b7dd615f32204664449984d0102fc1f577963bf31e"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/settings_pty.py",
+      "from": "apps/agent-vesper-tui/tests/settings_pty.py",
+      "sha256": "0159f050e3840f86c8dacfca5b46acaa70be82ad30760588734f568ab7481445"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/skill_routing_pty.py",
+      "from": "apps/agent-vesper-tui/tests/skill_routing_pty.py",
+      "sha256": "023ef3a2602574091fff68305e19bfbf785c3df2373e0a10035a65f3cf7a30a1"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/skill_routing_submission_pty.py",
+      "from": "apps/agent-vesper-tui/tests/skill_routing_submission_pty.py",
+      "sha256": "7b7341c3fcabc158c561ab448fb12651f88041a30f07e5e017ea5184846aa00b"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/test_terminal_writer.py",
+      "from": "apps/agent-vesper-tui/tests/test_terminal_writer.py",
+      "sha256": "87d45e12d910f850324bfa1713dc3c0e9f589fc41e634fad90b01ceb0ab34cd5"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/test_windows_child_cleanup.py",
+      "from": "apps/agent-vesper-tui/tests/test_windows_child_cleanup.py",
+      "sha256": "3ed158b295dfe28785352cb507c06b4a5bc9d58f05a268562f993650f660de53"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/update_curl_fixture.sh",
+      "from": "apps/agent-vesper-tui/tests/update_curl_fixture.sh",
+      "sha256": "1717dd475c652477cb0d2c3db56236212a5d25be914e5350bfa416b281cda75b"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/update_payload_fixture.sh",
+      "from": "apps/agent-vesper-tui/tests/update_payload_fixture.sh",
+      "sha256": "7076d10b33a44737f0fc4c7bab50035be1f29bf52a03d344d5f29531d68b6b8c"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/usage_pty.py",
+      "from": "apps/agent-vesper-tui/tests/usage_pty.py",
+      "sha256": "2b0d060c35e2df7e7cd204ba8c61ee0b7247ca44a0f7efea35d1cc0c0153b0a2"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/voice_chunks.py",
+      "from": "apps/agent-vesper-tui/tests/voice_chunks.py",
+      "sha256": "3b3880612c68ce7274500bac312de0bc67d5fbaf0c784d2129872f07bf5acaa3"
+    },
+    {
+      "change": "R091",
+      "path": "apps/jarvis-tui/tests/voice_execution_policy.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_execution_policy.rs",
+      "sha256": "cd09b3087704cd117a03428c1f327a05df4fd9665eae3e878cb26737d8c9abab"
+    },
+    {
+      "change": "R097",
+      "path": "apps/jarvis-tui/tests/voice_flm_assets.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_flm_assets.rs",
+      "sha256": "32820dda48e09a4485a71079fa6b485c0e50a28115cfc9b42f3a0d270f18773c"
+    },
+    {
+      "change": "R083",
+      "path": "apps/jarvis-tui/tests/voice_flm_route.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_flm_route.rs",
+      "sha256": "0f41fcdc18ede7ade16978c4ca7190f637a5ca5c7334ca4f278fa2f09c4f0ccb"
+    },
+    {
+      "change": "R086",
+      "path": "apps/jarvis-tui/tests/voice_interruption_lifecycle.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_interruption_lifecycle.rs",
+      "sha256": "ff025229477162293ade5a49bb0bd5ebae4894c685cebfb836338b47904430bc"
+    },
+    {
+      "change": "R094",
+      "path": "apps/jarvis-tui/tests/voice_lifecycle.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_lifecycle.rs",
+      "sha256": "f9f633a1eaaac6889f4e85eac69d61965ae97d237d32f457c0b587015d5dc7a0"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/voice_model_fixture.py",
+      "from": "apps/agent-vesper-tui/tests/voice_model_fixture.py",
+      "sha256": "cf247164b83f0706a273470f489a58a04a8457211646398ee20f97f75d4dfb1c"
+    },
+    {
+      "change": "R094",
+      "path": "apps/jarvis-tui/tests/voice_multiturn_playback.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_multiturn_playback.rs",
+      "sha256": "27036490312202002c94bb87f14c74451e0a959a4775fc8bdb53caf722282358"
+    },
+    {
+      "change": "R096",
+      "path": "apps/jarvis-tui/tests/voice_playback_diagnostics.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_playback_diagnostics.rs",
+      "sha256": "9426a6ff7135b88ec2e8fe1e8b207f381f23c71ab8ac0841d783c5a32334ff71"
+    },
+    {
+      "change": "R090",
+      "path": "apps/jarvis-tui/tests/voice_policy_parity.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_policy_parity.rs",
+      "sha256": "fc36cf20d84651d6386656e3bd0ec66190bc4443c1b81ebda25394a351fb3fb4"
+    },
+    {
+      "change": "R093",
+      "path": "apps/jarvis-tui/tests/voice_provider_neutrality.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_provider_neutrality.rs",
+      "sha256": "8733ae244630d14edebb42f045e4b8e8d2fe119b5e4e92a731c97b169a6e9ca2"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/voice_pty.py",
+      "from": "apps/agent-vesper-tui/tests/voice_pty.py",
+      "sha256": "a4f4cf1dbf77550bbd38a644e69bdbc34ad113ea9bb38600749fe9b417c5ad6f"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/tests/voice_r20_default_capture.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_r20_default_capture.rs",
+      "sha256": "e3b2d307044185c4748bb1e8ca0090cc72ceb845dc06687bf097551cd4293e9c"
+    },
+    {
+      "change": "R091",
+      "path": "apps/jarvis-tui/tests/voice_r6_binding.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_r6_binding.rs",
+      "sha256": "74c1559b994afc371d974ff5612e168085dabf606877b9e1f3de5dfa801875e9"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/voice_recorder_fixture.py",
+      "from": "apps/agent-vesper-tui/tests/voice_recorder_fixture.py",
+      "sha256": "6022afc45dcacfc4f98ff5ea3de1f94966fd3dc0f46978effc2f066f03d7843a"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/voice_setup_pty.py",
+      "from": "apps/agent-vesper-tui/tests/voice_setup_pty.py",
+      "sha256": "b9e6e99d1c6cc5fe32e0bebf02febd9b74b0efaf1ecdfa17eb885096060c04d8"
+    },
+    {
+      "change": "R098",
+      "path": "apps/jarvis-tui/tests/voice_speech_pipeline.rs",
+      "from": "apps/agent-vesper-tui/tests/voice_speech_pipeline.rs",
+      "sha256": "adad6ffc43fbc09e2e59e527e6df92fbdcdd926ab8c244fbee7e5dfab9860524"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/voice_vad_worker.py",
+      "from": "apps/agent-vesper-tui/tests/voice_vad_worker.py",
+      "sha256": "20df2936a2f82d5254147e89b63ca2c5c16a7f463eb6dc0361bcc6b0cb53dece"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/windows-terminal-requirements.txt",
+      "from": "apps/agent-vesper-tui/tests/windows-terminal-requirements.txt",
+      "sha256": "c5a98f6add8185d9f0bf1fbfd0fa85e01c99bcfc9983be40a0bd60c521024b32"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/xai_plain_turn_pty.py",
+      "from": "apps/agent-vesper-tui/tests/xai_plain_turn_pty.py",
+      "sha256": "94d65d063e6b1ab1cc179c1a4fb7fb18a6b070137f7edf6ada859cd1d5c06be0"
+    },
+    {
+      "change": "R100",
+      "path": "apps/jarvis-tui/tests/xai_usage_pty.py",
+      "from": "apps/agent-vesper-tui/tests/xai_usage_pty.py",
+      "sha256": "37dfe8ea17cde072387fb70db92d19cf37491014771b247b1f9c2e62408d9b60"
+    },
+    {
+      "change": "M",
+      "path": "crates/AGENTS.md",
+      "sha256": "c2811b5e0be31d795731730f9def15954da3565d61681b9793a783778d5ae372"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-acp-protocol/AGENTS.md",
+      "from": "crates/vesper-acp/AGENTS.md",
+      "sha256": "f85bcdd77fc5d588e02afae2080a8a2b07604d9d864bf4c1b7dab7ca3883c84f"
+    },
+    {
+      "change": "R072",
+      "path": "crates/jarvis-acp-protocol/Cargo.toml",
+      "from": "crates/vesper-acp/Cargo.toml",
+      "sha256": "ca53dd9686a6ec7ff836cba6beec23e362ec96ada46eb5991f6db74a76d95e40"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-acp-protocol/src/adapter.rs",
+      "from": "crates/vesper-acp/src/adapter.rs",
+      "sha256": "b8a574cf42658f94fafa8e28b1be1c9f9ae781efc324889ab612bf42b231f2c9"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-acp-protocol/src/compat.rs",
+      "from": "crates/vesper-acp/src/compat.rs",
+      "sha256": "bbb48b8b2b47c7fa1ef37e4f220bf338288e448b2829255c0ee8a30b2a533c95"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-acp-protocol/src/controls.rs",
+      "from": "crates/vesper-acp/src/controls.rs",
+      "sha256": "1112eaa55e5d0bbf49fa69626e43e93086a091bdb8e3e55229f8efd72f0b8f0f"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-acp-protocol/src/engine.rs",
+      "from": "crates/vesper-acp/src/engine.rs",
+      "sha256": "d3f4c2df0aaca46edbcc11430624560264426412ec24a45fb66dfd265ada80f0"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-acp-protocol/src/lib.rs",
+      "from": "crates/vesper-acp/src/lib.rs",
+      "sha256": "9ca3c8c8b62dd61fb8bc5ad61d200676f30bc6fd67f52b7cc6d312ba752249ba"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-acp-protocol/src/mapping.rs",
+      "from": "crates/vesper-acp/src/mapping.rs",
+      "sha256": "ed3e73ef734284e3a427c92c43588a867e5f4192ff68871a41b36cf43675e774"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-acp-protocol/src/vro_events.rs",
+      "from": "crates/vesper-acp/src/vro_events.rs",
+      "sha256": "44fd76ed2e2a7a8b50656e6157fb6d73ad7a482b334fb9240ce401f2cd3279b0"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-agent/AGENTS.md",
+      "from": "crates/vesper-agent/AGENTS.md",
+      "sha256": "969de9a4917f913fd60ba4cfd0adecda9ab1c9b968ad1c6b5f9bd5ba94667aec"
+    },
+    {
+      "change": "R081",
+      "path": "crates/jarvis-agent/Cargo.toml",
+      "from": "crates/vesper-agent/Cargo.toml",
+      "sha256": "cb3cbfc63b5d2d728ee4ad5e5dffb09430d26af231eee8c54e0301a72c4f7b92"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-agent/examples/vesper_lens_fixture.rs",
+      "from": "crates/vesper-agent/examples/vesper_lens_fixture.rs",
+      "sha256": "91cb13eb74c2e9fb4aea454b1c4ed03cd99b227701b826911920848514038ff9"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/acceptance.rs",
+      "from": "crates/vesper-agent/src/acceptance.rs",
+      "sha256": "1557270f83bee1af5471edfaa60b4dff0e2c6460626980717f593dabc9b8a2c2"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-agent/src/agent_loop.rs",
+      "from": "crates/vesper-agent/src/agent_loop.rs",
+      "sha256": "12d005d83818c10d78dc3238892c286c822c6a0a50fc7b906d525be9f9610fe9"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/compaction.rs",
+      "from": "crates/vesper-agent/src/compaction.rs",
+      "sha256": "6797d1cf45b1d8ec9370e61209c6b8cfc8e044dbae399227329b9bef8d941ca9"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/confinement.rs",
+      "from": "crates/vesper-agent/src/confinement.rs",
+      "sha256": "c4f9a4bffe5c7abdc252a5b402914d1e781b6091162b978cf41b01034b354bde"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-agent/src/executor.rs",
+      "from": "crates/vesper-agent/src/executor.rs",
+      "sha256": "99eb912ec49c757cbaa20c6d6782f410625fae90d89fe4bd1c5745cf7df63808"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-agent/src/lib.rs",
+      "from": "crates/vesper-agent/src/lib.rs",
+      "sha256": "1346a027a83f794c411445df42d725d2861f4f61f9d7a1334549a658be2f05cf"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/src/permission.rs",
+      "from": "crates/vesper-agent/src/permission.rs",
+      "sha256": "536458aa3c2eefa9475258b765ba833c9e720643e9bb57ffc4ab09d3e99d38ab"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/planning/mod.rs",
+      "from": "crates/vesper-agent/src/planning/mod.rs",
+      "sha256": "92a5a4355ca22511b4a98b5f81ca1fd399ffeb9693b97e98979cdc1c50d97fb6"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/planning/vesper_lens/http.rs",
+      "from": "crates/vesper-agent/src/planning/vesper_lens/http.rs",
+      "sha256": "c90f1fcbefe199f0b9059b1b05e51ff7817c9ae0a51c9378cacf85f7a3db48c7"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/planning/vesper_lens/injector.rs",
+      "from": "crates/vesper-agent/src/planning/vesper_lens/injector.rs",
+      "sha256": "06fea843d250fb8b219b50158d3a98db7cd95fca5f1cd38715c77c9d3aeebe50"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/planning/vesper_lens/mod.rs",
+      "from": "crates/vesper-agent/src/planning/vesper_lens/mod.rs",
+      "sha256": "4396a6fbd90a548dfff143faa7afd774e73c19fd77aa06aaa0a8adb139396d31"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/planning/vesper_lens/server.rs",
+      "from": "crates/vesper-agent/src/planning/vesper_lens/server.rs",
+      "sha256": "fd14e0342b15a945495d69e6e8a5646d613d4d865fa52a25c32e039f721fa0dc"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/planning/vesper_lens/types.rs",
+      "from": "crates/vesper-agent/src/planning/vesper_lens/types.rs",
+      "sha256": "48a2a3633843db622e0018b61361b1613df2e47ea0ecbe4427db8ca52670f9c3"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-agent/src/project_context.rs",
+      "from": "crates/vesper-agent/src/project_context.rs",
+      "sha256": "9eba2c12503c3ecbe55247abc8530ca275fcfaa63ca5695953ccf84c41e44d28"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-agent/src/provider_output.rs",
+      "from": "crates/vesper-agent/src/provider_output.rs",
+      "sha256": "6275d9205e93ea1d1933dbfc0bbedff9df82400d556b58bf72454555b43c872f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/providers/lmstudio/client.rs",
+      "from": "crates/vesper-agent/src/providers/lmstudio/client.rs",
+      "sha256": "9d37cdd1b6147f6ba62deaa1825fc6a96c39ec6f1b16d83fbe6097b4a9de58ef"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/providers/lmstudio/config.rs",
+      "from": "crates/vesper-agent/src/providers/lmstudio/config.rs",
+      "sha256": "a37c91c6078010288662206276cf785451c62e289518e89f6381befa1d39afce"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/providers/lmstudio/discovery.rs",
+      "from": "crates/vesper-agent/src/providers/lmstudio/discovery.rs",
+      "sha256": "2782da17c50e9da50e1526abe6890d0043161e2add05c8685110c1d6ccbadbe0"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/providers/lmstudio/generator.rs",
+      "from": "crates/vesper-agent/src/providers/lmstudio/generator.rs",
+      "sha256": "752266a1236866992c0e65a62475a2717367ae3b4807cce1c644a701d887d16d"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-agent/src/providers/lmstudio/mod.rs",
+      "from": "crates/vesper-agent/src/providers/lmstudio/mod.rs",
+      "sha256": "d1941f580295f3cec0ad67b86f0d87c6173763b702f46b3eb24e8034962c9eee"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/providers/lmstudio/react.rs",
+      "from": "crates/vesper-agent/src/providers/lmstudio/react.rs",
+      "sha256": "8f86464324fb7a3d9e4d051d8f33e65728c9314988d03121d58e34b3c796cf21"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-agent/src/providers/mod.rs",
+      "from": "crates/vesper-agent/src/providers/mod.rs",
+      "sha256": "0cf45b9a7df684eeefa488bcf3a07795d57fb0e33727c6a90f8c6a45062bb7f7"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/references.rs",
+      "from": "crates/vesper-agent/src/references.rs",
+      "sha256": "8ed19d47298544534c9e12e63fbb908bdc23e92112e570a09681ad3a703ab06a"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-agent/src/registry.rs",
+      "from": "crates/vesper-agent/src/registry.rs",
+      "sha256": "42e4382d4dd20cef395b519eb69efd0aee654fb369cf9ecea8c0ecfea7115969"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-agent/src/sandbox_route.rs",
+      "from": "crates/vesper-agent/src/sandbox_route.rs",
+      "sha256": "6abf52923951d35ee0ab1d4f26853a3f293217215a491bebfd7854191ea4b1ae"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/src/tools.rs",
+      "from": "crates/vesper-agent/src/tools.rs",
+      "sha256": "b3bdfb6ee88acbbd6e3831d28fb1cf3d85d173776d62d265c2b89d125b6825b0"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/src/vro/executor.rs",
+      "from": "crates/vesper-agent/src/vro/executor.rs",
+      "sha256": "b181a98a5f6ca1bb9d9cfbcc40f387b7f202a55ede537c53ab8c954668ca1c5b"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/learning.rs",
+      "from": "crates/vesper-agent/src/vro/learning.rs",
+      "sha256": "9370c1a6a5b9645a9c79c54e5e8d9ddf8f040e86f52ee0f237809eaf61e89c76"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/src/vro/lens_integration.rs",
+      "from": "crates/vesper-agent/src/vro/lens_integration.rs",
+      "sha256": "c69bb7286a22d50d07b9a63ce122b80528a4fdd2e21e6594d28a18d26cbd1b62"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/loop_detector.rs",
+      "from": "crates/vesper-agent/src/vro/loop_detector.rs",
+      "sha256": "c2d1073f45a035fd5e422f1af0bceb6df6bf3814dd34c07f78c575584e1efa85"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/loop_detector_tests.rs",
+      "from": "crates/vesper-agent/src/vro/loop_detector_tests.rs",
+      "sha256": "f1ffe60a52cfe17a2f6350d974b894e1461e4135b4d5c255039e96af6e89ffff"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/mod.rs",
+      "from": "crates/vesper-agent/src/vro/mod.rs",
+      "sha256": "26bef5175be62f3a22054dd98a0a9e8db87b943f2d60fcad8e7f57bab6cab905"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/orchestrator.rs",
+      "from": "crates/vesper-agent/src/vro/orchestrator.rs",
+      "sha256": "0477467664482e737f4548fcfaae57fefab3199912bd0b9cf88ca1bdd7fa8fc8"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/profiler.rs",
+      "from": "crates/vesper-agent/src/vro/profiler.rs",
+      "sha256": "6ec105cc0f79bdcdd11007554e9679a8932d10138a63983cfb888e6f6a900a56"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/src/vro/rate_limit.rs",
+      "from": "crates/vesper-agent/src/vro/rate_limit.rs",
+      "sha256": "88942d2805f5a614cd844fd4d67fedf590ee94aa671c8d934ec6f52de1f4bfda"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/src/vro/react.rs",
+      "from": "crates/vesper-agent/src/vro/react.rs",
+      "sha256": "0cb293cb1994ebe18cce85a3247d6963ef01d90340b9254adc6210ef28b5e0b3"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/repair.rs",
+      "from": "crates/vesper-agent/src/vro/repair.rs",
+      "sha256": "85855df57ab2b2067cf39f8cffd12eb0199247d0694a7a1f47e4450dbd40d01f"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/scope.rs",
+      "from": "crates/vesper-agent/src/vro/scope.rs",
+      "sha256": "32ee32c2016e377647dd608363127ad0f470cc1ba4d46c6becd67330304e1195"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/src/vro/strategies.rs",
+      "from": "crates/vesper-agent/src/vro/strategies.rs",
+      "sha256": "1664c32ff97409b6ec2f4bd0339796e5eb084c8727d45acac51c82bd36500a47"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/src/vro/verifiers.rs",
+      "from": "crates/vesper-agent/src/vro/verifiers.rs",
+      "sha256": "90581633d17c2c1653b2d82f5b7dc735636fd199aa7e5c4c9b242959dc68d0f0"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-agent/tests/acceptance_policy.rs",
+      "from": "crates/vesper-agent/tests/acceptance_policy.rs",
+      "sha256": "dcdffc6ebd299869646b66b1b3771feaa3d0f577e849698d183e04ee1434db44"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-agent/tests/agent_loop.rs",
+      "from": "crates/vesper-agent/tests/agent_loop.rs",
+      "sha256": "4803cc9e53446b04dd226cb218e8732822fe078c1c556030012ea3b0e90fec92"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/tests/command_settlement.rs",
+      "from": "crates/vesper-agent/tests/command_settlement.rs",
+      "sha256": "8d8a73f96b72d660399e01a52a9caae92875cf637aac02fe9dd9eb3d46a42907"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-agent/tests/executors.rs",
+      "from": "crates/vesper-agent/tests/executors.rs",
+      "sha256": "f8043e9067099532f489a9874c19f2ee18342f8db80e22f5213310c267c35472"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-agent/tests/firewall.rs",
+      "from": "crates/vesper-agent/tests/firewall.rs",
+      "sha256": "196f8e8cc4ca75d53858090827c9ee12a44f4a21871aad73f391da1ae2b7a456"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/tests/fixtures/vesper-lens/fixture.js",
+      "from": "crates/vesper-agent/tests/fixtures/vesper-lens/fixture.js",
+      "sha256": "2d4235e390ab34b0372de12cccd028b7291c6f5f6b13107e6f9e75110fe86351"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/tests/fixtures/vesper-lens/index.html",
+      "from": "crates/vesper-agent/tests/fixtures/vesper-lens/index.html",
+      "sha256": "beafb06cd63b33b987b2806baa19a207a6e07988e3530a15b4ee7e6b8264f53b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-agent/tests/fixtures/vesper-lens/styles.css",
+      "from": "crates/vesper-agent/tests/fixtures/vesper-lens/styles.css",
+      "sha256": "bb4379f60f5436445cbc0de97aa1809671c0456351506960f775fc6d9e29c6f9"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/tests/live_react_integration.rs",
+      "from": "crates/vesper-agent/tests/live_react_integration.rs",
+      "sha256": "f86b4b5602b035cbb67b93162568df8d9c77ad75cd9a8fd7c5b8265676e02008"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-agent/tests/provider_tool_scope.rs",
+      "from": "crates/vesper-agent/tests/provider_tool_scope.rs",
+      "sha256": "ca23b262b30b2d1a4186495bc2884c7dddb55c59d363ba372842cf26ea21aad5"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-agent/tests/soak_test.rs",
+      "from": "crates/vesper-agent/tests/soak_test.rs",
+      "sha256": "b7b5b87b4c841ff80af3c49a5e17c5a3e1ed81a6001773af7a26134a2a86943b"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-agent/tests/vesper_lens_browser.mjs",
+      "from": "crates/vesper-agent/tests/vesper_lens_browser.mjs",
+      "sha256": "129d160851a8fae5e99b2ec956d4aadfd25baa0bef9ad97ca2670b9604ed66ee"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-agent/tests/vesper_lens_interview_browser.mjs",
+      "from": "crates/vesper-agent/tests/vesper_lens_interview_browser.mjs",
+      "sha256": "b6bf2dbadab5619954a3d0940f48f989fc4f9390a3f074be3f48d1f8b1f8f1f0"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-auth/AGENTS.md",
+      "from": "crates/vesper-auth/AGENTS.md",
+      "sha256": "a06479d1ae321f132b667941616b21685f6f1e20e95d1a2ea03710a221a9b9f3"
+    },
+    {
+      "change": "R085",
+      "path": "crates/jarvis-auth/Cargo.toml",
+      "from": "crates/vesper-auth/Cargo.toml",
+      "sha256": "d0a747b3a09d47fbfd87a240bef50af9d861392439e8c73305d90f912d64237e"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-auth/src/lib.rs",
+      "from": "crates/vesper-auth/src/lib.rs",
+      "sha256": "46e6cac6bf21dd1ab5ab5812fab5f8954e180dd6a984eab25286b6db24b11d25"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-auth/src/native_records.rs",
+      "from": "crates/vesper-auth/src/native_records.rs",
+      "sha256": "f0ffc5aa9e8e7050f6807a487036e026fc362a92ee16f7bff2a17b54ce11a19a"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-auth/tests/native_persistence.rs",
+      "from": "crates/vesper-auth/tests/native_persistence.rs",
+      "sha256": "45ad5ef5b2ee4319f54a07c64e41a0c77df44753bca4f2f6a5e63cda7ada9a55"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-bridge/AGENTS.md",
+      "from": "crates/vesper-bridge/AGENTS.md",
+      "sha256": "893edfba7d33a3f67f23259dfad703496fc1032c385cb57de37203967fe0426a"
+    },
+    {
+      "change": "R075",
+      "path": "crates/jarvis-bridge/Cargo.toml",
+      "from": "crates/vesper-bridge/Cargo.toml",
+      "sha256": "1f3569eb988149638945d2cab6e16299ed18950a7e2311cfae84814b283fdc6b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/adapter.rs",
+      "from": "crates/vesper-bridge/src/adapter.rs",
+      "sha256": "dbb2eb73972dd05f1e2c01e073d11c949a9fd62787dd7ef9ec0cd8eaed2f4143"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/capability.rs",
+      "from": "crates/vesper-bridge/src/capability.rs",
+      "sha256": "ede6a4e52d5657369a26ddebb2427248cb5c60e28a1124e1f41f75be7a579388"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/error.rs",
+      "from": "crates/vesper-bridge/src/error.rs",
+      "sha256": "e45e5ecda1e511646ec24668c3c8427883d87fbc01b61691e0355c3695def39d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/identity.rs",
+      "from": "crates/vesper-bridge/src/identity.rs",
+      "sha256": "7ef22add4fe6d4d9ae2ea94b82b6ab177ba906491e9ae04d03f58a583f4ec60f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/journal.rs",
+      "from": "crates/vesper-bridge/src/journal.rs",
+      "sha256": "ab5f671e8ad82795c36a57f6c0aac032a31401f226dcf3c5ffb058df33e41653"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/lease.rs",
+      "from": "crates/vesper-bridge/src/lease.rs",
+      "sha256": "6582dffe9082cec3e5e90a0b17aed5d12ed46e3f070fc270d459a61e65c08e57"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/lib.rs",
+      "from": "crates/vesper-bridge/src/lib.rs",
+      "sha256": "f70857fbbada62c7f00f7abd9802d637e073ff8afae15d29a01a7e3d346689c1"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/observation.rs",
+      "from": "crates/vesper-bridge/src/observation.rs",
+      "sha256": "622a53fef75fac31b41941450705084368e010a87baf4b72ed31b0aa45f06196"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/operation.rs",
+      "from": "crates/vesper-bridge/src/operation.rs",
+      "sha256": "b6272039256e9d6df90fec9d3b4daf922233069e0fb6633a67a485be84995183"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-bridge/src/session.rs",
+      "from": "crates/vesper-bridge/src/session.rs",
+      "sha256": "4180b26624047869f455355eca4cd997b2a77a7ced88de9b4f0ac090f880a5cf"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-bridge/tests/audit_fixes.rs",
+      "from": "crates/vesper-bridge/tests/audit_fixes.rs",
+      "sha256": "819572ac2f99363c2aa64e73ad8f0e25ba6f2e555719427435ad49e8fe92a9b9"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-bridge/tests/contract_invariants.rs",
+      "from": "crates/vesper-bridge/tests/contract_invariants.rs",
+      "sha256": "7bfafc75d31e4a9ed6b3af34e71b0d759752fbf131ff1c60435e882c342fb7b1"
+    },
+    {
+      "change": "R084",
+      "path": "crates/jarvis-bridge/tests/emergency_release.rs",
+      "from": "crates/vesper-bridge/tests/emergency_release.rs",
+      "sha256": "72b6428dab97b806e986bf19a1748f9cf1cc727e9c0b1b03318d168b113949e2"
+    },
+    {
+      "change": "R090",
+      "path": "crates/jarvis-bridge/tests/input_release_settlement.rs",
+      "from": "crates/vesper-bridge/tests/input_release_settlement.rs",
+      "sha256": "ba1e97ec1b05c3980c31c490bbd76844e70e877d01a5865a651227f70309b986"
+    },
+    {
+      "change": "R073",
+      "path": "crates/jarvis-bridge/tests/journal_bounds.rs",
+      "from": "crates/vesper-bridge/tests/journal_bounds.rs",
+      "sha256": "c7fc8632cad39268abcb4c897950397cf022bbd317e416059ad81668af18220b"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-bridge/tests/outcome_reachability.rs",
+      "from": "crates/vesper-bridge/tests/outcome_reachability.rs",
+      "sha256": "266f1e296e7a40eebfbbf4c66033c3f6d789f8fdb756c725f302081687477c8d"
+    },
+    {
+      "change": "R081",
+      "path": "crates/jarvis-bridge/tests/quarantine_lifecycle.rs",
+      "from": "crates/vesper-bridge/tests/quarantine_lifecycle.rs",
+      "sha256": "417b1638c8930159e32260a280c7c7cc6442d1e145fc855b05fc8539337d4e97"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-bridge/tests/session_bounds.rs",
+      "from": "crates/vesper-bridge/tests/session_bounds.rs",
+      "sha256": "47f8838710ea4fc6dd591da3a8691056190a67b9886fd8fd356583cc19584e8f"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-bridge/tests/session_gate.rs",
+      "from": "crates/vesper-bridge/tests/session_gate.rs",
+      "sha256": "349e4145430ced869c34667b92a08c960d3c8d35813dc8d2a13e49ed0bf8df89"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-bridge/tests/session_lifecycle_completion.rs",
+      "from": "crates/vesper-bridge/tests/session_lifecycle_completion.rs",
+      "sha256": "7585dd4121117953e65c81bda3717a631e37d18180c3b0463092e39eaa52e0d2"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-checkpoints/AGENTS.md",
+      "from": "crates/vesper-checkpoints/AGENTS.md",
+      "sha256": "8e4d08ef3284d4e74947a75ba4bc1104374266f283d6b6782e990f7f5391b588"
+    },
+    {
+      "change": "R078",
+      "path": "crates/jarvis-checkpoints/Cargo.toml",
+      "from": "crates/vesper-checkpoints/Cargo.toml",
+      "sha256": "d17b3ac93fffb62a1c03056e51a976079c28aaa644733763e488c8af78bf1293"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/ci.rs",
+      "from": "crates/vesper-checkpoints/src/ci.rs",
+      "sha256": "6cb1e897a1e05b1e9d5c8a651360d8affce5eabaf9c545e245c18ba963bc65ed"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/clipboard.rs",
+      "from": "crates/vesper-checkpoints/src/clipboard.rs",
+      "sha256": "42e944f553842b8eefe11a53547a69b9e8aa474e344103ae1d22caf8f67efe0f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/cron.rs",
+      "from": "crates/vesper-checkpoints/src/cron.rs",
+      "sha256": "834176c790d0a087862af7c77320a58a0bca4a19605966c04083f253d9daceeb"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/error.rs",
+      "from": "crates/vesper-checkpoints/src/error.rs",
+      "sha256": "2e97e9d8c09ffa2fb03af36bc7a927931d6fba29adf69e96d45a938fb467ce95"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/export.rs",
+      "from": "crates/vesper-checkpoints/src/export.rs",
+      "sha256": "09df717ef94757d52f687f5bc06d8a90ad85dc7c72aa6df54f8add32672f0e2f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/io.rs",
+      "from": "crates/vesper-checkpoints/src/io.rs",
+      "sha256": "1c38274458d87acaad15fcad364bbfc19a23ac4632df61161f7cbe8b4818a18d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/ledger.rs",
+      "from": "crates/vesper-checkpoints/src/ledger.rs",
+      "sha256": "1f945986c10b51dde914b6d8c93f6b107a07ccb727128140fd71e07f03a29998"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/lib.rs",
+      "from": "crates/vesper-checkpoints/src/lib.rs",
+      "sha256": "d873cc930bb89c658b686fde8ea94ca7e2f52b1498095629a77fe0dd0512c8d4"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/sessions.rs",
+      "from": "crates/vesper-checkpoints/src/sessions.rs",
+      "sha256": "71d055a3f8d1bb63984558c320fe84d6cd844586e9b0d0f23ef9a2d5c97d1204"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/snapshot.rs",
+      "from": "crates/vesper-checkpoints/src/snapshot.rs",
+      "sha256": "02fffc894995faad39c91b86653f40d0bc6fc752fa3b76a8685c76641f609619"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/types.rs",
+      "from": "crates/vesper-checkpoints/src/types.rs",
+      "sha256": "c2b10ecee99a8c7af9d400210cfa8bcf0e5cfed1c6ba55a2e5afc79308f7301f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-checkpoints/src/watchers.rs",
+      "from": "crates/vesper-checkpoints/src/watchers.rs",
+      "sha256": "687a77b15ff80f2ce5513a17e910ff65589a593daac42c2e33661afb0ae60da7"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-cognition/AGENTS.md",
+      "from": "crates/vesper-cognition/AGENTS.md",
+      "sha256": "265d26d9809285694559efaf258ed48184744ddf3299906f81cdce65a46cda90"
+    },
+    {
+      "change": "R088",
+      "path": "crates/jarvis-cognition/Cargo.toml",
+      "from": "crates/vesper-cognition/Cargo.toml",
+      "sha256": "76699a7b193076b5232a26cc0ff4c6faf7c40e2c020e20715b9c73018d7bf91d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/assets/additive_extraction_prompt.txt",
+      "from": "crates/vesper-cognition/assets/additive_extraction_prompt.txt",
+      "sha256": "e5677ea7a24550e08e7c71a633e887f3a5bb8c22cc234c718143964f78780385"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/assets/agent_context_suffix.txt",
+      "from": "crates/vesper-cognition/assets/agent_context_suffix.txt",
+      "sha256": "bc35169306b2c7e533fd9245ebde9886f147c562220ec0062ca32edde400a523"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/assets/procedural_memory_system_prompt.txt",
+      "from": "crates/vesper-cognition/assets/procedural_memory_system_prompt.txt",
+      "sha256": "3bdbc4e86552c34c2062696a1c274ada62fe9ef10889ac4bd3dd647c268b8211"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/bm25.rs",
+      "from": "crates/vesper-cognition/src/bm25.rs",
+      "sha256": "25b0d921a5a3d12367880bce9736cd00e5b8458f895a9e53622f5d8062713115"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/embedder.rs",
+      "from": "crates/vesper-cognition/src/embedder.rs",
+      "sha256": "3a7d2aa4b2eebf26f4532d14e6fb9eb7ecac9fdd4e335ac92aca34b7b19363dc"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/error.rs",
+      "from": "crates/vesper-cognition/src/error.rs",
+      "sha256": "1eaa678533f30632fe0ce886616c79eb5547dd3431ec78d0dd72762c80320a62"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/extract.rs",
+      "from": "crates/vesper-cognition/src/extract.rs",
+      "sha256": "7c260b2fcb6482661d32489033cbc6b06f228b046bd4beb6d85bf774af998996"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/filters.rs",
+      "from": "crates/vesper-cognition/src/filters.rs",
+      "sha256": "12bd8ce30fa3770b9aceab45041fd36114a789ac3ebecbb457838df1e78d814d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/lib.rs",
+      "from": "crates/vesper-cognition/src/lib.rs",
+      "sha256": "84060c1ee13687e82598bf97ab1f3e0cb2a067ca30038454446a2e8e4dedd7b4"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/nlp.rs",
+      "from": "crates/vesper-cognition/src/nlp.rs",
+      "sha256": "dfaca88d8fa9899d558eaf55bc74a6eb5927830a42008da71beff2b0fa4d80e6"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/pipeline.rs",
+      "from": "crates/vesper-cognition/src/pipeline.rs",
+      "sha256": "31c3ae8e8a92bbb30e20476b3aae883437cd14f81683da99d9fea07d3d202352"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/ports.rs",
+      "from": "crates/vesper-cognition/src/ports.rs",
+      "sha256": "7c119fe0162a28ce8e3df1138580fa443062f885a5f56b1b4a08cd7186690130"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/prompts.rs",
+      "from": "crates/vesper-cognition/src/prompts.rs",
+      "sha256": "ac72ae72d20cab355833d9ce3a717f48cec86150aa4a462adbff0b57419d9398"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/score.rs",
+      "from": "crates/vesper-cognition/src/score.rs",
+      "sha256": "f6db99d259fe31a432278422b92bc7ca2e487496462dc3feee579b7feb3ad90a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/store.rs",
+      "from": "crates/vesper-cognition/src/store.rs",
+      "sha256": "e71eea0ad630d9d177f4531589e0e562c58fa1f03579acc1beeed145872e84f6"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-cognition/src/types.rs",
+      "from": "crates/vesper-cognition/src/types.rs",
+      "sha256": "6724ed179c26094d5fa3bacc0e09e2d36f20f9cf780dc898170ae4334b8a5368"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-config/AGENTS.md",
+      "from": "crates/vesper-config/AGENTS.md",
+      "sha256": "9e815de2bf14b5dde638e195cc554c488bc3bfe47422170c1c76f4c8d2e08938"
+    },
+    {
+      "change": "R073",
+      "path": "crates/jarvis-config/Cargo.toml",
+      "from": "crates/vesper-config/Cargo.toml",
+      "sha256": "35fe3afa65d909534d02298f9b5aa0a25f7ca0dcbf68037d2f3d2f32710dc762"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-config/src/app.rs",
+      "from": "crates/vesper-config/src/app.rs",
+      "sha256": "adf0110932730ff501c780adfb1136fb2f7a4bc5e72aa0dbbed32a8d8b1373ef"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-config/src/atomic.rs",
+      "from": "crates/vesper-config/src/atomic.rs",
+      "sha256": "f96bc46bc12da7c001196a81b6e078c31d0d70df9af8d7be08bf11326fb20027"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-config/src/lib.rs",
+      "from": "crates/vesper-config/src/lib.rs",
+      "sha256": "9b9e1840eebfc6c14b4a069660f7e2f2ea1d1eb051dda60d374367972221143d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-config/src/paths.rs",
+      "from": "crates/vesper-config/src/paths.rs",
+      "sha256": "1d0bb7d7abe182d54a2060e1c79e479783d78cdeb77db2cd962a25f30bed8f71"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-config/src/profile.rs",
+      "from": "crates/vesper-config/src/profile.rs",
+      "sha256": "9100a06d5f325adb94fc4b6dfec45dbc3eefe7ca6cd051efe67a12e38ccc611c"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-config/src/sandbox_config.rs",
+      "from": "crates/vesper-config/src/sandbox_config.rs",
+      "sha256": "610d9936a62f08d6dc0d398bacc8488bcafccc3cf065f98d89fac99631d2e08c"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-config/src/web_config.rs",
+      "from": "crates/vesper-config/src/web_config.rs",
+      "sha256": "dc75931b51ee61047a32240bcd7e467c19a92bd43ec767f061dd54dc88c4abf6"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-domain/AGENTS.md",
+      "from": "crates/vesper-domain/AGENTS.md",
+      "sha256": "062f589742025f0458843999e0498fb6546a86d66c1e8220fc55a8b0023de5e4"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-domain/Cargo.toml",
+      "from": "crates/vesper-domain/Cargo.toml",
+      "sha256": "682fcaaaf1a98aa04e139990b9d85b2eee48f8fbda0e26047a380865fd9b2895"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/acceptance.rs",
+      "from": "crates/vesper-domain/src/acceptance.rs",
+      "sha256": "05a85e09c7206a4ea56624487f6d4f0df9380cbdb123e43eaa1d08a6820a5c26"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/bounded.rs",
+      "from": "crates/vesper-domain/src/bounded.rs",
+      "sha256": "1be969f1f7aea5eb052b4d0d1a22b0fb015aab21c161e9307564d672e98f8375"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/capability.rs",
+      "from": "crates/vesper-domain/src/capability.rs",
+      "sha256": "ce06b1950fa684dc39f5c618ced8fc23c6242cf55ae13712c36316e064b97e61"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/command.rs",
+      "from": "crates/vesper-domain/src/command.rs",
+      "sha256": "689a5200e7dc7ba28a7d23127a7dc498dac17b7f9b0ddd5e4e1ed8a741491363"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/compatibility.rs",
+      "from": "crates/vesper-domain/src/compatibility.rs",
+      "sha256": "1ec6bee4df43e01cb1242593eb5d822f27ffa4f7e9dfb84bf09dd2d16e1e8a06"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/content.rs",
+      "from": "crates/vesper-domain/src/content.rs",
+      "sha256": "7f93bfe6675da2bf563de1dd19aa98de8be119fa7077949c093438f5b444a3e6"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/error.rs",
+      "from": "crates/vesper-domain/src/error.rs",
+      "sha256": "ba1c03f23828eefaf097a7ce8c0646ef75de1b3b18449fce2a192886e1509d1e"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/event.rs",
+      "from": "crates/vesper-domain/src/event.rs",
+      "sha256": "2ead8faf30aefd7e3c627b483d7ef2dd83c9d8c3f42e3b0b817017322dc2a38e"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/finish.rs",
+      "from": "crates/vesper-domain/src/finish.rs",
+      "sha256": "d2bd779f3a53d732334c733cfa42adf44eeacb815f324caa57977b41701887f2"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/goal.rs",
+      "from": "crates/vesper-domain/src/goal.rs",
+      "sha256": "0369d6207a01e55ec75bb73381ef33580ceaf215b0dd2c01327c2b384e42611b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/ids.rs",
+      "from": "crates/vesper-domain/src/ids.rs",
+      "sha256": "037e8ce7edca28a6cb0781ed39a46932531ce5023daed1a7e4c895f9e75a1f21"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/lib.rs",
+      "from": "crates/vesper-domain/src/lib.rs",
+      "sha256": "997df057632e27a36b625ef3938c46177f15715f9182b79e0c5f004539c3b2e7"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/message.rs",
+      "from": "crates/vesper-domain/src/message.rs",
+      "sha256": "267adb4e6957ba0ae38a4bc648edea385bc804cf5dd623e7362821afb13df7b2"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/metadata.rs",
+      "from": "crates/vesper-domain/src/metadata.rs",
+      "sha256": "0da41354dd22a4d7ed4f34e1b946ea3ed18f9f2c90468c4ac9f4c7c6ab900d00"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/permission.rs",
+      "from": "crates/vesper-domain/src/permission.rs",
+      "sha256": "91b4520f112bc5b99420604392f8bd8169ef8bd3b28a83fac68363c42e96aad8"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/plan.rs",
+      "from": "crates/vesper-domain/src/plan.rs",
+      "sha256": "25a41b04637743d4b57a3f1eaa52ddf9258af4c1ce11279246610be5023e1d0a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/session.rs",
+      "from": "crates/vesper-domain/src/session.rs",
+      "sha256": "3ce5e1419df61dc4e3fa8a599bdaa5a8b19f2418718db0910fba64dc8d74afec"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/slash_commands.rs",
+      "from": "crates/vesper-domain/src/slash_commands.rs",
+      "sha256": "dbf5bbef91e8ea442a844826ea0c7393897e7da02c0602898fdcc8921fd7ce15"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/tool.rs",
+      "from": "crates/vesper-domain/src/tool.rs",
+      "sha256": "25042518ac4c12760bade51fddf80f5639b52914979c802a2f33859a164c0845"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/usage.rs",
+      "from": "crates/vesper-domain/src/usage.rs",
+      "sha256": "56a6851f881ec46db9ea0875b57ffdeb3ff357a7e579b33cff835763cf38834d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-domain/src/version.rs",
+      "from": "crates/vesper-domain/src/version.rs",
+      "sha256": "da73dbdfb1c0a1fe0f9f7608608b74cd20eb2544d48156b1fb90c3a042b3c29e"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-domain/src/vro.rs",
+      "from": "crates/vesper-domain/src/vro.rs",
+      "sha256": "5b0d6255b68ae604fe0094b67fe02178dff1318d7fe8e14e383435305e2a9b51"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/AGENTS.md",
+      "from": "crates/vesper-harness/AGENTS.md",
+      "sha256": "8682a5f6f1a8221147087b9587cc4b39990f37de78ed7550a22e7a38b2a0e0d2"
+    },
+    {
+      "change": "R054",
+      "path": "crates/jarvis-harness/Cargo.toml",
+      "from": "crates/vesper-harness/Cargo.toml",
+      "sha256": "969fb9065d87b0e01dcb2c84dfa044931b8d9f326a59b7ad7eb4e1b79c541226"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-harness/examples/voice_setup_receipt.rs",
+      "from": "crates/vesper-harness/examples/voice_setup_receipt.rs",
+      "sha256": "19eb13df4d9f828a96fbd3946a531cf42c16c197e78d69edd9457bd7e0e36f53"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-harness/src/acceptance.rs",
+      "from": "crates/vesper-harness/src/acceptance.rs",
+      "sha256": "0989d39cedbc8707da2e79ee9b7bc3cdca578304549fba543a6e99e765ce5883"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-harness/src/acceptance_enrollment_bounds_tests.rs",
+      "from": "crates/vesper-harness/src/acceptance_enrollment_bounds_tests.rs",
+      "sha256": "49e2d795ac672cc8fbb97c763884655820ddcd2b450f21431f1f225f503a2ed6"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-harness/src/acceptance_runner.rs",
+      "from": "crates/vesper-harness/src/acceptance_runner.rs",
+      "sha256": "712f642749ee7765a14cf30a9581f45bac30a9481f8a346787902e2aed5c5894"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/src/acceptance_settings.rs",
+      "from": "crates/vesper-harness/src/acceptance_settings.rs",
+      "sha256": "3f939fa826a9218163dc4ebac6920f0d582c33e57e1be469b37e60e9fb440e13"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/acceptance_snapshot.rs",
+      "from": "crates/vesper-harness/src/acceptance_snapshot.rs",
+      "sha256": "3efeed9a7ffbb49e65367f1a73965b5b117eac0a97bdb6e33dfd54bbc4a3acd5"
+    },
+    {
+      "change": "R090",
+      "path": "crates/jarvis-harness/src/acceptance_tests.rs",
+      "from": "crates/vesper-harness/src/acceptance_tests.rs",
+      "sha256": "a5ffbbaca4ad3091249c791054282fd21455ef5362c52658e44911fa6d90b41e"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/src/bridge_adapter_guard_tests.rs",
+      "from": "crates/vesper-harness/src/bridge_adapter_guard_tests.rs",
+      "sha256": "14a0ccc4e2908ca4edc8c9991c336e8615718b3a6fdeaeb0d5f4a58529112ad8"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/src/bridge_adapter_tests.rs",
+      "from": "crates/vesper-harness/src/bridge_adapter_tests.rs",
+      "sha256": "420dec168a1bd364f79061f6bb2c7c1cd02fddc30745ae55d5b72ca2ced56e2b"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/src/bridge_adapters.rs",
+      "from": "crates/vesper-harness/src/bridge_adapters.rs",
+      "sha256": "67dc64eeb45d1a00df7b17ac7f2db52a58e7cfa9bfbdc094b709acf75168e5a1"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/bridge_command.rs",
+      "from": "crates/vesper-harness/src/bridge_command.rs",
+      "sha256": "6f081d376810623045c932ccc774ed79c6b1258a4eaf07f57504d79977a0f067"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-harness/src/bridge_hardening_tests.rs",
+      "from": "crates/vesper-harness/src/bridge_hardening_tests.rs",
+      "sha256": "c087bc3e72b22b3b07d2e57583eb646c6bfc1d28dbf4424b914debc204764dcd"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-harness/src/bridge_latency_tests.rs",
+      "from": "crates/vesper-harness/src/bridge_latency_tests.rs",
+      "sha256": "6b428b00f833a36523b81fba08e04d2e21f3e9723ebe8c564fda7ddf7e38a910"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-harness/src/bridge_production_stop_tests.rs",
+      "from": "crates/vesper-harness/src/bridge_production_stop_tests.rs",
+      "sha256": "b30347c7113ea72966e445e18260bb68fec54294333826b85e6fe744add0d838"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-harness/src/bridge_service.rs",
+      "from": "crates/vesper-harness/src/bridge_service.rs",
+      "sha256": "b49ee1089b1ddc84da1d04fed181e959bf22e17d35a3733cf74d6a0ce5c58e6b"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-harness/src/bridge_service_tests.rs",
+      "from": "crates/vesper-harness/src/bridge_service_tests.rs",
+      "sha256": "20d8cfbfb558edcdccd3df28cdfb81f9f0794f5873ccc371183e2688ae617104"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/bridge_settings.rs",
+      "from": "crates/vesper-harness/src/bridge_settings.rs",
+      "sha256": "cde3a33923ca0562d3b9d612b292a6dec0c3617b3f97f44432151218212baa9c"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-harness/src/bridge_stop_tests.rs",
+      "from": "crates/vesper-harness/src/bridge_stop_tests.rs",
+      "sha256": "32689c87ceff26d1d8fc4f7e9c0ab748d469d1430afa4234b235d738ad733e89"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/daemon_lock.rs",
+      "from": "crates/vesper-harness/src/daemon_lock.rs",
+      "sha256": "353ad09eb5a6e63225c2bc8eda2fedfc436a920c63883ebc1251b75d949e88d5"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/dependency_setup.rs",
+      "from": "crates/vesper-harness/src/dependency_setup.rs",
+      "sha256": "c6854ffa626ceeeb9d8809efe5ad70c442a0ec30d7cf01306f87d10620c172d8"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-harness/src/dependency_setup_tests.rs",
+      "from": "crates/vesper-harness/src/dependency_setup_tests.rs",
+      "sha256": "1911eaae046436191c8bb0aa7b6ff5272d9c49fe5059c8ff1f9a5e5653063faa"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-harness/src/host_commands.rs",
+      "from": "crates/vesper-harness/src/host_commands.rs",
+      "sha256": "d17a8fc00d18893257ffe1816cfbd320b26b826ecd263b81678c6410953dcff9"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/host_resources.rs",
+      "from": "crates/vesper-harness/src/host_resources.rs",
+      "sha256": "57d41030697b605c9f225111063041c5112f8c66efdca82d5e94b092da5f593c"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/host_resources_constrained_tests.rs",
+      "from": "crates/vesper-harness/src/host_resources_constrained_tests.rs",
+      "sha256": "9d9ff55d653abdcb83225e2245d4f693f5eb8cfb20d09e1b2071cad589d4d83e"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/host_resources_native.rs",
+      "from": "crates/vesper-harness/src/host_resources_native.rs",
+      "sha256": "642a890e33225d37e6365ec3f41c02f11464b46655d2f5c919adf245a43cd1a2"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/host_resources_windows_job.ps1",
+      "from": "crates/vesper-harness/src/host_resources_windows_job.ps1",
+      "sha256": "c78873285f317e34a171f6d43b99dacbe863ff57a089bcea2fc7d09274f7612e"
+    },
+    {
+      "change": "R084",
+      "path": "crates/jarvis-harness/src/lens_tools.rs",
+      "from": "crates/vesper-harness/src/lens_tools.rs",
+      "sha256": "de3f712dab7492e6a07244ce72b65d2e3c85ec7bbddba45543bc233379424f9a"
+    },
+    {
+      "change": "R089",
+      "path": "crates/jarvis-harness/src/lib.rs",
+      "from": "crates/vesper-harness/src/lib.rs",
+      "sha256": "bdc3cad9974453f31f30f7937369464326e495a1f90512afbd15e26f571e6b3f"
+    },
+    {
+      "change": "R083",
+      "path": "crates/jarvis-harness/src/mcp_session_tests.rs",
+      "from": "crates/vesper-harness/src/mcp_session_tests.rs",
+      "sha256": "40bb4846a589ac3c509faf51daf4d3fd8f28ed8abd358aca6bd39bb7454d64df"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/release_closeout.rs",
+      "from": "crates/vesper-harness/src/release_closeout.rs",
+      "sha256": "ccc50f5517aa8b47c03bfe3afea127b469ed67176029326e6b20eadba2bf557b"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-harness/src/release_executor.rs",
+      "from": "crates/vesper-harness/src/release_executor.rs",
+      "sha256": "f728527c95c95b4a8ccfa540d8928341b164c9524aa03707a27b4093d1e8066b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/release_progress_tests.rs",
+      "from": "crates/vesper-harness/src/release_progress_tests.rs",
+      "sha256": "d0b20565bede116651837d1df46855f2610d5391e243d8a9e1277fe1cc58b92f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/release_recovery.rs",
+      "from": "crates/vesper-harness/src/release_recovery.rs",
+      "sha256": "e72ff3e492cdae46d5262b877044546585d91d7b0fd172258b27879249dfdefc"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-harness/src/sandbox_backend.rs",
+      "from": "crates/vesper-harness/src/sandbox_backend.rs",
+      "sha256": "bd1c0eadb80b2f096502e4743498161ed10493b3d1f070cf90a2cf064944d1c4"
+    },
+    {
+      "change": "R092",
+      "path": "crates/jarvis-harness/src/sandbox_outcome_tests.rs",
+      "from": "crates/vesper-harness/src/sandbox_outcome_tests.rs",
+      "sha256": "6b32bacf06ac6bf171d64a750fc33f632d275aa60e638b1f9724faa9eac01f6f"
+    },
+    {
+      "change": "R084",
+      "path": "crates/jarvis-harness/src/sandbox_panic_tests.rs",
+      "from": "crates/vesper-harness/src/sandbox_panic_tests.rs",
+      "sha256": "6e70c9856f682f20f491bcb7a53112ee6d6d61ee161d61885e8be6c14039adae"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/src/scope_holder.rs",
+      "from": "crates/vesper-harness/src/scope_holder.rs",
+      "sha256": "e6601ec50fe2fbff83106669d8d4a67684c35fa5ea7885679e7b5e2567d268bc"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-harness/src/skill_model_selector.rs",
+      "from": "crates/vesper-harness/src/skill_model_selector.rs",
+      "sha256": "2f08fb97466eb12d1530f001b8436762995769a679882084b8f98fc0e8e05991"
+    },
+    {
+      "change": "R092",
+      "path": "crates/jarvis-harness/src/skill_routing_settings.rs",
+      "from": "crates/vesper-harness/src/skill_routing_settings.rs",
+      "sha256": "4340e42271f4df91aadfba2058c5554ecf9f4852292b601fec89b2bf3df49f4f"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-harness/src/slash_commands.rs",
+      "from": "crates/vesper-harness/src/slash_commands.rs",
+      "sha256": "43fb2dd8205c4da89e7df6a0ee36328d96e4d51336398ca86c74a1e5dad2e56f"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/src/swarm_adapter.rs",
+      "from": "crates/vesper-harness/src/swarm_adapter.rs",
+      "sha256": "e9b5273c73f73d7044439fb01f7a9f537ea0d23448f35ecd644de8ff0e78542a"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/src/swarm_embedding.rs",
+      "from": "crates/vesper-harness/src/swarm_embedding.rs",
+      "sha256": "84bd304a759aec312ec928725ea919999681bcdea1c3549ccdaae9cdcbd4490b"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/src/swarm_gate_surface.rs",
+      "from": "crates/vesper-harness/src/swarm_gate_surface.rs",
+      "sha256": "b7ce7dee853c61436c362cda198ada551afef7845eea7a438f3d5455f963ee0d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/swarm_inputs.rs",
+      "from": "crates/vesper-harness/src/swarm_inputs.rs",
+      "sha256": "634445e3155254cb996b06e6037994831f2297ec371050e50d1187c93310c2d3"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/src/swarm_journal.rs",
+      "from": "crates/vesper-harness/src/swarm_journal.rs",
+      "sha256": "d054b8cf7925a611ea47722c1df56e608e8f258a73cd66b694d5d2a766ab3e30"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-harness/src/swarm_sandbox.rs",
+      "from": "crates/vesper-harness/src/swarm_sandbox.rs",
+      "sha256": "1fb3c72d0a32621b4c142104fcffd3352374b5b28d720df0ec99e0428e2c5e4d"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-harness/src/swarm_sandbox_tests.rs",
+      "from": "crates/vesper-harness/src/swarm_sandbox_tests.rs",
+      "sha256": "7acfe0009c8e4193e11f8681204d93816ece18b89d9ecc92df2b5fdaebb7b224"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/src/swarm_service.rs",
+      "from": "crates/vesper-harness/src/swarm_service.rs",
+      "sha256": "3b0ccdf5e84f7d8e8dca60ae032fd360a47be985e39212fd2ef3a2a3cff02bf1"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/src/swarm_settings.rs",
+      "from": "crates/vesper-harness/src/swarm_settings.rs",
+      "sha256": "67d1aad1e4ff50becce3cfcc04c8c54942d397458c894bc4575510af7dd63297"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/src/swarm_shared_scope.rs",
+      "from": "crates/vesper-harness/src/swarm_shared_scope.rs",
+      "sha256": "f7b98deea6d111554c2791ba8d5e9e3f795f90cce996479d094049080bebee5d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/src/voice_dependency_setup.rs",
+      "from": "crates/vesper-harness/src/voice_dependency_setup.rs",
+      "sha256": "4246fcb8af7856e519c0dfda8fd73f78f4165615dfe25507b49bb2702efeb3b0"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-harness/src/watcher_sweep.rs",
+      "from": "crates/vesper-harness/src/watcher_sweep.rs",
+      "sha256": "24830c35a27967a16a7e9dbaed4fee9aa64b039b32ae793b4297274baf2af532"
+    },
+    {
+      "change": "R092",
+      "path": "crates/jarvis-harness/src/web_runtime.rs",
+      "from": "crates/vesper-harness/src/web_runtime.rs",
+      "sha256": "932c06f323ab25302d333998f07cd4cedcaf8b940685b4e98bad1c4c4e4b13ce"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-harness/src/web_service.rs",
+      "from": "crates/vesper-harness/src/web_service.rs",
+      "sha256": "b341c106e08dee1ed52b71711a6c85ca10e4128a60b6d92da6e4b030f766e3b9"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-harness/src/web_settings.rs",
+      "from": "crates/vesper-harness/src/web_settings.rs",
+      "sha256": "219eae13f37720185b0872b5c7890562d8d9505ed4f361999c30ac2f8ad1e579"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/tests/container_cli_fixture.sh",
+      "from": "crates/vesper-harness/tests/container_cli_fixture.sh",
+      "sha256": "2d096e6d1829349a65f918a8f8f990f0a20bfdab51d5c867bfb3eb060e9461ea"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-harness/tests/context_paging_composition.rs",
+      "from": "crates/vesper-harness/tests/context_paging_composition.rs",
+      "sha256": "d99b64b1a454802e3c645813742cd40ab686c879d12441c1461197112171e4db"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/tests/dependency_cli_fixture.sh",
+      "from": "crates/vesper-harness/tests/dependency_cli_fixture.sh",
+      "sha256": "b4eb3dd4effeee26c87bbe78cead71da71eaa6d4b0c41f04ee8912c27ffa0d57"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-harness/tests/release_repair_dispatch.rs",
+      "from": "crates/vesper-harness/tests/release_repair_dispatch.rs",
+      "sha256": "666beeb8a8a55848beda471d750de096f0f0e8d082c0f8e553ef3587f8f4d3db"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-harness/tests/release_repair_retry.rs",
+      "from": "crates/vesper-harness/tests/release_repair_retry.rs",
+      "sha256": "05c47ec6c24147e431414ff6fec8737559f0e4617053bc636820a0e39f196586"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/tests/sandbox_parity.rs",
+      "from": "crates/vesper-harness/tests/sandbox_parity.rs",
+      "sha256": "248f1da06099830444d8e38acbbb60e659347578396530a2a185fd1ad90b11e7"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-harness/tests/scope_parity.rs",
+      "from": "crates/vesper-harness/tests/scope_parity.rs",
+      "sha256": "ca68d476e0c4bdfa763435c3666ee2a6f3131869de62f7de5ecd58a9bfe5da7c"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-harness/tests/skill_routing_settings.rs",
+      "from": "crates/vesper-harness/tests/skill_routing_settings.rs",
+      "sha256": "51cacb34d938c0cf48ee9ead98e3ca16ba16c5e3a35fb6dd20a4a5ab7e9328bf"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-harness/tests/swarm_adapter_tests.rs",
+      "from": "crates/vesper-harness/tests/swarm_adapter_tests.rs",
+      "sha256": "befc1efdcc8bbdd0047132904428690cf7492dd5d72e81b32a215cc629ce93b1"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/tests/swarm_gate_parity.rs",
+      "from": "crates/vesper-harness/tests/swarm_gate_parity.rs",
+      "sha256": "68f7b370311573fcc44d43eb897dd56ac0a35b2e60b100d24cdfc5d38aeafe44"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-harness/tests/swarm_lens_browser.mjs",
+      "from": "crates/vesper-harness/tests/swarm_lens_browser.mjs",
+      "sha256": "7908be7fec9e20a170b90b1a328cc3eef6e7d4665756e4dcec60b9692e4d5751"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/tests/swarm_native_hive.rs",
+      "from": "crates/vesper-harness/tests/swarm_native_hive.rs",
+      "sha256": "a5b2dc823b05ca7d7789fc244c391ff7fc18706bd329b8f402eb1e0ca13106d8"
+    },
+    {
+      "change": "R092",
+      "path": "crates/jarvis-harness/tests/swarm_pipeline_e2e.rs",
+      "from": "crates/vesper-harness/tests/swarm_pipeline_e2e.rs",
+      "sha256": "24435e9e4a4f7ee7849d0f2ce51e9379decd20eb932d99ffaaf5877e785c295e"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-harness/tests/vro13_e2e.rs",
+      "from": "crates/vesper-harness/tests/vro13_e2e.rs",
+      "sha256": "4f09d541e8e3a08f871dcaba29c1cd973d23616f83b1285addb395cc7305e1ca"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-harness/tests/watcher_latency_gate.rs",
+      "from": "crates/vesper-harness/tests/watcher_latency_gate.rs",
+      "sha256": "13a9445331cc6f22bf19ed78d1ff09281b67b506f99c55cad580cc1535147695"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-harness/tests/windows_resource_job.py",
+      "from": "crates/vesper-harness/tests/windows_resource_job.py",
+      "sha256": "5cce0bedd8f0542bf99ba48349b93d900980d9663e6faf617f1f933435aea114"
+    },
+    {
+      "change": "M",
+      "path": "crates/jarvis-identity/AGENTS.md",
+      "sha256": "410a8c5997c19e6149fcc681acc035819d2d3d94380229289929919d6e1193f8"
+    },
+    {
+      "change": "M",
+      "path": "crates/jarvis-identity/Cargo.toml",
+      "sha256": "682e3c1af47da44c44a1239d7c1452be2c576fbe0cd4201e769762012686e325"
+    },
+    {
+      "change": "M",
+      "path": "crates/jarvis-identity/src/mappings.rs",
+      "sha256": "adc4a6db5f25385725a15d274f9440a5a77d46ee975c212be423ff6445e453a3"
+    },
+    {
+      "change": "M",
+      "path": "crates/jarvis-identity/src/packages.rs",
+      "sha256": "502ed5538b2d445b37be4637ff2318c6cf65c4e4204d357210cb71d781dc68eb"
+    },
+    {
+      "change": "M",
+      "path": "crates/jarvis-identity/tests/contracts.rs",
+      "sha256": "41d8fa9c8b1e08fd15f51fc59db5602d1c8b64c155a0e2e00f1d34660ddf14c4"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-mcp/AGENTS.md",
+      "from": "crates/vesper-mcp/AGENTS.md",
+      "sha256": "7196d93370c469b742b76c58c6518dfde7746920957aa1a236ac92e8bb684c29"
+    },
+    {
+      "change": "R084",
+      "path": "crates/jarvis-mcp/Cargo.toml",
+      "from": "crates/vesper-mcp/Cargo.toml",
+      "sha256": "4d13505b7af0e86962cc3b58abdd34dfcbaf81435cf3b5c18b6cf6cc8f835c77"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-mcp/src/error.rs",
+      "from": "crates/vesper-mcp/src/error.rs",
+      "sha256": "15e6a9767b400b574e551548a7372c0efa0d12b36232ea528fcfcb9d2ae33a78"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-mcp/src/lib.rs",
+      "from": "crates/vesper-mcp/src/lib.rs",
+      "sha256": "dff623a62ab5cae12657f44085ba4bef813d1f540e858634c3b19b0e48adede8"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-mcp/src/mcp.rs",
+      "from": "crates/vesper-mcp/src/mcp.rs",
+      "sha256": "a343998240101453e8a16a2ca2635cb5e7b0e60e06e712958b274bbfdd0bf295"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-mcp/src/playwright_live_tests.rs",
+      "from": "crates/vesper-mcp/src/playwright_live_tests.rs",
+      "sha256": "3defe129bcaac7cf816d7edf77b979b659d4869e15c0e6573b2b0cfa684bfd73"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-mcp/src/plugins.rs",
+      "from": "crates/vesper-mcp/src/plugins.rs",
+      "sha256": "683921bbbe9521a20fdb63761539222fa1fc9c20928917a35fdf3d8e501a078e"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-mcp/src/session.rs",
+      "from": "crates/vesper-mcp/src/session.rs",
+      "sha256": "3236a7450ffc0253b6e9e93e084d6acd7d6fcf2d7a2e38eaa9957e3ebc732af8"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-mcp/src/session_tests.rs",
+      "from": "crates/vesper-mcp/src/session_tests.rs",
+      "sha256": "b309ff9fc7b421f92b9612ff129a85727c5db0852235a98816eae5b9dc0977c1"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-mcp/tests/http_contract.rs",
+      "from": "crates/vesper-mcp/tests/http_contract.rs",
+      "sha256": "1e3ad5a80abbeb781edae747f8bfb058ed7ae5e1dfd870ad6b43fe76b9beeb58"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-memory/AGENTS.md",
+      "from": "crates/vesper-memory/AGENTS.md",
+      "sha256": "2ef34d4abede46ae26c2bf3384275f886f4f3566f27f0a5824bdc90f8ab9d8e1"
+    },
+    {
+      "change": "R079",
+      "path": "crates/jarvis-memory/Cargo.toml",
+      "from": "crates/vesper-memory/Cargo.toml",
+      "sha256": "cb182bef42d268789c268876086e9826a5e04fe995ad5feded83bab821844b9e"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-memory/assets/AGENTS.md",
+      "from": "crates/vesper-memory/assets/AGENTS.md",
+      "sha256": "0365a963b7e3b275636c6a295d1add140d22bd4e157e250b4cada4c948fc6996"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/assets/routing-verbs.txt",
+      "from": "crates/vesper-memory/assets/routing-verbs.txt",
+      "sha256": "33555a6dd1dcfc8b6df24047460b3a531a1b9bf711f7ac63a2089e0d38db987d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/awareness.rs",
+      "from": "crates/vesper-memory/src/awareness.rs",
+      "sha256": "28b34f2b097df222b365e4a1c3b4c37983976d55c8e431d79c4307de7bf404b3"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/error.rs",
+      "from": "crates/vesper-memory/src/error.rs",
+      "sha256": "f91d95c47a797ea4bd2ce3aab3197fee7bd0e243cab7aad35a61de2f98f0ac4a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/io.rs",
+      "from": "crates/vesper-memory/src/io.rs",
+      "sha256": "ff1aa4da0c30bb9741b805f1e706696205c938987b3f0d006ecd0476faa621ad"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/lib.rs",
+      "from": "crates/vesper-memory/src/lib.rs",
+      "sha256": "44e571fef4f76095559313cbd84b1e36d604dd8c501bf44423db323786fbae67"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/model_routing.rs",
+      "from": "crates/vesper-memory/src/model_routing.rs",
+      "sha256": "766c015cb1823cd180f2901e2fef0eee4bcd4a508c01b60657e429f04e56452c"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/profile.rs",
+      "from": "crates/vesper-memory/src/profile.rs",
+      "sha256": "fca407428dffd8e1bd2d5bc153d7add3e555fa71b84ea8c6eac8da74a25d00ee"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/routing_quality.rs",
+      "from": "crates/vesper-memory/src/routing_quality.rs",
+      "sha256": "cad92a1b6ef948ab8449a59dd56b4e7e89bc1f4e823a6d61f29ec4204df2a14d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/skill_orchestrator.rs",
+      "from": "crates/vesper-memory/src/skill_orchestrator.rs",
+      "sha256": "dfac3f58fb8b7c616fec78b167655037ff034bca32d9bf700a2ba8f8e9d3b60b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/skills.rs",
+      "from": "crates/vesper-memory/src/skills.rs",
+      "sha256": "6fe2851a2f6096aa104bac539cc17d8e2200ae93e85852aa5cccc40b8b1f6ae6"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/store.rs",
+      "from": "crates/vesper-memory/src/store.rs",
+      "sha256": "63fe96a7e7862ccfb0e52e4ee0d3896faeed4cd6c7f3e2695440356b3454304d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/src/types.rs",
+      "from": "crates/vesper-memory/src/types.rs",
+      "sha256": "6057a8eef6108496235e0bc3ad5b33ed3c4a624cf2d0e4805c8f2435801587b9"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-memory/tests/chunk_routing_eval.rs",
+      "from": "crates/vesper-memory/tests/chunk_routing_eval.rs",
+      "sha256": "7e933f7d2fe1d928c728a8e09006796684471ed5280441568028cd93d645be6a"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-memory/tests/chunk_store.rs",
+      "from": "crates/vesper-memory/tests/chunk_store.rs",
+      "sha256": "d2d6a387f6db03c7677fc184204b1e1e0ec6acbd623534228aeb50e61aa87524"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-memory/tests/exemplar_routing.rs",
+      "from": "crates/vesper-memory/tests/exemplar_routing.rs",
+      "sha256": "80685c65c4c4333b09b493998faf473fd056ba9917a6f00f9fed46bd43d9f01f"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-memory/tests/model_routing.rs",
+      "from": "crates/vesper-memory/tests/model_routing.rs",
+      "sha256": "f77149058427e7845f9a54ee94bc2fe986c80dd3f4406067c47ae0076baffec1"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-memory/tests/routing_literal_requests.rs",
+      "from": "crates/vesper-memory/tests/routing_literal_requests.rs",
+      "sha256": "f5cc38148265c793b46b12f66389c4763932d128c23a39d6851eaca4086f61f1"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-memory/tests/routing_quality.rs",
+      "from": "crates/vesper-memory/tests/routing_quality.rs",
+      "sha256": "1d9e205cdeaed8b6d44f8669b33720b02a9a3590f80d9cb8fc125fb363a89e58"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-memory/tests/routing_quality_cases.json",
+      "from": "crates/vesper-memory/tests/routing_quality_cases.json",
+      "sha256": "e529ed0686c95d10ea1089b34b3595567a7d2db74361d3c829aa793c935ea783"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-memory/tests/routing_quality_corpus.rs",
+      "from": "crates/vesper-memory/tests/routing_quality_corpus.rs",
+      "sha256": "5ed10c5f9baaba1b4ee3ee35798e47fd5e2734fbf3aad5565e701a1cb5b39db9"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-memory/tests/routing_quality_development.rs",
+      "from": "crates/vesper-memory/tests/routing_quality_development.rs",
+      "sha256": "a16c23960f403c95305331439045c6275a5dd6b54b1127577ce27d49a3fbbb56"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-memory/tests/routing_quality_eval.rs",
+      "from": "crates/vesper-memory/tests/routing_quality_eval.rs",
+      "sha256": "440412a33b1a1318a45a29d3eac4da7a84824cb24b11e706f7c07ef7280f48b8"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-memory/tests/routing_quality_independent.rs",
+      "from": "crates/vesper-memory/tests/routing_quality_independent.rs",
+      "sha256": "6d9cda2832994072cc89f1458bd8bc121e0d0b0e8c462d4f8000f5678dde8f78"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-memory/tests/routing_quality_perf.rs",
+      "from": "crates/vesper-memory/tests/routing_quality_perf.rs",
+      "sha256": "72b7d72a569aae5b9b3582151e04bd3935b0c53ef10405d62152861565240484"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-memory/tests/routing_quality_store.rs",
+      "from": "crates/vesper-memory/tests/routing_quality_store.rs",
+      "sha256": "e4af95712abc222c5c8e51a4f88082c31a772798ca43a667adce55711046b9e1"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-memory/tests/skill_routing.rs",
+      "from": "crates/vesper-memory/tests/skill_routing.rs",
+      "sha256": "2cae62fafac6299f9568b868b436ded3660504f58b1317a8e9c56e2ad2c1ee63"
+    },
+    {
+      "change": "R087",
+      "path": "crates/jarvis-observability/AGENTS.md",
+      "from": "crates/vesper-observability/AGENTS.md",
+      "sha256": "e06d33a51108e51d6a1c4def8027cd17e3c1b89b12604105ef493062ef3511a5"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-observability/Cargo.toml",
+      "from": "crates/vesper-observability/Cargo.toml",
+      "sha256": "4f059b7d2f2d45fe7365f4f19e486d315a3528063f641a58c2e6594b80751cf3"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-observability/src/lib.rs",
+      "from": "crates/vesper-observability/src/lib.rs",
+      "sha256": "31a3f1dceb8957f2222be84f3334779573e96d0e408a0d0cc3aa1f0e2d16ccf3"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-policy/AGENTS.md",
+      "from": "crates/vesper-policy/AGENTS.md",
+      "sha256": "e66b0ddf11620e0a174b5bd4ab33da295187f2432c834a2e7015dad24f1f2013"
+    },
+    {
+      "change": "R066",
+      "path": "crates/jarvis-policy/Cargo.toml",
+      "from": "crates/vesper-policy/Cargo.toml",
+      "sha256": "2191e5ac671596410e86e23dbb55ba5f71d25a2b259c37e6a5bc56adbb005b21"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-policy/src/firewall/holder.rs",
+      "from": "crates/vesper-policy/src/firewall/holder.rs",
+      "sha256": "4d708070943a6e8d56c6d57f208bb9b110d9d74ab210f8a800a769b64a5cb251"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-policy/src/firewall/mod.rs",
+      "from": "crates/vesper-policy/src/firewall/mod.rs",
+      "sha256": "a80ee7de03d17fa085180206aa947d342de88c1375e3787ac015460965acd915"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-policy/src/firewall/normalize.rs",
+      "from": "crates/vesper-policy/src/firewall/normalize.rs",
+      "sha256": "d4c75e6c5f30d23969d5771443f531b3dec5f496c1bdc5de7d1273a7f1abc6c2"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-policy/src/firewall/rules.rs",
+      "from": "crates/vesper-policy/src/firewall/rules.rs",
+      "sha256": "c5391bd457f513a36ed59c35525349c13fe2177979d0a1a94659268fe3b87c36"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-policy/src/lib.rs",
+      "from": "crates/vesper-policy/src/lib.rs",
+      "sha256": "7b4c03165c2bf1fd6634dab40a6cbcd2f4e36932f71d9dcb94e7d0a475118a09"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-provider-glm/AGENTS.md",
+      "from": "crates/vesper-provider-glm/AGENTS.md",
+      "sha256": "a0d09b73dceaa5dbf04298c07f9bbbc7bde2e5a600f4953f5dc778208adfeb45"
+    },
+    {
+      "change": "R058",
+      "path": "crates/jarvis-provider-glm/Cargo.toml",
+      "from": "crates/vesper-provider-glm/Cargo.toml",
+      "sha256": "648b9d052325e16e23f91366ffe1cd50937f806b43c88635bfd479260a948912"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-glm/src/adapter.rs",
+      "from": "crates/vesper-provider-glm/src/adapter.rs",
+      "sha256": "955ae120bd514d4046903525809eeb295381ca3e8121ae5beb2b5b488dcd0dfa"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-provider-glm/src/auth.rs",
+      "from": "crates/vesper-provider-glm/src/auth.rs",
+      "sha256": "8320aea3263bc5f62c197c3ebb77a62b38a2d72acaf2beb69b405139fb27d3b0"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-glm/src/auxiliary.rs",
+      "from": "crates/vesper-provider-glm/src/auxiliary.rs",
+      "sha256": "cf90f99a1c968f2deaa04fb2fbbc07de860e35f27a781a07d55b38a0631d5ce5"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-glm/src/catalog.rs",
+      "from": "crates/vesper-provider-glm/src/catalog.rs",
+      "sha256": "922fde29698fa75234abefa1c9eeeafee6895c6b15b52f7a57801f161ead8a1e"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider-glm/src/compatibility.rs",
+      "from": "crates/vesper-provider-glm/src/compatibility.rs",
+      "sha256": "44861793f54a6c5f2ac51fc8a7a1c93d45e19f33f1cbf3328633528e867160ea"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider-glm/src/config.rs",
+      "from": "crates/vesper-provider-glm/src/config.rs",
+      "sha256": "8192ddf140598e43a29abc645398b1fe80b2c559ad1f5c6186c0e708b18888a0"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-glm/src/error.rs",
+      "from": "crates/vesper-provider-glm/src/error.rs",
+      "sha256": "7f0e980022b99b9491c11afd2c55eb9a583386e7ba1c1a59406c295a73c6fbeb"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-provider-glm/src/factory.rs",
+      "from": "crates/vesper-provider-glm/src/factory.rs",
+      "sha256": "b865e9ac6386fd34f47d0e37231042b64a49fe0a0859994a3f22f9d58dc97142"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-glm/src/integration_tests.rs",
+      "from": "crates/vesper-provider-glm/src/integration_tests.rs",
+      "sha256": "d19ef2a7950b7e80fabee984bfdcc9e8a98489dc5f088609cb1594a658d42c66"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-glm/src/lens_wire_tests.rs",
+      "from": "crates/vesper-provider-glm/src/lens_wire_tests.rs",
+      "sha256": "51b825190e8091ba2d233f36644dc2dd10eef91abac1ee770a59dc9aec0c681c"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-glm/src/lib.rs",
+      "from": "crates/vesper-provider-glm/src/lib.rs",
+      "sha256": "44e29eb89bfbf0debc4b6e5c3edbc5b5a95fca17dabb8afe3eca425d7cea5d91"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-glm/src/policy.rs",
+      "from": "crates/vesper-provider-glm/src/policy.rs",
+      "sha256": "35ece45bb4599c0a6b99c1c8ca4a7a1f0e971f27825da508a544c1fefd674f62"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-provider-glm/src/quota.rs",
+      "from": "crates/vesper-provider-glm/src/quota.rs",
+      "sha256": "08bc96ecdf11679b3bca59ffcd5b0bc403394f410e5d502ca783c8b7567b03ca"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-provider-glm/src/request.rs",
+      "from": "crates/vesper-provider-glm/src/request.rs",
+      "sha256": "e5ab3b25bb9bd5d1f68cbd12580a9b3a0c2eab550206b99dd291c6dde3b93b19"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-glm/src/response.rs",
+      "from": "crates/vesper-provider-glm/src/response.rs",
+      "sha256": "40c563e8170f536f3ffdb30e06abdd42385dc50df8de3ee695f1e1224a038ebc"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-provider-glm/src/retry.rs",
+      "from": "crates/vesper-provider-glm/src/retry.rs",
+      "sha256": "ec30175abca9b0cbad0f3ae9acfdde3370f1197defd496c3fafd7d01c380edd7"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-provider-glm/src/sse.rs",
+      "from": "crates/vesper-provider-glm/src/sse.rs",
+      "sha256": "3350e9e1fcad6597661b30a60b7d2769dfc070a93d67d176d2c08db19455747a"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-glm/src/transport.rs",
+      "from": "crates/vesper-provider-glm/src/transport.rs",
+      "sha256": "e05c321cf1af24d1c37bcbef2079aec135d493ebe0a08941f5934a88320e03ca"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-provider-glm/tests/quota_error_envelope.rs",
+      "from": "crates/vesper-provider-glm/tests/quota_error_envelope.rs",
+      "sha256": "453848259aeba5883fa845e02dc052f25c5ae75ac388f85a3a87d0d0d3561f23"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-openai/AGENTS.md",
+      "from": "crates/vesper-provider-openai/AGENTS.md",
+      "sha256": "367e2b54f86c76c1134b8a262d12c65ee0e46dce6e0d310d70623f1a3b7237f7"
+    },
+    {
+      "change": "R070",
+      "path": "crates/jarvis-provider-openai/Cargo.toml",
+      "from": "crates/vesper-provider-openai/Cargo.toml",
+      "sha256": "0affcfa6fd4e4c52cfb210f515c88478b2952b435cb7c9420e137246869b504b"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-openai/src/auth.rs",
+      "from": "crates/vesper-provider-openai/src/auth.rs",
+      "sha256": "440e81f63d7b4b2bf0564055983a102912f35b4f1470db0bf0e528d977f87425"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-provider-openai/src/auth_tests.rs",
+      "from": "crates/vesper-provider-openai/src/auth_tests.rs",
+      "sha256": "b0dbc7795a532e957792544754e67c649cfb1f6ce17feb505a2dd28939757476"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-openai/src/catalog.rs",
+      "from": "crates/vesper-provider-openai/src/catalog.rs",
+      "sha256": "caec910a641238181472790ae6faad033709892a9146fa83f73e2ff65123ca1a"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-provider-openai/src/credentials.rs",
+      "from": "crates/vesper-provider-openai/src/credentials.rs",
+      "sha256": "340315831bfba9431e771789e75763534b0f7ff5e73ba8fbb30e686da950d338"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-openai/src/discovery.rs",
+      "from": "crates/vesper-provider-openai/src/discovery.rs",
+      "sha256": "cd126640b4473fbd6c400e0bc1412d45596c8d41d6833ddd3d12573af81d0f61"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-provider-openai/src/factory.rs",
+      "from": "crates/vesper-provider-openai/src/factory.rs",
+      "sha256": "d857612e6892059770fed8018751c8b21c8aa986d1c59c156ac2316b4fcf3b7f"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-provider-openai/src/http_error.rs",
+      "from": "crates/vesper-provider-openai/src/http_error.rs",
+      "sha256": "46be89b03b14139f52ee62282fdbe41c2fcaccaf9201264ff9a1c92319edf395"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider-openai/src/http_error_bounds_tests.rs",
+      "from": "crates/vesper-provider-openai/src/http_error_bounds_tests.rs",
+      "sha256": "c7d5c104adf064edbe929f54df197831485ccac37a8c916fe2171d674bd99f34"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-openai/src/http_error_parameter_tests.rs",
+      "from": "crates/vesper-provider-openai/src/http_error_parameter_tests.rs",
+      "sha256": "c2938eccf91709e2bb369371b226407d6c1d2e777cd48bdebf8fa082f031fb5d"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-provider-openai/src/http_error_tests.rs",
+      "from": "crates/vesper-provider-openai/src/http_error_tests.rs",
+      "sha256": "bb80ac741750fca58689ef1aaf700c6fc358de55c7842c71311ad2a4957ab3fe"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-openai/src/lens_wire_tests.rs",
+      "from": "crates/vesper-provider-openai/src/lens_wire_tests.rs",
+      "sha256": "5ce6011cb605e29e91c4333e282e40ba37acfa2adfea2455a2f70ce836239e2b"
+    },
+    {
+      "change": "R077",
+      "path": "crates/jarvis-provider-openai/src/lib.rs",
+      "from": "crates/vesper-provider-openai/src/lib.rs",
+      "sha256": "8efe2058289e84dd07fa9e940099d58e976ad1bc2885c2894d76ded6d8d033a4"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-openai/src/policy.rs",
+      "from": "crates/vesper-provider-openai/src/policy.rs",
+      "sha256": "d2872b8bde78d90a709b5f8ba27d685457684a31fb78bf39489116e019442a4d"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-openai/src/tests.rs",
+      "from": "crates/vesper-provider-openai/src/tests.rs",
+      "sha256": "7e6f095d70e121c748b7a160177b559ef110ae84084d34d18d57ebafda8ef2d5"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-openai/src/transport.rs",
+      "from": "crates/vesper-provider-openai/src/transport.rs",
+      "sha256": "7ce0b59968dc5de7c9f4b5d00e1bfd2c71fe91a198234b1e03abca7bec145ccf"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-openai/src/usage.rs",
+      "from": "crates/vesper-provider-openai/src/usage.rs",
+      "sha256": "df8c9414078c8754f0726c93030cf0aec3e52fcea06b1a2886c2f164206ab1dc"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-openai/src/wire.rs",
+      "from": "crates/vesper-provider-openai/src/wire.rs",
+      "sha256": "cf2cd19ed5168b072b0f3d51e9fdd741ccdaa29b698ec989c2cb1c4c4decee12"
+    },
+    {
+      "change": "R080",
+      "path": "crates/jarvis-provider-synthetic/AGENTS.md",
+      "from": "crates/vesper-provider-synthetic/AGENTS.md",
+      "sha256": "e68c5ea3552b36d3378d9d7d649e8dd403961b63425ed605652c012108674474"
+    },
+    {
+      "change": "R069",
+      "path": "crates/jarvis-provider-synthetic/Cargo.toml",
+      "from": "crates/vesper-provider-synthetic/Cargo.toml",
+      "sha256": "1f474e3f48d089a159b23cfec9e95e90a53a4e974153acfb6b3c485f29d312cd"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-synthetic/src/config.rs",
+      "from": "crates/vesper-provider-synthetic/src/config.rs",
+      "sha256": "b9481297f0fcd79e1fd63ba00ed9afcb656a1a132be337cea3ae652032bc98a8"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-provider-synthetic/src/factory.rs",
+      "from": "crates/vesper-provider-synthetic/src/factory.rs",
+      "sha256": "6f44e6d76fddcc0bd7166e5d778a403b0f3a8b6efa40394a5fdc70423e530dc0"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider-synthetic/src/lib.rs",
+      "from": "crates/vesper-provider-synthetic/src/lib.rs",
+      "sha256": "b14269b22dcb23876a3ce10f566094e04a94b829b48733567968578976aba4a6"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-provider-synthetic/src/session.rs",
+      "from": "crates/vesper-provider-synthetic/src/session.rs",
+      "sha256": "b8bc746b08987f4e93dc30622c0fad39ef91ce9c4c2f13cb2fbebeffc2d0ee04"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider-xai/AGENTS.md",
+      "from": "crates/vesper-provider-xai/AGENTS.md",
+      "sha256": "e60c41306b4b50efd50c6b015da776b8954ea34faba6586e823ccb48b8d38538"
+    },
+    {
+      "change": "R074",
+      "path": "crates/jarvis-provider-xai/Cargo.toml",
+      "from": "crates/vesper-provider-xai/Cargo.toml",
+      "sha256": "5d541254219f7e93efd1a8ce1aae51c2da9067213ad98dbc774dd3b2d4b526bc"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-xai/src/auth.rs",
+      "from": "crates/vesper-provider-xai/src/auth.rs",
+      "sha256": "4dd2170c2bed9f276e1fd445fd97637714e7087e684c0d6ab49387b1dd1f946f"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-xai/src/catalog.rs",
+      "from": "crates/vesper-provider-xai/src/catalog.rs",
+      "sha256": "0726caaa464b1201a9c599f7c0e31aed4a1bcce01abf4ce7953322bf4c0ca2d6"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider-xai/src/credentials.rs",
+      "from": "crates/vesper-provider-xai/src/credentials.rs",
+      "sha256": "24aacc86c2484e05c57d86fb36b300d6905048f1f3ddad8c829b51a845d9ca2d"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-xai/src/discovery.rs",
+      "from": "crates/vesper-provider-xai/src/discovery.rs",
+      "sha256": "7803e4e756aa2fd011e7ab28231ee325a1b1eacfaec6f821eef9b171a197fdaf"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider-xai/src/factory.rs",
+      "from": "crates/vesper-provider-xai/src/factory.rs",
+      "sha256": "b0c4672bd634232bca264fe5367ebe7e6a1707e25eeae275aa18fc048fd86bd5"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider-xai/src/http_error.rs",
+      "from": "crates/vesper-provider-xai/src/http_error.rs",
+      "sha256": "e052914fdf8cba031ca1cfab4a2ea35f78783e58d722c0cd3ab84a15f5d8e2fb"
+    },
+    {
+      "change": "R073",
+      "path": "crates/jarvis-provider-xai/src/lib.rs",
+      "from": "crates/vesper-provider-xai/src/lib.rs",
+      "sha256": "b210d57852a61315437f67e2a563f063f1a0734f2b0b38ecf314a3bfbc9e480d"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-xai/src/tests.rs",
+      "from": "crates/vesper-provider-xai/src/tests.rs",
+      "sha256": "64b8bcd87d280a2d09791855bf8162b6fbad77596ea40b68bc1cd60b345ad2c3"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider-xai/src/transport.rs",
+      "from": "crates/vesper-provider-xai/src/transport.rs",
+      "sha256": "9208335c4541b4ee575429bc518824c813d81cbc3b0f033aae83d2f05c82223d"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-xai/src/usage.rs",
+      "from": "crates/vesper-provider-xai/src/usage.rs",
+      "sha256": "90b671b8efbc26c63b3e22604b099c0659f60bcfba81c07a6c18fdf915894462"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider-xai/src/wire.rs",
+      "from": "crates/vesper-provider-xai/src/wire.rs",
+      "sha256": "f547d3eebb8f4d1fd07e83906775f3c4a9e9b323fd59345501eb3f4b36116e66"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-provider-xai/testdata/oidc-test-private.pem",
+      "from": "crates/vesper-provider-xai/testdata/oidc-test-private.pem",
+      "sha256": "955d6f2cffed2496decc906a08003cf4e9417d82155ddc9068a9ca9e76b82675"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider/AGENTS.md",
+      "from": "crates/vesper-provider/AGENTS.md",
+      "sha256": "605177f4462b554f463004ed6649133cbcb3767f283c146f6a5de52a267bc1b5"
+    },
+    {
+      "change": "R082",
+      "path": "crates/jarvis-provider/Cargo.toml",
+      "from": "crates/vesper-provider/Cargo.toml",
+      "sha256": "cd75c6916cba1f6c3a0bc613781586e1c9bf541ca2a650024b8d8dfdf959a08b"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider/src/capability.rs",
+      "from": "crates/vesper-provider/src/capability.rs",
+      "sha256": "ec0197e080e8d108577bf6dc3267b05dba3f619c6a1b0203bfe9406f9ae6b9da"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider/src/error.rs",
+      "from": "crates/vesper-provider/src/error.rs",
+      "sha256": "29cf7fc36958c0c244d98a0e57afefb0b5571e0a676c7c1069f9adf5bf2acf09"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-provider/src/lib.rs",
+      "from": "crates/vesper-provider/src/lib.rs",
+      "sha256": "2b37c9112c5a1c9247da2217b423c4f9a717df682e70bcc6439bf24cb0689573"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider/src/model_capability.rs",
+      "from": "crates/vesper-provider/src/model_capability.rs",
+      "sha256": "5e8a9cca58ddd7ae8f95684e4c40ea4aad4ee5c0589d7fb1135d63bc47766c0b"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider/src/ports.rs",
+      "from": "crates/vesper-provider/src/ports.rs",
+      "sha256": "369af13ea725b734a2b8a97f4ec96711bde433f8e647623a2c0f67997e5c21ef"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider/src/request.rs",
+      "from": "crates/vesper-provider/src/request.rs",
+      "sha256": "090376f0c46f86d967a92ccaa7e9484fb33846065b0f0ea497f4d4387df7f9f7"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-provider/src/stream.rs",
+      "from": "crates/vesper-provider/src/stream.rs",
+      "sha256": "c310f34a4cab5040a63445c2482231fb53a4dee15682275b78acfe08dd5d62b8"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-provider/src/superpowers.rs",
+      "from": "crates/vesper-provider/src/superpowers.rs",
+      "sha256": "26f95a886b70655846b7b0114e8b2741fe4314b4cedda7307dffffca4a737ef1"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-provider/src/usage.rs",
+      "from": "crates/vesper-provider/src/usage.rs",
+      "sha256": "19ee6c112016bc0fe0fb9549f6f48b4203909274a01e834ef255f22ea809df64"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-provider/tests/usage_render_snapshot.rs",
+      "from": "crates/vesper-provider/tests/usage_render_snapshot.rs",
+      "sha256": "9a000cf7315b83af69b1609d01bc2b8e608caa4f07aed0aff825743ac6b589db"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-runtime/AGENTS.md",
+      "from": "crates/vesper-runtime/AGENTS.md",
+      "sha256": "c6d4f5558d4a45c794bb2e9131c73a9fbe2f6803ac64ac1137a38b3f168762bc"
+    },
+    {
+      "change": "R060",
+      "path": "crates/jarvis-runtime/Cargo.toml",
+      "from": "crates/vesper-runtime/Cargo.toml",
+      "sha256": "1b6b0593360f8b117a76173ded802fc70aae629359e9d5ad6b94e9a9570f5a17"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-runtime/src/cancellation.rs",
+      "from": "crates/vesper-runtime/src/cancellation.rs",
+      "sha256": "19cb5b7de97153a3b6d2921ed56bfdec8a2093e3a30671fe2b49574c5452287b"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-runtime/src/error.rs",
+      "from": "crates/vesper-runtime/src/error.rs",
+      "sha256": "5ce89563483c45498283424de00c2cd38be8e37e1b3979532db07f2b260879a9"
+    },
+    {
+      "change": "R090",
+      "path": "crates/jarvis-runtime/src/lib.rs",
+      "from": "crates/vesper-runtime/src/lib.rs",
+      "sha256": "0c04006fdb969b3c0b34d3bcbc845154a4b154048144939fef22833835e28b2a"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-runtime/src/persistence.rs",
+      "from": "crates/vesper-runtime/src/persistence.rs",
+      "sha256": "8cee711fb3c6b958c44b1866825362d7c7c905db66ff5c6b9efc5c195b13ba16"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-runtime/src/registry.rs",
+      "from": "crates/vesper-runtime/src/registry.rs",
+      "sha256": "9fc793213cb71b3be0653f6484c139085df7a219e1abe6825b2a6ec509c3ba63"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-runtime/src/session.rs",
+      "from": "crates/vesper-runtime/src/session.rs",
+      "sha256": "eef7597546b0be5f10dcca2b9100642651b475a3e6900c47b048ae41ec838819"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-runtime/src/supervisor.rs",
+      "from": "crates/vesper-runtime/src/supervisor.rs",
+      "sha256": "70c40d18ca56ba8ff2fd27f099ecb4fb66338e9692f83c0226c8167f455641da"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-runtime/tests/persisted_state.rs",
+      "from": "crates/vesper-runtime/tests/persisted_state.rs",
+      "sha256": "e770cd92a04cdb6c0f0d9429ee1a171e63d3809b787a8d8d75d81bfe611ecb98"
+    },
+    {
+      "change": "R089",
+      "path": "crates/jarvis-runtime/tests/persistence_writes.rs",
+      "from": "crates/vesper-runtime/tests/persistence_writes.rs",
+      "sha256": "e839a898cba8970f66e8431cba60953d092473cc295adce6c3ab7a4a57b0ae03"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-runtime/tests/runtime.rs",
+      "from": "crates/vesper-runtime/tests/runtime.rs",
+      "sha256": "11088192bb2180cf4dcb18536378e38f746b17b27a5190be79c1b810c4381c1a"
+    },
+    {
+      "change": "R089",
+      "path": "crates/jarvis-sandbox/AGENTS.md",
+      "from": "crates/vesper-sandbox/AGENTS.md",
+      "sha256": "b1a483b819379305932185164b824aad1553f03c1302ff08e9f0169777a6e114"
+    },
+    {
+      "change": "R086",
+      "path": "crates/jarvis-sandbox/Cargo.toml",
+      "from": "crates/vesper-sandbox/Cargo.toml",
+      "sha256": "0c7394f799faf681e17e5f30bd82c52865129d18a90d2bbdf1f9d4c3f40f8468"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sandbox/src/bin/jarvis-sandbox-init.rs",
+      "from": "crates/vesper-sandbox/src/bin/sandbox_init.rs",
+      "sha256": "d3ca70eaf38871448a7823a75d1d9dba44af766409430c07c95f69bba44661e4"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sandbox/src/docker.rs",
+      "from": "crates/vesper-sandbox/src/docker.rs",
+      "sha256": "52eb41f731ea854ec745ff759886ad9643c02dc1d72fdfc2c8646de3688ae47c"
+    },
+    {
+      "change": "R092",
+      "path": "crates/jarvis-sandbox/src/lib.rs",
+      "from": "crates/vesper-sandbox/src/lib.rs",
+      "sha256": "a72fb9b9878378c37b5919e5d73848343bae89f087b6ed01a1f28b5750f2682e"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sandbox/src/linux.rs",
+      "from": "crates/vesper-sandbox/src/linux.rs",
+      "sha256": "26f0afdfc53619a9905bf50f24f0abc502a73151d7b9d2d2af6787281d45f888"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-sandbox/src/pipe.rs",
+      "from": "crates/vesper-sandbox/src/pipe.rs",
+      "sha256": "6daf106f9937b7947baa029497581041444b8b594b894c7e485430570fcfcf72"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sandbox/src/stub.rs",
+      "from": "crates/vesper-sandbox/src/stub.rs",
+      "sha256": "cd0f84ce40fcaa177d9a4a6e06657c472023252eea9b337463cd3fb92bccefa9"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-sandbox/src/teardown_tests.rs",
+      "from": "crates/vesper-sandbox/src/teardown_tests.rs",
+      "sha256": "7b7d6a27f15f7d338141b4b12fe5eb745e341beee0e8b97b205a845fec079fd4"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sandbox/tests/docker.rs",
+      "from": "crates/vesper-sandbox/tests/docker.rs",
+      "sha256": "1b9145365d0368a0eaa92baa14bc1f52adb46daf45322866a602058e094adb1b"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-sandbox/tests/namespaces.rs",
+      "from": "crates/vesper-sandbox/tests/namespaces.rs",
+      "sha256": "01f3924c1acf6dab13fe6340368733e711e34b828fc89f6ed29fe3f2a46448b7"
+    },
+    {
+      "change": "R087",
+      "path": "crates/jarvis-sandbox/tests/stub_fail_closed.rs",
+      "from": "crates/vesper-sandbox/tests/stub_fail_closed.rs",
+      "sha256": "cad5ab1b3b881efaeffc9af90b93d43d26dd0ced5a02e63fd6c0a5f61d655f6b"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-security/AGENTS.md",
+      "from": "crates/vesper-security/AGENTS.md",
+      "sha256": "e9ffb75fbaaa98c010a20054007dcdd49c5e296d1a21ef330924fd644d8ee639"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-security/Cargo.toml",
+      "from": "crates/vesper-security/Cargo.toml",
+      "sha256": "5a7b8f2d1853a1e524e3332ef898f507fb8a1605c5e0293756ca6ecfffc33933"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/endpoint.rs",
+      "from": "crates/vesper-security/src/endpoint.rs",
+      "sha256": "d3ea6d5cbaf9646c364d89d52b06392fea8253488d7e4245f5f0055a6778a69b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/environment.rs",
+      "from": "crates/vesper-security/src/environment.rs",
+      "sha256": "ecdc7587ec97dd616ab21f8f05c1007033c997a837505d931de4a744b48405d1"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/lib.rs",
+      "from": "crates/vesper-security/src/lib.rs",
+      "sha256": "f135531297816d4cf64b5e06d93040f5d96fbd676ecc606ea02e77819ea11494"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/output.rs",
+      "from": "crates/vesper-security/src/output.rs",
+      "sha256": "f35abea43466a60f456c294f3ed635130ae92251c5c63ab7b7e9f96c7bb0c002"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/path.rs",
+      "from": "crates/vesper-security/src/path.rs",
+      "sha256": "476e551a2f5f830b582963e5cca64ebb8bc2ebf966dd16f057915c38455bfe84"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/sandbox.rs",
+      "from": "crates/vesper-security/src/sandbox.rs",
+      "sha256": "358987417a2c7a9ed8167a0e0a39d2987a24a6cce2ca63ed2e91aaf64676b668"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/scope.rs",
+      "from": "crates/vesper-security/src/scope.rs",
+      "sha256": "79dc643515fca3ee86f7b3e3647b6f8377214b41e489148bd8b6c904e551164a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/secret.rs",
+      "from": "crates/vesper-security/src/secret.rs",
+      "sha256": "d134e46ac2ec23c2107cffd9a0ce42434448487f3eeb240f8c69a6651292c83a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/untrusted.rs",
+      "from": "crates/vesper-security/src/untrusted.rs",
+      "sha256": "df0d08cd77ff3a2ee93fcaaf1edc9167055b07da843444cf601fa3710040da11"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-security/src/url_redaction.rs",
+      "from": "crates/vesper-security/src/url_redaction.rs",
+      "sha256": "3d2537c5d8bb14e82ecc0188cf58302458b5e96e1516f2857de86e77e18fe5bd"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sessions/AGENTS.md",
+      "from": "crates/vesper-sessions/AGENTS.md",
+      "sha256": "6be0fad04d9074ee93856a9d32b8c2ce238bc7044fbf5577788e24e1b18f444a"
+    },
+    {
+      "change": "R068",
+      "path": "crates/jarvis-sessions/Cargo.toml",
+      "from": "crates/vesper-sessions/Cargo.toml",
+      "sha256": "3481a57e2cfca97f737d4f4bbbd44ac2a97e05e83b76cf7c7fa614c450a0ae38"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/src/composite.rs",
+      "from": "crates/vesper-sessions/src/composite.rs",
+      "sha256": "3013b11574c33b5963103c7b8fc18bda283649fac1a8b392a779eaff2d0793ea"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/src/contracts.rs",
+      "from": "crates/vesper-sessions/src/contracts.rs",
+      "sha256": "f98c1fb660cbe1585a7b157e988c6de2c86bd3b7521ded47586d8d29e6bde65b"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sessions/src/conversion.rs",
+      "from": "crates/vesper-sessions/src/conversion.rs",
+      "sha256": "6e19780a5c4461ada45a2f38517594ff8cadbeec53553332a983cbae852c1ed0"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/src/decoder.rs",
+      "from": "crates/vesper-sessions/src/decoder.rs",
+      "sha256": "ee7a27dc602c3fb009574c5d4c2f0b104bccb6c9a96a139fa74791abd0d263e2"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-sessions/src/error.rs",
+      "from": "crates/vesper-sessions/src/error.rs",
+      "sha256": "986cd81a95f01cf5fa8505bda1cb0121ca8de0e4bf226db2bd3b84de34c81194"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-sessions/src/filename.rs",
+      "from": "crates/vesper-sessions/src/filename.rs",
+      "sha256": "73374605fbacf6dba8120bf826d8d59649e0402abc83953508a732d901858eed"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/src/filesystem.rs",
+      "from": "crates/vesper-sessions/src/filesystem.rs",
+      "sha256": "89b5bacb892e82a3caacf99e7abc4aa80e5e96499c13a9f4a3eae6f0f4ffca54"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-sessions/src/layout.rs",
+      "from": "crates/vesper-sessions/src/layout.rs",
+      "sha256": "bd0cffd017a02911ee1d15123d23a0bf8bf02c84ec49e0a9173a4c0a66a6d137"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-sessions/src/lib.rs",
+      "from": "crates/vesper-sessions/src/lib.rs",
+      "sha256": "a179ffd21dce695195e818f7a62e7052e16c914be1244d7d30b991e6d359e4b1"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/src/metadata.rs",
+      "from": "crates/vesper-sessions/src/metadata.rs",
+      "sha256": "d4f454bc7be479530b284321c66cf67bf5437a0efee1cdd2a37f5f0548a7adaa"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-sessions/src/replay.rs",
+      "from": "crates/vesper-sessions/src/replay.rs",
+      "sha256": "872c07bd472ae9346afbbbf9189c543ff1f6996e4e6bde0baba188d2ebe2e0d1"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-sessions/src/search.rs",
+      "from": "crates/vesper-sessions/src/search.rs",
+      "sha256": "5421dd488871dbf12fb461d892850b065624a95c56039aeae7399b74dd409a72"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/src/vesper_format.rs",
+      "from": "crates/vesper-sessions/src/vesper_format.rs",
+      "sha256": "8d69c0280f4fede4994eb9eb3eb8f5220db0c5406f929d495bfb57ebbd4cf0fa"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/src/writer.rs",
+      "from": "crates/vesper-sessions/src/writer.rs",
+      "sha256": "1cb944682831371abbbbb5a0eb5ebef700e78cae72cd48ebdb4ea255d00a73a2"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sessions/tests/legacy_decode.rs",
+      "from": "crates/vesper-sessions/tests/legacy_decode.rs",
+      "sha256": "930702a5f77ce9a1fe61af3cc3ca772f7c35eee8fb6f443ec6c5d132fc64305a"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/tests/metadata_listing.rs",
+      "from": "crates/vesper-sessions/tests/metadata_listing.rs",
+      "sha256": "2d05d30a71732fafda4c151aa88013d1c249f30b9e838a2283f61481a692a914"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-sessions/tests/read_only.rs",
+      "from": "crates/vesper-sessions/tests/read_only.rs",
+      "sha256": "07c1d45fb8ce6b8d3ddce7bcab2a752a36ece5e8f176de29844da6782b02a5f8"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sessions/tests/runtime_conversion.rs",
+      "from": "crates/vesper-sessions/tests/runtime_conversion.rs",
+      "sha256": "bd65c8a84b45993df95184ac74fba93385639f88519e1f199f799a3cc2dc35dd"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sessions/tests/search.rs",
+      "from": "crates/vesper-sessions/tests/search.rs",
+      "sha256": "21e9ce60c67e66c3327b79ed6f101cb7fb788e526c0dc69f81b276bd5d44e336"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sessions/tests/vesper_format_reader.rs",
+      "from": "crates/vesper-sessions/tests/vesper_format_reader.rs",
+      "sha256": "2fa171b03bbd9eb7d09e51eae84df251ba3435a6209068b2eaf3c9e0ec32ed87"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-sessions/tests/writer.rs",
+      "from": "crates/vesper-sessions/tests/writer.rs",
+      "sha256": "ed31e4451f271c0074cc25fa2d7982fa4fcc18268bb579b6c8282de554411560"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/AGENTS.md",
+      "from": "crates/vesper-swarm/AGENTS.md",
+      "sha256": "79714584b6fdbf64adba7160f6ac8bbc357c1bf8276b6ba822ed755bd5f6d3de"
+    },
+    {
+      "change": "R080",
+      "path": "crates/jarvis-swarm/Cargo.toml",
+      "from": "crates/vesper-swarm/Cargo.toml",
+      "sha256": "e685cd33db7500e3858561f6a5535d4545c4f3fa4b9846f05cb68f49b8a9687a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/bus.rs",
+      "from": "crates/vesper-swarm/src/bus.rs",
+      "sha256": "dda7ddcdeaaf0c3fd6f01a79a3c89d590886ba8b17ef0b78b231c71971b06350"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/error.rs",
+      "from": "crates/vesper-swarm/src/error.rs",
+      "sha256": "eedec16039717455ee31347f4ddf2c77cf4d8f59094fde5f3624a9c358182956"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/assignment.rs",
+      "from": "crates/vesper-swarm/src/hive/assignment.rs",
+      "sha256": "f9e348908127ee664ff866508c847d8db5958dcca012b4baf30787ca2f1cdc7b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/decision.rs",
+      "from": "crates/vesper-swarm/src/hive/decision.rs",
+      "sha256": "6b222477a0cb1a1430400faaa75b8a2b129d519b3b80f415f5c718de72d7d0e8"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/decision_tests.rs",
+      "from": "crates/vesper-swarm/src/hive/decision_tests.rs",
+      "sha256": "04ae4b4dfb04ee4fe87f7d4c5a8c34e55df0b675f964be8593c1538cb9e2af88"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/decomposition.rs",
+      "from": "crates/vesper-swarm/src/hive/decomposition.rs",
+      "sha256": "eb2cd3a3a7644d31237b31d1132603a040cf21997e82af2c5d201549f59f4654"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/governance.rs",
+      "from": "crates/vesper-swarm/src/hive/governance.rs",
+      "sha256": "042b2c23d293ac0256c97c9eba434ac09ed2eba04e13f098d7acbb2320467615"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/governance_tests.rs",
+      "from": "crates/vesper-swarm/src/hive/governance_tests.rs",
+      "sha256": "2dfc6cfbff6fd9b0022ed730d925f99d67791be4d2409394ed47a58580623c89"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/lifecycle.rs",
+      "from": "crates/vesper-swarm/src/hive/lifecycle.rs",
+      "sha256": "6d3b18aae726fb21b9498e8d05c34e8fafdc2471b92688a3353d8ac82a3cf19f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/mod.rs",
+      "from": "crates/vesper-swarm/src/hive/mod.rs",
+      "sha256": "0d6ac89c55ebc4edfc013161e4fdbfac38a285e6c55315a06575ed257883aee8"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/orchestrator.rs",
+      "from": "crates/vesper-swarm/src/hive/orchestrator.rs",
+      "sha256": "e9a87dff082ca9740bf9676f79ff97351db914bc1a9059b24f0973360c13c99f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/panel.rs",
+      "from": "crates/vesper-swarm/src/hive/panel.rs",
+      "sha256": "3537aa102479eb1e3a253dc2a3913968c664e78905e199bd119dc97f66fbc01d"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/panel_tests.rs",
+      "from": "crates/vesper-swarm/src/hive/panel_tests.rs",
+      "sha256": "738037afec27cfcfd964a3191629ca9fb272b3f70439698db48b4d3215795266"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/pools.rs",
+      "from": "crates/vesper-swarm/src/hive/pools.rs",
+      "sha256": "646187bd74cffd580512315b7f86369c8b091235619be8f4f220a0392b183fef"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/routing.rs",
+      "from": "crates/vesper-swarm/src/hive/routing.rs",
+      "sha256": "a87921532dae38159d81e1f029279a9a4409913650017ab8c96060d389056c4f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/routing_tests.rs",
+      "from": "crates/vesper-swarm/src/hive/routing_tests.rs",
+      "sha256": "f41bc8a56b8dec0ac14f43df1c3343910ea8a3f46dea49ec28aca72f762d74d2"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/timeout.rs",
+      "from": "crates/vesper-swarm/src/hive/timeout.rs",
+      "sha256": "2f5e5e9a333a67c9794eea4f323b72fabe5afd003988e362f842ab541f2f4b28"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/verify.rs",
+      "from": "crates/vesper-swarm/src/hive/verify.rs",
+      "sha256": "3e66803b56a4e13dca8372ce980ed188c29a02c96cf77f7c4fea964d13adbafc"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/hive/verify_tests.rs",
+      "from": "crates/vesper-swarm/src/hive/verify_tests.rs",
+      "sha256": "40af9543753544fde21a80a6d05ab85d0ae33c613d098a3543afc8ab43b246e9"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/ledger/filter.rs",
+      "from": "crates/vesper-swarm/src/ledger/filter.rs",
+      "sha256": "4bcc388c0e90f4e8427e7520e4fdbb19c8305d12d382c6e9544582b4a266cb60"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/ledger/hnsw.rs",
+      "from": "crates/vesper-swarm/src/ledger/hnsw.rs",
+      "sha256": "8799dbf8fd5082265f0e5828f05e435a6f1da205db1aa5a964b221ecb990a530"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/ledger/mod.rs",
+      "from": "crates/vesper-swarm/src/ledger/mod.rs",
+      "sha256": "d9982414dc782139fc5303fa252fd6fd320a1548688fe6748e271ca23e47a1e4"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/ledger/retention.rs",
+      "from": "crates/vesper-swarm/src/ledger/retention.rs",
+      "sha256": "ee608b4865e82fd23e23420b34511c50fecd7301c07631c4f7d9985f46189ace"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/ledger/snapshot_writer.rs",
+      "from": "crates/vesper-swarm/src/ledger/snapshot_writer.rs",
+      "sha256": "87a6f7e13c61efcf9097dd6b657740f831ef28f02f7660cbf8a170d85becd324"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/src/ledger/store.rs",
+      "from": "crates/vesper-swarm/src/ledger/store.rs",
+      "sha256": "2ed3dfd403cdb77b15686f1599c31e9769dae7233e854179b9a855c40a998f7f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/lib.rs",
+      "from": "crates/vesper-swarm/src/lib.rs",
+      "sha256": "8915a6b0ca57f4e858d6a0799ee41b4384b1467a6ef76f6291df652a43a73dc8"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/manager.rs",
+      "from": "crates/vesper-swarm/src/manager.rs",
+      "sha256": "80b34efd135f944c57721b220634884ca2ebd9bb7bc5b4bbc810b3ac260603ed"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/pool.rs",
+      "from": "crates/vesper-swarm/src/pool.rs",
+      "sha256": "336cb34aa920a28129f3bd373b9ca55da4e348a045adce52b886350feb4910c7"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/pool_instances.rs",
+      "from": "crates/vesper-swarm/src/pool_instances.rs",
+      "sha256": "05f5e958441ede6d220b8eb09ddeb34d9050e0229e9d500236863dde10c28284"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/src/sandbox.rs",
+      "from": "crates/vesper-swarm/src/sandbox.rs",
+      "sha256": "54be9178b65d4deca98ff6021d9ad76c6a648a1bec7a1531ecb18ac39a687a2e"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/topology.rs",
+      "from": "crates/vesper-swarm/src/topology.rs",
+      "sha256": "5fa9a2457b70a86a78a6ee17aa8a180787ea4a066b2fd3344cf74c36a058660b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/src/worker.rs",
+      "from": "crates/vesper-swarm/src/worker.rs",
+      "sha256": "3f267a6db33785d0cf329ecd969fff20ba213fe9099969fe66f188f231e9270f"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-swarm/tests/assignment_oracle_vectors.json",
+      "from": "crates/vesper-swarm/tests/assignment_oracle_vectors.json",
+      "sha256": "f77aae704e57dc9cb5695618019f16135845ed1cc1454b8a3b27be87f8c63925"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/assignment_regressions.rs",
+      "from": "crates/vesper-swarm/tests/assignment_regressions.rs",
+      "sha256": "d0dee745cfa386c3d913e176e5d6b3b854c8a15b893ca255a062e63ab0658a74"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-swarm/tests/bus_bounds_regressions.rs",
+      "from": "crates/vesper-swarm/tests/bus_bounds_regressions.rs",
+      "sha256": "92b4c2c2c5b9871bc2f9b12db2cc33c7d0266b0ffc5a4b15486b7cd49227ff60"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-swarm/tests/bus_clock_regressions.rs",
+      "from": "crates/vesper-swarm/tests/bus_clock_regressions.rs",
+      "sha256": "fb81dd0f74d83b786d81f78b9eabc8f10daf7140a277b7fb27e1e1605db915af"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-swarm/tests/bus_tests.rs",
+      "from": "crates/vesper-swarm/tests/bus_tests.rs",
+      "sha256": "7a4ae8c936d87f2f36e9cec835d42b9f9833818c0e3b16b845a5784a74f13136"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-swarm/tests/centralized_lifecycle_regressions.rs",
+      "from": "crates/vesper-swarm/tests/centralized_lifecycle_regressions.rs",
+      "sha256": "0b6889526dad393394e55abb638c502e9db63e5c27b0cc921c35b86d3fe59444"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/hive_boundary_regressions.rs",
+      "from": "crates/vesper-swarm/tests/hive_boundary_regressions.rs",
+      "sha256": "bdc8f6dd20c2e6f49c60b50f6d3612123d7c241fe70cb6dd6f38e66b2643c546"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/hive_concurrency_regressions.rs",
+      "from": "crates/vesper-swarm/tests/hive_concurrency_regressions.rs",
+      "sha256": "68575803bb60c7a0a72da3e3ec6ccfeaeec9431a9b7bc56d7e8e339447bbe4d4"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/hive_governance_audit_fixes.rs",
+      "from": "crates/vesper-swarm/tests/hive_governance_audit_fixes.rs",
+      "sha256": "1e5bf471e3408266d43f592e17bd96ebaf5962285ce6bc096fe0a076420bf0f4"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-swarm/tests/hive_governance_regressions.rs",
+      "from": "crates/vesper-swarm/tests/hive_governance_regressions.rs",
+      "sha256": "544ed34324debbe09b194355207853b4e0cecf2a1dafebf4a765643dc8c48ac5"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/hive_pool_regressions.rs",
+      "from": "crates/vesper-swarm/tests/hive_pool_regressions.rs",
+      "sha256": "ef09963d929c5b2a236a87038d03d8813798868caff9954bba4ff7daac2c1c00"
+    },
+    {
+      "change": "R092",
+      "path": "crates/jarvis-swarm/tests/hive_scaling_regressions.rs",
+      "from": "crates/vesper-swarm/tests/hive_scaling_regressions.rs",
+      "sha256": "de20afac55bdd2c460e767d1e9930c516c06677259ed9c1828931bd89bb8d9ec"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-swarm/tests/hive_tests.rs",
+      "from": "crates/vesper-swarm/tests/hive_tests.rs",
+      "sha256": "9f1c236706a43e75cb051420dbd259b5ab00824c8dee99d0b6d2d4fe0ab8b046"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/tests/hnsw_regressions.rs",
+      "from": "crates/vesper-swarm/tests/hnsw_regressions.rs",
+      "sha256": "73253c02d7793d5566929c52fe676bb580c2982838fb3c94b04989308792bf90"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/tests/hnsw_tests.rs",
+      "from": "crates/vesper-swarm/tests/hnsw_tests.rs",
+      "sha256": "5546ca359f29fea1bf7f04f1560b1ea94f6585cd076b06c0b86b68dde56c9fb8"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/tests/lease_async_regressions.rs",
+      "from": "crates/vesper-swarm/tests/lease_async_regressions.rs",
+      "sha256": "9dbb71c2b96908e2b340f5a78e6b8bad3c7a744e0664287204e1095c1870336b"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/lease_identity_regressions.rs",
+      "from": "crates/vesper-swarm/tests/lease_identity_regressions.rs",
+      "sha256": "f57203f434fff50f7bfe473e2be434908aa442c053850d811e1c9949fa101ab8"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/lease_panic_regressions.rs",
+      "from": "crates/vesper-swarm/tests/lease_panic_regressions.rs",
+      "sha256": "e03eab3180f724bd9991dda32b0f223ecd0b75db813394d749dcb4f5cb5ccb01"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-swarm/tests/lease_recovery_regressions.rs",
+      "from": "crates/vesper-swarm/tests/lease_recovery_regressions.rs",
+      "sha256": "6173417038fb9efbe1bde0e9e4b392c7366d0ec3a25ab8bd79bef5c8f9fb43ff"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/ledger_eviction_regressions.rs",
+      "from": "crates/vesper-swarm/tests/ledger_eviction_regressions.rs",
+      "sha256": "db3b1a2946707d6da4e4844d4805163c18a5e243977db2bb40b209cb71f90967"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/tests/ledger_filter_regressions.rs",
+      "from": "crates/vesper-swarm/tests/ledger_filter_regressions.rs",
+      "sha256": "389791510b856ce3b0ecfe0004eb2d4507b87cd769f56c95d721cde579b3ca07"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-swarm/tests/ledger_retention_regressions.rs",
+      "from": "crates/vesper-swarm/tests/ledger_retention_regressions.rs",
+      "sha256": "01f0aef855bba834ca7c353f87d705874d26164dc92cc5fa5a39d62b5367d5d5"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-swarm/tests/ledger_scale_regressions.rs",
+      "from": "crates/vesper-swarm/tests/ledger_scale_regressions.rs",
+      "sha256": "bda4e1b0fa14def10b9dd11429dda7ec280e6c6608145048fc54d242c762aa31"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/ledger_semantic_regressions.rs",
+      "from": "crates/vesper-swarm/tests/ledger_semantic_regressions.rs",
+      "sha256": "88b9a9a3ca0369aebdb54b91495d272584ba9cc675401fe730eb848da0ef9f5e"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/tests/ledger_tests.rs",
+      "from": "crates/vesper-swarm/tests/ledger_tests.rs",
+      "sha256": "34e61b05426967ca2b0f5a29551dfe2e6d61a8e43b600526adb9960553bb8f51"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/partition_lifecycle_regressions.rs",
+      "from": "crates/vesper-swarm/tests/partition_lifecycle_regressions.rs",
+      "sha256": "2d92a8cd5f7baccd22f749068b5f318dd03b35ad4f793e7c0a3d24b91fcf231c"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/pool_cancellation_regressions.rs",
+      "from": "crates/vesper-swarm/tests/pool_cancellation_regressions.rs",
+      "sha256": "4688a6cd107b5f02cc05980e86867107d81b8b6369102519120b729970e443cd"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-swarm/tests/pool_instance_regressions.rs",
+      "from": "crates/vesper-swarm/tests/pool_instance_regressions.rs",
+      "sha256": "4e56f92791ce20741790f31e45ab85baefff5928385931b9464381e2d4e2b543"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-swarm/tests/pool_retirement_regressions.rs",
+      "from": "crates/vesper-swarm/tests/pool_retirement_regressions.rs",
+      "sha256": "51173fbe0a1527ee40cd81f83a8b7f3065923e51fc0fd180f0568f1b11557e20"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-swarm/tests/pool_selected_lease_regressions.rs",
+      "from": "crates/vesper-swarm/tests/pool_selected_lease_regressions.rs",
+      "sha256": "6bbda25bb330298b88f629e04e910618e2eaa56cfa7b83a45e126b5521ad3b3e"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-swarm/tests/pool_shrink_regressions.rs",
+      "from": "crates/vesper-swarm/tests/pool_shrink_regressions.rs",
+      "sha256": "09b3165ed1a02fd996fc7c8f389291831ad36b591a853ba72856f22e80a660c2"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/tests/pool_tests.rs",
+      "from": "crates/vesper-swarm/tests/pool_tests.rs",
+      "sha256": "e535455cb2c08fbf6e7018a4e3fc09f72861fc538959a99cb911e2aa1d1e83ae"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-swarm/tests/sandbox_tests.rs",
+      "from": "crates/vesper-swarm/tests/sandbox_tests.rs",
+      "sha256": "90da01bb6a170952705a067678f8acf2ce9056732954de8c3e3a3715ab1373f4"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-swarm/tests/topology_regressions.rs",
+      "from": "crates/vesper-swarm/tests/topology_regressions.rs",
+      "sha256": "7f4914f1181f2ea54b2769df804cfac9c760da12a15081e611d10b41c5239d89"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-testkit/AGENTS.md",
+      "from": "crates/vesper-testkit/AGENTS.md",
+      "sha256": "dd63c4816f019b757d772ae269ed32e43169d0b6f3e0f0f9d17fe1bf12334435"
+    },
+    {
+      "change": "R053",
+      "path": "crates/jarvis-testkit/Cargo.toml",
+      "from": "crates/vesper-testkit/Cargo.toml",
+      "sha256": "cc2a7931a32ae67dee250f9df6c10785350fe2fd5b997a5d2bdf0484f45fca84"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-testkit/src/bridge_fake.rs",
+      "from": "crates/vesper-testkit/src/bridge_fake.rs",
+      "sha256": "2e0549b5fcb161b51bdf05925cb7fe9222030e4a0f2e511ca388e8d377cc9720"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-testkit/src/compare.rs",
+      "from": "crates/vesper-testkit/src/compare.rs",
+      "sha256": "c6e33d3106d26d0d0c21eeb1028ff68b2143816e636e1fba4956926a9300c3ab"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-testkit/src/conformance.rs",
+      "from": "crates/vesper-testkit/src/conformance.rs",
+      "sha256": "f0fa4939b25b787d8c9d3707f6698b5da2532c4ebc45f11109dd3a62b86f4fae"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-testkit/src/fake.rs",
+      "from": "crates/vesper-testkit/src/fake.rs",
+      "sha256": "974bfcabbf01a0c7ab9b4604f7ee920e19b6ebca810f24ee2a5e0fe5af578beb"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-testkit/src/fixture.rs",
+      "from": "crates/vesper-testkit/src/fixture.rs",
+      "sha256": "a2916e7cbb2c9408692d98b16eea48ab64038696a24f6303a015cf8a2838aac7"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-testkit/src/lib.rs",
+      "from": "crates/vesper-testkit/src/lib.rs",
+      "sha256": "3f4f00c953f56ccbdc22aaa283a3baa49396a1cf2f3ac2dd83d3402599e2eb68"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-testkit/src/normalize.rs",
+      "from": "crates/vesper-testkit/src/normalize.rs",
+      "sha256": "90502348dca7deb6ece34a7625fc1f02760603a6102388f48ba7608bfe24b6ef"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-testkit/src/session_store.rs",
+      "from": "crates/vesper-testkit/src/session_store.rs",
+      "sha256": "7d35b23013c4d3107be792b1fbd419f3b77ac3539ef6ca9b28c106e04a43c87a"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-testkit/tests/bridge_fake_scenarios.rs",
+      "from": "crates/vesper-testkit/tests/bridge_fake_scenarios.rs",
+      "sha256": "7511357ea772edc765511123ff72cd2a358936ff19caa94f1062ecdd2c20842f"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-voice-kokoro/AGENTS.md",
+      "from": "crates/vesper-voice-kokoro/AGENTS.md",
+      "sha256": "9d3df513bd88ca66f5591ab98da94981818c454d4813af1406d317d82d253bf8"
+    },
+    {
+      "change": "R090",
+      "path": "crates/jarvis-voice-kokoro/Cargo.toml",
+      "from": "crates/vesper-voice-kokoro/Cargo.toml",
+      "sha256": "6a39362ce6f2a872e66767c528812d0e8af6f79b7a61d7a0645931015c666523"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-voice-kokoro/examples/boundary_silence_receipt.rs",
+      "from": "crates/vesper-voice-kokoro/examples/boundary_silence_receipt.rs",
+      "sha256": "affa69e7660a5528a8044054f2f70a46b89909337b27c5fbcfa56fbcc25f66c4"
+    },
+    {
+      "change": "R084",
+      "path": "crates/jarvis-voice-kokoro/examples/latency_receipt.rs",
+      "from": "crates/vesper-voice-kokoro/examples/latency_receipt.rs",
+      "sha256": "81517ec75b43d31c0f3655792c7cb76d32ec8f3a4ff005ea80444cb7a0ff4857"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-voice-kokoro/examples/perf_receipt.rs",
+      "from": "crates/vesper-voice-kokoro/examples/perf_receipt.rs",
+      "sha256": "d2819fcd7a24638410463b26804b3b2a43729844c54b5bafaf9c8325920190d0"
+    },
+    {
+      "change": "R089",
+      "path": "crates/jarvis-voice-kokoro/examples/phoneme_char_matrix.rs",
+      "from": "crates/vesper-voice-kokoro/examples/phoneme_char_matrix.rs",
+      "sha256": "b976d2c88129dc92a7dc79d058d4ba141548518086f8ab7db0264fcc088354cb"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-voice-kokoro/examples/phoneme_full_path.rs",
+      "from": "crates/vesper-voice-kokoro/examples/phoneme_full_path.rs",
+      "sha256": "469f6851bc6d99afaee4a604474d6c0aab9163c5231c60ca47dc00a9ee0bd4d3"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-voice-kokoro/examples/phoneme_markdown_units.rs",
+      "from": "crates/vesper-voice-kokoro/examples/phoneme_markdown_units.rs",
+      "sha256": "ca96f1f1f60e2f0f23dc2e92b222d0b50513c41d06fa36bbd71b7529f47ea0bf"
+    },
+    {
+      "change": "R083",
+      "path": "crates/jarvis-voice-kokoro/examples/phoneme_numeric_probe.rs",
+      "from": "crates/vesper-voice-kokoro/examples/phoneme_numeric_probe.rs",
+      "sha256": "799a622676cc541f51817d7f880dc9adefe9358ffaff39387379a4d702e69c0d"
+    },
+    {
+      "change": "R096",
+      "path": "crates/jarvis-voice-kokoro/examples/phoneme_recon.rs",
+      "from": "crates/vesper-voice-kokoro/examples/phoneme_recon.rs",
+      "sha256": "e572cf03962e95f496b93db9ef7f03e894139df30ad2d7a120d9f97b8c606dab"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-voice-kokoro/examples/phoneme_shape_matrix.rs",
+      "from": "crates/vesper-voice-kokoro/examples/phoneme_shape_matrix.rs",
+      "sha256": "4cf50a8e16fa734aa3b79883a62de0665299ebb5c516433cabe7b57a737b2502"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-voice-kokoro/examples/phoneme_strand_check.rs",
+      "from": "crates/vesper-voice-kokoro/examples/phoneme_strand_check.rs",
+      "sha256": "00d0c3715004b280461de98c0204e013c907e7af0fd996d5ac61189fcab6630d"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-voice-kokoro/examples/piece_rtf_receipt.rs",
+      "from": "crates/vesper-voice-kokoro/examples/piece_rtf_receipt.rs",
+      "sha256": "92af1d372209cfe6f0c17fc636696763113646bb9a0990e76a3e1cda8da77d8b"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-voice-kokoro/examples/pron_ab_audio.rs",
+      "from": "crates/vesper-voice-kokoro/examples/pron_ab_audio.rs",
+      "sha256": "298d71ffbee66d88924ef1cd9b20ec8bbf58128d77b18c68d84ffa9a7ef06990"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-voice-kokoro/examples/real_setup_receipt.rs",
+      "from": "crates/vesper-voice-kokoro/examples/real_setup_receipt.rs",
+      "sha256": "f5e92a97036c1c4b520892b56b29e94001e40ad278b8cb672a6dfdabcf834668"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-voice-kokoro/examples/repaired_boundary_receipt.rs",
+      "from": "crates/vesper-voice-kokoro/examples/repaired_boundary_receipt.rs",
+      "sha256": "1213ce8c0c79e261891413591cc4ab38c8919df525f04149d5a35d4e26ee4220"
+    },
+    {
+      "change": "R083",
+      "path": "crates/jarvis-voice-kokoro/examples/repro_tui_path.rs",
+      "from": "crates/vesper-voice-kokoro/examples/repro_tui_path.rs",
+      "sha256": "bd3ec6bf6d09151f15bae08fa76f9495df308dcca12a866bd013d064bdb5dcbf"
+    },
+    {
+      "change": "R082",
+      "path": "crates/jarvis-voice-kokoro/examples/repro_tui_path2.rs",
+      "from": "crates/vesper-voice-kokoro/examples/repro_tui_path2.rs",
+      "sha256": "18846ed613cc6f15a3cd326111cf28f7960af511de297dc16d5f722da2b8ffd0"
+    },
+    {
+      "change": "R072",
+      "path": "crates/jarvis-voice-kokoro/examples/repro_tui_path5.rs",
+      "from": "crates/vesper-voice-kokoro/examples/repro_tui_path5.rs",
+      "sha256": "3ed9014e1db4d2d8bccb28be1ddb91446215c123b604bac6f6ea310a943e7960"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-voice-kokoro/examples/signal_receipt.rs",
+      "from": "crates/vesper-voice-kokoro/examples/signal_receipt.rs",
+      "sha256": "725a12626248275a2097f973ac90590224d80f3dbda9514d2a038b4ae02eb9e0"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-voice-kokoro/src/adapter.rs",
+      "from": "crates/vesper-voice-kokoro/src/adapter.rs",
+      "sha256": "fb327fc475b3981430175f04fcad02cc6924eadf67dcb7c862dbd5e762bbf9ac"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-voice-kokoro/src/engine.rs",
+      "from": "crates/vesper-voice-kokoro/src/engine.rs",
+      "sha256": "4d6b40ca68c002be80a8cf0c67fedddfb90f67026a5469460cb26c46b7f1540f"
+    },
+    {
+      "change": "R092",
+      "path": "crates/jarvis-voice-kokoro/src/lib.rs",
+      "from": "crates/vesper-voice-kokoro/src/lib.rs",
+      "sha256": "8855ed1f5035d66f45aef14fb2361196a004544bb3ca5aec968535f8cdf20d2c"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-voice-kokoro/src/mock.rs",
+      "from": "crates/vesper-voice-kokoro/src/mock.rs",
+      "sha256": "c851f0eb89b40db813e689dc357185badf2f5e2404e6a6d91df21523a6419e00"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-voice-kokoro/src/pack.rs",
+      "from": "crates/vesper-voice-kokoro/src/pack.rs",
+      "sha256": "fe494bc3caf253332b8e4b88e8a58089759c4c58d80abba487bf85e191df5e61"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice-kokoro/src/phonemize.rs",
+      "from": "crates/vesper-voice-kokoro/src/phonemize.rs",
+      "sha256": "aa242a1da4dce630b5c418fc56317277de8ddf2e7e5befb3751a693e491c7dc7"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice-kokoro/src/setup.rs",
+      "from": "crates/vesper-voice-kokoro/src/setup.rs",
+      "sha256": "ffe68a8e0dd62ede88660ac9d3bef90af0bf53a055a1f9a4c7bfa0b57e396368"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-voice-kokoro/src/vocab.rs",
+      "from": "crates/vesper-voice-kokoro/src/vocab.rs",
+      "sha256": "363240195ef1f3b0b1becd7e505bf662628e3e3dbe39efc4f27bcd5ecb4a2dc0"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-voice/AGENTS.md",
+      "from": "crates/vesper-voice/AGENTS.md",
+      "sha256": "38a9f68f072a5625bca2c761919641d8327bd514987666691a6c46158cb80fe2"
+    },
+    {
+      "change": "R088",
+      "path": "crates/jarvis-voice/Cargo.toml",
+      "from": "crates/vesper-voice/Cargo.toml",
+      "sha256": "4343bca9a70a6a082373727d999d9e8441283653d3138e4faca6c66827c06c3a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-voice/src/audio.rs",
+      "from": "crates/vesper-voice/src/audio.rs",
+      "sha256": "4f6c84b94e9af7abb518bd816c30ee3cf9170511c9bbea407f76ce1c15dc6399"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-voice/src/cancel.rs",
+      "from": "crates/vesper-voice/src/cancel.rs",
+      "sha256": "ff2860c5662f41f13064b08da6075ac9f4a8317a5e56ca76d4060a6f3b6091ba"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-voice/src/composition/blocking.rs",
+      "from": "crates/vesper-voice/src/composition/blocking.rs",
+      "sha256": "721a97fe70eb39af0f3a41ba85509e023081b321c189c62ea27e71a542103a04"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-voice/src/composition/failover.rs",
+      "from": "crates/vesper-voice/src/composition/failover.rs",
+      "sha256": "d2a19b502a51353cf08c431fcfa7c990083a1073d7a5e20ecfd1ff8ce61eab19"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-voice/src/composition/mod.rs",
+      "from": "crates/vesper-voice/src/composition/mod.rs",
+      "sha256": "af5340b90be1d2d0f99e0eb4234556d68304319debf08d22edb5d8a735223ba0"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/composition/partials.rs",
+      "from": "crates/vesper-voice/src/composition/partials.rs",
+      "sha256": "7a84201d2532529e0e5dae83f4aec79b4da58a7cb8f3637211ae787dd1678cff"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/config.rs",
+      "from": "crates/vesper-voice/src/config.rs",
+      "sha256": "ee9bbdcec8a41dbdde83d2889e971faab2727afa9063e1d45ccf9732402900c4"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/error.rs",
+      "from": "crates/vesper-voice/src/error.rs",
+      "sha256": "eae83137b3ad79c58dbb5381b1c865edbe292cf76d0ec2f891b542fe6ab92c9c"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/events.rs",
+      "from": "crates/vesper-voice/src/events.rs",
+      "sha256": "18ad1dcd5ecaa2d62dcf2cf625d7c6b19c3158964bf67da883746a0670b3b4df"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/execution.rs",
+      "from": "crates/vesper-voice/src/execution.rs",
+      "sha256": "a090ed587fc0b02a021aedc7e8648dca3c0f28eabf5b0654108b2e4075c07e0b"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/fakes.rs",
+      "from": "crates/vesper-voice/src/fakes.rs",
+      "sha256": "59c13bc8056a1eb39fd3a3de75a5c3d115f2a1019cee1acdff474aed34de5e30"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/hygiene.rs",
+      "from": "crates/vesper-voice/src/hygiene.rs",
+      "sha256": "425c8a7a3d62c8578fd6bce248bb34c7431e50f91ce86cfbfd9f38f96e941672"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-voice/src/lib.rs",
+      "from": "crates/vesper-voice/src/lib.rs",
+      "sha256": "124cd6579ecad1c3d99d4451d6cbad9fd5fdb424002ed5ad374b61d9e3479127"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/ports.rs",
+      "from": "crates/vesper-voice/src/ports.rs",
+      "sha256": "2560ef0ef8339fa4477745a364422b12722e65833a89c2c934a5188d2ae6fb93"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-voice/src/report.rs",
+      "from": "crates/vesper-voice/src/report.rs",
+      "sha256": "8663df7330027764fe316be5e0053fe52b6f09cc26e611b462f1570045865d22"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/session.rs",
+      "from": "crates/vesper-voice/src/session.rs",
+      "sha256": "6f1549c500fd2b4d387578ba229713df9a5d3463eac9d02e6805112ebcf93236"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/stt_http.rs",
+      "from": "crates/vesper-voice/src/stt_http.rs",
+      "sha256": "93e85e1be6bd91ab0241ef782fcad38b0fbb7a0c72e44eab2a302e45fb12c3b3"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-voice/src/stt_sidecar.rs",
+      "from": "crates/vesper-voice/src/stt_sidecar.rs",
+      "sha256": "1c43ae5d0c3fae76ce145c7065e493cb72ca35e432500784dd9f0d66b98540ea"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-voice/src/test_util.rs",
+      "from": "crates/vesper-voice/src/test_util.rs",
+      "sha256": "3512e9c69be42fe776e4b498d4002a80772d9d2d092e9479e4acfa437474adb6"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/src/tts_subprocess.rs",
+      "from": "crates/vesper-voice/src/tts_subprocess.rs",
+      "sha256": "cf2e81968ec68dff6820fcdb5faa8298d48560d2f0e7561e2eb592b58d46b01d"
+    },
+    {
+      "change": "R099",
+      "path": "crates/jarvis-voice/tests/hygiene_formatting_units.rs",
+      "from": "crates/vesper-voice/tests/hygiene_formatting_units.rs",
+      "sha256": "149032a7022501d04bf104cd06723b6a830c5e0a28ceeebcc55e58a2baafd970"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-voice/tests/pr0_contracts.rs",
+      "from": "crates/vesper-voice/tests/pr0_contracts.rs",
+      "sha256": "4c5f3ef683e761345b0aac4a2b2b053d2ab92f33762778f7dd65314edf82d503"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-voice/tests/pr1_adapters.rs",
+      "from": "crates/vesper-voice/tests/pr1_adapters.rs",
+      "sha256": "3ec711e71171b39e3ed62acbd5184732fed4ed782ba5268a58ca68cf485931e5"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-voice/tests/pr2_tts.rs",
+      "from": "crates/vesper-voice/tests/pr2_tts.rs",
+      "sha256": "76cd785c5f7b4de11ffe12d170d6c15e112323a197461e16e0b26e9368c98232"
+    },
+    {
+      "change": "R097",
+      "path": "crates/jarvis-voice/tests/pr3_session.rs",
+      "from": "crates/vesper-voice/tests/pr3_session.rs",
+      "sha256": "e89a36b71eb20cd1221a4bd2a8b64be258757cb3c7cfec014d12684e5a07f1dd"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-web-fetch/AGENTS.md",
+      "from": "crates/vesper-web-fetch/AGENTS.md",
+      "sha256": "48895f21e53ec7b1407166f95c1b73eeb64e483b84073664812e4700370ad61f"
+    },
+    {
+      "change": "R070",
+      "path": "crates/jarvis-web-fetch/Cargo.toml",
+      "from": "crates/vesper-web-fetch/Cargo.toml",
+      "sha256": "1db77aab6af6823239b40a9026cebeb0d508a8f2ff8cbb1e285da3731f91c0fd"
+    },
+    {
+      "change": "R092",
+      "path": "crates/jarvis-web-fetch/Dockerfile",
+      "from": "crates/vesper-web-fetch/Dockerfile",
+      "sha256": "fd83cb934619cf91026ffe9ced5c123a71e392b6cfa1dbfe8169390096373d2c"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web-fetch/browser-pipe.sh",
+      "from": "crates/vesper-web-fetch/browser-pipe.sh",
+      "sha256": "e0bc36c9dffbe6d722a91ca1eb5aafee1c6978175f2de65f651a28ad5ce4a8d8"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-web-fetch/src/browser.rs",
+      "from": "crates/vesper-web-fetch/src/browser.rs",
+      "sha256": "05b79a8333b913b1d8f4e08c8d4d886e0dd6c4b846a6bed50a56f68aa5880f27"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-web-fetch/src/lib.rs",
+      "from": "crates/vesper-web-fetch/src/lib.rs",
+      "sha256": "ebd1e47c8b53550c214c0b11f85ef06342e1c5116f81ccb696dd0bd7a026031d"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-web-fetch/src/main.rs",
+      "from": "crates/vesper-web-fetch/src/main.rs",
+      "sha256": "4a92cb310064b5f2eae6105c74bc9108625a0cdb247850a6df0c5a5141a3efad"
+    },
+    {
+      "change": "R098",
+      "path": "crates/jarvis-web-fetch/src/parse.rs",
+      "from": "crates/vesper-web-fetch/src/parse.rs",
+      "sha256": "39fbfe00e0fd1d21670c7d32ff2b69010f3b45ebdb740f8786b7fab9bb52aa69"
+    },
+    {
+      "change": "R093",
+      "path": "crates/jarvis-web-fetch/src/route.rs",
+      "from": "crates/vesper-web-fetch/src/route.rs",
+      "sha256": "ff2934adfe6ddf046f9c90ba8be0fe6df6d95b13332f62db600726115e301a4d"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-web-fetch/tests/egress_and_route.rs",
+      "from": "crates/vesper-web-fetch/tests/egress_and_route.rs",
+      "sha256": "944388f224746297265d5964a52aacecc35d464375884d89e40986f8829964a2"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-web/AGENTS.md",
+      "from": "crates/vesper-web/AGENTS.md",
+      "sha256": "2c41215fe73b8ab404ef75669fe5effde66ebfae5dab65b5220d69c2d02e2342"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-web/Cargo.toml",
+      "from": "crates/vesper-web/Cargo.toml",
+      "sha256": "07efbbd8717cba1c9711c5ed385a6bf748ce8601d9d3745bea729a2fe7ff733a"
+    },
+    {
+      "change": "R094",
+      "path": "crates/jarvis-web/examples/gen-goldens.rs",
+      "from": "crates/vesper-web/examples/gen-goldens.rs",
+      "sha256": "853c988cbfdcb0edb34eba8c9f4f938b3249079609dbb83e1741e8e9f2d8fe62"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/action.rs",
+      "from": "crates/vesper-web/src/action.rs",
+      "sha256": "9fd2b60d3eb10340949d6b5cf764ad164f5d960ce19c2b909317890ffc498c9a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/arena.rs",
+      "from": "crates/vesper-web/src/arena.rs",
+      "sha256": "b26dd5a661ef9030323e7d5162070c3f212a47e6ca92bfae2c632688fcfb5d1e"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/bm25.rs",
+      "from": "crates/vesper-web/src/bm25.rs",
+      "sha256": "cd3b05ef350fa3e8535564675782f15c5dafd37e62393f4cac87f0e6ef26ee2b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/convert.rs",
+      "from": "crates/vesper-web/src/convert.rs",
+      "sha256": "1151b8ee9466959a0eaaac9ed88e33c74de2ee64290d117d9b377a24825849cc"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/crawl.rs",
+      "from": "crates/vesper-web/src/crawl.rs",
+      "sha256": "8e71b99e81a638a0f1f9666d3c2bb11b376ebdf289c761b669097d20f702c687"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/density.rs",
+      "from": "crates/vesper-web/src/density.rs",
+      "sha256": "f722e2312c4df3d98ec1bd7c16c2a0c5ea41b5fa9924af354a0616633fe621d2"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/dom.rs",
+      "from": "crates/vesper-web/src/dom.rs",
+      "sha256": "ae6da55ef1a82b721825666e2173a44991aa748276cf025a6c37359b7da5eb81"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/driver.rs",
+      "from": "crates/vesper-web/src/driver.rs",
+      "sha256": "c620cd4d36ee57f64ea8c74e2e2b1ad7584acbac7b6cb632f6bfe4a314c97cae"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/egress.rs",
+      "from": "crates/vesper-web/src/egress.rs",
+      "sha256": "e353313213b4c7a75d5aabf3ac0a94b48a3661de4b432567f6715c2794ab8088"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/interactable.rs",
+      "from": "crates/vesper-web/src/interactable.rs",
+      "sha256": "13398bb8f72aed53051abd22eeb4ac5d4961109c3ee5f0b81e256a94fc1aab71"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/lib.rs",
+      "from": "crates/vesper-web/src/lib.rs",
+      "sha256": "28f3feb3cc37636033ba0edb09295dfc5a4fa21d9280044fcc65b3c726d3d71e"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/links.rs",
+      "from": "crates/vesper-web/src/links.rs",
+      "sha256": "755d250ddc1d5a551386f25f7550a19e14e31981c5e1191f3947e16cc8d7014a"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/meta.rs",
+      "from": "crates/vesper-web/src/meta.rs",
+      "sha256": "31143b6d050dbbcd54ee2be5b4c50a4b844d931aab7af550c2767d03687c81cc"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/pipeline.rs",
+      "from": "crates/vesper-web/src/pipeline.rs",
+      "sha256": "55a7857b0146790c7420bb83efe6bdebbd5204023ae2763a864e7948beccc648"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/rank.rs",
+      "from": "crates/vesper-web/src/rank.rs",
+      "sha256": "d7c2331245d68ba4773e8addd1c6b8c6109ea75c0df9c576492f35a18a72d631"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/selector_map.rs",
+      "from": "crates/vesper-web/src/selector_map.rs",
+      "sha256": "f26edfb2f3029665f3fd62f346122998f5af2b60aa58a06ef54ccfb639ba593b"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/sitemap.rs",
+      "from": "crates/vesper-web/src/sitemap.rs",
+      "sha256": "e553bf177505cdb85cf2f84a0a38766911d13b9f38b720b1568096338701a218"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/snapshot.rs",
+      "from": "crates/vesper-web/src/snapshot.rs",
+      "sha256": "4e1d4a8068d356b5b3a35825b149c4f2c4f21196ce066577063944740c99a5df"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/strip.rs",
+      "from": "crates/vesper-web/src/strip.rs",
+      "sha256": "312f0cf391b89f45d84f510b9b40c7de7d456735f88b08559b572a295dc04cbb"
+    },
+    {
+      "change": "R100",
+      "path": "crates/jarvis-web/src/transport.rs",
+      "from": "crates/vesper-web/src/transport.rs",
+      "sha256": "daef4081b0e7c811b600c6e5eb3638963c2b974571f86f73e8a586106aaec426"
+    },
+    {
+      "change": "R095",
+      "path": "crates/jarvis-web/tests/action_engine.rs",
+      "from": "crates/vesper-web/tests/action_engine.rs",
+      "sha256": "daf93bb7fd94257321ee4b26c175590635de32c7522a33e8781bee349aa907ea"
+    },
+    {
+      "change": "R091",
+      "path": "crates/jarvis-web/tests/adversarial.rs",
+      "from": "crates/vesper-web/tests/adversarial.rs",
+      "sha256": "c99177f365c07d24513aacb7107e74a30c1140d64005da25cd2820f1de11c7a6"
+    },
+    {
+      "change": "R090",
+      "path": "crates/jarvis-web/tests/corpus.rs",
+      "from": "crates/vesper-web/tests/corpus.rs",
+      "sha256": "e9754e72c5304741f1a48ef6781d32e524da3b0c8a9bd96c1df136783f1ede08"
+    },
+    {
+      "change": "M",
+      "path": "docs/AGENTS.md",
+      "sha256": "dbfe2612eeecd34512456c8339d6aed413437e4bde0efded8a3d8bb93bcb619e"
+    },
+    {
+      "change": "M",
+      "path": "docs/architecture.md",
+      "sha256": "4c3e08ae542cafc446ffad33888e28fd0e96dd13b03274f357d1dce4df4393b1"
+    },
+    {
+      "change": "M",
+      "path": "docs/architecture/AGENTS.md",
+      "sha256": "3cc1628e52ce922c829fa8f08a6a0b56a9ce2551368eebee2a636d59fea4cee3"
+    },
+    {
+      "change": "A",
+      "path": "docs/architecture/rust-identity-stage2.md",
+      "sha256": "456679655947adf073701164332971b3530ef1db4fac3a2de300df01f91f2ff4"
+    },
+    {
+      "change": "M",
+      "path": "docs/dependencies.md",
+      "sha256": "c212fcdc91facda15e54262f0d315d388c086e42e630119f39cfa12d25ce5578"
+    },
+    {
+      "change": "A",
+      "path": "docs/foundation/2026-10-15-rust-identity-stage2-source.json"
+    },
+    {
+      "change": "A",
+      "path": "docs/foundation/2026-10-15-rust-identity-stage2.md",
+      "sha256": "ecd969cf2443c7679e38f30ef74972ddc48a71447afad9a464be646e24896573"
+    },
+    {
+      "change": "M",
+      "path": "docs/foundation/AGENTS.md",
+      "sha256": "043cc4d63b27982fc4c9fcb4804a55bc5fb084c3a3854382373519bee2b9087b"
+    },
+    {
+      "change": "M",
+      "path": "docs/foundation/evidence-index.md",
+      "sha256": "d0d552fb527346680384565879da6f3bd40d0c693a2ae916616615da8c6c2d15"
+    },
+    {
+      "change": "A",
+      "path": "docs/rust-identity-stage2-prd.md",
+      "sha256": "3afa9ce3896ac52a4c790b812f653df4e1ef0959adf8b1240667c49e5aaf2845"
+    },
+    {
+      "change": "M",
+      "path": "docs/workspace-map.md",
+      "sha256": "96e8c34daa5e851cc1af82f6a3ca2c43a3d43bdb5fbe35f3214d60db44c68182"
+    },
+    {
+      "change": "M",
+      "path": "scripts/AGENTS.md",
+      "sha256": "029ff88cf25ce8c367fbaf28c81542f6213c88b46cd48948f20a205141d1d2a8"
+    },
+    {
+      "change": "M",
+      "path": "scripts/test_install_windows_release.ps1",
+      "sha256": "5f3c009ebdc9941d514804ce2716188a503f87b2c625fb4e252479d14e8f0c39"
+    },
+    {
+      "change": "M",
+      "path": "scripts/test_windows_package_audit.py",
+      "sha256": "61867c8c49c4d0e7d16d8a145bb8d1e85ea20003bc6662c8c177daeff4af378e"
+    },
+    {
+      "change": "M",
+      "path": "scripts/windows_package_audit.py",
+      "sha256": "400ba7c6c36af81417d88b242bbf6bf16a0deea46cab3d6c36f7925a8308ebc0"
+    },
+    {
+      "change": "M",
+      "path": "xtask/AGENTS.md",
+      "sha256": "e7b356a0f0c2644c377eec7b592ebe2d274513a06f50bbe7d9cf9c25f7638429"
+    },
+    {
+      "change": "M",
+      "path": "xtask/Cargo.toml",
+      "sha256": "afd5eab1f557e034ea46dc57d89350c804aa014a3a699bcb38780bcddadeb964"
+    },
+    {
+      "change": "M",
+      "path": "xtask/src/identity_naming.rs",
+      "sha256": "c7a903ea85c3670eacad209909742bc9e9f078f00bf659e52e3128700535197f"
+    },
+    {
+      "change": "M",
+      "path": "xtask/src/main.rs",
+      "sha256": "11665b5688bc495ff924852df0c6c373e192ddf4001bf213405d9dd10664523f"
+    },
+    {
+      "change": "M",
+      "path": "xtask/src/swarm_gate.rs",
+      "sha256": "5b683b4ebc1564f1c5fc319ed3af86e6a103ea88d0705a667d2bb48985531310"
+    }
+  ]
+}

@@ -140,7 +140,7 @@ jobs:
         shell: bash
         timeout-minutes: 3
         run: |
-          python -m pip install --only-binary=:all: --require-hashes -r apps/agent-vesper-tui/tests/windows-terminal-requirements.txt
+          python -m pip install --only-binary=:all: --require-hashes -r apps/jarvis-tui/tests/windows-terminal-requirements.txt
       - name: Verify clean native first launch and provider Settings
         shell: bash
         timeout-minutes: 12
@@ -149,18 +149,18 @@ jobs:
           PYTHONIOENCODING: cp1252
           RUSTC_WRAPPER: ${{ steps.sccache_check.outputs.sccache_ready == 'true' && 'sccache' || '' }}
         run: |
-          cargo build --locked -p agent-vesper-tui -p agent-vesper-acp --features agent-vesper-tui/docker,agent-vesper-tui/swarm,agent-vesper-tui/bridge,agent-vesper-tui/voice-kokoro,agent-vesper-tui/voice-flm,agent-vesper-acp/docker,agent-vesper-acp/swarm,agent-vesper-acp/bridge
-          native_binary=target/debug/agent-vesper-tui
-          acp_binary=target/debug/agent-vesper-acp
+          cargo build --locked -p jarvis-tui -p jarvis-acp --features jarvis-tui/docker,jarvis-tui/swarm,jarvis-tui/bridge,jarvis-tui/voice-kokoro,jarvis-tui/voice-flm,jarvis-acp/docker,jarvis-acp/swarm,jarvis-acp/bridge
+          native_binary=target/debug/jarvis-tui
+          acp_binary=target/debug/jarvis-acp
           if [ "${{ matrix.platform_spike }}" = "windows" ]; then
             native_binary="$native_binary.exe"
             acp_binary="$acp_binary.exe"
           fi
-          python apps/agent-vesper-tui/tests/test_windows_child_cleanup.py
-          python apps/agent-vesper-tui/tests/first_launch_pty.py "$native_binary"
-          python apps/agent-vesper-tui/tests/settings_auth_pty.py "$native_binary"
-          python apps/agent-vesper-tui/tests/voice_setup_pty.py "$native_binary"
-          python apps/agent-vesper-tui/tests/release_hosts_pty.py "$native_binary" "$acp_binary"
+          python apps/jarvis-tui/tests/test_windows_child_cleanup.py
+          python apps/jarvis-tui/tests/first_launch_pty.py "$native_binary"
+          python apps/jarvis-tui/tests/settings_auth_pty.py "$native_binary"
+          python apps/jarvis-tui/tests/voice_setup_pty.py "$native_binary"
+          python apps/jarvis-tui/tests/release_hosts_pty.py "$native_binary" "$acp_binary"
       - name: Verify native speech dependency setup and real PCM signals
         shell: bash
         timeout-minutes: 20
@@ -175,19 +175,19 @@ jobs:
         timeout-minutes: 6
         env:
           RUSTC_WRAPPER: ${{ steps.sccache_check.outputs.sccache_ready == 'true' && 'sccache' || '' }}
-        run: python crates/vesper-harness/tests/windows_resource_job.py
+        run: python crates/jarvis-harness/tests/windows_resource_job.py
       - name: Run Stage 4.1 process transcript blockers
         shell: bash
         timeout-minutes: 12
         env:
           RUSTC_WRAPPER: ${{ steps.sccache_check.outputs.sccache_ready == 'true' && 'sccache' || '' }}
-        run: cargo test -p agent-vesper-acp --all-features --test process_blockers -- --test-threads=1
+        run: cargo test -p jarvis-acp --all-features --test process_blockers -- --test-threads=1
       - name: Run shared command-settlement behavior
         shell: bash
         timeout-minutes: 12
         env:
           RUSTC_WRAPPER: ${{ steps.sccache_check.outputs.sccache_ready == 'true' && 'sccache' || '' }}
-        run: cargo test -p vesper-agent --test command_settlement -- --test-threads=1
+        run: cargo test -p jarvis-agent --test command_settlement -- --test-threads=1
       - name: Run process conformance tests
         shell: bash
         env:
@@ -198,7 +198,7 @@ jobs:
         timeout-minutes: 5
         env:
           RUSTC_WRAPPER: ${{ steps.sccache_check.outputs.sccache_ready == 'true' && 'sccache' || '' }}
-        run: cargo test -p vesper-harness --lib --all-features release_executor::tests::release_worker_cancel_restart_process_acceptance -- --exact --test-threads=1 --nocapture
+        run: cargo test -p jarvis-harness --lib --all-features release_executor::tests::release_worker_cancel_restart_process_acceptance -- --exact --test-threads=1 --nocapture
       - name: Run Linux sandbox conformance
         if: matrix.platform_spike == 'linux'
         shell: bash

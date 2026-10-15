@@ -6,6 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-15-rust-identity-stage2.md` and its source-inventory JSON own exact Stage 2 source, verification, compatibility boundaries and protected-merge receipts.
+
 - `2026-10-14-identity-stage1.md` and `stage1-source-provenance.json` own Stage 1
   source provenance, exact-candidate verification, identity tests and limitations.
 

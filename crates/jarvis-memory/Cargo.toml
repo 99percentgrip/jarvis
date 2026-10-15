@@ -1,0 +1,24 @@
+[package]
+name = "jarvis-memory"
+description = "Provider-neutral persistent memory graph, learned skills, user profile, and bounded epistemic ledger for Agent Vesper (ADR 0011 — Stage 12)"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+sha2 = { workspace = true }
+rust-stemmers = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+jarvis-domain = { path = "../jarvis-domain", version = "=0.24.14" }
+jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

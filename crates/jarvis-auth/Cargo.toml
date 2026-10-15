@@ -1,0 +1,29 @@
+[package]
+name = "jarvis-auth"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+keyring.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
+zeroize.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+fs2 = "=0.4.3"
+sha2.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+sha2.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

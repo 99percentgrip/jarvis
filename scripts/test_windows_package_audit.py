@@ -5,7 +5,7 @@ import struct
 import tempfile
 import unittest
 
-from windows_package_audit import EXECUTABLES, audit, pe_imports
+from windows_package_audit import BUILD_EXECUTABLES, EXECUTABLES, audit, pe_imports
 
 
 def fixture(dll="kernel32.dll", delay=False):
@@ -54,6 +54,19 @@ class PackageAuditTests(unittest.TestCase):
         self.assertIn("$helpExit = $LASTEXITCODE", real_check)
         self.assertIn("$ErrorActionPreference = $checkPreference", real_check)
         self.assertIn("$versionExit -ne 0 -or -not $observedVersion", real_check)
+
+    def test_renamed_build_targets_preserve_complete_pe_audit(self):
+        with tempfile.TemporaryDirectory() as root:
+            bundle = Path(root)
+            for name in BUILD_EXECUTABLES:
+                (bundle / name).write_bytes(fixture())
+            self.assertEqual(set(audit(bundle, BUILD_EXECUTABLES)), set(BUILD_EXECUTABLES))
+            (bundle / BUILD_EXECUTABLES[-1]).unlink()
+            with self.assertRaises(FileNotFoundError):
+                audit(bundle, BUILD_EXECUTABLES)
+            (bundle / BUILD_EXECUTABLES[-1]).write_bytes(fixture("VCRUNTIME140.dll", delay=True))
+            with self.assertRaisesRegex(ValueError, "separately installed runtime"):
+                audit(bundle, BUILD_EXECUTABLES)
 
     def test_reads_normal_and_delay_imports(self):
         for delay in (False, True):
