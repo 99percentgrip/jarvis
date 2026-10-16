@@ -71,7 +71,7 @@ than prohibiting ordinary authorized project tools or third-party application IP
 ## Identity consumers and dependencies
 
 The [reviewed inventory](../foundation/runtime-identity-stage3-inventory.json)
-records 22 resource groups, source symbols/line references, readers, writers,
+records 26 resource groups, source symbols/line references, readers, writers,
 verification entry points and 96 reviewed environment mappings. It includes
 non-Rust seed helpers as well as the workspace; the initial literal scan is not
 presented as a complete consumer inventory.
@@ -95,7 +95,9 @@ executable explicitly activates synthetic legacy/controller seams.
 
 API keys explicitly supplied by users are stored independently. Credential vaults
 require an application tag; untagged or differently owned records refuse before
-native lookup, refresh or deletion. Windows empty-store reads create no disk lease.
+native lookup, refresh or deletion. Provider operation leases preflight vault
+ownership before lock-file creation; unowned records remain byte- and file-set
+unchanged. Windows empty-store reads create no disk lease.
 
 Independent subscription authorization has not been established for OpenAI ChatGPT
 or xAI Grok. Ordinary login, refresh and retained subscription dispatch are blocked

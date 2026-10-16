@@ -44,7 +44,7 @@ followed by normal protected merge, integrated-tree verification and all four
 exact-merge push workflows. Missing, ignored, skipped, cancelled or failing checks
 never count as success. Final receipts remain in the linked report; candidate
 hosted evidence is pending until actually observed. Final local verification passed
-3,645 test executions and all 165 exact acceptance cases, plus Rust 1.88, both
+3,650 test executions and all 165 exact acceptance cases, plus Rust 1.88, both
 build modes and shipping audit/deny; 43 ignored executions remain limitations.
 The first PR #5 candidate
 failed native fixture/voice-path checks and left macOS Intel cancelled; the linked
