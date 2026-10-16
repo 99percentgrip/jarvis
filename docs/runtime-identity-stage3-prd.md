@@ -53,7 +53,9 @@ run successfully again on the updated head. A subsequent native Windows
 cognition fixture failure was corrected using native absolute overrides, with
 a new relative-override no-write regression; production guards remain unchanged. Windows release first-launch inventory
 subsequently failed; the exact fixture now has a native ownership/read regression,
-and its storage failure remains unresolved until native proof and the full matrix pass.
+and identified the fixture directory ACL boundary. The source-derived explicit
+owner-rights entry is now replaced with the approved concrete SIDs; native proof
+and a fresh full matrix are still required.
 
 ## Explicit limitations and next authority boundary
 

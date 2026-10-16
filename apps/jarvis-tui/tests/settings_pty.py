@@ -47,9 +47,11 @@ def fixture_owned_directory(path):
     if os.name == "nt":
         code = """$ErrorActionPreference='Stop'; $p=$env:FIXTURE_PRIVATE_PATH;
 $user=[System.Security.Principal.WindowsIdentity]::GetCurrent().User;
-$acl=Get-Acl -LiteralPath $p; $acl.SetAccessRuleProtection($true,$false);
-foreach($sid in @($user.Value,'S-1-5-18','S-1-5-32-544')){
-$r=[System.Security.AccessControl.FileSystemAccessRule]::new([System.Security.Principal.SecurityIdentifier]::new($sid),'FullControl','ContainerInherit,ObjectInherit','None','Allow'); $acl.AddAccessRule($r)};
+$acl=Get-Acl -LiteralPath $p;
+# Python 3.13 mkdir(0700) adds an explicit OWNER RIGHTS ACE. Removing only
+# inherited rules leaves it behind; replace the fixture DACL with exact SIDs.
+$sddl='D:P(A;OICI;FA;;;{0})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)' -f $user.Value;
+$acl.SetSecurityDescriptorSddlForm($sddl,[System.Security.AccessControl.AccessControlSections]::Access);
 Set-Acl -LiteralPath $p -AclObject $acl"""
         subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", code],
                        env=dict(os.environ, FIXTURE_PRIVATE_PATH=str(path)), check=True, capture_output=True, timeout=15)

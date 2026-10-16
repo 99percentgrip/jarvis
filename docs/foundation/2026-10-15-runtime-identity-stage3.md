@@ -4,10 +4,10 @@
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
-Status: PR #5 corrective source passed final local verification; hosted Windows
-identified a further native-path fixture correction, now locally verified;
-Windows release first-launch inventory remains under investigation;
-normal protected merge and post-merge workflows remain pending.
+Status: PR #5 Windows fixture DACL correction is locally verified and awaiting
+fresh native CI. The previous diagnostic head passed ten mandatory contexts;
+Windows installer/native and the exact-head aggregate failed. Protected merge
+and all four post-merge workflows remain pending.
 The [PRD](../runtime-identity-stage3-prd.md), [architecture](../architecture/runtime-identity-stage3.md)
 and [source inventory](runtime-identity-stage3-inventory.json) own the acceptance trace.
 
@@ -372,6 +372,45 @@ The Windows installer workflow executes this real regression in the release prof
 before the unchanged first-launch gate, with a separate bounded step. No existing
 assertion, test timeout, platform or required context is removed or relaxed.
 Offline workflow guards and trigger contracts still passed 18 and 11 cases.
+
+## Windows explicit owner-rights fixture correction
+
+Diagnostic head `8e72a87921973f812b0bd8f6ad7bcd3cfe26210c` settled with
+10 successful required checks: quality, supply-chain, Rust 1.88, Linux x86_64/ARM64,
+macOS Intel/Apple Silicon, both contained browsers and Native namespace Hive.
+Windows installer job 116716804530 and native job 116716803685 both failed the
+new exact-fixture test at **directory ownership**, before reading any credential.
+The aggregate failed accordingly. The successful macOS Intel lane took 62.4 minutes;
+other successful native lanes took 31.7–45.5 minutes. These are prior-head receipts,
+not authorization to reuse them for a changed head.
+
+The source-derived cause is Python 3.13's explicit `OWNER RIGHTS` (OW) ACE when
+creating a 0700 Windows directory. The fixture removed only inherited ACEs, then
+added approved principals; the explicit alias survived. Production validation
+correctly accepts the actual user SID, SYSTEM and administrators, not that alias.
+[The exact Python 3.13.16 source](https://github.com/python/cpython/blob/v3.13.16/Modules/posixmodule.c#L5288-L5295)
+records this initial descriptor. Its retrieved source hash and bounded excerpt
+are retained in the private evidence directory.
+
+`settings_pty.py::fixture_owned_directory` now replaces only the access section
+with a protected inheritable descriptor naming exactly those three approved SIDs,
+instead of adding rules to the existing descriptor. Owner/group sections remain
+intact, using the documented
+[section-specific .NET API](https://learn.microsoft.com/en-us/dotnet/api/system.security.accesscontrol.objectsecurity.setsecuritydescriptorsddlform?view=netframework-4.8.1).
+Only synthetic fixture directories are affected. Production Rust, security policy,
+credential semantics, existing assertions and all test deadlines are unchanged.
+The exact-fixture regression and four-provider signed-out first-launch script
+passed locally (`windows-fixture-dacl-local.log`,
+`windows-fixture-first-launch-local.log`). Native Windows proof remains mandatory;
+Linux cannot establish Windows ACL behavior. JSON/Python/link/whitespace checks and
+trigger-contract verification passed. A fresh complete thirteen-context matrix is
+required before protected integration.
+
+Superseded candidates with confirmed mandatory failures had their unfinished
+verification runs cancelled to free runners. The current candidate was never
+cancelled; every cancelled/missing/failed old result remains non-passing evidence.
+The scoped cancellation receipts and earlier native cognition case passes are
+retained privately. No repository control, release workflow or tag rule changed.
 
 ## Dependency integrity
 

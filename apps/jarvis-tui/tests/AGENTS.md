@@ -268,7 +268,9 @@ Verify terminal interaction through the production TUI binary with isolated stat
 
 
 - Signed-out vault fixtures secure their synthetic parent directory before writing
-  records, including native inheritable Windows ACLs. POSIX chmod alone cannot
+  records, including a replacement protected Windows DACL granting only the actual
+  user, SYSTEM and administrators. Python's explicit OWNER RIGHTS ACE must not be
+  retained by an additive fixture update. POSIX chmod alone cannot
   establish Windows confidentiality. API-key-only providers without a tombstone
   use an explicit invalid synthetic vault to refuse native lookup.
 - Stage 3 fixtures seed current platform roots and explicitly declare synthetic

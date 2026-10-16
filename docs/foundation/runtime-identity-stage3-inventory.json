@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Windows release authentication inventory unresolved; focused exact-fixture ownership regression passed locally; native and full integration pending",
+  "status": "Windows fixture explicit owner-rights ACE corrected by replacement DACL; local proof passed; fresh native thirteen-check integration pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -55,7 +55,7 @@
       ],
       "writers": "SecureCredentialStore; provider operation locks",
       "consumers": "GLM, OpenAI, xAI and both LM Studio host adapters",
-      "verification": "runtime ownership tests; hosted native persistence",
+      "verification": "runtime_ownership; runtime_credentials exact terminal fixture; hosted native persistence",
       "stage": 3
     },
     {
