@@ -101,7 +101,12 @@ transport, stderr-only tracing, and orderly shutdown.
   constrained-host coverage. Its short receipt deadline requires every controlled Cargo
   command to record promptly before release. Its metadata JSON uses a literal
   `%s` argument rather than implementation-dependent printf format escapes; the
-  named metadata regression requires valid JSON. Production macOS/Windows governor
+  named metadata regression requires valid JSON. Controlled Cargo commands are
+  per-fixture symlinks to the checked-in immutable `tests/support/controlled_cargo_fixture.sh`,
+  with LF bytes pinned in `.gitattributes` and private receipt/release path bindings.
+  Never execute freshly written wrapper scripts or add retries for ETXTBSY. The
+  concurrent fixture regression checks immutable code, path quoting and isolated receipts.
+  Production macOS/Windows governor
   discovery is shared with TUI through the native harness observer, including
   Windows Job Object constraints. Native platform observation/descendant tests and
   the real constrained-Windows-job fixture supplement synthetic lifecycle evidence.

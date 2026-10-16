@@ -4,13 +4,13 @@
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
-Status: PR #5 remains unmerged. The prior final candidate passed native credential,
-voice and first-launch verification on Windows, then failed the constrained Job
-Object fixture because its Python launcher still used the legacy activation key.
-The launcher now uses the registered application key; a new source-contract regression
-failed before the correction and all eleven identity tests passed afterward.
-A fresh full local run and all thirteen exact-head checks are required for the
-corrective candidate. Protected merge and four post-merge workflows remain pending.
+Status: PR #5 remains unmerged. The Windows constrained-probe launcher correction
+passed focused identity/MSRV checks. A fresh full local run then reproduced the
+previous ACP fixture's Linux ETXTBSY failure at immediate execution of a generated
+Cargo wrapper. That wrapper now uses checked-in immutable code and fixture-local
+path bindings; all nine focused process tests passed. Fresh full local and thirteen
+exact-head hosted checks remain mandatory, followed by protected merge and four
+successful post-merge workflows.
 The [PRD](../runtime-identity-stage3-prd.md), [architecture](../architecture/runtime-identity-stage3.md)
 and [source inventory](runtime-identity-stage3-inventory.json) own the acceptance trace.
 
@@ -479,6 +479,35 @@ regeneration. `windows-job-naming-corrected.log` records the successful guard re
 This is source-derived activation proof, not native Job Object execution. The next
 exact-head Windows job must execute and retain the real constrained observation.
 No production Rust behavior, external dependency or verification policy changes.
+
+## Recurrent local controlled-wrapper execution correction
+
+`verify-windows-job-candidate.log` stopped at
+`controlled_cargo_metadata_emits_valid_json`: Linux returned OS error 26
+(`ExecutableFileBusy` / `Text file busy`) while executing the freshly generated
+Cargo wrapper. Its other seven process cases passed. This repeats an earlier
+observed failure that five bounded focused reruns had not reproduced. The precise
+other process holding a writable descriptor was not identified; the recurrence
+is retained rather than dismissed as a passing run or hidden behind retries.
+
+The fixture now links each private `cargo` path to the checked-in immutable
+`controlled_cargo_fixture.sh`. Receipt and release paths are separate fixture-local
+data bindings, read without interpolating them into executable source. Missing
+bindings fail before metadata success. The exact JSON, governor environment,
+20 ms gate polling, exit classification, original deadlines and all lifecycle
+assertions remain. LF bytes are pinned by a targeted `.gitattributes` rule.
+This follows the existing immutable executable contract used by container fixtures;
+production runtime and controller code are unchanged.
+
+`immutable-cargo-fixture-red.log` proves the new structural/concurrent regression
+rejects the old generated executable. `immutable-cargo-fixture-green.log` records
+all nine ACP governor tests passing, including eight concurrent metadata wrappers
+with quoted/spaced paths, independent receipts and unchanged shared executable
+bytes. Focused all-feature Clippy and Rust 1.88 test-target checking, POSIX shell
+syntax, LF/executable attributes, the frozen naming guard and changed report
+links/JSON/whitespace all passed. This removes the write/execute hazard instead of
+retrying an executable failure. Full local verification and the complete new exact-head matrix are still
+required. Earlier successful source receipts remain prior-candidate evidence.
 
 ## Dependency integrity
 

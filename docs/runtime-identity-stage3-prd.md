@@ -65,6 +65,10 @@ regressions and native credential/first-launch/voice checks, then failed its
 constrained-job launcher: a legacy activation key did not match the registered
 Rust guard. The one-line fixture correction has red/green source-contract proof;
 native constrained execution and fresh complete verification remain pending.
+The subsequent local full run reproduced the generated Cargo wrapper ETXTBSY
+fixture failure. Immutable checked-in executable code with private data bindings
+now passes all nine ACP governor process tests, including a concurrent ownership
+regression; fresh full local and exact-head integration evidence remains required.
 
 ## Explicit limitations and next authority boundary
 

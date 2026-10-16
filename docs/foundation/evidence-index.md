@@ -1,6 +1,6 @@
 # Foundation Evidence Index
 
-- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — runtime/security evidence, first hosted failure analysis, corrective fixtures and private-leaf/temporary-workspace audit; final local verification passed 165 exact acceptance cases, MSRV, builds and audit/deny; source inventory and preservation retained; native Windows installer passed after fixture DACL correction; reproduced provider credential-lock ownership defect has red/green proof, 3,650 passing executions/165 acceptance cases and fresh MSRV/build/security success; Windows native then exposed a legacy constrained-probe activation key; its focused correction has red/green identity-contract proof and awaits fresh complete exact-head integration.
+- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — source-derived ownership/security inventory, preservation, native fixture corrections and immutable controlled-wrapper repair; prior full local proof includes 3,650 passing executions and 165 acceptance cases. Current focused identity/MSRV and nine ACP governor tests pass; fresh full local, exact-head protected integration and post-merge verification remain pending.
 
 - [Stage 2 Rust identity migration](2026-10-15-rust-identity-stage2.md) — complete reviewed workspace mapping, explicit legacy executable adapters, local verification and pending protected-merge evidence.
 

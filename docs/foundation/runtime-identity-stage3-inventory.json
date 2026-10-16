@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Prior candidate passed provider ownership/native credential/first-launch/voice proof but failed the Windows constrained-probe legacy activation key; focused fixture correction and source-contract proof passed; fresh verification pending",
+  "status": "Constrained Windows probe activation and recurrent generated-executable fixture corrections have focused red/green proof; prior runtime/security evidence retained; fresh full local and exact-head integration pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -1518,6 +1518,7 @@
     "User-requested vesper-block-* project exports are user-owned output, not automatic application-private storage; public export naming remains deferred."
   ],
   "changed_files": [
+    ".gitattributes",
     ".github/AGENTS.md",
     ".github/test_verify_native_credentials.py",
     ".github/verify_native_credentials.py",
@@ -1550,6 +1551,7 @@
     "apps/jarvis-acp/tests/runtime_ownership.rs",
     "apps/jarvis-acp/tests/session_controls.rs",
     "apps/jarvis-acp/tests/skill_routing_controls.rs",
+    "apps/jarvis-acp/tests/support/controlled_cargo_fixture.sh",
     "apps/jarvis-acp/tests/support/credentials.rs",
     "apps/jarvis-acp/tests/support/mod.rs",
     "apps/jarvis-acp/tests/support/persistence_vectors.rs",
@@ -1766,6 +1768,13 @@
       "reader": "crates/jarvis-harness/src/host_resources_native.rs::tests::windows_job_fixture",
       "verification": "crates/jarvis-identity/tests/contracts.rs::windows_job_launcher_activates_the_registered_native_probe",
       "authority": "explicit native test child only; no release/provider authority"
+    },
+    {
+      "contract": "Immutable ACP controlled Cargo executable with private path bindings",
+      "writer": "apps/jarvis-acp/tests/release_resource_governor.rs::write_controlled_cargo",
+      "executable": "apps/jarvis-acp/tests/support/controlled_cargo_fixture.sh",
+      "verification": "concurrent_cargo_fixtures_keep_bindings_private_and_executable_immutable; existing eight ACP governor process cases",
+      "authority": "explicit offline process fixture only; no production retries or release operation"
     }
   ]
 }
