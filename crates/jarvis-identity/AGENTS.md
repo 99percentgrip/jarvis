@@ -12,6 +12,8 @@ J.A.R.V.I.S.; remain separate from active runtime composition.
   and pure validation. Production dependencies and side effects are forbidden.
 - `tests/contracts.rs` checks actual Cargo metadata, source evidence, platform
   defaults and negative registry mutations using isolated verification inputs.
+  Its Windows Job Object launcher contract checks the actual Python activation
+  key against the registered Rust guard on every platform; native execution is separate.
 
 ## Local Contracts
 

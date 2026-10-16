@@ -480,3 +480,21 @@ fn active_runtime_environment_registry_cites_real_consumers_without_collisions()
         );
     }
 }
+
+#[test]
+fn windows_job_launcher_activates_the_registered_native_probe() {
+    let identity = RUNTIME_ENVIRONMENT
+        .iter()
+        .find(|entry| entry.current == "JARVIS_WINDOWS_JOB_FIXTURE")
+        .unwrap();
+    let guard = std::fs::read_to_string(root().join(identity.source)).unwrap();
+    assert!(guard.contains(&format!("std::env::var(\"{}\")", identity.current)));
+    let launcher =
+        std::fs::read_to_string(root().join("crates/jarvis-harness/tests/windows_resource_job.py"))
+            .unwrap();
+    assert!(
+        launcher.contains(&format!("{}='1'", identity.current)),
+        "native launcher must activate the actual registered Rust probe guard"
+    );
+    assert!(!launcher.contains(&format!("{}='1'", identity.legacy)));
+}

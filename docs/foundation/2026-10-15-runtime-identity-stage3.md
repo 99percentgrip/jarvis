@@ -4,12 +4,13 @@
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
-Status: PR #5 Windows fixture DACL correction passed the native Windows installer
-check. A further source review reproduced a credential-lock ownership ordering
-defect in both provider adapters; its focused correction passed red/green tests
-and passed fresh full local, MSRV, build and security verification; a new exact-head
-CI run is required.
-Protected merge and all four post-merge workflows remain pending.
+Status: PR #5 remains unmerged. The prior final candidate passed native credential,
+voice and first-launch verification on Windows, then failed the constrained Job
+Object fixture because its Python launcher still used the legacy activation key.
+The launcher now uses the registered Jarvis key; a new source-contract regression
+failed before the correction and all eleven identity tests passed afterward.
+A fresh full local run and all thirteen exact-head checks are required for the
+corrective candidate. Protected merge and four post-merge workflows remain pending.
 The [PRD](../runtime-identity-stage3-prd.md), [architecture](../architecture/runtime-identity-stage3.md)
 and [source inventory](runtime-identity-stage3-inventory.json) own the acceptance trace.
 
@@ -445,6 +446,36 @@ all-feature workspace builds, `cargo audit` and all-feature `cargo deny check`.
 Those six command receipts are recorded in `provider-lock-local-suite-results.json`.
 A new complete thirteen-check candidate matrix remains required before integration;
 earlier remote success does not cover this change.
+
+## Windows constrained-job launcher correction
+
+Candidate `3575710341ae615492394dffb107a638ec403bb2` failed in
+[Windows native job 116865113634](https://github.com/99percentgrip/jarvis/actions/runs/38867981294/job/116865113634).
+The Python launcher set `AGENT_VESPER_WINDOWS_JOB_FIXTURE`, but the actual Rust
+`windows_job_fixture` guard already required `JARVIS_WINDOWS_JOB_FIXTURE`.
+The selected test returned without running its native probe; the existing required
+`WINDOWS_JOB_OBSERVATION` receipt was absent and the launcher correctly failed.
+This was a deterministic missed fixture identity writer, not a timeout or outage.
+
+Only the launcher's activation identifier changes. The actual 2 GiB Job Object,
+production governor, unsafe-Cargo-admission refusal, memory/pressure assertions,
+60-second child deadline and owned-child cleanup remain unchanged. This head
+settled with eleven successful required contexts; Windows native and the dependent
+exact-head aggregate failed. The Windows
+log independently records all four new provider lock-ownership cases passing,
+native credential persistence/reload, first launch and real voice signals; later
+steps in that failed job are not passing evidence.
+
+The new `windows_job_launcher_activates_the_registered_native_probe` identity test
+reads the actual Python launcher, actual Rust consumer and approved runtime mapping
+on every platform. `windows-job-environment-red.log` proves its pre-fix failure;
+`windows-job-environment-green.log` records eleven passing identity contracts;
+`windows-job-msrv-green.log` repeats them on Rust 1.88. Focused all-target/all-feature
+Clippy, Python syntax, the exact one-identifier launcher delta, report links,
+inventory consistency, whitespace and the unchanged naming baseline all passed.
+This is source-derived activation proof, not native Job Object execution. The next
+exact-head Windows job must execute and retain the real constrained observation.
+No production Rust behavior, external dependency or verification policy changes.
 
 ## Dependency integrity
 

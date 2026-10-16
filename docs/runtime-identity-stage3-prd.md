@@ -60,7 +60,11 @@ defect now has red/green ownership regressions and a production preflight correc
 fresh full verification passed 3,650 executions and 165 exact acceptance cases
 with 43 ignored limitations retained. Fresh Rust 1.88 workspace/Windows checks,
 both build modes and audit/deny also passed. A fresh exact-head matrix is still
-required for that correction.
+required for that correction. The Windows lane subsequently passed those provider
+regressions and native credential/first-launch/voice checks, then failed its
+constrained-job launcher: a legacy activation key did not match the registered
+Rust guard. The one-line fixture correction has red/green source-contract proof;
+native constrained execution and fresh complete verification remain pending.
 
 ## Explicit limitations and next authority boundary
 

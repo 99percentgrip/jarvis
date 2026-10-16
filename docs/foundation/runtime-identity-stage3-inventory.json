@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Native Windows installer passed DACL correction; provider-lock ownership correction passed focused red/green, full verify, MSRV, builds and audit/deny; fresh exact-head integration pending",
+  "status": "Prior candidate passed provider ownership/native credential/first-launch/voice proof but failed the Windows constrained-probe legacy activation key; focused fixture correction and source-contract proof passed; fresh verification pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -1670,6 +1670,7 @@
     "crates/jarvis-harness/tests/swarm_gate_parity.rs",
     "crates/jarvis-harness/tests/swarm_native_hive.rs",
     "crates/jarvis-harness/tests/vro13_e2e.rs",
+    "crates/jarvis-harness/tests/windows_resource_job.py",
     "crates/jarvis-identity/AGENTS.md",
     "crates/jarvis-identity/src/lib.rs",
     "crates/jarvis-identity/src/mappings.rs",
@@ -1755,5 +1756,16 @@
     "xtask/AGENTS.md",
     "xtask/src/identity_naming.rs",
     "xtask/src/main.rs"
+  ],
+  "verification_contracts": [
+    {
+      "contract": "Windows constrained Job Object probe activation",
+      "legacy": "AGENT_VESPER_WINDOWS_JOB_FIXTURE",
+      "current": "JARVIS_WINDOWS_JOB_FIXTURE",
+      "writer": "crates/jarvis-harness/tests/windows_resource_job.py::run",
+      "reader": "crates/jarvis-harness/src/host_resources_native.rs::tests::windows_job_fixture",
+      "verification": "crates/jarvis-identity/tests/contracts.rs::windows_job_launcher_activates_the_registered_native_probe",
+      "authority": "explicit native test child only; no release/provider authority"
+    }
   ]
 }
