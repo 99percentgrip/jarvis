@@ -7,7 +7,7 @@ Implement only the owner's revised Stage 3 directive in the isolated branch
 Status: PR #5 remains unmerged. The prior final candidate passed native credential,
 voice and first-launch verification on Windows, then failed the constrained Job
 Object fixture because its Python launcher still used the legacy activation key.
-The launcher now uses the registered Jarvis key; a new source-contract regression
+The launcher now uses the registered application key; a new source-contract regression
 failed before the correction and all eleven identity tests passed afterward.
 A fresh full local run and all thirteen exact-head checks are required for the
 corrective candidate. Protected merge and four post-merge workflows remain pending.
@@ -450,7 +450,8 @@ earlier remote success does not cover this change.
 ## Windows constrained-job launcher correction
 
 Candidate `3575710341ae615492394dffb107a638ec403bb2` failed in
-[Windows native job 116865113634](https://github.com/99percentgrip/jarvis/actions/runs/38867981294/job/116865113634).
+Windows native job 116865113634, workflow run 38867981294, in
+`99percentgrip/jarvis`.
 The Python launcher set `AGENT_VESPER_WINDOWS_JOB_FIXTURE`, but the actual Rust
 `windows_job_fixture` guard already required `JARVIS_WINDOWS_JOB_FIXTURE`.
 The selected test returned without running its native probe; the existing required
@@ -472,7 +473,9 @@ on every platform. `windows-job-environment-red.log` proves its pre-fix failure;
 `windows-job-environment-green.log` records eleven passing identity contracts;
 `windows-job-msrv-green.log` repeats them on Rust 1.88. Focused all-target/all-feature
 Clippy, Python syntax, the exact one-identifier launcher delta, report links,
-inventory consistency, whitespace and the unchanged naming baseline all passed.
+inventory consistency and whitespace passed. The first documentation wording
+failed three frozen naming checks; only the prose was corrected, with no baseline
+regeneration. `windows-job-naming-corrected.log` records the successful guard rerun.
 This is source-derived activation proof, not native Job Object execution. The next
 exact-head Windows job must execute and retain the real constrained observation.
 No production Rust behavior, external dependency or verification policy changes.
