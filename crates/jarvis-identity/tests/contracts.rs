@@ -185,7 +185,20 @@ fn declared_legacy_contracts_have_current_source_evidence() {
     let root = root();
     for m in MAPPINGS {
         let source = std::fs::read_to_string(root.join(m.source)).unwrap();
-        assert!(source.contains(m.legacy), "missing source evidence: {m:?}");
+        let active_private_mapping = m.classification == Classification::CompatibilitySensitive
+            && matches!(
+                m.surface,
+                Surface::Configuration | Surface::Credential | Surface::ProjectScope
+            )
+            && m.planned.is_some_and(|target| source.contains(target));
+        let active_environment_mapping = m.surface == Surface::Environment
+            && RUNTIME_ENVIRONMENT
+                .iter()
+                .any(|entry| entry.legacy == m.legacy && source.contains(entry.current));
+        assert!(
+            source.contains(m.legacy) || active_private_mapping || active_environment_mapping,
+            "missing legacy or activated private-contract source evidence: {m:?}"
+        );
     }
     for p in PACKAGES {
         assert!(
@@ -310,7 +323,7 @@ fn acp_repository_provenance_and_release_ownership_agree_with_real_source() {
 
 #[test]
 fn all_five_planned_platform_roots_are_disjoint_from_actual_legacy_defaults() {
-    use jarvis_config::{PathEnvironment, Platform as LegacyPlatform, VesperPaths};
+    use jarvis_config::{JarvisPaths, PathEnvironment, Platform as LegacyPlatform, VesperPaths};
     let inputs = PathInputs {
         home: "/identity-fixture/home".into(),
         config_base: "/identity-fixture/home/.config".into(),
@@ -339,6 +352,12 @@ fn all_five_planned_platform_roots_are_disjoint_from_actual_legacy_defaults() {
         };
         let old = VesperPaths::resolve(old_platform, &env).unwrap();
         let new = PlannedPaths::for_platform(d.platform, &inputs);
+        let active = JarvisPaths::resolve(old_platform, &env).unwrap();
+        assert_eq!(active.config, new.config);
+        assert_eq!(active.data, new.data);
+        assert_eq!(active.cache, new.cache);
+        assert_eq!(active.state, new.state);
+        assert_eq!(active.logs, new.logs);
         for planned in [
             &new.config,
             &new.data,
@@ -388,10 +407,13 @@ fn active_source_and_shipped_skill_environment_inputs_are_all_classified() {
             }
             let source = std::fs::read_to_string(path).unwrap();
             for word in source.split(|c: char| !(c.is_ascii_alphanumeric() || c == '_')) {
-                let branded = ["AGENT_VESPER_", "VESPER_"].iter().any(|prefix| {
-                    word.strip_prefix(prefix)
-                        .is_some_and(|suffix| suffix.starts_with(|c: char| c.is_ascii_uppercase()))
-                });
+                let branded = ["AGENT_VESPER_", "VESPER_", "JARVIS_"]
+                    .iter()
+                    .any(|prefix| {
+                        word.strip_prefix(prefix).is_some_and(|suffix| {
+                            suffix.starts_with(|c: char| c.is_ascii_uppercase())
+                        })
+                    });
                 if word == "GLM_VENV_PATH"
                     || (branded
                         && word
@@ -407,13 +429,72 @@ fn active_source_and_shipped_skill_environment_inputs_are_all_classified() {
     for directory in ["apps", "crates", "scripts", "skills"] {
         collect(&root().join(directory), &mut source);
     }
-    let registered: BTreeSet<_> = MAPPINGS
+    let mut registered: BTreeSet<_> = MAPPINGS
         .iter()
         .filter(|m| m.surface == Surface::Environment)
         .map(|m| m.legacy.to_owned())
         .collect();
-    assert_eq!(
-        source, registered,
-        "source/skill identity-bearing environment inputs require classification"
+    registered.extend(
+        RUNTIME_ENVIRONMENT
+            .iter()
+            .map(|entry| entry.current.to_owned()),
     );
+    // Historical mappings remain provenance even after an active reader moves.
+    // Every source identifier, including newly added inputs, still needs a row.
+    assert!(
+        source.is_subset(&registered),
+        "unclassified source environment identifiers: {:?}",
+        source.difference(&registered).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn active_runtime_environment_registry_cites_real_consumers_without_collisions() {
+    let root = root();
+    let mut targets = std::collections::BTreeSet::new();
+    for entry in RUNTIME_ENVIRONMENT {
+        assert!(
+            entry
+                .current
+                .to_ascii_lowercase()
+                .starts_with(&format!("{}_", PRODUCT.slug))
+        );
+        assert!(
+            targets.insert(entry.current),
+            "duplicate runtime environment target"
+        );
+        let source = std::fs::read_to_string(root.join(entry.source)).unwrap();
+        assert!(
+            source.contains(entry.current),
+            "stale runtime source evidence: {}",
+            entry.source
+        );
+        assert!(
+            ![
+                "VESPER_SESSION_FORMAT",
+                "VESPER_SESSION_VERSION",
+                "VESPER_SECRET_CANARY",
+                "VESPER_SYNTHETIC_CANARY"
+            ]
+            .contains(&entry.legacy)
+        );
+    }
+}
+
+#[test]
+fn windows_job_launcher_activates_the_registered_native_probe() {
+    let identity = RUNTIME_ENVIRONMENT
+        .iter()
+        .find(|entry| entry.current == "JARVIS_WINDOWS_JOB_FIXTURE")
+        .unwrap();
+    let guard = std::fs::read_to_string(root().join(identity.source)).unwrap();
+    assert!(guard.contains(&format!("std::env::var(\"{}\")", identity.current)));
+    let launcher =
+        std::fs::read_to_string(root().join("crates/jarvis-harness/tests/windows_resource_job.py"))
+            .unwrap();
+    assert!(
+        launcher.contains(&format!("{}='1'", identity.current)),
+        "native launcher must activate the actual registered Rust probe guard"
+    );
+    assert!(!launcher.contains(&format!("{}='1'", identity.legacy)));
 }

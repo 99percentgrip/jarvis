@@ -4,7 +4,7 @@
 //!
 //! Layout (per user, never per workspace):
 //!
-//! `~/.local/share/agent-vesper/voice-pack/`
+//! Native application data root plus `voice-pack/`.
 //! - `model_quantized.onnx` — the pinned acoustic model (immutable revision)
 //! - `voices/af_heart.bin` — style vector (Heart)
 //! - `voices/am_michael.bin` — style vector (Michael)
@@ -185,49 +185,19 @@ pub const ASSET_VOCAB: PinnedAsset = PinnedAsset {
 /// All voice assets this build installs (exactly two; not a repo snapshot).
 pub const VOICE_ASSETS: [PinnedAsset; 2] = [ASSET_VOICE_AF_HEART, ASSET_VOICE_AM_MICHAEL];
 
-/// The managed pack root: `~/.local/share/agent-vesper/voice-pack`
-/// (`$XDG_DATA_HOME` honored), shared across projects and application
-/// updates — never a per-workspace copy.
+/// The native application data root plus `voice-pack`, shared across projects.
+/// Unowned existing storage and redirected private paths are never adopted.
 #[must_use]
 pub fn pack_root() -> PathBuf {
-    if let Some(data_home) = std::env::var_os("XDG_DATA_HOME")
-        && Path::new(&data_home).is_absolute()
-    {
-        return PathBuf::from(data_home)
-            .join("agent-vesper")
-            .join("voice-pack");
-    }
-    #[cfg(windows)]
-    if let Some(local) = std::env::var_os("LOCALAPPDATA")
-        .filter(|path| Path::new(path).is_absolute())
-        .map(PathBuf::from)
-        .or_else(|| {
-            std::env::var_os("USERPROFILE")
-                .filter(|path| Path::new(path).is_absolute())
-                .map(|home| PathBuf::from(home).join("AppData/Local"))
-        })
-    {
-        return local.join("agent-vesper/voice-pack");
-    }
-    #[cfg(not(windows))]
-    if let Some(home) = std::env::var_os("HOME").filter(|path| Path::new(path).is_absolute()) {
-        #[cfg(target_os = "macos")]
-        {
-            let legacy = PathBuf::from(&home).join(".local/share/agent-vesper/voice-pack");
-            if legacy.is_dir() {
-                return legacy;
-            }
-            return PathBuf::from(home).join("Library/Application Support/agent-vesper/voice-pack");
-        }
-        #[cfg(not(target_os = "macos"))]
-        return PathBuf::from(home)
-            .join(".local")
-            .join("share")
-            .join("agent-vesper")
-            .join("voice-pack");
-    }
-    // No home: the pack cannot live anywhere honest.
-    PathBuf::from("/nonexistent-agent-vesper-voice-pack")
+    jarvis_config::JarvisPaths::from_environment()
+        .ok()
+        .and_then(resolved_pack_root)
+        .unwrap_or_else(|| PathBuf::from("/nonexistent-jarvis-voice-pack"))
+}
+fn resolved_pack_root(paths: jarvis_config::JarvisPaths) -> Option<PathBuf> {
+    let root = paths.data.join("voice-pack");
+    jarvis_security::validate_new_or_owned_directory(&root).ok()?;
+    Some(root)
 }
 
 /// Each runtime is measured from its official upstream release archive.
@@ -435,6 +405,7 @@ fn pack_record_path(root: &Path) -> PathBuf {
 /// [`verify_pack`]'s job); malformed or foreign records read as absent.
 #[must_use]
 pub fn read_pack_record(root: &Path) -> Option<PackRecord> {
+    jarvis_security::validate_private_path(&pack_record_path(root)).ok()?;
     let bytes = std::fs::read(pack_record_path(root)).ok()?;
     let record: PackRecord = serde_json::from_slice(&bytes).ok()?;
     (record.format == 1).then_some(record)
@@ -448,6 +419,7 @@ pub fn read_pack_record(root: &Path) -> Option<PackRecord> {
 /// context; no partial record is left behind.
 pub fn write_pack_record(root: &Path, record: &PackRecord) -> Result<(), VoiceError> {
     let path = pack_record_path(root);
+    jarvis_security::validate_private_path(&path).map_err(io_unavailable)?;
     let dir = path
         .parent()
         .ok_or_else(|| VoiceError::InvalidInput("pack record has no parent".into()))?;
@@ -455,6 +427,7 @@ pub fn write_pack_record(root: &Path, record: &PackRecord) -> Result<(), VoiceEr
     let json = serde_json::to_vec_pretty(record)
         .map_err(|_| VoiceError::InvalidInput("pack record serialization failed".into()))?;
     let temp = dir.join(format!(".pack.json.tmp.{}", std::process::id()));
+    jarvis_security::validate_private_path(&temp).map_err(io_unavailable)?;
     std::fs::write(&temp, &json).map_err(io_unavailable)?;
     std::fs::rename(&temp, &path).map_err(io_unavailable)?;
     Ok(())
@@ -476,6 +449,7 @@ fn io_unavailable(error: std::io::Error) -> VoiceError {
 /// `pack_identity` additionally hashes Unix device/inode/ctime so replacement
 /// with preserved size/mtime still invalidates cached verification.
 fn file_identity(path: &Path) -> Option<(u64, i128)> {
+    jarvis_security::validate_private_path(path).ok()?;
     let metadata = std::fs::symlink_metadata(path).ok()?;
     if !metadata.file_type().is_file() {
         // Refuse symlinked pack files outright (recorded rule).
@@ -729,6 +703,7 @@ pub fn assess(root: &Path) -> Result<Option<PackProblem>, VoiceError> {
 /// # Errors
 /// IO failures surface as [`VoiceError::Unavailable`].
 pub fn remove_pack(root: &Path) -> Result<u64, VoiceError> {
+    jarvis_security::validate_private_path(root).map_err(io_unavailable)?;
     let mut reclaimed = 0u64;
     for asset in std::iter::once(&ASSET_MODEL)
         .chain(VOICE_ASSETS.iter())
@@ -738,6 +713,7 @@ pub fn remove_pack(root: &Path) -> Result<u64, VoiceError> {
         .chain(std::iter::once(&RUNTIME_NOTICES_FILE))
     {
         let path = root.join(asset.installed_name);
+        jarvis_security::validate_private_path(&path).map_err(io_unavailable)?;
         if let Ok(metadata) = std::fs::symlink_metadata(&path) {
             reclaimed += metadata.len();
             if metadata.is_dir() {
@@ -763,6 +739,43 @@ pub fn remove_pack(root: &Path) -> Result<u64, VoiceError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_pack_discovery_refuses_unowned_and_redirected_private_storage() {
+        let fixture = tempfile::tempdir().unwrap();
+        let paths = jarvis_config::JarvisPaths::resolve(
+            jarvis_config::Platform::Linux,
+            &jarvis_config::PathEnvironment {
+                home: Some(fixture.path().to_path_buf()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let root = paths.data.join("voice-pack");
+        assert_eq!(resolved_pack_root(paths.clone()), Some(root.clone()));
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("pack.json"), b"synthetic old unowned record").unwrap();
+        assert!(resolved_pack_root(paths.clone()).is_none());
+        assert_eq!(
+            std::fs::read(root.join("pack.json")).unwrap(),
+            b"synthetic old unowned record"
+        );
+        std::fs::remove_file(root.join("pack.json")).unwrap();
+        jarvis_security::prepare_owned_directory(&root).unwrap();
+        assert_eq!(resolved_pack_root(paths.clone()), Some(root.clone()));
+        #[cfg(unix)]
+        {
+            std::fs::remove_dir_all(&root).unwrap();
+            let legacy = fixture.path().join(".agent-vesper");
+            std::fs::create_dir(&legacy).unwrap();
+            std::fs::write(legacy.join("canary"), b"unchanged").unwrap();
+            std::os::unix::fs::symlink(&legacy, &root).unwrap();
+            assert!(resolved_pack_root(paths).is_none());
+            assert!(read_pack_record(&root).is_none());
+            assert!(remove_pack(&root).is_err());
+            assert_eq!(std::fs::read(legacy.join("canary")).unwrap(), b"unchanged");
+        }
+    }
 
     #[test]
     fn pinned_assets_match_primary_source_manifest() {

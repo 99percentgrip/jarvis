@@ -202,11 +202,13 @@ impl VoicePackSetup {
     pub fn plan(&self) -> Result<SetupPlan, SetupError> {
         if !self.root.is_absolute()
             || self.root == Path::new("/nonexistent-agent-vesper-voice-pack")
+            || self.root == Path::new("/nonexistent-jarvis-voice-pack")
         {
             return Err(SetupError::Storage {
                 detail: "Cannot locate your private voice pack directory. Restore user data paths, then Retry setup.".into(),
             });
         }
+        jarvis_security::validate_new_or_owned_directory(&self.root).map_err(storage_error)?;
         let transfer_bytes = Download::Asset(&ASSET_MODEL).size()
             + Download::Asset(&ASSET_VOCAB).size()
             + VOICE_ASSETS.iter().map(|v| v.size).sum::<u64>()
@@ -294,6 +296,8 @@ impl VoicePackSetup {
         cancel: &impl Fn() -> bool,
         probe: Option<ProbeFn>,
     ) -> Result<(), SetupError> {
+        // A prior owned pack may have been moved aside for rollback.
+        self.create_root()?;
         // Download small assets first, model last (fail fast, cheap).
         self.stage_asset(&Download::Asset(&ASSET_VOCAB), &progress, cancel)
             .await?;
@@ -382,6 +386,7 @@ impl VoicePackSetup {
             Download::RuntimeArchive => SetupStage::Runtime,
         };
         let partial = self.staging_dir().join(download.partial_name());
+        jarvis_security::validate_private_path(&partial).map_err(storage_error)?;
         let expected = download.size();
         let resumed = std::fs::metadata(&partial).map(|m| m.len()).unwrap_or(0);
         if resumed > expected {
@@ -453,6 +458,8 @@ impl VoicePackSetup {
         let place = |staged_name: &str, installed_name: &str| -> Result<(), SetupError> {
             let from = staging.join(staged_name);
             let to = self.root.join(installed_name);
+            jarvis_security::validate_private_path(&from).map_err(storage_error)?;
+            jarvis_security::validate_private_path(&to).map_err(storage_error)?;
             if let Some(parent) = to.parent() {
                 std::fs::create_dir_all(parent).map_err(storage_error)?;
             }
@@ -496,8 +503,8 @@ impl VoicePackSetup {
     }
 
     fn create_root(&self) -> Result<(), SetupError> {
-        std::fs::create_dir_all(&self.root).map_err(storage_error)?;
-        std::fs::create_dir_all(self.staging_dir()).map_err(storage_error)?;
+        jarvis_security::prepare_owned_directory(&self.root).map_err(storage_error)?;
+        jarvis_security::prepare_owned_directory(&self.staging_dir()).map_err(storage_error)?;
         Ok(())
     }
 
@@ -831,10 +838,14 @@ pub const LEASE_DIR: &str = "runtime/leases";
 /// [`VoiceError::Unavailable`] on IO failure (readiness surfaces it).
 pub fn write_lease(root: &Path) -> Result<(), VoiceError> {
     let dir = root.join(LEASE_DIR);
-    std::fs::create_dir_all(dir.as_path()).map_err(|error| VoiceError::Unavailable {
-        provider: ProviderId::new(pack::PROVIDER_ID).expect("static id fits"),
-        reason: jarvis_domain::BoundedString::new(format!("lease storage failed: {error}"))
-            .unwrap_or_else(|_| jarvis_domain::BoundedString::new("lease failed").expect("fits")),
+    jarvis_security::prepare_private_directory(dir.as_path()).map_err(|error| {
+        VoiceError::Unavailable {
+            provider: ProviderId::new(pack::PROVIDER_ID).expect("static id fits"),
+            reason: jarvis_domain::BoundedString::new(format!("lease storage failed: {error}"))
+                .unwrap_or_else(|_| {
+                    jarvis_domain::BoundedString::new("lease failed").expect("fits")
+                }),
+        }
     })?;
     let path = dir.join(format!("{}.json", std::process::id()));
     let record = serde_json::json!({
@@ -1022,6 +1033,7 @@ mod tests {
     fn unknown_or_relative_pack_locations_refuse_before_transfer() {
         for root in [
             "/nonexistent-agent-vesper-voice-pack",
+            "/nonexistent-jarvis-voice-pack",
             "relative-voice-pack",
         ] {
             assert!(matches!(

@@ -1,0 +1,1780 @@
+{
+  "schema": 1,
+  "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
+  "status": "Constrained Windows probe activation and recurrent generated-executable fixture corrections have focused red/green proof; prior runtime/security evidence retained; fresh full local and exact-head integration pending",
+  "ownership_categories": [
+    "JarvisPrivate",
+    "VesperPrivate",
+    "UserOwnedShared",
+    "ExternalProtocol"
+  ],
+  "resource_groups": [
+    {
+      "id": "platform-roots",
+      "owner": "JarvisPrivate",
+      "resource": "Platform config/data/state/cache/log roots",
+      "legacy_contract": "VesperPaths defaults",
+      "current_contract": "JarvisPaths native roots",
+      "source": "crates/jarvis-config/src/paths.rs",
+      "symbol": "impl JarvisPaths",
+      "source_lines": [
+        52
+      ],
+      "writers": "JarvisPaths::initialize; initialize_environment",
+      "consumers": "configuration, authentication and both hosts",
+      "verification": "first_run_preserves_all_synthetic_vesper_roots_and_user_project_files",
+      "stage": 3
+    },
+    {
+      "id": "project-private",
+      "owner": "JarvisPrivate",
+      "resource": "Per-project state and scope stamp",
+      "legacy_contract": ".agent-vesper; .vesper-scope-id",
+      "current_contract": ".jarvis; .jarvis-scope-id",
+      "source": "crates/jarvis-agent/src/vro/scope.rs",
+      "symbol": "pub fn resolve",
+      "source_lines": [
+        692,
+        846
+      ],
+      "writers": "host scope resolution and private store writers",
+      "consumers": "both hosts and shared harness",
+      "verification": "scope_parity; runtime_ownership",
+      "stage": 3
+    },
+    {
+      "id": "credentials",
+      "owner": "JarvisPrivate",
+      "resource": "API-key vaults, native services and operation locks",
+      "legacy_contract": "agent-vesper service and old provider paths",
+      "current_contract": "99percentgrip.jarvis service; native config directory",
+      "source": "crates/jarvis-auth/src/lib.rs",
+      "symbol": "pub fn prepare_operation_storage",
+      "source_lines": [
+        160
+      ],
+      "writers": "SecureCredentialStore; provider operation locks",
+      "consumers": "GLM, OpenAI, xAI and both LM Studio host adapters",
+      "verification": "runtime_ownership; runtime_credentials exact terminal fixture; hosted native persistence; both provider unowned_vault_refuses_before_creating_an_operation_lock and owned_vault_operation_lock_preserves_credentials_and_stays_private",
+      "stage": 3
+    },
+    {
+      "id": "oauth-registration",
+      "owner": "ExternalProtocol",
+      "resource": "Subscription and Google application authorization",
+      "legacy_contract": "Inherited application-bound registrations",
+      "current_contract": "IDs unchanged; normal paths inactive pending independent authorization",
+      "source": "crates/jarvis-provider-openai/src/auth.rs",
+      "symbol": "pub fn new",
+      "source_lines": [
+        136
+      ],
+      "writers": "owning provider authorization adapters",
+      "consumers": "OpenAI ChatGPT, xAI Grok; bundled Google helper",
+      "verification": "protocol fixtures only; live independent authorization UNKNOWN",
+      "stage": 3
+    },
+    {
+      "id": "sessions",
+      "owner": "JarvisPrivate",
+      "resource": "Conversation records, discovery and atomic writes",
+      "legacy_contract": "Vesper session roots",
+      "current_contract": "native data / sessions; explicit independently owned roots",
+      "source": "crates/jarvis-sessions/src/filesystem.rs",
+      "symbol": "pub fn new_owned",
+      "source_lines": [
+        87
+      ],
+      "writers": "VesperSessionWriter::new_owned",
+      "consumers": "ACP session repository and TUI persistence",
+      "verification": "persistence_writes; runtime_ownership",
+      "stage": 3
+    },
+    {
+      "id": "message-journal",
+      "owner": "JarvisPrivate",
+      "resource": "Queued messages and message/session identity",
+      "legacy_contract": "Vesper TUI persisted conversation state",
+      "current_contract": "same serialized schema inside current owned session records",
+      "source": "apps/jarvis-tui/src/messages.rs",
+      "symbol": "pub struct MessageJournal",
+      "source_lines": [
+        310
+      ],
+      "writers": "host conversation persistence",
+      "consumers": "queue admission, cancellation and explicit resume",
+      "verification": "message_queue_pty; journal round-trip and crash recovery tests",
+      "stage": 3
+    },
+    {
+      "id": "memory-skills",
+      "owner": "JarvisPrivate",
+      "resource": "Memory, profiles, awareness and learned skills",
+      "legacy_contract": "Vesper private project/global stores",
+      "current_contract": "project .jarvis / memory; native data / memory",
+      "source": "crates/jarvis-harness/src/lib.rs",
+      "symbol": "pub fn open_at",
+      "source_lines": [
+        2649
+      ],
+      "writers": "MemoryStores; underlying bounded atomic stores",
+      "consumers": "both hosts; skill routing",
+      "verification": "runtime_ownership; memory and skill suites",
+      "stage": 3
+    },
+    {
+      "id": "cognition",
+      "owner": "JarvisPrivate",
+      "resource": "Cognitive SQLite, embedding settings and WAL sidecars",
+      "legacy_contract": "Vesper project/global cognition",
+      "current_contract": "project .jarvis / cognition; native data / cognition",
+      "source": "crates/jarvis-cognition/src/store.rs",
+      "symbol": "pub fn open",
+      "source_lines": [
+        73,
+        1190
+      ],
+      "writers": "CognitiveStore; host embedding configuration",
+      "consumers": "TUI and ACP cognitive memory",
+      "verification": "cognition unit/integration tests; filesystem path guards",
+      "stage": 3
+    },
+    {
+      "id": "checkpoint-operations",
+      "owner": "JarvisPrivate",
+      "resource": "Checkpoints, lineage, cron, watcher and operational metadata",
+      "legacy_contract": "Vesper project checkpoints/session roots",
+      "current_contract": "current private roots; ACP checkpoint opt-in unchanged",
+      "source": "crates/jarvis-harness/src/lib.rs",
+      "symbol": "pub fn new_with_checkpoint_gate",
+      "source_lines": [
+        3028
+      ],
+      "writers": "checkpoint, session and cron registries",
+      "consumers": "host commands and permission-gated hosted tools",
+      "verification": "checkpoint suites; host parity and process persistence",
+      "stage": 3
+    },
+    {
+      "id": "settings-approvals",
+      "owner": "JarvisPrivate",
+      "resource": "Provider, theme, web, voice, swarm, skills and acceptance settings",
+      "legacy_contract": "Vesper private settings files",
+      "current_contract": "project .jarvis; user-wide native config / ui",
+      "source": "apps/jarvis-tui/src/settings_voice_save.rs",
+      "symbol": "pub fn save_voice_scope",
+      "source_lines": [
+        8
+      ],
+      "writers": "native settings writers and shared settings modules",
+      "consumers": "both native hosts",
+      "verification": "settings_pty; acceptance_controls; swarm/skill routing tests",
+      "stage": 3
+    },
+    {
+      "id": "seed-helpers",
+      "owner": "JarvisPrivate",
+      "resource": "Seed resource resolution and citation cache",
+      "legacy_contract": "hard-coded Vesper home resource prefixes",
+      "current_contract": "selected validated skill store; native cache / citations",
+      "source": "crates/jarvis-memory/src/skills.rs",
+      "symbol": "fn bind_resource_paths",
+      "source_lines": [
+        665
+      ],
+      "writers": "citation helper; explicitly authorized skill operations",
+      "consumers": "bounded body/chunk loader and selected helper scripts",
+      "verification": "test_runtime_isolation.py; skill resource binding tests",
+      "stage": 3
+    },
+    {
+      "id": "user-projects",
+      "owner": "UserOwnedShared",
+      "resource": "User-selected projects, artifacts and files",
+      "legacy_contract": "user permissions and explicit selection",
+      "current_contract": "unchanged user authority; private guards do not govern arbitrary tool paths",
+      "source": "crates/jarvis-harness/tests/runtime_ownership.rs",
+      "symbol": "fn private_memory",
+      "source_lines": [
+        21
+      ],
+      "writers": "existing permission-gated user tools",
+      "consumers": "including projects named agent-vesper; selected review artifacts",
+      "verification": "private_memory_does_not_adopt_vesper_and_does_not_restrict_user_project_names",
+      "stage": 3
+    },
+    {
+      "id": "browser-lens",
+      "owner": "JarvisPrivate",
+      "resource": "Contained browser instance state and Lens local server state",
+      "legacy_contract": "contained image paths and temporary instance resources",
+      "current_contract": "independent sandbox instance names; ephemeral loopback Lens ownership",
+      "source": "crates/jarvis-sandbox/src/docker.rs",
+      "symbol": "pub const CONTAINER_NAME_PREFIX",
+      "source_lines": [
+        62
+      ],
+      "writers": "sandbox supervisor, contained browser and Lens adapters",
+      "consumers": "browser sessions and review server",
+      "verification": "web containment; Lens protocol and container acceptance",
+      "stage": 3
+    },
+    {
+      "id": "browser-protocol",
+      "owner": "ExternalProtocol",
+      "resource": "Browser wire fields, contained image paths and helper adapters",
+      "legacy_contract": "existing image and browser contracts",
+      "current_contract": "preserved Stage 2 compatibility adapters; no public registration change",
+      "source": "crates/jarvis-agent/src/planning/vesper_lens/server.rs",
+      "symbol": "fn read_bounded",
+      "source_lines": [
+        440,
+        446
+      ],
+      "writers": "existing browser protocol transports",
+      "consumers": "explicitly selected review artifacts and contained drivers",
+      "verification": "Lens protocol regressions; two contained browser native lanes",
+      "stage": 3
+    },
+    {
+      "id": "voice-private",
+      "owner": "JarvisPrivate",
+      "resource": "Voice packs, venv, tools, captures, settings and stderr logs",
+      "legacy_contract": "Vesper data paths and shared temporary log filename",
+      "current_contract": "native data; native logs; owned ephemeral audio directories",
+      "source": "apps/jarvis-tui/src/voice_capture_store.rs",
+      "symbol": "fn start_with",
+      "source_lines": [
+        232
+      ],
+      "writers": "managed capture and independent voice setup/child ownership",
+      "consumers": "speech capture, synthesis, playback and optional dependency setup",
+      "verification": "voice suites; lost-wakeup regression; capture lease and cleanup tests",
+      "stage": 3
+    },
+    {
+      "id": "voice-vendor",
+      "owner": "ExternalProtocol",
+      "resource": "Vendor FLM, model files, devices and sidecar wire parameter",
+      "legacy_contract": "FLM_MODEL_PATH; GLM_ACP_WHISPER_MODEL child parameter",
+      "current_contract": "vendor contracts unchanged; parent supplies current configured model explicitly",
+      "source": "crates/jarvis-voice/src/stt_sidecar.rs",
+      "symbol": "fn spawn",
+      "source_lines": [
+        109
+      ],
+      "writers": "explicit adapter subprocess environment",
+      "consumers": "shared user-installed vendor runtimes and model resources",
+      "verification": "sidecar adapter tests; native recognition fixture",
+      "stage": 3
+    },
+    {
+      "id": "bridge-private",
+      "owner": "JarvisPrivate",
+      "resource": "Bridge preferences, approvals and owned operational records",
+      "legacy_contract": "Vesper application settings and records",
+      "current_contract": "current private settings and operational roots",
+      "source": "crates/jarvis-harness/src/bridge_settings.rs",
+      "symbol": "impl BridgeSettings",
+      "source_lines": [
+        23,
+        95
+      ],
+      "writers": "native settings and permission-gated bridge service",
+      "consumers": "existing application-control behavior",
+      "verification": "bridge settings; AT01 process/socket observation",
+      "stage": 3
+    },
+    {
+      "id": "bridge-protocol",
+      "owner": "ExternalProtocol",
+      "resource": "Explicit Resolve IPC and MPRIS application bindings",
+      "legacy_contract": "user-selected external worker endpoints",
+      "current_contract": "wire paths retained; known Vesper-private endpoints refused",
+      "source": "crates/jarvis-harness/src/bridge_adapters.rs",
+      "symbol": "fn worker_alive",
+      "source_lines": [
+        134
+      ],
+      "writers": "permission-gated typed external adapter requests",
+      "consumers": "shared third-party application endpoint; no automatic discovery from old variables",
+      "verification": "Bridge adapter fixtures and containment tests",
+      "stage": 3
+    },
+    {
+      "id": "process-locks",
+      "owner": "JarvisPrivate",
+      "resource": "Daemon locks, child records, sandbox names and IPC pairing",
+      "legacy_contract": "Vesper lock roots, process markers and fixed default port",
+      "current_contract": "current owner marker, process-generation handles, ephemeral loopback endpoints",
+      "source": "crates/jarvis-harness/src/daemon_lock.rs",
+      "symbol": "pub fn acquire_daemon_lock",
+      "source_lines": [
+        125
+      ],
+      "writers": "daemon guard, FLM child registry and mobile approval owner",
+      "consumers": "no Vesper PID adoption or termination",
+      "verification": "daemon tests; generation-handle test; concurrent mobile endpoint test",
+      "stage": 3
+    },
+    {
+      "id": "release-boundary",
+      "owner": "JarvisPrivate",
+      "resource": "Dormant release/recovery paths and updater",
+      "legacy_contract": "Vesper release channels and epochs",
+      "current_contract": "normal entrypoints inactive; no epoch adoption; Stage 7 activation deferred",
+      "source": "crates/jarvis-harness/src/release_recovery.rs",
+      "symbol": "pub fn default_release_root",
+      "source_lines": [
+        3793
+      ],
+      "writers": "NONE in normal runtime; controlled offline fixtures only",
+      "consumers": "TUI/ACP release routes and native updater",
+      "verification": "ordinary all-feature release refusal; release_hosts_pty ordinary-host no-write/no-network branch and unchanged synthetic parity through explicit non-shipping hosts",
+      "stage": 3,
+      "fixture_consumers": [
+        "apps/jarvis-tui/examples/offline_release_host.rs",
+        "apps/jarvis-acp/src/bin/jarvis-acp-test-driver.rs",
+        "apps/jarvis-tui/tests/release_hosts_pty.py"
+      ]
+    },
+    {
+      "id": "legacy-private",
+      "owner": "VesperPrivate",
+      "resource": "Original configuration, credentials, sessions, installations and RRC state",
+      "legacy_contract": "original locations and ownership",
+      "current_contract": "unchanged, never automatically adopted",
+      "source": "crates/jarvis-security/src/private_state.rs",
+      "symbol": "pub fn is_legacy_private_namespace",
+      "source_lines": [
+        212
+      ],
+      "writers": "NONE authorized by Stage 3",
+      "consumers": "only synthetic negative fixtures are used by verification",
+      "verification": "source preservation receipt; private root and credential non-transfer tests",
+      "stage": 3
+    },
+    {
+      "id": "voice-pack-boundary",
+      "owner": "JarvisPrivate",
+      "resource": "Native voice pack discovery and confirmed setup staging",
+      "legacy_contract": "shared legacy voice-pack and hard-coded diagnostic home",
+      "current_contract": "native application data voice-pack; owned setup/staging and native diagnostic cache",
+      "source": "crates/jarvis-voice-kokoro/src/pack.rs",
+      "symbol": "fn resolved_pack_root",
+      "source_lines": [
+        197
+      ],
+      "writers": "VoicePackSetup::create_root, stage_asset, place_files and write_lease",
+      "consumers": "both voice readiness paths, production TTS and explicit diagnostic examples",
+      "verification": "native_pack_discovery_refuses_unowned_and_redirected_private_storage; setup and asset integrity suites",
+      "stage": 3
+    },
+    {
+      "id": "private-host-preferences",
+      "owner": "JarvisPrivate",
+      "resource": "Native UI choices, theme/provider preferences, keybindings, trusted-publisher records, editor drafts and screenshot cache",
+      "legacy_contract": "Inherited unguarded preference leaves and predictable shared temporary names",
+      "current_contract": "Owned guarded preference/trust files, atomic grouped rollback, unique editor stores and native cache/screenshots",
+      "source": "apps/jarvis-tui/src/settings_host.rs",
+      "symbol": "fn load(",
+      "writers": "save, save_group, save_theme_preference, save_provider_preference, persist_trusted_publishers, edit_keybindings and capture_screenshot",
+      "consumers": "native TUI Settings, plugin trust, editor and media commands",
+      "verification": "settings_host::tests; private_publisher_records_refuse_unowned_storage_and_reload_owned_state; settings_pty.py",
+      "stage": 3,
+      "source_lines": [
+        18
+      ]
+    },
+    {
+      "id": "vad-private-work",
+      "owner": "JarvisPrivate",
+      "resource": "FLM VAD worker source and per-request audio workspaces",
+      "legacy_contract": "Predictable materialized script and temporary audio; prefix-based stale-directory sweep",
+      "current_contract": "Unchanged embedded worker source via interpreter arguments; unique owned audio held until blocking settlement; no prefix sweep",
+      "source": "apps/jarvis-tui/src/voice_flm_vad.rs",
+      "symbol": "fn private_vad_work",
+      "writers": "preprocess and write_canonical_wav",
+      "consumers": "existing FLM voice preprocessing",
+      "verification": "vad_workspaces_are_unique_private_and_cleanup_only_their_own_audio; existing voice_vad_worker.py protocol regression",
+      "stage": 3,
+      "source_lines": [
+        173
+      ]
+    },
+    {
+      "id": "exclusive-ephemeral-workspaces",
+      "owner": "JarvisPrivate",
+      "resource": "Verifier snapshot, native observation, browser profile and optional setup staging directories",
+      "legacy_contract": "Generic exclusive tempfile directories without common legacy-base validation/native ACL initialization",
+      "current_contract": "Validated-before-create exclusive private_temporary_workspace; protected native ACLs; no application marker inside copied project trees",
+      "source": "crates/jarvis-security/src/private_state.rs",
+      "symbol": "pub fn private_temporary_workspace",
+      "writers": "fresh-allocation factory, acceptance_snapshot, native probe, web_runtime, dependency setup and dormant updater fixtures",
+      "consumers": "both hosts through shared harness; offline verifier processes",
+      "verification": "exclusive_temporary_workspace_keeps_project_contents_metadata_free; temporary_allocation_refuses_legacy_roots_before_creating_any_entry",
+      "stage": 3,
+      "source_lines": [
+        42
+      ]
+    },
+    {
+      "id": "project-settings-ownership",
+      "owner": "JarvisPrivate",
+      "resource": "Project Web/Sandbox/Skills/Swarm/Bridge/acceptance activation settings",
+      "legacy_contract": "Parsing project-private preferences without an explicit store-ownership check",
+      "current_contract": "Refuse nonempty unowned .jarvis stores before parsing; explicit Save initializes only owned state",
+      "source": "crates/jarvis-harness/src/acceptance_settings.rs",
+      "symbol": "fn location(",
+      "writers": "acceptance, Web, Skills, Swarm and Bridge native Save methods",
+      "consumers": "both hosts through shared settings/config readers",
+      "verification": "runtime_private_settings::unowned_project_settings_refuse_without_import_or_mutation; existing settings parser/save tests",
+      "stage": 3,
+      "source_lines": [
+        12
+      ]
+    }
+  ],
+  "environment_mappings": [
+    {
+      "legacy": "AGENT_VESPER_GWS_BIN",
+      "current": "JARVIS_GWS_BIN",
+      "source": "skills/skills/google-workspace/scripts/google_api.py",
+      "source_lines": [
+        95
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_CITATION_LEDGER",
+      "current": "JARVIS_CITATION_LEDGER",
+      "source": "skills/skills/grounded-citations/scripts/sources.py",
+      "source_lines": [
+        28,
+        134
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "GLM_VENV_PATH",
+      "current": "JARVIS_VOICE_VENV_PATH",
+      "source": "apps/jarvis-tui/src/main.rs",
+      "source_lines": [
+        4894,
+        4908,
+        20038,
+        20050,
+        20060,
+        20066
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_ALLOW_INSECURE_LOOPBACK",
+      "current": "JARVIS_ALLOW_INSECURE_LOOPBACK",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        2911
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_BUNDLE_DIR",
+      "current": "JARVIS_BUNDLE_DIR",
+      "source": "apps/jarvis-acp/tests/process_transcript.rs",
+      "source_lines": [
+        33
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_CHECKPOINT_ROOT",
+      "current": "JARVIS_CHECKPOINT_ROOT",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        167,
+        195,
+        198
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_COGNITION_EMBEDDING_API",
+      "current": "JARVIS_COGNITION_EMBEDDING_API",
+      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source_lines": [
+        678,
+        680
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_COGNITION_EMBEDDING_MODEL",
+      "current": "JARVIS_COGNITION_EMBEDDING_MODEL",
+      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source_lines": [
+        668
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_COGNITION_MODEL",
+      "current": "JARVIS_COGNITION_MODEL",
+      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source_lines": [
+        275,
+        300
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_COGNITION_ROOT",
+      "current": "JARVIS_COGNITION_ROOT",
+      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source_lines": [
+        703
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_COGNITION_USER_ID",
+      "current": "JARVIS_COGNITION_USER_ID",
+      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source_lines": [
+        951
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_CONFIG_DIR",
+      "current": "JARVIS_CONFIG_DIR",
+      "source": "crates/jarvis-config/src/paths.rs",
+      "source_lines": [
+        66,
+        144
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_CREDENTIALS_PATH",
+      "current": "JARVIS_CREDENTIALS_PATH",
+      "source": "apps/jarvis-tui/tests/openai_startup_responsiveness.rs",
+      "source_lines": [
+        228
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_ENABLE_CHECKPOINTS",
+      "current": "JARVIS_ENABLE_CHECKPOINTS",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        194,
+        199
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_ENABLE_LEGACY_SESSION_READS",
+      "current": "JARVIS_ENABLE_LEGACY_SESSION_READS",
+      "source": "apps/jarvis-acp/tests/support/persistence_vectors.rs",
+      "source_lines": [
+        127
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_ENABLE_SCOPE_STAMP",
+      "current": "JARVIS_ENABLE_SCOPE_STAMP",
+      "source": "apps/jarvis-acp/src/main.rs",
+      "source_lines": [
+        69
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_ENABLE_SESSION_READS",
+      "current": "JARVIS_ENABLE_SESSION_READS",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3050
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_ENABLE_SESSION_WRITES",
+      "current": "JARVIS_ENABLE_SESSION_WRITES",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        2981,
+        2990
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_ENABLE_VESPER_SESSION_READS",
+      "current": "JARVIS_ENABLE_VESPER_SESSION_READS",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3051
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_EXTRA_SCOPES",
+      "current": "JARVIS_EXTRA_SCOPES",
+      "source": "crates/jarvis-agent/src/vro/scope.rs",
+      "source_lines": [
+        18,
+        69,
+        672,
+        962,
+        1176
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_FIREWALL",
+      "current": "JARVIS_FIREWALL",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        1765,
+        1773,
+        1779
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_FULL_HARNESS",
+      "current": "JARVIS_FULL_HARNESS",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        156
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_GLM_BASE_URL",
+      "current": "JARVIS_GLM_BASE_URL",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        2910
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_GLM_MODEL",
+      "current": "JARVIS_GLM_MODEL",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        2934
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+      "current": "JARVIS_GLOBAL_COGNITION_ROOT",
+      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source_lines": [
+        600
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_GLOBAL_MEMORY_ROOT",
+      "current": "JARVIS_GLOBAL_MEMORY_ROOT",
+      "source": "apps/jarvis-acp/tests/process_transcript.rs",
+      "source_lines": [
+        571
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_HOME",
+      "current": "JARVIS_HOME",
+      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source_lines": [
+        260
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_LEGACY_PROFILE",
+      "current": "JARVIS_LEGACY_PROFILE",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3056
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_LEGACY_SESSION_ROOT",
+      "current": "JARVIS_LEGACY_SESSION_ROOT",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3055
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_LMSTUDIO_CREDENTIALS_PATH",
+      "current": "JARVIS_LMSTUDIO_CREDENTIALS_PATH",
+      "source": "apps/jarvis-acp/src/lmstudio_provider.rs",
+      "source_lines": [
+        741
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_LMSTUDIO_MODEL",
+      "current": "JARVIS_LMSTUDIO_MODEL",
+      "source": "crates/jarvis-agent/tests/live_react_integration.rs",
+      "source_lines": [
+        62,
+        64
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_LMSTUDIO_ROOT",
+      "current": "JARVIS_LMSTUDIO_ROOT",
+      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source_lines": [
+        257
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_LMSTUDIO_URL",
+      "current": "JARVIS_LMSTUDIO_URL",
+      "source": "crates/jarvis-agent/tests/live_react_integration.rs",
+      "source_lines": [
+        56,
+        58,
+        100
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_LOG",
+      "current": "JARVIS_LOG",
+      "source": "apps/jarvis-acp/src/main.rs",
+      "source_lines": [
+        143,
+        317
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_MCP_ROOT",
+      "current": "JARVIS_MCP_ROOT",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        268
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_MEMORY_ROOT",
+      "current": "JARVIS_MEMORY_ROOT",
+      "source": "apps/jarvis-acp/tests/process_transcript.rs",
+      "source_lines": [
+        570
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_MOBILE_ALLOW_PUBLIC",
+      "current": "JARVIS_MOBILE_ALLOW_PUBLIC",
+      "source": "apps/jarvis-tui/src/mobile.rs",
+      "source_lines": [
+        41,
+        56
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_MOBILE_BIND",
+      "current": "JARVIS_MOBILE_BIND",
+      "source": "apps/jarvis-tui/src/mobile.rs",
+      "source_lines": [
+        40
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_MOBILE_URL",
+      "current": "JARVIS_MOBILE_URL",
+      "source": "apps/jarvis-tui/src/mobile.rs",
+      "source_lines": [
+        42,
+        65,
+        72,
+        75
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_NATIVE_PROCESS_FIXTURE",
+      "current": "JARVIS_NATIVE_PROCESS_FIXTURE",
+      "source": "crates/jarvis-harness/src/host_resources_native.rs",
+      "source_lines": [
+        358,
+        396,
+        409
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_NAV_TRACE",
+      "current": "JARVIS_NAV_TRACE",
+      "source": "apps/jarvis-tui/src/auth_settings.rs",
+      "source_lines": [
+        1029
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
+      "current": "JARVIS_OPENAI_CREDENTIALS_PATH",
+      "source": "apps/jarvis-acp/tests/process_transcript.rs",
+      "source_lines": [
+        31,
+        101,
+        349,
+        566,
+        709,
+        773,
+        856
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_OPENAI_TEST_MODE",
+      "current": "JARVIS_OPENAI_TEST_MODE",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3228
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_OPENAI_TEST_URL",
+      "current": "JARVIS_OPENAI_TEST_URL",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3225
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_PROVIDER",
+      "current": "JARVIS_PROVIDER",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        43,
+        3202,
+        3634,
+        3637
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_REGISTRY_PR",
+      "current": "JARVIS_REGISTRY_PR",
+      "source": "crates/jarvis-harness/src/release_executor.rs",
+      "source_lines": [
+        1207
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_RELEASE_ROOT",
+      "current": "JARVIS_RELEASE_ROOT",
+      "source": "apps/jarvis-acp/tests/release_resource_governor.rs",
+      "source_lines": [
+        85,
+        131,
+        223,
+        286,
+        329
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_SANDBOX",
+      "current": "JARVIS_SANDBOX",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        115,
+        1821,
+        3483
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_SESSION_MAX_BYTES",
+      "current": "JARVIS_SESSION_MAX_BYTES",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3062
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_SESSION_MAX_ENTRIES",
+      "current": "JARVIS_SESSION_MAX_ENTRIES",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3063
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_SESSION_ROOT",
+      "current": "JARVIS_SESSION_ROOT",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        2986,
+        2996,
+        3054
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_SESSION_WRITE_MAX_BYTES",
+      "current": "JARVIS_SESSION_WRITE_MAX_BYTES",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3002
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_SESSION_WRITE_ROOT",
+      "current": "JARVIS_SESSION_WRITE_ROOT",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        2985,
+        2994
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_TELEMETRY",
+      "current": "JARVIS_TELEMETRY",
+      "source": "apps/jarvis-tui/src/main.rs",
+      "source_lines": [
+        15339
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_TEST_DISPATCH_GATE",
+      "current": "JARVIS_TEST_DISPATCH_GATE",
+      "source": "apps/jarvis-acp/src/bin/jarvis-acp-test-driver.rs",
+      "source_lines": [
+        89
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_TRAJECTORY_PATH",
+      "current": "JARVIS_TRAJECTORY_PATH",
+      "source": "apps/jarvis-tui/src/main.rs",
+      "source_lines": [
+        15347
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_VOICE_VENV",
+      "current": "JARVIS_VOICE_VENV",
+      "source": "apps/jarvis-tui/src/lib.rs",
+      "source_lines": [
+        162,
+        165
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_VRO_ENABLED",
+      "current": "JARVIS_VRO_ENABLED",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        246,
+        248,
+        253,
+        300
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_WEB",
+      "current": "JARVIS_WEB",
+      "source": "crates/jarvis-harness/src/web_service.rs",
+      "source_lines": [
+        260,
+        275
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_WHISPER_MODEL",
+      "current": "JARVIS_WHISPER_MODEL",
+      "source": "apps/jarvis-tui/src/voice_shared_stt.rs",
+      "source_lines": [
+        36
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_WINDOWS_JOB_FIXTURE",
+      "current": "JARVIS_WINDOWS_JOB_FIXTURE",
+      "source": "crates/jarvis-harness/src/host_resources_native.rs",
+      "source_lines": [
+        431
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_XAI_CREDENTIALS_PATH",
+      "current": "JARVIS_XAI_CREDENTIALS_PATH",
+      "source": "apps/jarvis-acp/tests/provider_selection.rs",
+      "source_lines": [
+        83
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "AGENT_VESPER_XAI_TEST_MODE",
+      "current": "JARVIS_XAI_TEST_MODE",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3261
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_XAI_TEST_STALE_HOSTED",
+      "current": "JARVIS_XAI_TEST_STALE_HOSTED",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        2891
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "AGENT_VESPER_XAI_TEST_URL",
+      "current": "JARVIS_XAI_TEST_URL",
+      "source": "apps/jarvis-acp/src/lib.rs",
+      "source_lines": [
+        3260
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_BRIDGE_RESOLVE_IPC",
+      "current": "JARVIS_BRIDGE_RESOLVE_IPC",
+      "source": "crates/jarvis-harness/src/bridge_adapter_tests.rs",
+      "source_lines": [
+        179,
+        181,
+        183
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_CREDENTIAL_FIXTURE_PHASE",
+      "current": "JARVIS_CREDENTIAL_FIXTURE_PHASE",
+      "source": "crates/jarvis-auth/tests/native_persistence.rs",
+      "source_lines": [
+        79,
+        112
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_CREDENTIAL_FIXTURE_SERVICE",
+      "current": "JARVIS_CREDENTIAL_FIXTURE_SERVICE",
+      "source": "crates/jarvis-auth/tests/native_persistence.rs",
+      "source_lines": [
+        77,
+        106
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_CREDENTIAL_FIXTURE_VAULT",
+      "current": "JARVIS_CREDENTIAL_FIXTURE_VAULT",
+      "source": "crates/jarvis-auth/tests/native_persistence.rs",
+      "source_lines": [
+        78,
+        111
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_DEPENDENCY_TEST_ENGINE",
+      "current": "JARVIS_DEPENDENCY_TEST_ENGINE",
+      "source": "crates/jarvis-harness/src/dependency_setup_tests.rs",
+      "source_lines": [
+        120
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_DEPENDENCY_TEST_IMAGE",
+      "current": "JARVIS_DEPENDENCY_TEST_IMAGE",
+      "source": "crates/jarvis-harness/src/dependency_setup_tests.rs",
+      "source_lines": [
+        123
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_DOCKER_BIN",
+      "current": "JARVIS_DOCKER_BIN",
+      "source": "apps/jarvis-acp/tests/dependency_setup_controls.rs",
+      "source_lines": [
+        26
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_DOCKER_DESKTOP",
+      "current": "JARVIS_DOCKER_DESKTOP",
+      "source": "crates/jarvis-harness/src/dependency_setup.rs",
+      "source_lines": [
+        823,
+        827
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_DOCKER_IMAGE",
+      "current": "JARVIS_DOCKER_IMAGE",
+      "source": "apps/jarvis-acp/tests/swarm_native_process.rs",
+      "source_lines": [
+        150
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_DUMP_UI",
+      "current": "JARVIS_DUMP_UI",
+      "source": "apps/jarvis-tui/src/ui.rs",
+      "source_lines": [
+        4560,
+        4596,
+        4697
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_NATIVE_CREDENTIAL_ACCEPTANCE",
+      "current": "JARVIS_NATIVE_CREDENTIAL_ACCEPTANCE",
+      "source": "crates/jarvis-auth/tests/native_persistence.rs",
+      "source_lines": [
+        13
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_OUTPUT_CAPTURE_DIR",
+      "current": "JARVIS_OUTPUT_CAPTURE_DIR",
+      "source": "apps/jarvis-tui/src/ui.rs",
+      "source_lines": [
+        4820
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_PIPELINE_FIXTURE",
+      "current": "JARVIS_PIPELINE_FIXTURE",
+      "source": "apps/jarvis-tui/tests/voice_speech_pipeline.rs",
+      "source_lines": [
+        15,
+        33,
+        54,
+        73,
+        89,
+        146,
+        162,
+        248
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_PYTHON_PATH",
+      "current": "JARVIS_PYTHON_PATH",
+      "source": "apps/jarvis-tui/src/main.rs",
+      "source_lines": [
+        4894,
+        4907,
+        20050,
+        20060
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_R3_PACK_CASE",
+      "current": "JARVIS_R3_PACK_CASE",
+      "source": "apps/jarvis-tui/tests/r3_voice_pack.rs",
+      "source_lines": [
+        24,
+        44
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_R3_PACK_ROOT",
+      "current": "JARVIS_R3_PACK_ROOT",
+      "source": "apps/jarvis-tui/tests/r3_voice_pack.rs",
+      "source_lines": [
+        25,
+        45
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_ROUTING_EVAL_OUTPUT",
+      "current": "JARVIS_ROUTING_EVAL_OUTPUT",
+      "source": "crates/jarvis-memory/tests/routing_quality_eval.rs",
+      "source_lines": [
+        288
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_ROUTING_INDEPENDENT_OUTPUT",
+      "current": "JARVIS_ROUTING_INDEPENDENT_OUTPUT",
+      "source": "crates/jarvis-memory/tests/routing_quality_independent.rs",
+      "source_lines": [
+        182
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_ROUTING_METADATA_OUTPUT",
+      "current": "JARVIS_ROUTING_METADATA_OUTPUT",
+      "source": "crates/jarvis-memory/tests/routing_quality_development.rs",
+      "source_lines": [
+        36
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_ROUTING_POLICY_OUTPUT",
+      "current": "JARVIS_ROUTING_POLICY_OUTPUT",
+      "source": "crates/jarvis-memory/tests/routing_quality_development.rs",
+      "source_lines": [
+        75
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_ROUTING_TASK_OUTPUT",
+      "current": "JARVIS_ROUTING_TASK_OUTPUT",
+      "source": "crates/jarvis-memory/tests/routing_quality_development.rs",
+      "source_lines": [
+        43
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_RRC_LIFECYCLE_MODE",
+      "current": "JARVIS_RRC_LIFECYCLE_MODE",
+      "source": "crates/jarvis-harness/src/release_executor.rs",
+      "source_lines": [
+        5856,
+        5905,
+        5931
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_RRC_LIFECYCLE_ROOT",
+      "current": "JARVIS_RRC_LIFECYCLE_ROOT",
+      "source": "crates/jarvis-harness/src/release_executor.rs",
+      "source_lines": [
+        5857,
+        5907,
+        5932
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_SANDBOX_INIT",
+      "current": "JARVIS_SANDBOX_INIT",
+      "source": "crates/jarvis-sandbox/src/lib.rs",
+      "source_lines": [
+        422,
+        424,
+        437
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_SETUP_PACKAGE",
+      "current": "JARVIS_SETUP_PACKAGE",
+      "source": "crates/jarvis-harness/src/dependency_setup.rs",
+      "source_lines": [
+        572
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_SETUP_REPAIR",
+      "current": "JARVIS_SETUP_REPAIR",
+      "source": "crates/jarvis-harness/src/voice_dependency_setup.rs",
+      "source_lines": [
+        407
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_TEST_NODE",
+      "current": "JARVIS_TEST_NODE",
+      "source": "crates/jarvis-harness/tests/swarm_adapter_tests.rs",
+      "source_lines": [
+        173
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_TEST_PLAYWRIGHT_CLI",
+      "current": "JARVIS_TEST_PLAYWRIGHT_CLI",
+      "source": "crates/jarvis-mcp/src/playwright_live_tests.rs",
+      "source_lines": [
+        37
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_TEST_PYTHON",
+      "current": "JARVIS_TEST_PYTHON",
+      "source": "apps/jarvis-tui/tests/message_queue_pty.rs",
+      "source_lines": [
+        12
+      ],
+      "owner": "JarvisPrivate",
+      "role": "fixture or tool contract"
+    },
+    {
+      "legacy": "VESPER_TUI_SWARM_CHILD",
+      "current": "JARVIS_TUI_SWARM_CHILD",
+      "source": "apps/jarvis-tui/src/swarm_host_tests.rs",
+      "source_lines": [
+        87,
+        234
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    },
+    {
+      "legacy": "VESPER_WEB_TEST_IMAGE",
+      "current": "JARVIS_WEB_TEST_IMAGE",
+      "source": "crates/jarvis-web-fetch/src/browser.rs",
+      "source_lines": [
+        570,
+        609,
+        611,
+        612
+      ],
+      "owner": "JarvisPrivate",
+      "role": "runtime or private helper declaration"
+    }
+  ],
+  "platform_roots": {
+    "linux": {
+      "config_base": "XDG_CONFIG_HOME or HOME/.config",
+      "data_base": "XDG_DATA_HOME or HOME/.local/share",
+      "state_base": "XDG_STATE_HOME or HOME/.local/state",
+      "cache_base": "XDG_CACHE_HOME or HOME/.cache",
+      "application_component": "jarvis",
+      "logs": "jarvis/logs"
+    },
+    "macos": {
+      "support": "Library/Application Support/Jarvis",
+      "config": "Config",
+      "data": "Data",
+      "state": "State",
+      "cache": "Library/Caches/Jarvis",
+      "logs": "Library/Logs/Jarvis"
+    },
+    "windows": {
+      "config_base": "APPDATA",
+      "machine_base": "LOCALAPPDATA",
+      "application_component": "Jarvis",
+      "data": "Jarvis/Data",
+      "state": "Jarvis/State",
+      "cache": "Jarvis/Cache",
+      "logs": "Jarvis/Logs"
+    }
+  },
+  "compatibility_exceptions": [
+    "Serialization markers and message/session IDs remain unchanged inside independently owned records.",
+    "Third-party provider variables, OAuth IDs and vendor wire fields are preserved; independent subscription/Google authorization is unverified and inactive.",
+    "Published ACP registration and installer identities are deferred. No installer or update activation occurs.",
+    "Contained image paths and executable compatibility adapters remain as verified in Stage 2.",
+    "Bundled legacy TouchDesigner setup and non-shipped live timing launcher remain inactive rather than writing Vesper state.",
+    "Historical and third-party references are preserved; this is not a public documentation rebrand.",
+    "Excluded research workspace and its separate advisory are not part of active shipping builds.",
+    "Linux orphan cleanup pins process generation; unsupported generation identification refuses orphan signals while retaining foreground owned-child teardown.",
+    "User-requested vesper-block-* project exports are user-owned output, not automatic application-private storage; public export naming remains deferred."
+  ],
+  "changed_files": [
+    ".gitattributes",
+    ".github/AGENTS.md",
+    ".github/test_verify_native_credentials.py",
+    ".github/verify_native_credentials.py",
+    ".github/verify_native_voice.py",
+    ".github/workflows/ci.yml",
+    ".github/workflows/platform-foundation.yml",
+    ".github/workflows/web-driver.yml",
+    ".gitignore",
+    "AGENTS.md",
+    "Cargo.lock",
+    "apps/AGENTS.md",
+    "apps/jarvis-acp/AGENTS.md",
+    "apps/jarvis-acp/Cargo.toml",
+    "apps/jarvis-acp/src/bin/jarvis-acp-test-driver.rs",
+    "apps/jarvis-acp/src/cognition.rs",
+    "apps/jarvis-acp/src/lib.rs",
+    "apps/jarvis-acp/src/lmstudio_provider.rs",
+    "apps/jarvis-acp/src/main.rs",
+    "apps/jarvis-acp/tests/acceptance_controls.rs",
+    "apps/jarvis-acp/tests/bridge_at01_os_observation.rs",
+    "apps/jarvis-acp/tests/dependency_setup_controls.rs",
+    "apps/jarvis-acp/tests/midturn_slash_grace.rs",
+    "apps/jarvis-acp/tests/openai_native.rs",
+    "apps/jarvis-acp/tests/openai_rejection.rs",
+    "apps/jarvis-acp/tests/persistence_writes.rs",
+    "apps/jarvis-acp/tests/process_blockers.rs",
+    "apps/jarvis-acp/tests/process_transcript.rs",
+    "apps/jarvis-acp/tests/provider_selection.rs",
+    "apps/jarvis-acp/tests/release_resource_governor.rs",
+    "apps/jarvis-acp/tests/runtime_ownership.rs",
+    "apps/jarvis-acp/tests/session_controls.rs",
+    "apps/jarvis-acp/tests/skill_routing_controls.rs",
+    "apps/jarvis-acp/tests/support/controlled_cargo_fixture.sh",
+    "apps/jarvis-acp/tests/support/credentials.rs",
+    "apps/jarvis-acp/tests/support/mod.rs",
+    "apps/jarvis-acp/tests/support/persistence_vectors.rs",
+    "apps/jarvis-acp/tests/swarm_controls.rs",
+    "apps/jarvis-acp/tests/swarm_native_process.rs",
+    "apps/jarvis-acp/tests/xai_native.rs",
+    "apps/jarvis-tui/AGENTS.md",
+    "apps/jarvis-tui/Cargo.toml",
+    "apps/jarvis-tui/examples/AGENTS.md",
+    "apps/jarvis-tui/examples/offline_release_host.rs",
+    "apps/jarvis-tui/examples/r3_worker_device_check.rs",
+    "apps/jarvis-tui/examples/voice_live_timing.py",
+    "apps/jarvis-tui/src/auth_settings.rs",
+    "apps/jarvis-tui/src/commands.rs",
+    "apps/jarvis-tui/src/dispatch.rs",
+    "apps/jarvis-tui/src/landing.rs",
+    "apps/jarvis-tui/src/landing_host.rs",
+    "apps/jarvis-tui/src/lib.rs",
+    "apps/jarvis-tui/src/lmstudio_hub.rs",
+    "apps/jarvis-tui/src/lmstudio_provider.rs",
+    "apps/jarvis-tui/src/main.rs",
+    "apps/jarvis-tui/src/mobile.rs",
+    "apps/jarvis-tui/src/platform_voice.rs",
+    "apps/jarvis-tui/src/settings_host.rs",
+    "apps/jarvis-tui/src/settings_voice_save.rs",
+    "apps/jarvis-tui/src/swarm_host_tests.rs",
+    "apps/jarvis-tui/src/swarm_hub.rs",
+    "apps/jarvis-tui/src/ui.rs",
+    "apps/jarvis-tui/src/update_host.rs",
+    "apps/jarvis-tui/src/voice.rs",
+    "apps/jarvis-tui/src/voice_capture_store.rs",
+    "apps/jarvis-tui/src/voice_flm.rs",
+    "apps/jarvis-tui/src/voice_flm_vad.rs",
+    "apps/jarvis-tui/src/voice_shared_stt.rs",
+    "apps/jarvis-tui/tests/AGENTS.md",
+    "apps/jarvis-tui/tests/bridge_at01_pty.py",
+    "apps/jarvis-tui/tests/dependency_setup_pty.py",
+    "apps/jarvis-tui/tests/first_launch_pty.py",
+    "apps/jarvis-tui/tests/flm_f9_loop_pty.py",
+    "apps/jarvis-tui/tests/message_journal_ux_pty.py",
+    "apps/jarvis-tui/tests/message_queue_pty.py",
+    "apps/jarvis-tui/tests/message_queue_pty.rs",
+    "apps/jarvis-tui/tests/openai_startup_responsiveness.rs",
+    "apps/jarvis-tui/tests/pr4_f9_gate.rs",
+    "apps/jarvis-tui/tests/pr4_wiring.rs",
+    "apps/jarvis-tui/tests/r3_loop_pty.py",
+    "apps/jarvis-tui/tests/r3_voice_pack.rs",
+    "apps/jarvis-tui/tests/release_hosts_pty.py",
+    "apps/jarvis-tui/tests/runtime_credentials.rs",
+    "apps/jarvis-tui/tests/settings_auth_pty.py",
+    "apps/jarvis-tui/tests/settings_pty.py",
+    "apps/jarvis-tui/tests/skill_routing_pty.py",
+    "apps/jarvis-tui/tests/skill_routing_submission_pty.py",
+    "apps/jarvis-tui/tests/usage_pty.py",
+    "apps/jarvis-tui/tests/voice_execution_policy.rs",
+    "apps/jarvis-tui/tests/voice_lifecycle.rs",
+    "apps/jarvis-tui/tests/voice_pty.py",
+    "apps/jarvis-tui/tests/voice_r20_default_capture.rs",
+    "apps/jarvis-tui/tests/voice_setup_pty.py",
+    "apps/jarvis-tui/tests/voice_speech_pipeline.rs",
+    "apps/jarvis-tui/tests/xai_plain_turn_pty.py",
+    "apps/jarvis-tui/tests/xai_usage_pty.py",
+    "crates/AGENTS.md",
+    "crates/jarvis-agent/AGENTS.md",
+    "crates/jarvis-agent/Cargo.toml",
+    "crates/jarvis-agent/src/agent_loop.rs",
+    "crates/jarvis-agent/src/executor.rs",
+    "crates/jarvis-agent/src/sandbox_route.rs",
+    "crates/jarvis-agent/src/tools.rs",
+    "crates/jarvis-agent/src/vro/scope.rs",
+    "crates/jarvis-agent/tests/firewall.rs",
+    "crates/jarvis-agent/tests/live_react_integration.rs",
+    "crates/jarvis-auth/AGENTS.md",
+    "crates/jarvis-auth/src/lib.rs",
+    "crates/jarvis-auth/src/native_records.rs",
+    "crates/jarvis-auth/tests/native_persistence.rs",
+    "crates/jarvis-checkpoints/src/io.rs",
+    "crates/jarvis-checkpoints/src/snapshot.rs",
+    "crates/jarvis-cognition/AGENTS.md",
+    "crates/jarvis-cognition/src/store.rs",
+    "crates/jarvis-config/AGENTS.md",
+    "crates/jarvis-config/src/lib.rs",
+    "crates/jarvis-config/src/paths.rs",
+    "crates/jarvis-config/src/sandbox_config.rs",
+    "crates/jarvis-config/src/web_config.rs",
+    "crates/jarvis-domain/src/slash_commands.rs",
+    "crates/jarvis-harness/AGENTS.md",
+    "crates/jarvis-harness/Cargo.toml",
+    "crates/jarvis-harness/src/acceptance_settings.rs",
+    "crates/jarvis-harness/src/acceptance_snapshot.rs",
+    "crates/jarvis-harness/src/acceptance_tests.rs",
+    "crates/jarvis-harness/src/bridge_adapter_tests.rs",
+    "crates/jarvis-harness/src/bridge_adapters.rs",
+    "crates/jarvis-harness/src/bridge_settings.rs",
+    "crates/jarvis-harness/src/daemon_lock.rs",
+    "crates/jarvis-harness/src/dependency_setup.rs",
+    "crates/jarvis-harness/src/dependency_setup_tests.rs",
+    "crates/jarvis-harness/src/host_commands.rs",
+    "crates/jarvis-harness/src/host_resources_native.rs",
+    "crates/jarvis-harness/src/lib.rs",
+    "crates/jarvis-harness/src/release_executor.rs",
+    "crates/jarvis-harness/src/release_recovery.rs",
+    "crates/jarvis-harness/src/sandbox_backend.rs",
+    "crates/jarvis-harness/src/scope_holder.rs",
+    "crates/jarvis-harness/src/skill_routing_settings.rs",
+    "crates/jarvis-harness/src/swarm_service.rs",
+    "crates/jarvis-harness/src/swarm_settings.rs",
+    "crates/jarvis-harness/src/voice_dependency_setup.rs",
+    "crates/jarvis-harness/src/web_runtime.rs",
+    "crates/jarvis-harness/src/web_service.rs",
+    "crates/jarvis-harness/src/web_settings.rs",
+    "crates/jarvis-harness/tests/dependency_cli_fixture.sh",
+    "crates/jarvis-harness/tests/runtime_ownership.rs",
+    "crates/jarvis-harness/tests/runtime_private_settings.rs",
+    "crates/jarvis-harness/tests/scope_parity.rs",
+    "crates/jarvis-harness/tests/skill_routing_settings.rs",
+    "crates/jarvis-harness/tests/swarm_adapter_tests.rs",
+    "crates/jarvis-harness/tests/swarm_gate_parity.rs",
+    "crates/jarvis-harness/tests/swarm_native_hive.rs",
+    "crates/jarvis-harness/tests/vro13_e2e.rs",
+    "crates/jarvis-harness/tests/windows_resource_job.py",
+    "crates/jarvis-identity/AGENTS.md",
+    "crates/jarvis-identity/src/lib.rs",
+    "crates/jarvis-identity/src/mappings.rs",
+    "crates/jarvis-identity/src/runtime.rs",
+    "crates/jarvis-identity/tests/contracts.rs",
+    "crates/jarvis-mcp/src/mcp.rs",
+    "crates/jarvis-mcp/src/playwright_live_tests.rs",
+    "crates/jarvis-mcp/src/plugins.rs",
+    "crates/jarvis-memory/AGENTS.md",
+    "crates/jarvis-memory/src/io.rs",
+    "crates/jarvis-memory/src/skills.rs",
+    "crates/jarvis-memory/tests/exemplar_routing.rs",
+    "crates/jarvis-memory/tests/routing_quality_development.rs",
+    "crates/jarvis-memory/tests/routing_quality_eval.rs",
+    "crates/jarvis-memory/tests/routing_quality_independent.rs",
+    "crates/jarvis-policy/src/firewall/holder.rs",
+    "crates/jarvis-provider-glm/AGENTS.md",
+    "crates/jarvis-provider-glm/src/auth.rs",
+    "crates/jarvis-provider-openai/AGENTS.md",
+    "crates/jarvis-provider-openai/Cargo.toml",
+    "crates/jarvis-provider-openai/src/auth.rs",
+    "crates/jarvis-provider-openai/src/auth_tests.rs",
+    "crates/jarvis-provider-openai/src/credentials.rs",
+    "crates/jarvis-provider-openai/src/factory.rs",
+    "crates/jarvis-provider-xai/AGENTS.md",
+    "crates/jarvis-provider-xai/Cargo.toml",
+    "crates/jarvis-provider-xai/src/auth.rs",
+    "crates/jarvis-provider-xai/src/credentials.rs",
+    "crates/jarvis-provider-xai/src/factory.rs",
+    "crates/jarvis-sandbox/AGENTS.md",
+    "crates/jarvis-sandbox/src/bin/jarvis-sandbox-init.rs",
+    "crates/jarvis-sandbox/src/docker.rs",
+    "crates/jarvis-sandbox/src/lib.rs",
+    "crates/jarvis-sandbox/tests/namespaces.rs",
+    "crates/jarvis-security/AGENTS.md",
+    "crates/jarvis-security/Cargo.toml",
+    "crates/jarvis-security/src/lib.rs",
+    "crates/jarvis-security/src/private_state.rs",
+    "crates/jarvis-security/src/private_state_windows.rs",
+    "crates/jarvis-sessions/AGENTS.md",
+    "crates/jarvis-sessions/Cargo.toml",
+    "crates/jarvis-sessions/src/filesystem.rs",
+    "crates/jarvis-sessions/src/layout.rs",
+    "crates/jarvis-sessions/src/writer.rs",
+    "crates/jarvis-voice-kokoro/AGENTS.md",
+    "crates/jarvis-voice-kokoro/Cargo.toml",
+    "crates/jarvis-voice-kokoro/examples/pron_ab_audio.rs",
+    "crates/jarvis-voice-kokoro/src/pack.rs",
+    "crates/jarvis-voice-kokoro/src/setup.rs",
+    "crates/jarvis-voice/AGENTS.md",
+    "crates/jarvis-voice/src/config.rs",
+    "crates/jarvis-voice/src/stt_sidecar.rs",
+    "crates/jarvis-web-fetch/AGENTS.md",
+    "crates/jarvis-web-fetch/src/browser.rs",
+    "docs/AGENTS.md",
+    "docs/architecture/AGENTS.md",
+    "docs/architecture/runtime-identity-stage3.md",
+    "docs/foundation/2026-10-15-runtime-identity-stage3.md",
+    "docs/foundation/AGENTS.md",
+    "docs/foundation/evidence-index.md",
+    "docs/foundation/runtime-identity-stage3-inventory.json",
+    "docs/migration-status.md",
+    "docs/runtime-identity-stage3-prd.md",
+    "skills/AGENTS.md",
+    "skills/skills/agent-vesper.md",
+    "skills/skills/box/references/cli-guide.md",
+    "skills/skills/github-auth/scripts/gh-env.sh",
+    "skills/skills/github-repo-management/references/github-api-cheatsheet.md",
+    "skills/skills/google-workspace.md",
+    "skills/skills/google-workspace/scripts/google_api.py",
+    "skills/skills/google-workspace/scripts/gws_bridge.py",
+    "skills/skills/google-workspace/scripts/setup.py",
+    "skills/skills/grounded-citations.md",
+    "skills/skills/grounded-citations/scripts/sources.py",
+    "skills/skills/grounded-citations/scripts/test_runtime_isolation.py",
+    "skills/skills/plan.md",
+    "skills/skills/research-paper-writing/chunks/agent-integration.md",
+    "skills/skills/session-librarian.md",
+    "skills/skills/touchdesigner-mcp/references/troubleshooting.md",
+    "skills/skills/touchdesigner-mcp/scripts/setup.sh",
+    "skills/skills/verify-with-xtask-verify.md",
+    "skills/skills/vesper-skill-authoring.md",
+    "xtask/AGENTS.md",
+    "xtask/src/identity_naming.rs",
+    "xtask/src/main.rs"
+  ],
+  "verification_contracts": [
+    {
+      "contract": "Windows constrained Job Object probe activation",
+      "legacy": "AGENT_VESPER_WINDOWS_JOB_FIXTURE",
+      "current": "JARVIS_WINDOWS_JOB_FIXTURE",
+      "writer": "crates/jarvis-harness/tests/windows_resource_job.py::run",
+      "reader": "crates/jarvis-harness/src/host_resources_native.rs::tests::windows_job_fixture",
+      "verification": "crates/jarvis-identity/tests/contracts.rs::windows_job_launcher_activates_the_registered_native_probe",
+      "authority": "explicit native test child only; no release/provider authority"
+    },
+    {
+      "contract": "Immutable ACP controlled Cargo executable with private path bindings",
+      "writer": "apps/jarvis-acp/tests/release_resource_governor.rs::write_controlled_cargo",
+      "executable": "apps/jarvis-acp/tests/support/controlled_cargo_fixture.sh",
+      "verification": "concurrent_cargo_fixtures_keep_bindings_private_and_executable_immutable; existing eight ACP governor process cases",
+      "authority": "explicit offline process fixture only; no production retries or release operation"
+    }
+  ]
+}

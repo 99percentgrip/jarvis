@@ -53,16 +53,15 @@ use jarvis_domain::{OutcomeStatus, ReasoningBudget, ToolExecutionClass};
 use serde_json::Value;
 
 /// Default LM Studio local server endpoint. Override via
-/// `AGENT_VESPER_LMSTUDIO_URL`.
+/// `JARVIS_LMSTUDIO_URL`.
 fn lmstudio_url() -> String {
-    std::env::var("AGENT_VESPER_LMSTUDIO_URL")
-        .unwrap_or_else(|_| "http://localhost:1234".to_string())
+    std::env::var("JARVIS_LMSTUDIO_URL").unwrap_or_else(|_| "http://localhost:1234".to_string())
 }
 
 /// Default model name to request. Override via
-/// `AGENT_VESPER_LMSTUDIO_MODEL`.
+/// `JARVIS_LMSTUDIO_MODEL`.
 fn lmstudio_model() -> String {
-    std::env::var("AGENT_VESPER_LMSTUDIO_MODEL").unwrap_or_else(|_| "qwen3-coder-30b".to_string())
+    std::env::var("JARVIS_LMSTUDIO_MODEL").unwrap_or_else(|_| "qwen3-coder-30b".to_string())
 }
 
 /// Optional API key (some local servers are configured with one).
@@ -98,7 +97,7 @@ async fn endpoint_reachable() -> bool {
 async fn skip_if_offline() -> bool {
     if !endpoint_reachable().await {
         eprintln!(
-            "skip: LM Studio endpoint {} is offline; set AGENT_VESPER_LMSTUDIO_URL \
+            "skip: LM Studio endpoint {} is offline; set JARVIS_LMSTUDIO_URL \
              or start the server to run this live integration test",
             lmstudio_url()
         );

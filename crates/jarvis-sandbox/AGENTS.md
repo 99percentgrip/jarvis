@@ -20,7 +20,7 @@ through safe `std::process`.
 ## Local Contracts
 
 - Supervisor discovery prefers the renamed sibling and accepts the legacy
-  `sandbox_init` sibling; `VESPER_SANDBOX_INIT` retains override precedence.
+  `sandbox_init` sibling; `JARVIS_SANDBOX_INIT` retains override precedence.
   This does not change namespaces, capabilities, deadlines or installation roots.
 
 - Strictly opt-in: nothing here is constructed unless a tool explicitly

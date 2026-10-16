@@ -132,6 +132,20 @@ impl FileIpcAdapter {
 
     /// Worker liveness: the beat file must be fresher than 5s.
     fn worker_alive(&self) -> bool {
+        for path in [
+            self.ipc_dir.clone(),
+            self.cmd_path(),
+            self.result_path(),
+            self.beat_path(),
+        ] {
+            if jarvis_security::is_legacy_private_namespace(&path)
+                || path
+                    .canonicalize()
+                    .is_ok_and(|target| jarvis_security::is_legacy_private_namespace(&target))
+            {
+                return false;
+            }
+        }
         match std::fs::metadata(self.beat_path()) {
             Ok(meta) => {
                 let Ok(modified) = meta.modified() else {

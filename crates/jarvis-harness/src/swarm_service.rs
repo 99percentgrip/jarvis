@@ -41,7 +41,7 @@ pub fn parent_cancellation(
 pub async fn configured_backend(
     root: &std::path::Path,
 ) -> Result<(Arc<dyn SandboxBackend>, SandboxBackendChoice), String> {
-    let selection = std::env::var("AGENT_VESPER_SANDBOX").ok();
+    let selection = std::env::var("JARVIS_SANDBOX").ok();
     if backend_selection(selection.as_deref(), cfg!(feature = "docker"))?
         == SandboxBackendChoice::Default
     {
@@ -352,19 +352,20 @@ async fn run_owned(
     let shared_scope = settings.shared_scope;
     let (leases, artifacts) = tokio::task::spawn_blocking(move || {
         let root = root.canonicalize().map_err(|error| error.to_string())?;
-        let parent = root.join(".agent-vesper");
+        let parent = root.join(".jarvis");
         if parent
             .symlink_metadata()
             .is_ok_and(|m| m.file_type().is_symlink())
         {
             return Err("Swarm state directory alias refused.".to_string());
         }
-        std::fs::create_dir_all(&parent).map_err(|error| error.to_string())?;
+        jarvis_security::prepare_owned_directory(&parent).map_err(|error| error.to_string())?;
         let run = tempfile::Builder::new()
             .prefix("swarm-run-")
             .tempdir_in(parent)
-            .map_err(|error| error.to_string())?
-            .keep();
+            .map_err(|error| error.to_string())?;
+        jarvis_security::prepare_owned_directory(run.path()).map_err(|error| error.to_string())?;
+        let run = run.keep();
         let demand = SandboxDemand {
             requirement: IsolationRequirement::Filesystem,
             allow_network: false,

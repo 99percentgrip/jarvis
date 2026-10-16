@@ -36,7 +36,9 @@ pub enum AuthError {
     #[error("OpenAI authentication returned an invalid response")]
     InvalidResponse,
     /// Initial endpoint is unavailable or account policy disables device login.
-    #[error("OpenAI device sign-in is unavailable; check account device-login permissions")]
+    #[error(
+        "Subscription authorization is unavailable for this independent application; use an explicitly supplied API key while registration is reviewed"
+    )]
     DeviceLoginUnavailable,
     /// The service refused the request.
     #[error("OpenAI authentication was rejected; sign in again")]
@@ -132,6 +134,9 @@ impl fmt::Debug for NativeAuthClient {
 impl NativeAuthClient {
     /// Constructs the native TLS client without I/O, installation or login.
     pub fn new() -> Result<Self, AuthError> {
+        if !cfg!(test) {
+            return Err(AuthError::DeviceLoginUnavailable);
+        }
         let client = Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .connect_timeout(Duration::from_secs(10))

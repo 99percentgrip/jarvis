@@ -84,7 +84,7 @@ fn respond(stream: &mut TcpStream, kind: &str, body: &str) {
 #[cfg(unix)]
 #[ignore = "requires real container runtime and bundled Landlock image; all state is isolated"]
 fn native_tui_swarm_settings_task_and_history_round_trip() {
-    if std::env::var("VESPER_TUI_SWARM_CHILD").as_deref() == Ok("1") {
+    if std::env::var("JARVIS_TUI_SWARM_CHILD").as_deref() == Ok("1") {
         tokio::runtime::Runtime::new().unwrap().block_on(child());
         return;
     }
@@ -175,8 +175,8 @@ fn native_tui_swarm_settings_task_and_history_round_trip() {
         )
         .unwrap();
     }
-    let cli = std::env::var("VESPER_DOCKER_BIN").unwrap_or_else(|_| "docker".into());
-    let image = std::env::var("VESPER_DOCKER_IMAGE").expect("select bundled acceptance image");
+    let cli = std::env::var("JARVIS_DOCKER_BIN").unwrap_or_else(|_| "docker".into());
+    let image = std::env::var("JARVIS_DOCKER_IMAGE").expect("select bundled acceptance image");
     let inspected = std::process::Command::new(&cli)
         .args(["image", "inspect", &image, "--format", "{{.Id}}"])
         .output()
@@ -231,15 +231,15 @@ fn native_tui_swarm_settings_task_and_history_round_trip() {
         .env("XDG_DATA_HOME", temp.path().join("data"))
         .env("XDG_CACHE_HOME", temp.path().join("cache"))
         .env("XDG_STATE_HOME", temp.path().join("state"))
-        .env("VESPER_TUI_SWARM_CHILD", "1")
-        .env("VESPER_DOCKER_BIN", wrapper)
-        .env("AGENT_VESPER_COGNITION_ROOT", cognition)
+        .env("JARVIS_TUI_SWARM_CHILD", "1")
+        .env("JARVIS_DOCKER_BIN", wrapper)
+        .env("JARVIS_COGNITION_ROOT", cognition)
         .env("ZAI_API_KEY", "synthetic-tui-canary")
         .env(
-            "AGENT_VESPER_GLM_BASE_URL",
+            "JARVIS_GLM_BASE_URL",
             format!("http://{}/v4", provider.address),
         )
-        .env("AGENT_VESPER_ALLOW_INSECURE_LOOPBACK", "1");
+        .env("JARVIS_ALLOW_INSECURE_LOOPBACK", "1");
     if let Ok(path) = std::env::var("PATH") {
         child.env("PATH", path);
     }
@@ -267,7 +267,7 @@ async fn child() {
         jarvis_provider_glm::GlmFactory::default().superpowers(),
     );
     let mut config = build_agent_config(&provider).unwrap();
-    let fixture_endpoint = std::env::var("AGENT_VESPER_GLM_BASE_URL").unwrap();
+    let fixture_endpoint = std::env::var("JARVIS_GLM_BASE_URL").unwrap();
     assert!(fixture_endpoint.starts_with("http://127.0.0.1:"));
     for (key, value) in [
         ("zai:endpoint-plan", json!("custom")),
@@ -301,9 +301,7 @@ async fn child() {
         root_display: "isolated".into(),
         global_root_display: "isolated".into(),
         project_display: "fixture".into(),
-        root: std::env::var_os("AGENT_VESPER_COGNITION_ROOT")
-            .unwrap()
-            .into(),
+        root: std::env::var_os("JARVIS_COGNITION_ROOT").unwrap().into(),
         embedder: None,
         credential_source: Arc::new(jarvis_provider_glm::EnvironmentCredentialSource),
     };

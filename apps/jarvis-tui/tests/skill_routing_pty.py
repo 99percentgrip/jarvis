@@ -14,7 +14,7 @@ def run(binary):
         source = library/'ledger-audit.md'
         source.write_text('---\ndescription: Audit ledger transactions\n---\nUSER EDITS\n')
         before = source.read_bytes()
-        path = root/'.agent-vesper/skill-routing.json'
+        path = root/'.jarvis/skill-routing.json'
         host = Host(binary, root)
         try:
             host.wait('Start coding')

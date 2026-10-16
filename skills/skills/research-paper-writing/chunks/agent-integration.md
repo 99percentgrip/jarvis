@@ -11,7 +11,7 @@ Compose this skill with other library skills for specific phases:
 | Skill | When to Use | How to Load |
 |-------|-------------|-------------|
 | **arxiv** | Phase 1 (Literature Review): searching arXiv, generating BibTeX, finding related papers via Semantic Scholar | `read_skill(name="arxiv")` |
-| **plan** | Phase 0 (Setup): creating structured plans before execution. Writes to `.agent-vesper/plans/` | `read_skill(name="plan")` |
+| **plan** | Phase 0 (Setup): creating structured plans before execution. Writes to `.jarvis/plans/` | `read_skill(name="plan")` |
 | **excalidraw** | Phase 4-5: hand-drawn-style figures and architecture diagrams | `read_skill(name="excalidraw")` |
 | **arxiv** | Phase 1 (Literature Review): searching arXiv, BibTeX, related papers | `read_skill(name="arxiv")` |
 

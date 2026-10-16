@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use jarvis_config::{ProfileName, VesperPaths};
+use jarvis_config::{JarvisPaths, ProfileName};
 
 use crate::SessionSource;
 
@@ -13,7 +13,7 @@ pub struct AgentVesperSessionLayout {
 impl AgentVesperSessionLayout {
     /// Places future session records under the platform-specific data root.
     #[must_use]
-    pub fn from_paths(paths: &VesperPaths) -> Self {
+    pub fn from_paths(paths: &JarvisPaths) -> Self {
         Self {
             root: paths.data.join("sessions"),
         }
@@ -96,7 +96,7 @@ mod tests {
             Path::new("/synthetic/home/.glm-acp/profiles/work_2/sessions")
         );
 
-        let paths = VesperPaths::resolve(
+        let paths = JarvisPaths::resolve(
             Platform::Linux,
             &PathEnvironment {
                 home: Some(home.to_path_buf()),
@@ -106,14 +106,16 @@ mod tests {
         .unwrap();
         assert_eq!(
             AgentVesperSessionLayout::from_paths(&paths).root(),
-            Path::new("/synthetic/home/.local/share/agent-vesper/sessions")
+            Path::new("/synthetic/home/.local/share")
+                .join("jarvis")
+                .join("sessions")
         );
     }
 
     #[test]
     fn vesper_session_root_follows_each_injected_platform_data_root() {
         let home = Path::new("/synthetic/home");
-        let mac = VesperPaths::resolve(
+        let mac = JarvisPaths::resolve(
             Platform::MacOs,
             &PathEnvironment {
                 home: Some(home.to_path_buf()),
@@ -123,10 +125,12 @@ mod tests {
         .unwrap();
         assert_eq!(
             AgentVesperSessionLayout::from_paths(&mac).root(),
-            Path::new("/synthetic/home/Library/Application Support/Agent Vesper/Data/sessions")
+            Path::new("/synthetic/home/Library/Application Support")
+                .join("Jarvis")
+                .join("Data/sessions")
         );
 
-        let windows = VesperPaths::resolve(
+        let windows = JarvisPaths::resolve(
             Platform::Windows,
             &PathEnvironment {
                 app_data: Some(Path::new("C:/Roaming").to_path_buf()),
@@ -137,7 +141,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             AgentVesperSessionLayout::from_paths(&windows).root(),
-            Path::new("C:/Local/Agent Vesper/Data/sessions")
+            Path::new("C:/Local").join("Jarvis").join("Data/sessions")
         );
     }
 }

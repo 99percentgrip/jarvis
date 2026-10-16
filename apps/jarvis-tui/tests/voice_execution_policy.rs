@@ -649,8 +649,8 @@ impl TempWorkspace {
             .prefix("vesper-voice-exec-")
             .tempdir()
             .unwrap();
-        std::fs::create_dir_all(root.path().join(".agent-vesper")).unwrap();
-        std::fs::write(root.path().join(".agent-vesper/config.toml"), toml).unwrap();
+        jarvis_security::prepare_owned_directory(&root.path().join(".jarvis")).unwrap();
+        std::fs::write(root.path().join(".jarvis/config.toml"), toml).unwrap();
         Self { root }
     }
 

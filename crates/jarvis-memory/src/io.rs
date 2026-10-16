@@ -15,6 +15,7 @@ use crate::error::MemoryError;
 /// sibling of `target` (so the rename stays intra-directory), `fsync`ed,
 /// then renamed. Returns `Ok(())` only after the rename has succeeded.
 pub(crate) fn write_atomic(target: &Path, payload: &[u8]) -> Result<(), MemoryError> {
+    jarvis_security::validate_private_path(target).map_err(|_| MemoryError::InvalidRoot)?;
     let parent = target.parent().ok_or(MemoryError::InvalidRoot)?;
     write_atomic_into(parent, target, payload)
 }
@@ -29,6 +30,7 @@ fn write_atomic_into(parent: &Path, target: &Path, payload: &[u8]) -> Result<(),
             .and_then(|name| name.to_str())
             .unwrap_or("memory")
     ));
+    jarvis_security::validate_private_path(&temp).map_err(|_| MemoryError::InvalidRoot)?;
     {
         let mut file = File::create(&temp).map_err(|_| MemoryError::io("create"))?;
         file.write_all(payload)
@@ -44,6 +46,7 @@ fn write_atomic_into(parent: &Path, target: &Path, payload: &[u8]) -> Result<(),
 /// concurrent writers; the store wraps every mutation in a process-local
 /// `Mutex` to serialize them.
 pub(crate) fn append_line(target: &Path, line: &str) -> Result<(), MemoryError> {
+    jarvis_security::validate_private_path(target).map_err(|_| MemoryError::InvalidRoot)?;
     use std::io::Write;
     let mut file = std::fs::OpenOptions::new()
         .create(true)
@@ -61,6 +64,7 @@ pub(crate) fn append_line(target: &Path, line: &str) -> Result<(), MemoryError> 
 pub(crate) fn read_all_jsonl<T: serde::de::DeserializeOwned>(
     target: &Path,
 ) -> Result<Vec<T>, MemoryError> {
+    jarvis_security::validate_private_path(target).map_err(|_| MemoryError::InvalidRoot)?;
     let bytes = match fs::read(target) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
@@ -86,6 +90,7 @@ pub(crate) fn read_all_jsonl<T: serde::de::DeserializeOwned>(
 /// vector when the file does not exist (used by the user-profile store,
 /// which treats absence as "empty profile").
 pub(crate) fn read_all_lines(target: &Path) -> Result<Vec<String>, MemoryError> {
+    jarvis_security::validate_private_path(target).map_err(|_| MemoryError::InvalidRoot)?;
     let bytes = match fs::read(target) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),

@@ -12,8 +12,8 @@ fn native_skill_controls_save_explicitly_and_do_not_dispatch_provider() {
     let mut process = ProcessHarness::spawn_with_environment(
         listener.local_addr().unwrap(),
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
         ],
     );
     let root = process.isolated_root().join("workspace");
@@ -69,8 +69,8 @@ fn ordinary_use_the_prose_reaches_the_acp_provider_once_and_session_continues() 
     let mut process = ProcessHarness::spawn_with_environment(
         address,
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
         ],
     );
     let root = process.isolated_root().join("workspace");

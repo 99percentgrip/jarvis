@@ -17,6 +17,7 @@ swarm = ["jarvis-harness/swarm"]
 bridge = ["jarvis-harness/bridge"]
 
 [dependencies]
+jarvis-security = { path = "../../crates/jarvis-security", version = "=0.24.14" }
 jarvis-provider-openai = { path = "../../crates/jarvis-provider-openai", version = "=0.24.14" }
 jarvis-provider-xai = { path = "../../crates/jarvis-provider-xai", version = "=0.24.14" }
 base64.workspace = true
@@ -46,7 +47,6 @@ jarvis-sessions = { path = "../../crates/jarvis-sessions", version = "=0.24.14" 
 [dev-dependencies]
 sha2.workspace = true
 tempfile.workspace = true
-jarvis-security = { path = "../../crates/jarvis-security", version = "=0.24.14" }
 
 [[bin]]
 name = "jarvis-acp"

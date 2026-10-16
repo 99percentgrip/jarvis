@@ -471,7 +471,7 @@ impl ProviderFactory for XaiFactory {
                 AuthenticationMethodDescriptor {
                     method_id: BoundedString::new("xai-grok-session").expect("static"),
                     display_name: BoundedString::new(
-                        "Grok account / SuperGrok (account allowance)",
+                        "Grok account (independent authorization pending)",
                     )
                     .expect("static"),
                     secret_reference_fields: vec![],

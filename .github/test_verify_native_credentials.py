@@ -23,7 +23,7 @@ class NativeReceiptTests(unittest.TestCase):
     def test_hosted_scope_requires_all_explicit_guards(self):
         allowed = {
             "GITHUB_ACTIONS": "true", "RUNNER_OS": "Windows",
-            "VESPER_NATIVE_CREDENTIAL_ACCEPTANCE": "isolated-hosted-fixture",
+            "JARVIS_NATIVE_CREDENTIAL_ACCEPTANCE": "isolated-hosted-fixture",
         }
         require_hosted_fixture(allowed)
         for omitted in allowed:

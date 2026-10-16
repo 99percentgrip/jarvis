@@ -184,11 +184,21 @@ When the user requests a durable behavior change, record it here or in the relev
   identities follow the explicit `jarvis-identity` registry. The terminal executable
   is `jarvis-tui`; `xtask` keeps its existing identity. The specification library
   remains side-effect-free and unwired into production state resolution.
-- Runtime environment variables, credential services, persisted markers, project
-  state, ACP registration, browser protocols, installer destinations, download
-  routes and RRC epoch ownership remain legacy contracts until separately approved.
+- Persisted wire markers, ACP registration, browser protocols, installer destinations,
+  download routes and RRC publication ownership remain compatibility/deferred contracts.
+  Stage 3 separately authorizes private runtime roots and credential/environment isolation.
   New compiled filenames use explicit discovery/private-fixture compatibility;
-  no automatic data import, installation, release or Stage 3 work is authorized.
+  Stage 3 owns independent private runtime storage and process identities;
+  Stage 4 import and all later installation/registration/publication remain
+  unauthorized. No automatic data import, installation or release is permitted.
+- Private runtime defaults and application environment readers use independent
+  namespaces. Nonempty private stores require an ownership marker; legacy user
+  state is never adopted. User-selected projects retain ordinary tool authority.
+  API keys are explicitly supplied/stored independently; subscription OAuth and
+  bundled Google authorization stay inactive pending independent secure paths.
+- Normal updater and release/recovery entry points remain dormant. Integration-only
+  offline controller/legacy-format fixtures use an explicit non-default test
+  executable seam; enabling Cargo features alone cannot activate those paths.
 - Naming verification admits only registered technical identifiers in owned active
   source/developer docs. Approved directory moves retain canonical historical hit
   identities; all thirteen upstream patterns and the frozen baseline stay intact.
@@ -253,7 +263,11 @@ When the user requests a durable behavior change, record it here or in the relev
 - Supply-chain license policy permits the OSI-approved `BSL-1.0` for native
   platform integrations such as the Windows clipboard backend; advisory,
   source, and wildcard-dependency gates remain fail-closed.
-- Registry publishing follows the continuous-update contract: one open
+- The inherited registry/release contracts below describe deferred controller behavior,
+  not permission to activate it. Stage 3 ordinary routes stay dormant; only explicit
+  offline integration fixtures may exercise the inherited lifecycle. Independent
+  registration/publication requires separate Stage 7 authorization.
+- Original Vesper registry publishing follows the continuous-update contract: one open
   `agent-vesper` PR in `agentclientprotocol/registry`, updated in place on
   the same branch for every version bump. Never close-and-replace it.
 - Use standard public GitHub Actions for this public project. Deliberately
@@ -335,8 +349,8 @@ When the user requests a durable behavior change, record it here or in the relev
   continuation; only the ultimate safety ceiling may terminate unfinished
   work, and both hosts must surface that condition explicitly with the plan.
 - Durable session checkpoints and lineage are OPT-IN in the ACP host:
-  default OFF, enabled only by `AGENT_VESPER_ENABLE_CHECKPOINTS=1` or an
-  explicit `AGENT_VESPER_CHECKPOINT_ROOT`. The auto-spawned ACP process
+  default OFF, enabled only by `JARVIS_ENABLE_CHECKPOINTS=1` or an
+  explicit `JARVIS_CHECKPOINT_ROOT`. The auto-spawned ACP process
   must never create `.agent-vesper/` durable state in arbitrary project
   directories by default.
 - Production harness work includes transactional sessions, provider-neutral

@@ -220,7 +220,7 @@ pub const HOST_PARITY_SLASH_COMMANDS: [SlashCommandDescriptor; 19] = [
     },
     SlashCommandDescriptor {
         name: "sandbox",
-        description: "Show the VRO-13 command sandbox status (view only; set AGENT_VESPER_SANDBOX and restart)",
+        description: "Show the VRO-13 command sandbox status (view only; set JARVIS_SANDBOX and restart)",
     },
     SlashCommandDescriptor {
         name: "web",

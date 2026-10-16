@@ -6,6 +6,12 @@ Verify terminal interaction through the production TUI binary with isolated stat
 
 ## Ownership
 
+- `runtime_credentials.rs` verifies the exact Python signed-out terminal fixture
+  through production directory/file ownership guards and the native-first reader.
+  A UUID fixture account must already exist in the fallback before that read;
+  no real provider/keyring entry or secret is used. Native failures must identify
+  setup, directory ownership, file confidentiality or record-read boundaries.
+
 - `message_queue_pty.py` owns a held loopback provider and real terminal proof of
   mixed literal terminal paste ordering (including existing image-file paths),
   Enter queue/FIFO, command bypass, pending drop, complete
@@ -45,7 +51,9 @@ Verify terminal interaction through the production TUI binary with isolated stat
   terminal before exec; close parent slave handles after spawn so EOF settles.
   The fixture must not query or change the invoking release host via `/dev/tty`.
 
-- `release_hosts_pty.py` observes one isolated RRC ledger through real TUI/ACP
+- `release_hosts_pty.py` explicitly invokes the non-shipping TUI example and ACP
+  integration driver; ordinary executable dormancy is tested separately while
+  preserving read-only user-project CI status. It observes one isolated RRC ledger through real TUI/ACP
   processes for all four selected, signed-out adapters: partial matrix, blocked no-write retry, Published/main degraded,
   and cross-host cancellation preserving epoch/run/tag/assets. ACP pipe reading uses a bounded queue on every OS; Windows identities retain
   the native canonical path prefix. Synthetic persisted
@@ -150,9 +158,7 @@ Verify terminal interaction through the production TUI binary with isolated stat
   (`python3 tests/voice_pty.py <binary> ~/.local/share/agent-vesper/
   voice-venv/bin/python`); any other second argument is used as the fixture
   interpreter and fails at the recorder shebang. `settings_pty.py`'s
-  Settings-submenu click currently drifts on every preserved candidate
-  (root menu stays visible after clicking `Implementation acceptance`);
-  tracked as pre-existing, not a per-unit regression.
+  Settings fixtures retain native mouse proof after bounded viewport scrolling.
 
 - `r3_loop_pty.py` exercises F9 through the actual agent/provider dispatch using
   a loopback LM Studio protocol fixture, recorder/STT/player doubles, and real
@@ -254,6 +260,26 @@ Verify terminal interaction through the production TUI binary with isolated stat
   discovery. Scheduling deadlines bound settlement, not enqueue performance.
 
 ## Local Contracts
+
+- Menu fixtures reveal hidden rows through native focus scrolling within the
+  original deadline before mouse/keyboard activation. Restart preference checks
+  enter Settings before observing restored execution choices, matching the existing
+  landing/restore sequence; every saved-value assertion remains required.
+
+
+- Signed-out vault fixtures secure their synthetic parent directory before writing
+  records, including a replacement protected Windows DACL granting only the actual
+  user, SYSTEM and administrators. Python's explicit OWNER RIGHTS ACE must not be
+  retained by an additive fixture update. POSIX chmod alone cannot
+  establish Windows confidentiality. API-key-only providers without a tombstone
+  use an explicit invalid synthetic vault to refuse native lookup.
+- Stage 3 fixtures seed current platform roots and explicitly declare synthetic
+  private directories before populating records. `settings_pty.py` supplies
+  signed-out provider vaults and a truthful unavailable optional-store fixture;
+  HOME isolation alone does not isolate native credential managers.
+- Voice cleanup counts no residual audio; the sole ownership-marker metadata is
+  validated byte-for-byte before exclusion from that metric. Unknown files still
+  count. Runtime roots and active settings use current independent namespaces.
 
 - Windows ConPTY cleanup accepts a failed taskkill only after bounded owned-child exit verification; live children, command timeouts and unsettled readers remain failures. `test_windows_child_cleanup.py` covers the race and refusal paths without native devices.
 

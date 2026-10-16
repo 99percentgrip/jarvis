@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Write a markdown plan to .agent-vesper/plans/; no execution.
+description: Write a markdown plan to .jarvis/plans/; no execution.
 version: 2.0.0
 author: Agent Vesper library (writing-craft adapted from obra/superpowers)
 license: MIT
@@ -21,7 +21,7 @@ For this turn, you are planning only.
 - Do not edit project files except the plan markdown file.
 - Do not run mutating terminal commands, commit, push, or perform external actions.
 - You may inspect the repo or other context with read-only commands/tools when needed.
-- Your deliverable is a markdown plan saved inside the active workspace under `.agent-vesper/plans/`.
+- Your deliverable is a markdown plan saved inside the active workspace under `.jarvis/plans/`.
 
 ## Output requirements
 
@@ -41,12 +41,12 @@ If the task is code-related, include exact file paths, likely test targets, and 
 ## Save location
 
 Save the plan with `write_file` under:
-- `.agent-vesper/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
+- `.jarvis/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
 
 Treat that as relative to the active working directory / backend workspace. The agent's file tools operate on the active workspace, so a relative path keeps the plan with the project.
 
 If the runtime provides a specific target path, use that exact path.
-If not, create a sensible timestamped filename yourself under `.agent-vesper/plans/`.
+If not, create a sensible timestamped filename yourself under `.jarvis/plans/`.
 
 ## Interaction style
 
@@ -142,7 +142,7 @@ Each task follows this format:
 **Files:**
 - Create: `exact/path/to/new_file.py`
 - Modify: `exact/path/to/existing.py:45-67` (line numbers if known)
-- Test: `~/.agent-vesper/memory/skills/plan/tests/path/to/test_file.py`
+- Test: `~/.jarvis/memory/skills/plan/tests/path/to/test_file.py`
 
 **Step 1: Write failing test**
 
@@ -154,7 +154,7 @@ def test_specific_behavior():
 
 **Step 2: Run test to verify failure**
 
-Run: `pytest ~/.agent-vesper/memory/skills/plan/tests/path/test.py::test_specific_behavior -v`
+Run: `pytest ~/.jarvis/memory/skills/plan/tests/path/test.py::test_specific_behavior -v`
 Expected: FAIL — "function not defined"
 
 **Step 3: Write minimal implementation**
@@ -166,13 +166,13 @@ def function(input):
 
 **Step 4: Run test to verify pass**
 
-Run: `pytest ~/.agent-vesper/memory/skills/plan/tests/path/test.py::test_specific_behavior -v`
+Run: `pytest ~/.jarvis/memory/skills/plan/tests/path/test.py::test_specific_behavior -v`
 Expected: PASS
 
 **Step 5: Commit**
 
 ```bash
-git add ~/.agent-vesper/memory/skills/plan/tests/path/test.py src/path/file.py
+git add ~/.jarvis/memory/skills/plan/tests/path/test.py src/path/file.py
 git commit -m "feat: add specific feature"
 ```
 ````
@@ -302,7 +302,7 @@ git commit -m "type: description"
 ### Missing Verification
 
 **Bad:** "Step 3: Test it works"
-**Good:** "Step 3: Run `pytest ~/.agent-vesper/memory/skills/plan/tests/test_auth.py -v`, expected: 3 passed"
+**Good:** "Step 3: Run `pytest ~/.jarvis/memory/skills/plan/tests/test_auth.py -v`, expected: 3 passed"
 
 ### Missing File Paths
 

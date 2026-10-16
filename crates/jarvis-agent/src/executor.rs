@@ -33,7 +33,7 @@ pub struct ToolContext {
     /// Confined workspace roots; path-bearing tools must not escape these.
     pub workspace_roots: Vec<WorkspaceRoot>,
     /// VRO-13 hard-denial firewall for shell-class tools (PR-1 core,
-    /// PR-2 wiring). `None` is the structural off-path: `AGENT_VESPER_FIREWALL=off`
+    /// PR-2 wiring). `None` is the structural off-path: `JARVIS_FIREWALL=off`
     /// leaves this empty and `RunCommand` never invokes a scan — the
     /// executor path is byte-identical to the pre-VRO-13 path. `Some` means
     /// every shell command is normalized and matched before `run_bounded`.
@@ -42,7 +42,7 @@ pub struct ToolContext {
     /// `None` (the default) is the structural off-path: `RunCommand` runs
     /// `run_bounded` exactly as before, byte-identical to PR-3 behavior.
     /// `Some` carries the isolation demand (resolved from
-    /// `.agent-vesper/config.toml` `[sandbox]` or a tool-level demand) plus
+    /// `.jarvis/config.toml` `[sandbox]` or a tool-level demand) plus
     /// the backend factory; the executor consults `vesper-security`'s
     /// fail-closed capability check before provisioning.
     pub sandbox: Option<Arc<SandboxRoute>>,

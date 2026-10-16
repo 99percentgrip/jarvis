@@ -24,6 +24,7 @@ def main():
     if sys.argv[1:] != ['--execute-live']:
         print('No live execution. Requires explicit approval and --execute-live.')
         return
+    raise SystemExit('Legacy live timing launcher is inactive pending independent runtime and authentication isolation; no Vesper state is read or copied.')
     home = Path.home()
     provider = (REPO / '.agent-vesper/provider').read_text().strip()
     # This diagnostic's credential-path isolation is implemented for the active

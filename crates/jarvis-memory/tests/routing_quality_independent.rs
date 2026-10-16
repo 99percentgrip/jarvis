@@ -179,7 +179,7 @@ fn independently_frozen_cases_report_native_outcomes_without_weakening_labels() 
         "{}",
         serde_json::to_string_pretty(&output["summary"]).unwrap()
     );
-    if let Ok(path) = std::env::var("VESPER_ROUTING_INDEPENDENT_OUTPUT") {
+    if let Ok(path) = std::env::var("JARVIS_ROUTING_INDEPENDENT_OUTPUT") {
         std::fs::write(path, serde_json::to_vec_pretty(&output).unwrap()).unwrap();
     }
 }

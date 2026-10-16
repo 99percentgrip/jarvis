@@ -3,12 +3,12 @@
 import sys
 import tempfile
 from pathlib import Path
-from settings_pty import Host
+from settings_pty import Host, private_config_root
 
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='vesper-setup-pty-') as temp:
         root = Path(temp)
-        host = Host(str(Path(binary).resolve()), root, {'VESPER_DOCKER_BIN': str(root/'missing-engine')})
+        host = Host(str(Path(binary).resolve()), root, {'JARVIS_DOCKER_BIN': str(root/'missing-engine')})
         try:
             host.wait('Start coding')
             host.click('Settings')
@@ -17,14 +17,14 @@ def run(binary):
             host.wait('Set up web and isolated tools')
             host.click('Continue coding without setup')
             host.wait('Setup declined')
-            assert not (root/'home/.agent-vesper/runtime.json').exists()
-            assert not (root/'home/.agent-vesper/runtime-setup.lock').exists()
+            assert not (private_config_root(root)/'runtime.json').exists()
+            assert not (private_config_root(root)/'runtime-setup.lock').exists()
             for _ in range(2):
                 host.click('Set up features / repair')
                 host.click('Set up web and isolated tools')
                 host.wait('driver is missing')
-                assert not (root/'home/.agent-vesper/runtime.json').exists()
-                assert not (root/'.agent-vesper/web-settings.json').exists()
+                assert not (private_config_root(root)/'runtime.json').exists()
+                assert not (root/'.jarvis/web-settings.json').exists()
             host.key('\x1b')
             host.key('\x1b')
             host.wait('Start coding')

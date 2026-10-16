@@ -137,7 +137,7 @@ actual = str(n.width) + 'x' + str(n.height)
 
 ### Config location
 
-`$AGENT_VESPER_HOME/config.yaml` (defaults to `~/.agent-vesper/config.yaml` when `AGENT_VESPER_HOME` is unset)
+The inherited standalone setup writer is inactive pending an independent native configuration adapter. Do not read or edit a Vesper configuration. Existing explicitly configured MCP endpoints retain their protocol.
 
 ### MCP entry format
 

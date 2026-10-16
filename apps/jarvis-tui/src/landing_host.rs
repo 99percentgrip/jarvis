@@ -52,7 +52,7 @@ pub(super) async fn open(
                                 std::thread::spawn(move || { let _ = child.wait(); });
                                 "Requested release page in your browser.".into()
                             }
-                            Err(_) => "Could not open browser. Visit github.com/99percentgrip/agent-vesper/releases".into(),
+                            Err(_) => "Could not open browser. Visit github.com/99percentgrip/jarvis/releases".into(),
                         };
                         None
                     }
@@ -88,44 +88,10 @@ struct ReleaseCheck {
 }
 
 async fn check_latest_release() -> Result<ReleaseCheck, String> {
-    // Public, credential-free GitHub API; no provider calls or project data.
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(12))
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .map_err(|_| "Could not initialize update check.".to_owned())?;
-    let mut response = client
-        .get("https://api.github.com/repos/99percentgrip/agent-vesper/releases/latest")
-        .header(
-            "User-Agent",
-            concat!("agent-vesper-tui/", env!("CARGO_PKG_VERSION")),
-        )
-        .header("Accept", "application/vnd.github+json")
-        .send()
-        .await
-        .map_err(|_| {
-            "Update check unavailable (network or timeout). Press U to retry.".to_owned()
-        })?;
-    if !response.status().is_success() {
-        return Err(format!(
-            "GitHub returned HTTP {}. Press U to retry.",
-            response.status().as_u16()
-        ));
-    }
-    let mut bytes = Vec::new();
-    while let Some(chunk) = response
-        .chunk()
-        .await
-        .map_err(|_| "Release response interrupted. Press U to retry.".to_owned())?
-    {
-        if bytes.len() + chunk.len() > 262_144 {
-            return Err("Release response too large. Press R for releases.".into());
-        }
-        bytes.extend_from_slice(&chunk);
-    }
-    release_response(&bytes)
+    Err("Independent updates are unavailable during technical migration.".into())
 }
 
+#[cfg(test)]
 fn release_response(bytes: &[u8]) -> Result<ReleaseCheck, String> {
     let value: serde_json::Value = serde_json::from_slice(bytes)
         .map_err(|_| "Invalid release response. Press R for releases.".to_owned())?;

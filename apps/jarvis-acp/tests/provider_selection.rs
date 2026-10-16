@@ -1,6 +1,6 @@
 //! Stage 9 network-free provider selection proof.
 //!
-//! Boots the release composition with `AGENT_VESPER_PROVIDER=synthetic` and
+//! Boots the release composition with `JARVIS_PROVIDER=synthetic` and
 //! drives a complete ACP prompt-completion lifecycle through the in-process
 //! synthetic provider with no network I/O, no GLM credential, and no fake HTTP
 //! server. The deterministic reply must flow from the synthetic session,
@@ -9,11 +9,11 @@
 //! is configured), so it also proves the selected provider was actually wired.
 
 // Integration tests pull the shared process harness module, whose helpers are
-// consumed by different test binaries; only `critical_environment_keys` is
+// consumed by different test binaries; only isolated environment restoration is
 // needed here, so the rest of `support` is permitted to be dead code in this
 // test binary.
 #![allow(dead_code)]
-// The proof boots the release binary with `AGENT_VESPER_PROVIDER=synthetic`,
+// The proof boots the release binary with `JARVIS_PROVIDER=synthetic`,
 // which the composition accepts only under the `integration-test-harness`
 // feature (the synthetic adapter must never be selectable in production
 // builds). Without the feature the child process exits immediately, so the
@@ -33,7 +33,7 @@ use serde_json::{Value, json};
 
 mod support;
 
-use support::critical_environment_keys;
+use support::restore_isolated_environment;
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -58,10 +58,12 @@ fn synthetic_provider_serves_an_acp_prompt_lifecycle_without_network_io() {
     let credentials = temp.join("signed-out.json");
     std::fs::write(
         &credentials,
-        serde_json::to_vec(&json!({"credentials": {
-            "openai": {"native-auth": "{\"mode\":\"signed-out\"}"},
-            "xai": {"native-auth": "{\"mode\":\"signed-out\"}"}
-        }}))
+        serde_json::to_vec(
+            &json!({"application": "99percentgrip.jarvis", "credentials": {
+                "openai": {"native-auth": "{\"mode\":\"signed-out\"}"},
+                "xai": {"native-auth": "{\"mode\":\"signed-out\"}"}
+            }}),
+        )
         .unwrap(),
     )
     .unwrap();
@@ -71,28 +73,24 @@ fn synthetic_provider_serves_an_acp_prompt_lifecycle_without_network_io() {
         std::fs::set_permissions(&credentials, std::fs::Permissions::from_mode(0o600)).unwrap();
     }
 
-    // No ZAI_API_KEY and no AGENT_VESPER_GLM_BASE_URL: synthetic mode must not
+    // No ZAI_API_KEY and no JARVIS_GLM_BASE_URL: synthetic mode must not
     // require GLM credentials or any network endpoint.
     let mut command = Command::new(env!("CARGO_BIN_EXE_jarvis-acp"));
     command
         .current_dir(&temp)
         .env_clear()
-        .env("AGENT_VESPER_OPENAI_CREDENTIALS_PATH", &credentials)
-        .env("AGENT_VESPER_XAI_CREDENTIALS_PATH", &credentials)
+        .env("JARVIS_OPENAI_CREDENTIALS_PATH", &credentials)
+        .env("JARVIS_XAI_CREDENTIALS_PATH", &credentials)
         .env("HOME", &temp)
         .env("XDG_CONFIG_HOME", temp.join("config"))
         .env("XDG_CACHE_HOME", temp.join("cache"))
         .env("XDG_DATA_HOME", temp.join("data"))
         .env("XDG_STATE_HOME", temp.join("state"))
-        .env("AGENT_VESPER_PROVIDER", "synthetic")
+        .env("JARVIS_PROVIDER", "synthetic")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    for key in critical_environment_keys() {
-        if let Ok(value) = std::env::var(key) {
-            command.env(key, value);
-        }
-    }
+    restore_isolated_environment(&mut command);
     let mut child = OwnedChild(command.spawn().unwrap());
     let mut stdin = child.0.stdin.take().unwrap();
     let stdout = child.0.stdout.take().unwrap();

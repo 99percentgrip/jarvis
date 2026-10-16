@@ -383,27 +383,18 @@ impl SidecarStt {
 }
 
 /// Private temp directory removed on drop (audio never persists).
-struct PrivateDir(PathBuf);
+struct PrivateDir(jarvis_security::PrivateTemporaryDirectory);
 
 impl PrivateDir {
     fn path(&self) -> &std::path::Path {
-        &self.0
+        self.0.path()
     }
 }
-
-impl Drop for PrivateDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
-
-static DIR_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 fn private_dir(provider: &ProviderId) -> Result<PrivateDir, VoiceError> {
-    let unique = DIR_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let path = std::env::temp_dir().join(format!("vesper-voice-{}-{}", std::process::id(), unique));
-    std::fs::create_dir_all(&path).map_err(|_| unavailability(provider, "temp dir"))?;
-    Ok(PrivateDir(path))
+    let directory = jarvis_security::private_temporary_directory("jarvis-voice-")
+        .map_err(|_| unavailability(provider, "temp dir"))?;
+    Ok(PrivateDir(directory))
 }
 
 /// Writes canonical PCM frames as the WAV the script requires

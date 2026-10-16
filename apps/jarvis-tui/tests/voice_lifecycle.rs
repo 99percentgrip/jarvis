@@ -2,9 +2,9 @@
 #![cfg(unix)]
 
 #[test]
-#[ignore = "requires VESPER_TEST_PYTHON pointing to a Python with numpy"]
+#[ignore = "requires JARVIS_TEST_PYTHON pointing to a Python with numpy"]
 fn microphone_free_voice_lifecycle() {
-    let python = std::env::var("VESPER_TEST_PYTHON").unwrap_or_else(|_| "/usr/bin/python3".into());
+    let python = std::env::var("JARVIS_TEST_PYTHON").unwrap_or_else(|_| "/usr/bin/python3".into());
     let prerequisite = std::process::Command::new(&python)
         .args(["-c", "import numpy"])
         .status()

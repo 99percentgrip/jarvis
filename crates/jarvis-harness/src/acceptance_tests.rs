@@ -845,15 +845,15 @@ async fn project_rules_are_frozen_and_runtime_configuration_is_snapshotted() {
         session.sources[1].text.contains("All native hosts"),
         "edits cannot replace the original obligations"
     );
-    std::fs::create_dir(root.path().join(".agent-vesper")).unwrap();
+    std::fs::create_dir(root.path().join(".jarvis")).unwrap();
     std::fs::write(
-        root.path().join(".agent-vesper/config.toml"),
+        root.path().join(".jarvis/config.toml"),
         "[sandbox]\nfilesystem=true\n",
     )
     .unwrap();
     let before = SourceSnapshot::capture(root.path()).unwrap().digest;
     std::fs::write(
-        root.path().join(".agent-vesper/config.toml"),
+        root.path().join(".jarvis/config.toml"),
         "[sandbox]\nfilesystem=false\n",
     )
     .unwrap();
@@ -977,7 +977,7 @@ async fn automatic_enrollment_rejects_missing_external_and_forged_scope_without_
         assert!(
             !root
                 .path()
-                .join(".agent-vesper/acceptance-settings.json")
+                .join(".jarvis/acceptance-settings.json")
                 .exists()
         );
     }
@@ -1022,7 +1022,7 @@ async fn automatic_scope_review_refusal_and_cancellation_do_not_remember_a_path(
     assert!(
         !root
             .path()
-            .join(".agent-vesper/acceptance-settings.json")
+            .join(".jarvis/acceptance-settings.json")
             .exists()
     );
     let cancel = Arc::new(jarvis_runtime::RuntimeCancellation::new());
@@ -1044,7 +1044,7 @@ async fn automatic_scope_review_refusal_and_cancellation_do_not_remember_a_path(
     assert!(
         !root
             .path()
-            .join(".agent-vesper/acceptance-settings.json")
+            .join(".jarvis/acceptance-settings.json")
             .exists()
     );
 }

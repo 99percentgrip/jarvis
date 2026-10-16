@@ -9,7 +9,7 @@ transport, stderr-only tracing, and orderly shutdown.
 
 - VB-PRD-001 composition is behind the default-off `bridge` build
   feature. `bridge_enabled_from_settings()` resolves the explicit
-  user-owned `.agent-vesper/bridge-settings.json` once per process
+  user-owned `.jarvis/bridge-settings.json` once per process
   (fail-closed) and `with_bridge` attaches the harness Bridge service;
   the disabled build compiles zero bridge code. `/bridge` (status,
   discover, stop, disconnect) answers read-only at host level; connect
@@ -101,7 +101,12 @@ transport, stderr-only tracing, and orderly shutdown.
   constrained-host coverage. Its short receipt deadline requires every controlled Cargo
   command to record promptly before release. Its metadata JSON uses a literal
   `%s` argument rather than implementation-dependent printf format escapes; the
-  named metadata regression requires valid JSON. Production macOS/Windows governor
+  named metadata regression requires valid JSON. Controlled Cargo commands are
+  per-fixture symlinks to the checked-in immutable `tests/support/controlled_cargo_fixture.sh`,
+  with LF bytes pinned in `.gitattributes` and private receipt/release path bindings.
+  Never execute freshly written wrapper scripts or add retries for ETXTBSY. The
+  concurrent fixture regression checks immutable code, path quoting and isolated receipts.
+  Production macOS/Windows governor
   discovery is shared with TUI through the native harness observer, including
   Windows Job Object constraints. Native platform observation/descendant tests and
   the real constrained-Windows-job fixture supplement synthetic lifecycle evidence.
@@ -129,6 +134,9 @@ transport, stderr-only tracing, and orderly shutdown.
   must not be serialized into ordinary ACP response prose.
 - Contain no session, provider-wire, or ACP-mapping business logic.
 - Stdout is exclusively newline-delimited ACP JSON-RPC.
+- Process fixtures use native absolute temporary workspaces and explicitly private
+  HOME/USERPROFILE/roaming/local roots on every platform. Restoring OS execution
+  prerequisites must never inherit real application data roots.
 - Tests use loopback endpoints and synthetic credentials only. The shared process
   harness supplies explicit signed-out OpenAI and xAI vault records under its
   temporary root; environment/HOME isolation alone does not isolate an OS credential
@@ -139,21 +147,26 @@ transport, stderr-only tracing, and orderly shutdown.
   workspace-scoped tool I/O and MCP/plugin subprocess work only after a model
   tool call passes the agent permission gate. The explicit `--setup`
   authentication commands (`--setup`, OpenAI `--login`/`--logout`) delegate
-  credential writes to the owning adapter. Native subscription dispatch may
-  persist a refreshed token under the adapter's operation lock.
+  credential writes to the owning adapter. Independent subscription authorization
+  is pending: normal login, refresh and retained-token dispatch refuse before
+  network access. Explicit API keys remain supported in the independent store.
+- Normal legacy-session discovery is disabled. Only the integration-only driver
+  enables bounded, owned synthetic archived-format fixtures; all-features ordinary
+  binaries remain inactive. Read-only startup validates roots without creating
+  them; the full harness initializes independent roots before its private tools.
 - Session readers are disabled unless explicitly enabled, use bounded
   filesystem stores, reject unsafe roots, and never create missing roots.
 - Workspace-scope identity resolution is read-only by default: the
-  editor-spawned ACP process must not create `.vesper-scope-id` in a project
-  unless `AGENT_VESPER_ENABLE_SCOPE_STAMP=1`. This persistence policy does
+  editor-spawned ACP process must not create `.jarvis-scope-id` in a project
+  unless `JARVIS_ENABLE_SCOPE_STAMP=1`. This persistence policy does
   not change the resolved scope id, so TUI↔ACP scope identity remains equal.
 - Session writers are disabled unless explicitly enabled via
-  `AGENT_VESPER_ENABLE_SESSION_WRITES`; the application constructs and injects
+  `JARVIS_ENABLE_SESSION_WRITES`; the application constructs and injects
   `VesperSessionWriter` but delegates every mutation, atomic rename, and
-  sidecar generation to `jarvis-sessions`. The write root defaults to the Agent
-  Vesper read root (`AGENT_VESPER_SESSION_WRITE_ROOT` or
-  `AGENT_VESPER_SESSION_ROOT`) and must be absolute with an existing parent;
-  `AGENT_VESPER_SESSION_WRITE_MAX_BYTES` bounds the record size.
+  sidecar generation to `jarvis-sessions`. The write root defaults to the
+  current owned read root (`JARVIS_SESSION_WRITE_ROOT` or
+  `JARVIS_SESSION_ROOT`) and must be absolute with an existing parent;
+  `JARVIS_SESSION_WRITE_MAX_BYTES` bounds the record size.
 - Durable editor-chat registration must enable both session writes and Agent
   Vesper session reads; writes commit completed turns, while reads provide
   list/load/resume after the editor launches a fresh ACP process. Checkpoint
@@ -163,7 +176,7 @@ transport, stderr-only tracing, and orderly shutdown.
   native OpenAI and xAI in every boot so the ACP `provider` footer picker (TUI
   `/provider` parity) can switch between them mid-session. The initial
   acting provider comes from the `--provider` flag or
-  `AGENT_VESPER_PROVIDER` (accepted tokens: `glm`/`zai`, `lmstudio`, `openai`, `xai`). The
+  `JARVIS_PROVIDER` (accepted tokens: `glm`/`zai`, `lmstudio`, `openai`, `xai`). The
   deterministic synthetic adapter is reachable only through the
   `integration-test-harness` feature and must never be advertised as a real
   provider or model. The runtime stays provider-neutral; provider-specific
@@ -304,9 +317,9 @@ transport, stderr-only tracing, and orderly shutdown.
   and malformed outcomes remain fail-closed. The engine injects the shared
   hosted Python-oracle tool surface and bounded project instruction
   context, and opens `MemoryStores` with the cross-project global skill
-  layer (`AGENT_VESPER_GLOBAL_MEMORY_ROOT` → `~/.agent-vesper/memory`), so
+  layer (`JARVIS_GLOBAL_MEMORY_ROOT` or native application data plus `memory`), so
   `/skills` lists global learned skills exactly like the TUI. Set
-  `AGENT_VESPER_FULL_HARNESS=0` only for protocol-conformance fixtures that
+  `JARVIS_FULL_HARNESS=0` only for protocol-conformance fixtures that
   must exercise the provider-neutral single-turn runtime path; production
   defaults to the full engine.
 - Mixed and image-only prompt blocks remain intact through harness
@@ -347,8 +360,8 @@ Every host-agnostic capability shipped in the TUI MUST also be wired here
 
 - **Cognitive memory** (`src/cognition.rs`, ACP composition of the shared engine):
   `CognitionBundle::open_default` opens the SAME durable stores as the TUI
-  (project `.agent-vesper/cognition/` + global
-  `~/.local/share/agent-vesper/cognition/`), honors the same
+  (project `.jarvis/cognition/` + global
+  native application data plus `cognition`), honors the same
   `embedding.json` (ADR 0016) source selection (local / lmstudio /
   bigmodel / provider-routed), routes extraction Zai → LM Studio → NoOp,
   and re-embeds on embedder-model change. Surface: silent pre-reply recall
@@ -360,7 +373,7 @@ Every host-agnostic capability shipped in the TUI MUST also be wired here
   be evaluated in the TUI composition (and vice versa). The model-facing
   instruction and host-parity extension catalog are shared foundation
   constants with registration/advertisement tests.
-- **VRO reasoning orchestration**: opt-in via `AGENT_VESPER_VRO_ENABLED=1`
+- **VRO reasoning orchestration**: opt-in via `JARVIS_VRO_ENABLED=1`
   (TUI parity). `should_orchestrate` routes non-Direct, non-ReAct profiles
   through `VroOrchestrator::execute_with_learning` with an
   `AcpCandidateGenerator` bridging the shared `AgentLoop`; `/reasoning set
@@ -398,13 +411,13 @@ byte-identical to the TUI's (host-parity contract):
 
 - bare or `status` — the live route body (active backend + demand + route
   instance, or the truthful no-route notice pointing at
-  `.agent-vesper/config.toml` `[sandbox]`).
+  `.jarvis/config.toml` `[sandbox]`).
 - `on` / `enable` — the honest restart instruction: the demand lives in
   `[sandbox]`; edit it and restart. Never a fake runtime toggle.
-- `off` / `disable` — restart with `AGENT_VESPER_SANDBOX=off`.
+- `off` / `disable` — restart with `JARVIS_SANDBOX=off`.
 - anything else — the shared usage error listing `on|off|status`.
 
-The route itself is resolved at host boot (`AGENT_VESPER_SANDBOX=docker|off`
+The route itself is resolved at host boot (`JARVIS_SANDBOX=docker|off`
 plus the `[sandbox]` scope demand); the Docker backend requires a
 `--features docker` build of this composition, and a build without it
 refuses a docker demand honestly instead of falling back.
@@ -414,8 +427,8 @@ refuses a docker demand honestly instead of falling back.
 `/checkpoint`, `/rollback`, `/undo`, `/sessions`, and `/lineage` are
 DISABLED by default in this composition (root contract): the shared
 `HarnessToolService` is built with `new_with_checkpoint_gate(..., false)`
-unless `AGENT_VESPER_ENABLE_CHECKPOINTS` is truthy or
-`AGENT_VESPER_CHECKPOINT_ROOT` is set explicitly. Gated commands answer
+unless `JARVIS_ENABLE_CHECKPOINTS` is truthy or
+`JARVIS_CHECKPOINT_ROOT` is set explicitly. Gated commands answer
 with the opt-in notice and the service creates no durable
 checkpoint/lineage directories at boot. `/ci` stays available (read-only);
 `/export` writes an explicit user-requested file only. The TUI host keeps

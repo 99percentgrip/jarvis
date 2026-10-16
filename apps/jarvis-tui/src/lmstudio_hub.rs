@@ -10,7 +10,7 @@
 //!
 //! [`LmStudioSettings`] holds only **non-secret** fields (the URL + optional
 //! model) and is persisted as JSON under the Agent Vesper state dir
-//! (`$AGENT_VESPER_LMSTUDIO_ROOT` or `.agent-vesper/lmstudio/settings.json`).
+//! (`$JARVIS_LMSTUDIO_ROOT` or `.jarvis/lmstudio/settings.json`).
 //! The optional API key is **not** stored here (project secret discipline);
 //! it is read from the `LMSTUDIO_API_KEY` environment variable, which the
 //! screen surfaces as a hint. Moving the key into the OS credential store is
@@ -222,16 +222,16 @@ impl LmStudioHub {
 // Persistence
 // ---------------------------------------------------------------------------
 
-/// Resolves the LM Studio settings directory: `$AGENT_VESPER_LMSTUDIO_ROOT`
-/// or `$AGENT_VESPER_HOME/lmstudio`, falling back to `./.agent-vesper/lmstudio`.
+/// Resolves the LM Studio settings directory: `$JARVIS_LMSTUDIO_ROOT`
+/// or `$JARVIS_HOME/lmstudio`, falling back to `./.jarvis/lmstudio`.
 #[must_use]
 pub fn lmstudio_settings_dir() -> PathBuf {
-    if let Ok(root) = std::env::var("AGENT_VESPER_LMSTUDIO_ROOT") {
+    if let Ok(root) = std::env::var("JARVIS_LMSTUDIO_ROOT") {
         return PathBuf::from(root);
     }
-    let home = std::env::var("AGENT_VESPER_HOME")
+    let home = std::env::var("JARVIS_HOME")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from(".agent-vesper"));
+        .unwrap_or_else(|_| PathBuf::from(".jarvis"));
     home.join("lmstudio")
 }
 

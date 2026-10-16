@@ -71,6 +71,15 @@ impl CognitiveStore {
     /// Open (or create) the store at the given path. The parent directory
     /// MUST exist; this method never creates directories.
     pub fn open(path: &Path) -> Result<Self> {
+        jarvis_security::validate_private_path(path).map_err(|_| CognitionError::InvalidRoot)?;
+        // SQLite owns adjacent journal/WAL files; a preexisting redirect there
+        // must not escape the same private boundary as the main database.
+        for suffix in ["-wal", "-shm", "-journal"] {
+            let mut sidecar = path.as_os_str().to_os_string();
+            sidecar.push(suffix);
+            jarvis_security::validate_private_path(Path::new(&sidecar))
+                .map_err(|_| CognitionError::InvalidRoot)?;
+        }
         if !path.is_absolute() {
             return Err(CognitionError::InvalidRoot);
         }

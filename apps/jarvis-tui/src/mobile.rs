@@ -37,10 +37,9 @@ pub struct MobileServer {
 
 impl MobileServer {
     pub fn start_from_environment() -> Result<Self, String> {
-        let bind =
-            std::env::var("AGENT_VESPER_MOBILE_BIND").unwrap_or_else(|_| "127.0.0.1:8765".into());
-        let allow_public = std::env::var("AGENT_VESPER_MOBILE_ALLOW_PUBLIC").as_deref() == Ok("1");
-        let public_url = std::env::var("AGENT_VESPER_MOBILE_URL").ok();
+        let bind = std::env::var("JARVIS_MOBILE_BIND").unwrap_or_else(|_| "127.0.0.1:0".into());
+        let allow_public = std::env::var("JARVIS_MOBILE_ALLOW_PUBLIC").as_deref() == Ok("1");
+        let public_url = std::env::var("JARVIS_MOBILE_URL").ok();
         Self::start(&bind, allow_public, public_url.as_deref())
     }
 
@@ -54,7 +53,7 @@ impl MobileServer {
         }
         let public = host == "0.0.0.0";
         if public && !allow_public {
-            return Err("refusing 0.0.0.0 without AGENT_VESPER_MOBILE_ALLOW_PUBLIC=1".into());
+            return Err("refusing 0.0.0.0 without JARVIS_MOBILE_ALLOW_PUBLIC=1".into());
         }
         let listener = TcpListener::bind(bind).map_err(|error| error.to_string())?;
         listener
@@ -63,17 +62,17 @@ impl MobileServer {
         let address = listener.local_addr().map_err(|error| error.to_string())?;
         let advertised = if public {
             public_url
-                .ok_or_else(|| "public mobile bind requires AGENT_VESPER_MOBILE_URL".to_string())?
+                .ok_or_else(|| "public mobile bind requires JARVIS_MOBILE_URL".to_string())?
                 .trim_end_matches('/')
                 .to_owned()
         } else {
             format!("http://127.0.0.1:{}", address.port())
         };
         if !advertised.starts_with("http://") && !advertised.starts_with("https://") {
-            return Err("AGENT_VESPER_MOBILE_URL must start with http:// or https://".into());
+            return Err("JARVIS_MOBILE_URL must start with http:// or https://".into());
         }
         if advertised.len() > MAX_ADVERTISED_URL_BYTES {
-            return Err("AGENT_VESPER_MOBILE_URL is too long".into());
+            return Err("JARVIS_MOBILE_URL is too long".into());
         }
         let pair_token = random_token();
         let pairing_url = format!("{advertised}/?pair={pair_token}");
@@ -378,6 +377,18 @@ mod tests {
         let server = MobileServer::start("127.0.0.1:0", false, None).unwrap();
         let (origin, _) = server.pairing_url().split_once("/?pair=").unwrap();
         TcpStream::connect(origin.trim_start_matches("http://")).unwrap();
+    }
+
+    #[test]
+    fn concurrent_instances_own_distinct_endpoints_and_pairing_secrets() {
+        let first = MobileServer::start("127.0.0.1:0", false, None).unwrap();
+        let second = MobileServer::start("127.0.0.1:0", false, None).unwrap();
+        let (first_origin, first_pair) = first.pairing_url().split_once("/?pair=").unwrap();
+        let (second_origin, second_pair) = second.pairing_url().split_once("/?pair=").unwrap();
+        assert_ne!(first_origin, second_origin);
+        assert_ne!(first_pair, second_pair);
+        drop(first);
+        TcpStream::connect(second_origin.trim_start_matches("http://")).unwrap();
     }
 
     #[test]

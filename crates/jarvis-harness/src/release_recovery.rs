@@ -3791,14 +3791,17 @@ fn infer_platform(labels: Option<&serde_json::Value>) -> Option<String> {
 
 #[must_use]
 pub fn default_release_root() -> Option<PathBuf> {
-    if let Some(path) = std::env::var_os("AGENT_VESPER_RELEASE_ROOT") {
+    if !cfg!(test) && !crate::release_executor::controlled_process_fixture_enabled() {
+        return None;
+    }
+    if let Some(path) = std::env::var_os("JARVIS_RELEASE_ROOT") {
         return Some(PathBuf::from(path));
     }
     let home = std::env::var_os("XDG_STATE_HOME")
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/state")))
         .or_else(|| std::env::var_os("USERPROFILE").map(PathBuf::from))?;
-    Some(home.join("agent-vesper").join("release-recovery"))
+    Some(home.join("jarvis").join("release-recovery"))
 }
 
 pub fn repository_identity_for_workspace(workspace: &Path) -> Result<String, RrcError> {
@@ -3851,8 +3854,11 @@ pub fn release_command(
     source_commit: &str,
     branch_ref: &str,
 ) -> Result<String, RrcError> {
-    let root = default_release_root()
-        .ok_or_else(|| RrcError::Invalid("no user-owned release state root is available".into()))?;
+    let root = default_release_root().ok_or_else(|| {
+        RrcError::Invalid(
+            "release-disabled: independent publication infrastructure is not active".into(),
+        )
+    })?;
     let ledger = ReleaseLedger::open(root, repo_identity)?;
     let arg = argument.trim();
     match arg {
@@ -5048,8 +5054,11 @@ pub fn admit_natural_release_for_workspace_with_factory(
     objective: &str,
     repair_factory: Option<crate::WorkerFactory>,
 ) -> Result<NaturalReleaseAdmission, RrcError> {
-    let root = default_release_root()
-        .ok_or_else(|| RrcError::Invalid("no user-owned release state root is available".into()))?;
+    let root = default_release_root().ok_or_else(|| {
+        RrcError::Invalid(
+            "release-disabled: independent publication infrastructure is not active".into(),
+        )
+    })?;
     admit_natural_release_with_launcher(
         workspace,
         objective,
@@ -5107,8 +5116,11 @@ pub fn release_command_outcome_for_workspace_with_factory(
     let canonical = workspace.canonicalize()?;
     let repo_identity = repository_identity(&canonical)?;
     let action = argument.trim();
-    let root = default_release_root()
-        .ok_or_else(|| RrcError::Invalid("no user-owned release state root is available".into()))?;
+    let root = default_release_root().ok_or_else(|| {
+        RrcError::Invalid(
+            "release-disabled: independent publication infrastructure is not active".into(),
+        )
+    })?;
     let ledger = ReleaseLedger::open(root, &repo_identity)?;
     if let Some(version) = release_start_selector(action, ledger.load()?.is_some()) {
         let objective = match &version {
@@ -5214,8 +5226,11 @@ pub fn reconcile_unowned_release(
     workspace: &Path,
 ) -> Result<Option<ReleaseRecoveryRecord>, RrcError> {
     let identity = repository_identity_for_workspace(workspace)?;
-    let root = default_release_root()
-        .ok_or_else(|| RrcError::Invalid("no user-owned release state root is available".into()))?;
+    let root = default_release_root().ok_or_else(|| {
+        RrcError::Invalid(
+            "release-disabled: independent publication infrastructure is not active".into(),
+        )
+    })?;
     let ledger = ReleaseLedger::open(root, &identity)?;
     let Some(mut record) = ledger.load()? else {
         return Ok(None);

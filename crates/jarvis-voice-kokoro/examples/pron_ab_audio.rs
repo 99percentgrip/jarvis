@@ -1,6 +1,6 @@
 //! Bounded diagnostic audio for Alex's listening matrix (mission §8):
 //! the six word cells + both full fixtures, both voices, fixed build.
-//! ≤8 MiB/file, ≤32 MiB aggregate, owned probe dir /tmp/vesper-pron-ab.
+//! ≤8 MiB/file, ≤32 MiB aggregate, owned diagnostic directory under the native application cache.
 #![allow(missing_docs)]
 fn main() {
     let espeak: std::path::PathBuf = std::env::var_os("PATH")
@@ -10,7 +10,13 @@ fn main() {
                 .find(|c| c.is_file())
         })
         .expect("espeak-ng on PATH");
-    let pack_root = std::path::PathBuf::from("/home/Alex/.local/share/agent-vesper/voice-pack");
+    let pack_root = jarvis_voice_kokoro::pack_root();
+    let output_root = jarvis_config::JarvisPaths::from_environment()
+        .expect("native private roots")
+        .cache
+        .join("voice-diagnostics")
+        .join("pron-ab");
+    jarvis_security::prepare_owned_directory(&output_root).expect("owned diagnostic output");
     let engine =
         match jarvis_voice_kokoro::engine::EngineState::load(&pack_root).expect("pack loads") {
             jarvis_voice_kokoro::engine::EngineState::Ready(engine) => engine,
@@ -43,8 +49,8 @@ fn main() {
                 .synthesize_blocking(text, &style, &espeak)
                 .expect("synthesis");
             let name = format!("{voice}_{tag}_{}", text.len());
-            let path = std::path::PathBuf::from("/tmp/vesper-pron-ab").join(format!("{name}.raw"));
-            std::fs::create_dir_all("/tmp/vesper-pron-ab").unwrap();
+            let path = output_root.join(format!("{name}.raw"));
+            jarvis_security::validate_private_path(&path).expect("private diagnostic file");
             let bytes: Vec<u8> = output
                 .frames
                 .iter()

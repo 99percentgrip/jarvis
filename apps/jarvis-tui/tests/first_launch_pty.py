@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 
-from settings_pty import Host
+from settings_pty import Host, fixture_owned_directory
 from settings_auth_pty import signed_out_vault
 
 
@@ -16,23 +16,28 @@ def run(binary):
         with tempfile.TemporaryDirectory(prefix="vesper-first-launch-") as temporary:
             root = Path(temporary)
             config = root / "config"
-            config.mkdir()
+            fixture_owned_directory(config)
             # A deliberately unreadable vault blocks native-keyring fallback.
             # Z.ai has no signed-out tombstone; never consult the caller's store.
             glm = config / "zai.json"
             glm.write_text('{"credentials":null}')
             glm.chmod(0o600)
-            for provider in ("openai", "xai", "lmstudio"):
+            for provider in ("openai", "xai"):
                 signed_out_vault(config / f"{provider}.json", provider, "native-auth")
+            # API-key-only LM Studio has no subscription tombstone. An invalid
+            # synthetic vault blocks native lookup without inventing a saved key.
+            lmstudio = config / "lmstudio.json"
+            lmstudio.write_text('{"credentials":null}')
+            lmstudio.chmod(0o600)
             host = Host(binary, root, {
                 "ZAI_API_KEY": "", "Z_AI_API_KEY": "",
-                "AGENT_VESPER_HOME": str(root / "state"),
-                "AGENT_VESPER_PROVIDER": selected,
-                "AGENT_VESPER_CREDENTIALS_PATH": str(glm),
-                "AGENT_VESPER_OPENAI_CREDENTIALS_PATH": str(config / "openai.json"),
-                "AGENT_VESPER_XAI_CREDENTIALS_PATH": str(config / "xai.json"),
-                "AGENT_VESPER_LMSTUDIO_CREDENTIALS_PATH": str(config / "lmstudio.json"),
-                "AGENT_VESPER_VRO_ENABLED": "0",
+                "JARVIS_HOME": str(root / "state"),
+                "JARVIS_PROVIDER": selected,
+                "JARVIS_CREDENTIALS_PATH": str(glm),
+                "JARVIS_OPENAI_CREDENTIALS_PATH": str(config / "openai.json"),
+                "JARVIS_XAI_CREDENTIALS_PATH": str(config / "xai.json"),
+                "JARVIS_LMSTUDIO_CREDENTIALS_PATH": str(config / "lmstudio.json"),
+                "JARVIS_VRO_ENABLED": "0",
             })
             try:
                 host.wait("Start coding", timeout=10)

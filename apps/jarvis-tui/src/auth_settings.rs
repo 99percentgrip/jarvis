@@ -1026,7 +1026,7 @@ async fn spawn_logout(
 }
 
 fn trace_nav(kind: KeyEventKind, code: KeyCode) {
-    let Ok(path) = std::env::var("AGENT_VESPER_NAV_TRACE") else {
+    let Ok(path) = std::env::var("JARVIS_NAV_TRACE") else {
         return;
     };
     if path.is_empty() || path == "0" {

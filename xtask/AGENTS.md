@@ -7,6 +7,12 @@ architecture, MSRV, and source-oracle checks.
 
 ## Local Contracts
 
+- `verify` runs offline bundled-helper runtime isolation with platform Python,
+  including native Windows ACL inspection. It does not execute live OAuth,
+  installation, or user-home mutations.
+
+- Stage 3 verification admits only explicitly registered complete runtime identifiers, preserving all frozen naming patterns and counts. Architecture adds reviewed config-root dependencies for the application, agent and private voice/provider adapters; identity itself remains pure and unwired. Runtime regression evidence must prove filesystem ownership rather than string equality alone.
+
 - Architecture verifies all current first-party packages/binaries/import targets
   against the explicit current Stage 2 registry. Only verification may consume the
   pure identity module. Runtime consumer or production-dependency drift fails.

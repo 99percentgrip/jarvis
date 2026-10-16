@@ -19,6 +19,8 @@ managers with an explicit owner-only file fallback on Unix systems.
 
 ## Local Contracts
 
+- The production application service is `99percentgrip.jarvis`. Before native or fallback access, refuse legacy/redirected paths and existing unmarked credential records. New vault writes carry the application owner; no Vesper token read, refresh, deletion or plaintext export is authorized. Generic path-explicit fixture stores do not establish production adoption authority.
+
 - Depend only on `jarvis-security` among workspace crates.
 - Never include credential values in formatting, errors, logs, or serialized
   metadata other than the explicitly authorized private fallback vault.

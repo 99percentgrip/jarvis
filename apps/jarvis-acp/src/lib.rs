@@ -16,7 +16,7 @@ use jarvis_acp_protocol::{
     AcpAdapter, AcpAdapterConfig, AcpPermissionDecision, AcpPermissionRequest,
     AcpPermissionRequester, AcpPromptEngine, AcpPromptFuture, AcpPromptRequest, AcpPromptResult,
 };
-use jarvis_config::{PathEnvironment, Platform, ProfileName, VesperPaths};
+use jarvis_config::{JarvisPaths, PathEnvironment, Platform, ProfileName};
 use jarvis_domain::{
     ContentPart, ConversationMessage, EndpointId, ExtensionMap, MessageId, MessageRole, ModelId,
     ProviderId, QualifiedModelId,
@@ -40,7 +40,7 @@ use tokio::sync::Mutex;
 
 /// Runs ACP stdio with an injected provider factory.
 ///
-/// The release binary selects the factory from `AGENT_VESPER_PROVIDER` or the
+/// The release binary selects the factory from `JARVIS_PROVIDER` or the
 /// `--provider` CLI flag (see [`run`] and [`boot`]); the non-default
 /// process-test driver may wrap a selected factory with generic synchronization
 /// only. The provider configuration, model, and default endpoint are resolved
@@ -97,6 +97,7 @@ where
         },
     );
     let adapter = if full_harness_enabled() {
+        jarvis_config::JarvisPaths::initialize_environment().map_err(|_| ())?;
         let agent_config = jarvis_agent::AgentLoopConfig {
             provider_id: provider.clone(),
             provider_configuration: profile.provider_configuration.clone(),
@@ -111,7 +112,7 @@ where
             // host boot. `None` = structurally identical legacy path.
             firewall: jarvis_policy::firewall::holder::shared(),
             // VRO-13 PR-4: the process-global sandbox route, resolved once
-            // at host boot from AGENT_VESPER_SANDBOX + [sandbox] scope
+            // at host boot from JARVIS_SANDBOX + [sandbox] scope
             // demand. `None` = no scope demand, byte-identical legacy path.
             sandbox: jarvis_harness::sandbox_backend::holder::shared(),
         };
@@ -152,7 +153,7 @@ where
 }
 
 fn full_harness_enabled() -> bool {
-    std::env::var("AGENT_VESPER_FULL_HARNESS")
+    std::env::var("JARVIS_FULL_HARNESS")
         .map(|value| {
             !matches!(
                 value.trim().to_ascii_lowercase().as_str(),
@@ -163,7 +164,7 @@ fn full_harness_enabled() -> bool {
 }
 
 fn checkpoint_root_path() -> PathBuf {
-    std::env::var("AGENT_VESPER_CHECKPOINT_ROOT")
+    std::env::var("JARVIS_CHECKPOINT_ROOT")
         .map(PathBuf::from)
         .unwrap_or_else(|_| default_agent_root("checkpoints"))
 }
@@ -188,14 +189,14 @@ async fn open_cognition_bundle(active_provider: &str) -> cognition::CognitionBun
 /// Checkpoints and session lineage are OPT-IN in the ACP composition
 /// (user-mandated default-off): Zed spawns this process silently inside
 /// arbitrary project directories, and an always-on durable store littered
-/// `.agent-vesper/` state — and up to 50 × 10 MiB of snapshots — in every
+/// `.jarvis/` state — and up to 50 × 10 MiB of snapshots — in every
 /// project it touched. Users enable it explicitly with
-/// `AGENT_VESPER_ENABLE_CHECKPOINTS=1` or by setting a concrete
-/// `AGENT_VESPER_CHECKPOINT_ROOT`; the TUI host keeps its always-on default
+/// `JARVIS_ENABLE_CHECKPOINTS=1` or by setting a concrete
+/// `JARVIS_CHECKPOINT_ROOT`; the TUI host keeps its always-on default
 /// because it is user-launched interactively.
 fn checkpoint_gate() -> Option<PathBuf> {
-    let explicit_root = std::env::var("AGENT_VESPER_CHECKPOINT_ROOT").is_ok();
-    let enabled = std::env::var("AGENT_VESPER_ENABLE_CHECKPOINTS")
+    let explicit_root = std::env::var("JARVIS_CHECKPOINT_ROOT").is_ok();
+    let enabled = std::env::var("JARVIS_ENABLE_CHECKPOINTS")
         .map(|value| {
             !matches!(
                 value.trim().to_ascii_lowercase().as_str(),
@@ -242,14 +243,14 @@ fn should_orchestrate(
 }
 
 /// Whether VRO orchestration is enabled for this process
-/// (`AGENT_VESPER_VRO_ENABLED=1`).
+/// (`JARVIS_VRO_ENABLED=1`).
 fn vro_enabled_from_env() -> bool {
-    std::env::var("AGENT_VESPER_VRO_ENABLED")
+    std::env::var("JARVIS_VRO_ENABLED")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false)
 }
 
-/// VRO orchestrator: opt-in via `AGENT_VESPER_VRO_ENABLED=1`, exactly like
+/// VRO orchestrator: opt-in via `JARVIS_VRO_ENABLED=1`, exactly like
 /// the TUI composition. Disabled (the default) keeps every turn on the
 /// direct AgentLoop — zero behavior change.
 fn vro_orchestrator() -> jarvis_agent::VroOrchestrator {
@@ -264,7 +265,7 @@ fn vro_orchestrator() -> jarvis_agent::VroOrchestrator {
 }
 
 fn mcp_root_path() -> PathBuf {
-    std::env::var("AGENT_VESPER_MCP_ROOT")
+    std::env::var("JARVIS_MCP_ROOT")
         .map(PathBuf::from)
         .unwrap_or_else(|_| default_agent_root("mcp"))
 }
@@ -272,7 +273,7 @@ fn mcp_root_path() -> PathBuf {
 fn default_agent_root(name: &str) -> PathBuf {
     std::env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
-        .join(".agent-vesper")
+        .join(".jarvis")
         .join(name)
 }
 
@@ -296,7 +297,7 @@ struct AcpHarnessEngine {
     /// TUI's durable stores. Powers the `/remember` family and silent
     /// pre-reply recall injection.
     cognition: Arc<cognition::CognitionBundle>,
-    /// VRO orchestrator (opt-in via `AGENT_VESPER_VRO_ENABLED=1`, TUI
+    /// VRO orchestrator (opt-in via `JARVIS_VRO_ENABLED=1`, TUI
     /// parity). `disabled()` keeps every turn on the direct AgentLoop.
     vro: jarvis_agent::VroOrchestrator,
     /// Per-session `/reasoning set mode=` overrides (VRO-8).
@@ -1761,7 +1762,7 @@ impl AcpHarnessEngine {
             // it must be answered here before the domain-catalog fallthrough.
             // View-only: the firewall state is process-global and immutable
             // after boot (first-resolution-wins holder); changing it requires
-            // a restart with a different `AGENT_VESPER_FIREWALL`, which this
+            // a restart with a different `JARVIS_FIREWALL`, which this
             // text states truthfully instead of faking a toggle.
             if lowered == "firewall" {
                 let body = jarvis_policy::firewall::holder::shared()
@@ -1769,13 +1770,13 @@ impl AcpHarnessEngine {
                     .map_or_else(
                         || {
                             "firewall: disabled (process-global; enable with \
-                             AGENT_VESPER_FIREWALL=on and restart)"
+                             JARVIS_FIREWALL=on and restart)"
                                 .to_owned()
                         },
                         |_| {
                             "firewall: enabled — hard-denial rules active for \
                              run_command (deny > every permission mode; \
-                             disable with AGENT_VESPER_FIREWALL=off and restart)"
+                             disable with JARVIS_FIREWALL=off and restart)"
                                 .to_owned()
                         },
                     );
@@ -1797,7 +1798,7 @@ impl AcpHarnessEngine {
                             || {
                                 "sandbox: no active route (no [sandbox] scope \
                                  demand; run_command runs unsandboxed; add \
-                                 [sandbox] to .agent-vesper/config.toml and \
+                                 [sandbox] to .jarvis/config.toml and \
                                  restart to demand isolation)"
                                     .to_owned()
                             },
@@ -1813,11 +1814,11 @@ impl AcpHarnessEngine {
                             },
                         ),
                     "on" | "enable" | "enabled" => "sandbox: route is boot-resolved; set \
-                                                  [sandbox] in .agent-vesper/config.toml \
+                                                  [sandbox] in .jarvis/config.toml \
                                                   and restart"
                         .to_owned(),
                     "off" | "disable" | "disabled" => {
-                        "sandbox: off requires a restart with AGENT_VESPER_SANDBOX=off".to_owned()
+                        "sandbox: off requires a restart with JARVIS_SANDBOX=off".to_owned()
                     }
                     _ => "Usage: /sandbox [on|off|status] (route is boot-resolved; \
                          on/off explain the restart step)"
@@ -2887,7 +2888,7 @@ impl ProviderProfile {
             #[cfg(feature = "integration-test-harness")]
             let provider_configuration = {
                 let mut provider_configuration = provider_configuration;
-                if std::env::var_os("AGENT_VESPER_XAI_TEST_STALE_HOSTED").is_some() {
+                if std::env::var_os("JARVIS_XAI_TEST_STALE_HOSTED").is_some() {
                     provider_configuration
                         .values
                         .values
@@ -2906,9 +2907,8 @@ impl ProviderProfile {
             // GLM (zai): the production adapter. Endpoint and credential
             // overrides are only consulted here.
             let mut provider_configuration = GlmFactory::default_configuration();
-            if let Ok(base_url) = std::env::var("AGENT_VESPER_GLM_BASE_URL") {
-                let allow_insecure =
-                    std::env::var_os("AGENT_VESPER_ALLOW_INSECURE_LOOPBACK").is_some();
+            if let Ok(base_url) = std::env::var("JARVIS_GLM_BASE_URL") {
+                let allow_insecure = std::env::var_os("JARVIS_ALLOW_INSECURE_LOOPBACK").is_some();
                 provider_configuration
                     .values
                     .values
@@ -2931,7 +2931,7 @@ impl ProviderProfile {
                     .map_err(|_| ())?;
             }
             let model = ModelId::new(
-                std::env::var("AGENT_VESPER_GLM_MODEL").unwrap_or_else(|_| "glm-5.3".into()),
+                std::env::var("JARVIS_GLM_MODEL").unwrap_or_else(|_| "glm-5.3".into()),
             )
             .map_err(|_| ())?;
             let endpoint = EndpointId::new("zai-coding").map_err(|_| ())?;
@@ -2978,35 +2978,35 @@ fn session_reads_from_environment(
 
 /// Resolves the optional transactional session writer from environment
 /// configuration. The writer is only constructed when persistence is opted in
-/// via `AGENT_VESPER_ENABLE_SESSION_WRITES`. All filesystem mutation stays
+/// via `JARVIS_ENABLE_SESSION_WRITES`. All filesystem mutation stays
 /// owned by `VesperSessionWriter` inside `vesper-sessions`; the composition
 /// binary constructs and injects it without performing any I/O itself.
 ///
-/// Write root resolution order: explicit `AGENT_VESPER_SESSION_WRITE_ROOT`,
-/// then the shared read root `AGENT_VESPER_SESSION_ROOT`, then the platform
+/// Write root resolution order: explicit `JARVIS_SESSION_WRITE_ROOT`,
+/// then the shared read root `JARVIS_SESSION_ROOT`, then the platform
 /// Agent Vesper data root. The writer requires an absolute root whose parent
 /// exists; deployment is responsible for that parent when the default is used.
 fn session_writes_from_environment() -> Result<Option<Arc<RuntimeSessionWrites>>, ()> {
-    if !enabled("AGENT_VESPER_ENABLE_SESSION_WRITES") {
+    if !enabled("JARVIS_ENABLE_SESSION_WRITES") {
         return Ok(None);
     }
     let home = std::env::var_os(home_variable()).map(PathBuf::from);
-    let root = match std::env::var_os("AGENT_VESPER_SESSION_WRITE_ROOT").map(PathBuf::from) {
+    let root = match std::env::var_os("JARVIS_SESSION_WRITE_ROOT").map(PathBuf::from) {
         Some(root) => root,
-        None => match std::env::var_os("AGENT_VESPER_SESSION_ROOT").map(PathBuf::from) {
+        None => match std::env::var_os("JARVIS_SESSION_ROOT").map(PathBuf::from) {
             Some(root) => root,
             None => default_vesper_root(home.as_deref())?,
         },
     };
     let max_session_bytes =
-        bounded_number::<u64>("AGENT_VESPER_SESSION_WRITE_MAX_BYTES", 16 * 1024 * 1024)?;
+        bounded_number::<u64>("JARVIS_SESSION_WRITE_MAX_BYTES", 16 * 1024 * 1024)?;
     let max_session_bytes = usize::try_from(max_session_bytes).map_err(|_| ())?;
     let bounds = WriteBounds {
         max_session_bytes,
         ..WriteBounds::default()
     };
     let writer =
-        VesperSessionWriter::new(root, SessionSource::AgentVesper, bounds).map_err(|_| ())?;
+        VesperSessionWriter::new_owned(root, SessionSource::AgentVesper, bounds).map_err(|_| ())?;
     Ok(Some(Arc::new(RuntimeSessionWrites::new(Arc::new(writer)))))
 }
 
@@ -3022,22 +3022,45 @@ struct SessionReadSettings {
     max_entries: usize,
 }
 
+// Only the integration-only executable enables archived format fixtures.
+// Ordinary hosts keep this false even when built with every Cargo feature.
+#[cfg(feature = "integration-test-harness")]
+static LEGACY_SESSION_FIXTURE_READS: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+#[cfg(feature = "integration-test-harness")]
+pub fn enable_legacy_session_fixture_reads() {
+    LEGACY_SESSION_FIXTURE_READS.store(true, std::sync::atomic::Ordering::Release);
+}
+
+fn legacy_session_fixture_reads() -> bool {
+    #[cfg(feature = "integration-test-harness")]
+    {
+        LEGACY_SESSION_FIXTURE_READS.load(std::sync::atomic::Ordering::Acquire)
+    }
+    #[cfg(not(feature = "integration-test-harness"))]
+    {
+        false
+    }
+}
+
 impl SessionReadSettings {
     fn from_environment() -> Result<Self, ()> {
         Ok(Self {
-            enable_vesper: enabled("AGENT_VESPER_ENABLE_SESSION_READS")
-                || enabled("AGENT_VESPER_ENABLE_VESPER_SESSION_READS"),
-            enable_legacy: enabled("AGENT_VESPER_ENABLE_LEGACY_SESSION_READS"),
-            vesper_root: std::env::var_os("AGENT_VESPER_SESSION_ROOT").map(PathBuf::from),
-            legacy_root: std::env::var_os("AGENT_VESPER_LEGACY_SESSION_ROOT").map(PathBuf::from),
-            legacy_profile: std::env::var("AGENT_VESPER_LEGACY_PROFILE")
+            enable_vesper: enabled("JARVIS_ENABLE_SESSION_READS")
+                || enabled("JARVIS_ENABLE_VESPER_SESSION_READS"),
+            enable_legacy: legacy_session_fixture_reads()
+                && enabled("JARVIS_ENABLE_LEGACY_SESSION_READS"),
+            vesper_root: std::env::var_os("JARVIS_SESSION_ROOT").map(PathBuf::from),
+            legacy_root: std::env::var_os("JARVIS_LEGACY_SESSION_ROOT").map(PathBuf::from),
+            legacy_profile: std::env::var("JARVIS_LEGACY_PROFILE")
                 .ok()
                 .map(ProfileName::new)
                 .transpose()
                 .map_err(|_| ())?,
             home: std::env::var_os(home_variable()).map(PathBuf::from),
-            max_session_bytes: bounded_number("AGENT_VESPER_SESSION_MAX_BYTES", 16 * 1024 * 1024)?,
-            max_entries: bounded_number("AGENT_VESPER_SESSION_MAX_ENTRIES", 10_000)?,
+            max_session_bytes: bounded_number("JARVIS_SESSION_MAX_BYTES", 16 * 1024 * 1024)?,
+            max_entries: bounded_number("JARVIS_SESSION_MAX_ENTRIES", 10_000)?,
         })
     }
 
@@ -3055,7 +3078,7 @@ impl SessionReadSettings {
                 None => default_vesper_root(self.home.as_deref())?,
             };
             Arc::new(
-                FilesystemSessionStore::new(root, SessionSource::AgentVesper, bounds)
+                FilesystemSessionStore::new_owned(root, SessionSource::AgentVesper, bounds)
                     .map_err(|_| ())?,
             )
         } else {
@@ -3075,6 +3098,9 @@ impl SessionReadSettings {
                     self.legacy_profile.as_ref(),
                 ),
             };
+            if legacy_session_fixture_reads() {
+                jarvis_security::validate_owned_directory(&root).map_err(|_| ())?;
+            }
             Arc::new(
                 FilesystemSessionStore::new(root, legacy_source.clone(), bounds).map_err(|_| ())?,
             )
@@ -3138,7 +3164,7 @@ fn default_vesper_root(home: Option<&std::path::Path>) -> Result<PathBuf, ()> {
         local_app_data: std::env::var_os("LOCALAPPDATA").map(PathBuf::from),
         ..PathEnvironment::default()
     };
-    let paths = VesperPaths::resolve(current_platform(), &environment).map_err(|_| ())?;
+    let paths = JarvisPaths::resolve(current_platform(), &environment).map_err(|_| ())?;
     Ok(AgentVesperSessionLayout::from_paths(&paths)
         .root()
         .to_path_buf())
@@ -3173,7 +3199,7 @@ const fn home_variable() -> &'static str {
 }
 
 /// Runs the normal release composition with the provider selected by
-/// `AGENT_VESPER_PROVIDER` (default `glm`).
+/// `JARVIS_PROVIDER` (default `glm`).
 ///
 /// Both production adapters (Z.ai GLM + LM Studio) are registered so the
 /// ACP `provider` footer picker (TUI `/provider` parity) can switch between
@@ -3196,10 +3222,10 @@ pub async fn run_multi_provider(initial: &str) -> Result<(), ()> {
     let providers = Arc::new(ProviderRegistry::new());
     let openai = jarvis_provider_openai::OpenAiFactory::default();
     #[cfg(feature = "integration-test-harness")]
-    let openai = if let Ok(url) = std::env::var("AGENT_VESPER_OPENAI_TEST_URL") {
+    let openai = if let Ok(url) = std::env::var("JARVIS_OPENAI_TEST_URL") {
         jarvis_provider_openai::OpenAiFactory::for_loopback(
             &url,
-            if std::env::var("AGENT_VESPER_OPENAI_TEST_MODE").as_deref() == Ok("chatgpt") {
+            if std::env::var("JARVIS_OPENAI_TEST_MODE").as_deref() == Ok("chatgpt") {
                 jarvis_provider_openai::auth::AuthenticationMode::ChatGpt
             } else {
                 jarvis_provider_openai::auth::AuthenticationMode::ApiKey
@@ -3231,8 +3257,8 @@ pub async fn run_multi_provider(initial: &str) -> Result<(), ()> {
 
     let xai = jarvis_provider_xai::XaiFactory::default();
     #[cfg(feature = "integration-test-harness")]
-    let xai = if let Ok(url) = std::env::var("AGENT_VESPER_XAI_TEST_URL") {
-        if std::env::var("AGENT_VESPER_XAI_TEST_MODE").as_deref() == Ok("grok-session") {
+    let xai = if let Ok(url) = std::env::var("JARVIS_XAI_TEST_URL") {
+        if std::env::var("JARVIS_XAI_TEST_MODE").as_deref() == Ok("grok-session") {
             jarvis_provider_xai::XaiFactory::for_loopback_grok_session(&url)
         } else {
             jarvis_provider_xai::XaiFactory::for_loopback(&url)
@@ -3436,6 +3462,7 @@ pub async fn run_multi_provider(initial: &str) -> Result<(), ()> {
         },
     );
     let adapter = if full_harness_enabled() {
+        jarvis_config::JarvisPaths::initialize_environment().map_err(|_| ())?;
         let agent_config = jarvis_agent::AgentLoopConfig {
             provider_id: initial_id.clone(),
             provider_configuration: profile.provider_configuration.clone(),
@@ -3453,7 +3480,7 @@ pub async fn run_multi_provider(initial: &str) -> Result<(), ()> {
             // host boot. `None` = structurally identical legacy path.
             firewall: jarvis_policy::firewall::holder::shared(),
             // VRO-13 PR-4: the process-global sandbox route, resolved once
-            // at host boot from AGENT_VESPER_SANDBOX + [sandbox] scope
+            // at host boot from JARVIS_SANDBOX + [sandbox] scope
             // demand. `None` = no scope demand, byte-identical legacy path.
             sandbox: jarvis_harness::sandbox_backend::holder::shared(),
         };
@@ -3604,10 +3631,10 @@ pub async fn boot(provider: &str) -> Result<(), ()> {
     }
 }
 
-/// Resolves the provider token from `AGENT_VESPER_PROVIDER`, defaulting to
+/// Resolves the provider token from `JARVIS_PROVIDER`, defaulting to
 /// `glm` so the production adapter remains the default when unset.
 fn selected_provider_token() -> String {
-    std::env::var("AGENT_VESPER_PROVIDER").unwrap_or_else(|_| String::from("glm"))
+    std::env::var("JARVIS_PROVIDER").unwrap_or_else(|_| String::from("glm"))
 }
 
 /// Builds the active adapter's static capability index at the ACP composition

@@ -7,7 +7,10 @@ Run Box commands through Agent Vesper's `terminal` tool. Prefer the documented c
 Resolve one command runner before any Box operation:
 
 1. Check whether `box` already resolves in the runtime shell (`command -v box` on macOS/Linux or `Get-Command box` in PowerShell). If it does, use that command as-is, regardless of where Agent Vesper or Box CLI was installed.
-2. If it does not resolve, install and verify an isolated CLI under a writable, persistent Agent Vesper runtime directory. Prefer the current Agent Vesper home at `tools/box-cli`; `AGENT_VESPER_HOME` is optional, and Agent Vesper uses its platform default when it is unset (`~/.agent-vesper` on macOS/Linux and `%LOCALAPPDATA%\agent-vesper` on Windows).
+2. If it does not resolve, obtain explicit approval for a writable persistent,
+   user-owned tools directory. Do not read or install into another application's
+   private home. Native optional-dependency setup owns application-private setup;
+   these standalone examples require an explicitly selected directory.
 3. If that directory is not writable, ask for a writable persistent directory in the runtime. Do not assume Agent Vesper'ss source checkout, a global npm prefix, or a user home is writable. If a nonstandard existing CLI is not on `PATH`, ask for its executable path instead of scanning the machine.
 
 Only use `npm exec --prefix` after Agent Vesper installed and verified that exact local copy. Run each installation block below as one terminal call, record the verified absolute prefix it prints, and use that literal path in later calls. Never depend on a shell variable surviving a separate Agent Vesper terminal call, and never give the user an unverified `npm exec --prefix` command to run.
@@ -19,7 +22,7 @@ On macOS/Linux:
 ```bash
 node --version
 npm --version
-BOX_CLI_HOME="${AGENT_VESPER_HOME:-$HOME/.agent-vesper}/tools/box-cli"
+BOX_CLI_HOME="<APPROVED_ABSOLUTE_TOOLS_DIRECTORY>/box-cli"
 mkdir -p "$BOX_CLI_HOME"
 npm install --prefix "$BOX_CLI_HOME" @box/cli
 npm exec --prefix "$BOX_CLI_HOME" -- box --version
@@ -31,7 +34,7 @@ On Windows PowerShell:
 ```powershell
 node --version
 npm --version
-$boxCliHome = Join-Path $(if ($env:AGENT_VESPER_HOME) { $env:AGENT_VESPER_HOME } else { Join-Path $env:LOCALAPPDATA "agent-vesper" }) "tools\box-cli"
+$boxCliHome = Join-Path "<APPROVED_ABSOLUTE_TOOLS_DIRECTORY>" "box-cli"
 New-Item -ItemType Directory -Force -Path $boxCliHome | Out-Null
 npm install --prefix $boxCliHome @box/cli
 npm exec --prefix $boxCliHome -- box --version

@@ -19,14 +19,14 @@ fn native_rejections_are_safe_and_actionable_in_both_authentication_modes() {
         let mut process = ProcessHarness::spawn_with_environment(
             address,
             [
-                ("AGENT_VESPER_PROVIDER", "openai".into()),
-                ("AGENT_VESPER_OPENAI_TEST_MODE", mode.into()),
+                ("JARVIS_PROVIDER", "openai".into()),
+                ("JARVIS_OPENAI_TEST_MODE", mode.into()),
                 (
-                    "AGENT_VESPER_OPENAI_TEST_URL",
+                    "JARVIS_OPENAI_TEST_URL",
                     format!("http://{address}/responses"),
                 ),
-                ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-                ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+                ("JARVIS_FULL_HARNESS", "1".into()),
+                ("JARVIS_VRO_ENABLED", "0".into()),
             ],
         );
         let server = thread::spawn(move || {

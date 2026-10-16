@@ -9,7 +9,7 @@ metadata:
   vesper:
     tags: [agent, configuration, memory, skills, reasoning, acp]
 prerequisites:
-  commands: [agent-vesper-tui]
+  commands: [jarvis-tui]
 ---
 
 # Agent Vesper
@@ -20,10 +20,10 @@ the Vesper Reasoning Orchestrator (VRO).
 
 ## Binaries
 
-- `agent-vesper-tui` — interactive terminal UI (default way to work).
-- `agent-vesper-acp` — ACP v1 stdio server for Zed and other
+- `jarvis-tui` — interactive terminal UI (default way to work).
+- `jarvis-acp` — ACP v1 stdio server for Zed and other
   ACP-compatible editors. Optional non-interactive setup:
-  `agent-vesper-acp --setup`.
+  `jarvis-acp --setup`.
 
 ## Authentication
 
@@ -36,10 +36,10 @@ the Vesper Reasoning Orchestrator (VRO).
 
 ## Memory and skills layout
 
-- Project state: `<project>/.agent-vesper/` (per-project memory, sessions,
+- Project state: `<project>/.jarvis/` (per-project memory, sessions,
   checkpoints, cognition).
 - Cross-project global memory root: `~/.agent-vesper/memory/`
-  (override with `AGENT_VESPER_GLOBAL_MEMORY_ROOT`). Global skills are
+  (override with `JARVIS_GLOBAL_MEMORY_ROOT`). Global skills are
   appended after project-local ones; local slugs shadow global ones.
 - Skills live at `<root>/skills/<slug>.md`; resource directories sit next
   to the file at `<root>/skills/<slug>/`. Bundles (named skill groups) are

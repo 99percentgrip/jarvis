@@ -86,7 +86,7 @@ def run():
             startup.stdin, startup.stdout, startup.stderr = in_handle, out_handle, out_handle
             command = ctypes.create_unicode_buffer(subprocess.list2cmdline([
                 executable, '--exact', 'host_resources::native_backend::tests::windows_job_fixture', '--nocapture']))
-            env = dict(os.environ, AGENT_VESPER_WINDOWS_JOB_FIXTURE='1', TEMP=str(root), TMP=str(root))
+            env = dict(os.environ, JARVIS_WINDOWS_JOB_FIXTURE='1', TEMP=str(root), TMP=str(root))
             environment = ctypes.create_unicode_buffer('\0'.join(f'{key}={value}' for key, value in sorted(env.items())) + '\0\0')
             try:
                 check(kernel.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info)))

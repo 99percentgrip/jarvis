@@ -2,7 +2,7 @@
 from pathlib import Path
 import sys
 import tempfile
-from settings_pty import Host
+from settings_pty import Host, private_data_root
 
 
 def run(binary):
@@ -20,8 +20,8 @@ def run(binary):
             # Structurally avoids the confirmed setup branch on every platform.
             host.choose("Cancel")
             host.wait("Voice conversation · current ON")
-            assert not (root / "data/agent-vesper/voice-tools").exists()
-            assert not (root / "data/agent-vesper/voice-venv").exists()
+            assert not (private_data_root(root) / "voice-tools").exists()
+            assert not (private_data_root(root) / "voice-venv").exists()
             host.key("\x1b")
             host.key("\x1b")
             host.choose("Discard changes")

@@ -20,11 +20,27 @@ async fn main() -> ExitCode {
     if let Some(code) = handle_meta_flags() {
         return code;
     }
+    if jarvis_config::JarvisPaths::validate_environment().is_err() {
+        eprintln!("Private application storage ownership refused; no legacy state was imported.");
+        return ExitCode::FAILURE;
+    }
     if let Some(code) = handle_native_auth_flags().await {
         return code;
     }
     if let Some(code) = handle_auth_flags() {
         return code;
+    }
+    if std::env::current_dir()
+        .ok()
+        .and_then(|root| {
+            jarvis_security::validate_new_or_owned_directory(&root.join(".jarvis")).ok()
+        })
+        .is_none()
+    {
+        eprintln!(
+            "Project-private storage is unowned or redirected; no existing data was adopted."
+        );
+        return ExitCode::FAILURE;
     }
     configure_stderr_tracing();
     // VRO-13 PR-2: resolve the process-global firewall exactly once, before
@@ -33,9 +49,9 @@ async fn main() -> ExitCode {
     let _ = jarvis_policy::firewall::holder::install_from_env();
     // VRO-13 PR-4: resolve the process-global sandbox route once, before
     // any session or engine can observe it. Same first-resolution-wins
-    // contract as the firewall: `AGENT_VESPER_SANDBOX=docker|namespaces|off`
+    // contract as the firewall: `JARVIS_SANDBOX=docker|namespaces|off`
     // plus the project scope's `[sandbox]` demand from
-    // `.agent-vesper/config.toml`. No demand → holder stays `None` and the
+    // `.jarvis/config.toml`. No demand → holder stays `None` and the
     // executor keeps the byte-identical legacy path.
     let _ = jarvis_harness::sandbox_backend::holder::install_from_env();
     // VRO-14 PR-5: resolve the opt-in [web] tool scope once at boot —
@@ -50,7 +66,7 @@ async fn main() -> ExitCode {
     // sees scopes. Resolution failure degrades gracefully (un-scoped
     // defaults), never blocking stdio protocol startup.
     let scope_stamp_policy =
-        if std::env::var("AGENT_VESPER_ENABLE_SCOPE_STAMP").is_ok_and(|value| value == "1") {
+        if std::env::var("JARVIS_ENABLE_SCOPE_STAMP").is_ok_and(|value| value == "1") {
             jarvis_agent::vro::scope::StampPolicy::Write
         } else {
             jarvis_agent::vro::scope::StampPolicy::ReadOnly
@@ -108,7 +124,7 @@ fn print_help() {
     eprintln!();
     eprintln!("OPTIONS:");
     eprintln!(
-        "        --provider <glm|zai|lmstudio|openai|xai> Initial provider (default: AGENT_VESPER_PROVIDER or glm)"
+        "        --provider <glm|zai|lmstudio|openai|xai> Initial provider (default: JARVIS_PROVIDER or glm)"
     );
     eprintln!(
         "                                          All adapters stay registered; switch via the footer Provider picker"
@@ -123,16 +139,12 @@ fn print_help() {
     eprintln!(
         "    LMSTUDIO_API_KEY                     LM Studio API key (optional; local servers usually need none)"
     );
+    eprintln!("    JARVIS_PROVIDER                Default provider (glm|zai|lmstudio|openai|xai)");
+    eprintln!("    JARVIS_LOG                     Tracing filter (default: warn, stderr only)");
     eprintln!(
-        "    AGENT_VESPER_PROVIDER                Default provider (glm|zai|lmstudio|openai|xai)"
+        "    JARVIS_ENABLE_CHECKPOINTS      Opt in to /checkpoint, /rollback, /undo, /sessions, /lineage (default: off)"
     );
-    eprintln!(
-        "    AGENT_VESPER_LOG                     Tracing filter (default: warn, stderr only)"
-    );
-    eprintln!(
-        "    AGENT_VESPER_ENABLE_CHECKPOINTS      Opt in to /checkpoint, /rollback, /undo, /sessions, /lineage (default: off)"
-    );
-    eprintln!("    AGENT_VESPER_VRO_ENABLED=1           Opt in to reasoning orchestration (VRO)");
+    eprintln!("    JARVIS_VRO_ENABLED=1           Opt in to reasoning orchestration (VRO)");
     eprintln!(
         "    --setup                               Store the selected provider API key without printing it"
     );
@@ -160,7 +172,7 @@ fn print_help() {
 async fn handle_native_auth_flags() -> Option<ExitCode> {
     use jarvis_provider::ProviderCredentialPort;
     use std::sync::Arc;
-    let provider = provider_from_argv().or_else(|| std::env::var("AGENT_VESPER_PROVIDER").ok());
+    let provider = provider_from_argv().or_else(|| std::env::var("JARVIS_PROVIDER").ok());
     let (label, api_key_env, port): (&str, &str, Arc<dyn ProviderCredentialPort>) =
         match provider.as_deref() {
             Some("openai") => (
@@ -286,7 +298,7 @@ fn handle_auth_flags() -> Option<ExitCode> {
 ///
 /// Returns the selected provider token so the composition boundary can resolve
 /// it through the same `boot` dispatch the environment-driven path uses. When
-/// absent the caller falls back to `AGENT_VESPER_PROVIDER` (default `glm`).
+/// absent the caller falls back to `JARVIS_PROVIDER` (default `glm`).
 /// This stays provider-agnostic; unknown values are rejected by `boot`.
 fn provider_from_argv() -> Option<String> {
     let mut args = std::env::args().skip(1);
@@ -302,8 +314,7 @@ fn provider_from_argv() -> Option<String> {
 }
 
 fn configure_stderr_tracing() {
-    let filter =
-        EnvFilter::try_from_env("AGENT_VESPER_LOG").unwrap_or_else(|_| EnvFilter::new("warn"));
+    let filter = EnvFilter::try_from_env("JARVIS_LOG").unwrap_or_else(|_| EnvFilter::new("warn"));
     let _ = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .with_writer(std::io::stderr)

@@ -6,6 +6,8 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `runtime-identity-stage3-prd.md` owns runtime isolation acceptance and the Stage 4 boundary.
+
 - `rust-identity-stage2-prd.md` owns the authorized Rust workspace/executable migration and protected-merge acceptance; architecture/foundation children own its mapping and evidence.
 
 - `identity-stage1-prd.md` owns the authorized first-party identity architecture,
@@ -283,6 +285,8 @@ Own durable project documentation and evidence-backed engineering records.
   form on a verified vocabulary-free fixture.
 
 ## Local Contracts
+
+- `runtime-identity-stage3-prd.md` owns Stage 3 runtime ownership acceptance. Architecture/foundation children own its inventory, safety decisions, verification and exact-head/integrated evidence.
 
 - Separate confirmed current behavior from inference and proposed architecture.
 - Cite repository-relative source paths, symbols, and line ranges when practical.

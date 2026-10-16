@@ -158,9 +158,9 @@ def run(binary, python, voice="am_michael", mode="off"):
                         os.link(source, destination)
             host = settings_pty.Host(str(Path(binary).resolve()), root, dict(
                 PATH=str(commands) + os.pathsep + os.environ['PATH'],
-                VESPER_PYTHON_PATH=python, PYTHONPATH=str(root), VOICE_FIXTURE_ROOT=str(root),
-                TMPDIR=str(root / 'audio'), AGENT_VESPER_VOICE_VENV=str(root / 'voice-venv'),
-                AGENT_VESPER_PROVIDER='lmstudio', NO_PROXY='127.0.0.1,localhost',
+                JARVIS_PYTHON_PATH=python, PYTHONPATH=str(root), VOICE_FIXTURE_ROOT=str(root),
+                TMPDIR=str(root / 'audio'), JARVIS_VOICE_VENV=str(root / 'voice-venv'),
+                JARVIS_PROVIDER='lmstudio', NO_PROXY='127.0.0.1,localhost',
             ))
             try:
                 host.wait('Start coding', timeout=25)

@@ -29,6 +29,13 @@ continuation state, and provider error mapping without changing the shared agent
 
 ## Local Contracts
 
+- Production credential operations validate application ownership before creating
+  an operation lock. Unowned vaults refuse without new files or changed bytes;
+  owned records retain private, reusable locks. Only explicit unit fixture stores
+  bypass that production preflight; Cargo features cannot activate the fixture.
+- Stage 3 subscription login/refresh remains inactive pending independent
+  authorization. Retained protocol evidence below does not activate that path.
+
 - Grok-session surfaces exclude Global/API-key-only hosted tools, native
   compaction and WebSocket controls. Stale persisted values never cross that
   authentication/billing boundary.

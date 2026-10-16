@@ -1522,7 +1522,12 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // build-time link. Default-off `ort`/`mock-synthesis`
             // features; the crate compiles bare.
             "jarvis-voice-kokoro",
-            BTreeSet::from(["jarvis-domain", "jarvis-security", "jarvis-voice"]),
+            BTreeSet::from([
+                "jarvis-domain",
+                "jarvis-security",
+                "jarvis-voice",
+                "jarvis-config",
+            ]),
         ),
         (
             // VRO-14 PR-3: the sandboxed fetch route. This is the ONE
@@ -1591,6 +1596,7 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // behavior stays in this leaf crate and does not enter shared runtime.
             "jarvis-provider-xai",
             BTreeSet::from([
+                "jarvis-config",
                 "jarvis-auth",
                 "jarvis-domain",
                 "jarvis-provider",
@@ -1608,7 +1614,7 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
         ),
         (
             "jarvis-sessions",
-            BTreeSet::from(["jarvis-config", "jarvis-domain"]),
+            BTreeSet::from(["jarvis-security", "jarvis-config", "jarvis-domain"]),
         ),
         (
             "jarvis-acp-protocol",
@@ -1623,6 +1629,7 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // (vesper-security) before spawning.
             "jarvis-agent",
             BTreeSet::from([
+                "jarvis-config",
                 "jarvis-domain",
                 "jarvis-provider",
                 "jarvis-runtime",
@@ -1640,6 +1647,7 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // SandboxBackendPort, so neither host touches the backend type.
             "jarvis-harness",
             BTreeSet::from([
+                "jarvis-security",
                 "jarvis-agent",
                 "jarvis-policy",
                 "jarvis-checkpoints",
@@ -1672,6 +1680,7 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
         (
             "jarvis-acp",
             BTreeSet::from([
+                "jarvis-security",
                 "jarvis-provider-openai",
                 "jarvis-provider-xai",
                 "jarvis-acp-protocol",
@@ -1697,6 +1706,7 @@ fn allowed_dependencies() -> BTreeMap<&'static str, BTreeSet<&'static str>> {
             // pure; the binary owns the spawn/drain plumbing.
             "jarvis-tui",
             BTreeSet::from([
+                "jarvis-config",
                 "jarvis-provider-openai",
                 "jarvis-provider-xai",
                 "jarvis-agent",
@@ -1968,6 +1978,10 @@ fn collect_source_files(path: &Path, output: &mut Vec<PathBuf>) -> Result<(), St
 }
 
 fn verify() -> Result<(), String> {
+    run(
+        if cfg!(windows) { "python" } else { "python3" },
+        &["skills/skills/grounded-citations/scripts/test_runtime_isolation.py"],
+    )?;
     let commands: &[&[&str]] = &[
         &["fmt", "--all", "--check"],
         &[

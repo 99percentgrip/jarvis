@@ -334,7 +334,7 @@ async fn redirects_never_forward_authentication_requests() {
 async fn hosted_device_flow_persists_large_subscription_record() {
     assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
     assert_eq!(
-        std::env::var("VESPER_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
+        std::env::var("JARVIS_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
         Ok("isolated-hosted-fixture")
     );
     use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};

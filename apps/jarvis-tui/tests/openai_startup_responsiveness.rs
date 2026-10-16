@@ -199,9 +199,10 @@ fn launch(
     xai_endpoint: Option<&str>,
 ) -> io::Result<TuiProcess> {
     use std::os::unix::fs::PermissionsExt;
+    jarvis_security::prepare_owned_directory(home)?;
     for provider in ["openai", "xai"] {
         let path = home.join(format!("{provider}-credentials.json"));
-        let vault = serde_json::json!({"credentials": {
+        let vault = serde_json::json!({"application": "99percentgrip.jarvis", "credentials": {
             provider: {"native-auth": "{\"mode\":\"signed-out\"}"}
         }});
         std::fs::write(&path, vault.to_string())?;
@@ -223,23 +224,23 @@ fn launch(
         .arg("missing-openai-startup-session")
         .current_dir(home)
         .env("TERM", "xterm-256color")
-        .env("AGENT_VESPER_PROVIDER", "openai")
-        .env("AGENT_VESPER_CREDENTIALS_PATH", &glm_vault)
-        .env("AGENT_VESPER_HOME", home)
-        .env("AGENT_VESPER_OPENAI_TEST_URL", endpoint)
+        .env("JARVIS_PROVIDER", "openai")
+        .env("JARVIS_CREDENTIALS_PATH", &glm_vault)
+        .env("JARVIS_HOME", home)
+        .env("JARVIS_OPENAI_TEST_URL", endpoint)
         .env(
-            "AGENT_VESPER_OPENAI_CREDENTIALS_PATH",
+            "JARVIS_OPENAI_CREDENTIALS_PATH",
             home.join("openai-credentials.json"),
         )
         .env(
-            "AGENT_VESPER_XAI_CREDENTIALS_PATH",
+            "JARVIS_XAI_CREDENTIALS_PATH",
             home.join("xai-credentials.json"),
         )
         .env("XDG_CONFIG_HOME", home.join("config"))
         .env("XDG_DATA_HOME", home.join("data"))
         .env("XDG_STATE_HOME", home.join("state"))
         .env(
-            "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+            "JARVIS_GLOBAL_COGNITION_ROOT",
             home.join("global-cognition"),
         )
         .env("HOME", home)
@@ -247,7 +248,7 @@ fn launch(
         .stdout(Stdio::from(stdout))
         .stderr(Stdio::from(slave));
     if let Some(endpoint) = xai_endpoint {
-        command.env("AGENT_VESPER_XAI_TEST_URL", endpoint);
+        command.env("JARVIS_XAI_TEST_URL", endpoint);
     }
     let child = command.spawn()?;
     let output = Arc::new(Mutex::new(Vec::new()));
@@ -498,10 +499,10 @@ fn native_release_admission_does_not_wait_for_account_model_discovery() {
             .write_all(b"release patch\r")
             .expect("native release input");
         // There is deliberately no Git repository or release authority in this
-        // private fixture. Native admission must refuse that immediately, even
+        // private fixture. The dormant release boundary must refuse immediately, even
         // while the unrelated model endpoint remains blocked.
         assert!(
-            wait_for(&output, b"git-common-dir", Duration::from_secs(4)),
+            wait_for(&output, b"release-disabled", Duration::from_secs(4)),
             "native release was held behind account discovery:\n{}",
             screen(&output)
         );

@@ -57,26 +57,17 @@ pub(crate) struct DispatchAuth {
 
 impl Default for Credentials {
     fn default() -> Self {
-        let path = std::env::var_os("AGENT_VESPER_OPENAI_CREDENTIALS_PATH")
+        let path = std::env::var_os("JARVIS_OPENAI_CREDENTIALS_PATH")
             .map(PathBuf::from)
             .or_else(|| {
-                std::env::var_os("XDG_CONFIG_HOME")
-                    .map(|p| PathBuf::from(p).join("agent-vesper/openai-credentials.json"))
+                jarvis_config::JarvisPaths::from_environment()
+                    .ok()
+                    .map(|p| p.config.join("openai-credentials.json"))
             })
-            .or_else(|| {
-                std::env::var_os("APPDATA")
-                    .map(|p| PathBuf::from(p).join("agent-vesper/openai-credentials.json"))
-            })
-            .unwrap_or_else(|| {
-                std::env::var_os("HOME")
-                    .or_else(|| std::env::var_os("USERPROFILE"))
-                    .map(PathBuf::from)
-                    .unwrap_or_default()
-                    .join(".config/agent-vesper/openai-credentials.json")
-            });
+            .unwrap_or_default();
         Self {
             lock_path: path.with_extension("lock"),
-            store: SecureCredentialStore::new("agent-vesper", path),
+            store: SecureCredentialStore::new("99percentgrip.jarvis", path),
             lock: LOCK.get_or_init(|| Arc::new(Mutex::new(()))).clone(),
             #[cfg(test)]
             test_store: None,
@@ -104,6 +95,15 @@ impl Credentials {
     // TUI and ACP cannot rotate the same refresh token concurrently.
     fn try_process_lock(&self) -> Result<Option<std::fs::File>, CredentialError> {
         #[cfg(test)]
+        let needs_owner_preflight = self.test_store.is_none();
+        #[cfg(not(test))]
+        let needs_owner_preflight = true;
+        if needs_owner_preflight {
+            self.store
+                .prepare_operation_storage()
+                .map_err(|_| CredentialError::Unavailable)?;
+        }
+        #[cfg(test)]
         let path = self
             .test_store
             .as_ref()
@@ -112,15 +112,9 @@ impl Credentials {
         #[cfg(not(test))]
         let path = self.lock_path.clone();
         let parent = path.parent().ok_or(CredentialError::Unavailable)?;
-        if !parent.exists() {
-            std::fs::create_dir_all(parent).map_err(|_| CredentialError::Unavailable)?;
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))
-                    .map_err(|_| CredentialError::Unavailable)?;
-            }
-        }
+        jarvis_security::validate_private_path(&path).map_err(|_| CredentialError::Unavailable)?;
+        jarvis_security::prepare_private_directory(parent)
+            .map_err(|_| CredentialError::Unavailable)?;
         if std::fs::symlink_metadata(&path).is_ok_and(|metadata| !metadata.is_file()) {
             return Err(CredentialError::Unavailable);
         }
@@ -409,6 +403,9 @@ impl Credentials {
                 account: None,
             });
         }
+        if !cfg!(test) {
+            return Err(CredentialError::Unavailable);
+        }
         let mut saved = tokens(&value)?;
         let expiry = jwt(saved.access_token()).and_then(|v| v.get("exp").and_then(Value::as_u64));
         let now = SystemTime::now()
@@ -505,9 +502,82 @@ fn account(tokens: &SubscriptionTokens) -> Result<SecretValue, CredentialError> 
     Ok(SecretValue::new(value))
 }
 
+#[cfg(test)]
+mod ownership_tests {
+    use super::*;
+
+    #[test]
+    fn owned_vault_operation_lock_preserves_credentials_and_stays_private() {
+        let root =
+            jarvis_security::private_temporary_directory("credential-lease-fixture-").unwrap();
+        let path = root.path().join("credentials.json");
+        let bytes = br#"{"application":"99percentgrip.jarvis","credentials":{}}"#;
+        jarvis_security::write_private_atomic(&path, bytes).unwrap();
+        let credentials = Credentials {
+            store: SecureCredentialStore::new("99percentgrip.jarvis", path.clone()),
+            lock_path: path.with_extension("lock"),
+            lock: Arc::new(Mutex::new(())),
+            test_store: None,
+        };
+        let lease = credentials.try_process_lock().unwrap().unwrap();
+        jarvis_security::validate_private_file(&path.with_extension("lock")).unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+        drop(lease);
+        assert!(credentials.try_process_lock().unwrap().is_some());
+    }
+
+    #[test]
+    fn unowned_vault_refuses_before_creating_an_operation_lock() {
+        let root =
+            jarvis_security::private_temporary_workspace("credential-ownership-fixture-").unwrap();
+        let path = root.path().join("credentials.json");
+        let bytes = br#"{"credentials":{"openai":{"native-auth":"synthetic-foreign-record"}}}"#;
+        std::fs::write(&path, bytes).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        }
+        let credentials = Credentials {
+            store: SecureCredentialStore::new("99percentgrip.jarvis", path.clone()),
+            lock_path: path.with_extension("lock"),
+            lock: Arc::new(Mutex::new(())),
+            test_store: None,
+        };
+        assert!(credentials.try_process_lock().is_err());
+        assert!(!path.with_extension("lock").exists());
+        assert!(!root.path().join(".jarvis-owner").exists());
+        assert_eq!(std::fs::read(path).unwrap(), bytes);
+        assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 1);
+    }
+}
+
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn operation_lock_preserves_existing_user_directory_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+        let fixture = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(fixture.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+        let credentials = Credentials {
+            test_store: Some(jarvis_auth::PrivateFileCredentialStore::new(
+                fixture.path().join("credentials.json"),
+            )),
+            lock: Arc::new(Mutex::new(())),
+            ..Credentials::default()
+        };
+        let _lease = credentials.try_process_lock().unwrap().unwrap();
+        assert_eq!(
+            std::fs::metadata(fixture.path())
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o755
+        );
+    }
 
     #[tokio::test]
     async fn scoped_api_key_has_api_metadata_without_overriding_selected_subscription_or_logout() {
@@ -622,7 +692,7 @@ mod tests {
 pub(crate) async fn verify_hosted_subscription_persistence(result: SubscriptionTokens) {
     assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
     assert_eq!(
-        std::env::var("VESPER_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
+        std::env::var("JARVIS_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
         Ok("isolated-hosted-fixture")
     );
     let temporary = tempfile::tempdir().unwrap();

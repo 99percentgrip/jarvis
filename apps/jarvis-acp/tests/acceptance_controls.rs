@@ -13,14 +13,14 @@ fn native_acceptance_controls_persist_only_explicit_activation() {
     let mut process = ProcessHarness::spawn_with_environment(
         listener.local_addr().unwrap(),
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 cognition.path().display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 global.path().display().to_string(),
             ),
         ],
@@ -63,7 +63,7 @@ fn native_acceptance_controls_persist_only_explicit_activation() {
         "{text}"
     );
     // Native opt-in no longer requires a manually entered PRD path.
-    std::fs::remove_file(root.join(".agent-vesper/acceptance-settings.json")).unwrap();
+    std::fs::remove_file(root.join(".jarvis/acceptance-settings.json")).unwrap();
     process.prompt(8, &session, "/settings acceptance on", "automatic-on");
     assert!(process.response(8).get("error").is_none());
     let automatic = jarvis_harness::acceptance_settings::AcceptanceSettings::load(&root).unwrap();

@@ -159,20 +159,11 @@ pub async fn query_startup_view(
 }
 
 /// Resolve the harness-owned voice backend venv root. Precedence:
-/// `$AGENT_VESPER_VOICE_VENV` → `$XDG_DATA_HOME/agent-vesper/voice-venv` →
+/// `$JARVIS_VOICE_VENV` → `$XDG_DATA_HOME/agent-vesper/voice-venv` →
 /// native application data. Existing macOS legacy environments are reused.
 pub fn voice_venv_root() -> std::path::PathBuf {
-    if let Some(root) = std::env::var_os("AGENT_VESPER_VOICE_VENV") {
+    if let Some(root) = std::env::var_os("JARVIS_VOICE_VENV") {
         return std::path::PathBuf::from(root);
-    }
-    #[cfg(target_os = "macos")]
-    if std::env::var_os("XDG_DATA_HOME").is_none()
-        && let Some(home) = std::env::var_os("HOME")
-    {
-        let legacy = std::path::PathBuf::from(home).join(".local/share/agent-vesper/voice-venv");
-        if platform_voice::venv_python(&legacy).is_file() {
-            return legacy;
-        }
     }
     platform_voice::data_root()
         .map(|root| root.join("voice-venv"))

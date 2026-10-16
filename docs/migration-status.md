@@ -1,5 +1,19 @@
 # Migration Status
 
+## Independent runtime migration — 2026-10-15
+
+Stage 3 runtime isolation is implemented on the dedicated feature branch and
+has passed local verification and awaits protected exact-head CI/integration. No completion or independent
+release is claimed until the exact-head and post-merge matrices pass.
+See the [current PRD](runtime-identity-stage3-prd.md) and
+[execution evidence](foundation/2026-10-15-runtime-identity-stage3.md).
+Independent subscription/Google authorization remains securely inactive pending
+validated paths. Original source releases and the inherited records below remain
+provenance; their live-authentication/release claims do not establish current
+independent-product capability or authorize release activity.
+
+## Inherited source implementation records
+
 Last updated: 2026-09-26
 
 VRO-18 native xAI provider is **AUDIT 1 REPAIRED — RELEASED IN v0.24.1**. The

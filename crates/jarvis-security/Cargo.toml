@@ -9,6 +9,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+tempfile.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
@@ -17,6 +18,14 @@ zeroize.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+# Already locked; safe effective-user observation for private directory ownership.
+rustix = { version = "=1.1.4", features = ["process"] }
+
+[target.'cfg(windows)'.dependencies]
+# Stage 3 security requirement: native owner/DACL checks without first-party unsafe code.
+windows-permissions = "=0.2.4"
 
 [lints]
 workspace = true

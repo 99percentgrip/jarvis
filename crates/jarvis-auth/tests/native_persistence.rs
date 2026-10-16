@@ -10,7 +10,7 @@ const NEIGHBOR: CredentialId = CredentialId::new("neighbor", "api-key");
 fn require_hosted_fixture() {
     assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
     assert_eq!(
-        std::env::var("VESPER_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
+        std::env::var("JARVIS_NATIVE_CREDENTIAL_ACCEPTANCE").as_deref(),
         Ok("isolated-hosted-fixture")
     );
     assert!(matches!(
@@ -50,6 +50,10 @@ fn hosted_native_credential_persistence() {
     let store = SecureCredentialStore::new(service, vault.clone());
     let cleanup = Cleanup(store.clone());
     assert!(store.load(ID).unwrap().is_none());
+    assert!(
+        !vault.parent().unwrap().exists(),
+        "empty native discovery must not allocate disk state"
+    );
     store.store(NEIGHBOR, "synthetic-neighbor-key").unwrap();
     // Existing small native API keys remain readable before and after a large
     // record rotation through the same public production store.
@@ -70,9 +74,9 @@ fn hosted_native_credential_persistence() {
                 "hosted_native_credential_reload_child",
                 "--show-output",
             ])
-            .env("VESPER_CREDENTIAL_FIXTURE_SERVICE", service)
-            .env("VESPER_CREDENTIAL_FIXTURE_VAULT", &vault)
-            .env("VESPER_CREDENTIAL_FIXTURE_PHASE", phase)
+            .env("JARVIS_CREDENTIAL_FIXTURE_SERVICE", service)
+            .env("JARVIS_CREDENTIAL_FIXTURE_VAULT", &vault)
+            .env("JARVIS_CREDENTIAL_FIXTURE_PHASE", phase)
             .output()
             .unwrap();
         assert!(
@@ -99,13 +103,13 @@ fn hosted_native_credential_persistence() {
 #[ignore = "spawned only by the explicit hosted native persistence fixture"]
 fn hosted_native_credential_reload_child() {
     require_hosted_fixture();
-    let service = std::env::var("VESPER_CREDENTIAL_FIXTURE_SERVICE").unwrap();
+    let service = std::env::var("JARVIS_CREDENTIAL_FIXTURE_SERVICE").unwrap();
     assert!(service.starts_with("vesper-ci-credential-"));
     let suffix = service.strip_prefix("vesper-ci-credential-").unwrap();
     assert_eq!(suffix.len(), 32);
     assert!(suffix.bytes().all(|byte| byte.is_ascii_hexdigit()));
-    let vault = PathBuf::from(std::env::var_os("VESPER_CREDENTIAL_FIXTURE_VAULT").unwrap());
-    let phase = std::env::var("VESPER_CREDENTIAL_FIXTURE_PHASE").unwrap();
+    let vault = PathBuf::from(std::env::var_os("JARVIS_CREDENTIAL_FIXTURE_VAULT").unwrap());
+    let phase = std::env::var("JARVIS_CREDENTIAL_FIXTURE_PHASE").unwrap();
     assert!(matches!(phase.as_str(), "first" | "rotated"));
     let store = SecureCredentialStore::new(Box::leak(service.into_boxed_str()), vault);
     assert_eq!(

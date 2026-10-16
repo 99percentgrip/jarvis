@@ -169,7 +169,7 @@ struct ActiveReleaseWorker {
 static ACTIVE_RELEASE_WORKERS: OnceLock<Mutex<HashMap<String, ActiveReleaseWorker>>> =
     OnceLock::new();
 
-// Only the integration-only ACP test driver can set this process-local seam.
+// Only explicitly invoked, non-shipping integration hosts set this process-local seam.
 // It removes host-pressure admission thresholds so the test can hold a fake
 // Cargo child deterministically on constrained CI machines. The test-support
 // governor uses a synthetic snapshot so shared-runner procfs/cgroup/disk timing
@@ -181,6 +181,17 @@ static PROCESS_TEST_PERMISSIVE_RESOURCE_POLICY: AtomicBool = AtomicBool::new(fal
 #[cfg(feature = "test-support")]
 pub fn enable_permissive_resource_governor_for_process_tests() {
     PROCESS_TEST_PERMISSIVE_RESOURCE_POLICY.store(true, Ordering::Release);
+}
+
+pub(crate) fn controlled_process_fixture_enabled() -> bool {
+    #[cfg(feature = "test-support")]
+    {
+        PROCESS_TEST_PERMISSIVE_RESOURCE_POLICY.load(Ordering::Acquire)
+    }
+    #[cfg(not(feature = "test-support"))]
+    {
+        false
+    }
 }
 
 #[cfg(any(test, feature = "test-support"))]
@@ -1193,7 +1204,7 @@ impl ReleaseExecutionPort for NativeReleaseExecutor {
             .release_version
             .as_deref()
             .ok_or_else(|| RrcError::Invalid("published version missing".into()))?;
-        let pr = std::env::var("AGENT_VESPER_REGISTRY_PR")
+        let pr = std::env::var("JARVIS_REGISTRY_PR")
             .ok()
             .map(|s| s.parse::<u64>())
             .transpose()
@@ -5842,8 +5853,8 @@ pub(crate) mod tests {
             .arg(LIFECYCLE_TEST_NAME)
             .arg("--exact")
             .arg("--nocapture")
-            .env("VESPER_RRC_LIFECYCLE_MODE", mode)
-            .env("VESPER_RRC_LIFECYCLE_ROOT", root)
+            .env("JARVIS_RRC_LIFECYCLE_MODE", mode)
+            .env("JARVIS_RRC_LIFECYCLE_ROOT", root)
             .spawn()
             .expect("spawn lifecycle fixture")
     }
@@ -5891,9 +5902,9 @@ pub(crate) mod tests {
 
     #[test]
     fn release_worker_cancel_restart_process_acceptance() {
-        if let Ok(mode) = std::env::var("VESPER_RRC_LIFECYCLE_MODE") {
+        if let Ok(mode) = std::env::var("JARVIS_RRC_LIFECYCLE_MODE") {
             let root = PathBuf::from(
-                std::env::var_os("VESPER_RRC_LIFECYCLE_ROOT").expect("lifecycle fixture root"),
+                std::env::var_os("JARVIS_RRC_LIFECYCLE_ROOT").expect("lifecycle fixture root"),
             );
             run_lifecycle_child(&mode, &root);
             return;
@@ -5917,8 +5928,8 @@ pub(crate) mod tests {
                 &executable,
                 &args,
                 &[
-                    ("VESPER_RRC_LIFECYCLE_MODE", "leader"),
-                    ("VESPER_RRC_LIFECYCLE_ROOT", &root_text),
+                    ("JARVIS_RRC_LIFECYCLE_MODE", "leader"),
+                    ("JARVIS_RRC_LIFECYCLE_ROOT", &root_text),
                 ],
             )
         });

@@ -98,6 +98,7 @@ pub trait SessionWriter: Send + Sync {
 /// Concrete transactional Agent Vesper filesystem writer.
 #[derive(Clone)]
 pub struct VesperSessionWriter {
+    require_owner: bool,
     root: PathBuf,
     source: SessionSource,
     bounds: WriteBounds,
@@ -130,6 +131,7 @@ impl VesperSessionWriter {
         }
         let bounds = bounds.validate()?;
         Ok(Self {
+            require_owner: false,
             root,
             source,
             bounds,
@@ -137,6 +139,18 @@ impl VesperSessionWriter {
             write_locks: Arc::new(Mutex::new(BTreeMap::new())),
             temp_counter: Arc::new(AtomicU64::new(0)),
         })
+    }
+
+    /// Application runtime writer: empty roots are initialized, unowned records refuse.
+    /// Construction remains I/O-free; ownership is checked on every write.
+    pub fn new_owned(
+        root: PathBuf,
+        source: SessionSource,
+        bounds: WriteBounds,
+    ) -> Result<Self, SessionStoreError> {
+        let mut writer = Self::new(root, source, bounds)?;
+        writer.require_owner = true;
+        Ok(writer)
     }
 
     #[must_use]
@@ -207,6 +221,7 @@ impl SessionWriter for VesperSessionWriter {
 
             let root = writer.root.clone();
             let bounds = writer.bounds;
+            let require_owner = writer.require_owner;
             let pid = std::process::id();
             let sequence = writer.temp_counter.fetch_add(1, Ordering::Relaxed);
 
@@ -217,9 +232,9 @@ impl SessionWriter for VesperSessionWriter {
                     &stem,
                     &session_bytes,
                     &sidecar_bytes,
-                    pid,
-                    sequence,
+                    (pid, sequence),
                     bounds,
+                    require_owner,
                 )
             })
             .await
@@ -234,10 +249,17 @@ fn store_sync(
     stem: &str,
     session_bytes: &[u8],
     sidecar_bytes: &[u8],
-    pid: u32,
-    sequence: u64,
+    temporary_identity: (u32, u64),
     bounds: WriteBounds,
+    require_owner: bool,
 ) -> Result<WriteOutcome, SessionStoreError> {
+    let (pid, sequence) = temporary_identity;
+    if require_owner {
+        if !root.parent().is_some_and(Path::is_dir) {
+            return Err(SessionStoreError::PathEscapesRoot);
+        }
+        jarvis_security::prepare_owned_directory(root)?;
+    }
     // The configured root is the only directory this writer may create, and it
     // is created non-recursively so arbitrary nested paths are never invented.
     match fs::create_dir(root) {

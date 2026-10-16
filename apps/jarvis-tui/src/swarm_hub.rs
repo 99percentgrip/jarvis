@@ -94,7 +94,7 @@ mod tests {
         let mut hub = SwarmHub::new(SwarmSettingsDraft::open(root.path()).unwrap());
         hub.change();
         assert!(hub.draft.settings.enabled);
-        assert!(!root.path().join(".agent-vesper").exists());
+        assert!(!root.path().join(".jarvis").exists());
         let mut terminal =
             ratatui::Terminal::new(ratatui::backend::TestBackend::new(100, 24)).unwrap();
         terminal

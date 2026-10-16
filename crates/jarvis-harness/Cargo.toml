@@ -7,6 +7,7 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
 base64.workspace = true
 command-group.workspace = true
 fs2 = "=0.4.3"

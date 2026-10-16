@@ -99,6 +99,9 @@ struct Claims {
 
 impl NativeAuthClient {
     pub(crate) fn production() -> Result<Self, AuthError> {
+        if !cfg!(test) {
+            return Err(AuthError::Protocol);
+        }
         Self::new(ISSUER)
     }
 

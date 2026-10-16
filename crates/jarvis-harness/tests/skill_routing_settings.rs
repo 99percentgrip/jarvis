@@ -88,7 +88,7 @@ fn malformed_preferences_cannot_reenable_disabled_skills() {
 fn settings_symlinks_never_write_outside_workspace() {
     let root = tempfile::tempdir().unwrap();
     let outside = tempfile::tempdir().unwrap();
-    std::os::unix::fs::symlink(outside.path(), root.path().join(".agent-vesper")).unwrap();
+    std::os::unix::fs::symlink(outside.path(), root.path().join(".jarvis")).unwrap();
     assert!(settings::command(root.path(), "save mode enhanced").is_err());
     assert_eq!(std::fs::read_dir(outside.path()).unwrap().count(), 0);
 }
