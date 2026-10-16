@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Windows fixture explicit owner-rights ACE corrected by replacement DACL; local proof passed; fresh native thirteen-check integration pending",
+  "status": "Native Windows installer passed DACL correction; provider-lock ownership correction passed focused red/green, full verify, MSRV, builds and audit/deny; fresh exact-head integration pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -55,7 +55,7 @@
       ],
       "writers": "SecureCredentialStore; provider operation locks",
       "consumers": "GLM, OpenAI, xAI and both LM Studio host adapters",
-      "verification": "runtime_ownership; runtime_credentials exact terminal fixture; hosted native persistence",
+      "verification": "runtime_ownership; runtime_credentials exact terminal fixture; hosted native persistence; both provider unowned_vault_refuses_before_creating_an_operation_lock and owned_vault_operation_lock_preserves_credentials_and_stays_private",
       "stage": 3
     },
     {
@@ -1688,11 +1688,13 @@
     "crates/jarvis-policy/src/firewall/holder.rs",
     "crates/jarvis-provider-glm/AGENTS.md",
     "crates/jarvis-provider-glm/src/auth.rs",
+    "crates/jarvis-provider-openai/AGENTS.md",
     "crates/jarvis-provider-openai/Cargo.toml",
     "crates/jarvis-provider-openai/src/auth.rs",
     "crates/jarvis-provider-openai/src/auth_tests.rs",
     "crates/jarvis-provider-openai/src/credentials.rs",
     "crates/jarvis-provider-openai/src/factory.rs",
+    "crates/jarvis-provider-xai/AGENTS.md",
     "crates/jarvis-provider-xai/Cargo.toml",
     "crates/jarvis-provider-xai/src/auth.rs",
     "crates/jarvis-provider-xai/src/credentials.rs",

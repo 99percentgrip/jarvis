@@ -16,7 +16,7 @@ The [architecture](architecture/runtime-identity-stage3.md),
 | 1. Five native platform path strategies | Shared config `JarvisPaths`; identity contract compares real resolver to approved plans | Local injected-platform proof; native CI pending |
 | 2. Non-overlapping private roots | Config first-run test retains synthetic legacy roots and user files | Local proof; final matrix pending |
 | 3. Safe first-run creation | Security owned-root marker; concurrent/idempotent initialization; exclusive private-workspace and pre-allocation legacy-base tests | Local filesystem proof |
-| 4. Credential namespace separation | Auth independent service/application-tag tests and API-key canary | Local proof; native managers pending CI |
+| 4. Credential namespace separation | Auth independent service/application-tag tests, API-key canary and both providers' unowned-vault/no-lock regressions | Local proof; native managers pending CI |
 | 5. OAuth token non-transfer | Auth rejects unowned tokens; normal provider subscription paths refuse before HTTP | Securely inactive; independent live authorization unavailable |
 | 6. Environment precedence/no legacy fallback | Explicit runtime registry; config override validation and ordinary ACP environment regression | Local source/process proof |
 | 7. Sessions and MessageJournal | Owned session constructors; normal ACP ownership, writer/crash and queue/PTY suites | Local proof; final matrix pending |
@@ -54,8 +54,13 @@ cognition fixture failure was corrected using native absolute overrides, with
 a new relative-override no-write regression; production guards remain unchanged. Windows release first-launch inventory
 subsequently failed; the exact fixture now has a native ownership/read regression,
 and identified the fixture directory ACL boundary. The source-derived explicit
-owner-rights entry is now replaced with the approved concrete SIDs; native proof
-and a fresh full matrix are still required.
+owner-rights entry is now replaced with the approved concrete SIDs; the native
+Windows installer passed. A further reproduced provider credential-lock ordering
+defect now has red/green ownership regressions and a production preflight correction;
+fresh full verification passed 3,650 executions and 165 exact acceptance cases
+with 43 ignored limitations retained. Fresh Rust 1.88 workspace/Windows checks,
+both build modes and audit/deny also passed. A fresh exact-head matrix is still
+required for that correction.
 
 ## Explicit limitations and next authority boundary
 

@@ -4,10 +4,12 @@
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
-Status: PR #5 Windows fixture DACL correction is locally verified and awaiting
-fresh native CI. The previous diagnostic head passed ten mandatory contexts;
-Windows installer/native and the exact-head aggregate failed. Protected merge
-and all four post-merge workflows remain pending.
+Status: PR #5 Windows fixture DACL correction passed the native Windows installer
+check. A further source review reproduced a credential-lock ownership ordering
+defect in both provider adapters; its focused correction passed red/green tests
+and passed fresh full local, MSRV, build and security verification; a new exact-head
+CI run is required.
+Protected merge and all four post-merge workflows remain pending.
 The [PRD](../runtime-identity-stage3-prd.md), [architecture](../architecture/runtime-identity-stage3.md)
 and [source inventory](runtime-identity-stage3-inventory.json) own the acceptance trace.
 
@@ -411,6 +413,38 @@ verification runs cancelled to free runners. The current candidate was never
 cancelled; every cancelled/missing/failed old result remains non-passing evidence.
 The scoped cancellation receipts and earlier native cognition case passes are
 retained privately. No repository control, release workflow or tag rule changed.
+
+## Credential operation-lock ownership correction
+
+A source review found that OpenAI and xAI acquired their operation lease before
+`SecureCredentialStore` checked the selected vault's application ownership.
+An explicit unowned private-state location could therefore receive a lock file
+even though subsequent credential reading refused it. This was a verified Stage 3
+non-mutation violation, not a hypothetical concern or native runner issue.
+
+The production `try_process_lock` entrypoints now call the existing
+`prepare_operation_storage` guard before opening or creating any lease file.
+Only the existing explicitly injected unit-test store seam bypasses this guard;
+ordinary builds, including integration-feature builds, always perform it.
+Both hosts inherit the correction through their existing provider adapters.
+No credential parsing, external protocol, keyring policy or timeout was weakened.
+
+`provider-lock-ownership-red.log` records both new unowned-vault tests failing
+against the previous source. `provider-lock-ownership-green.log` records six
+passing focused tests: both providers refuse before creating a lock or ownership
+marker, preserve the exact synthetic vault bytes, and support private reusable
+leases for properly owned stores. The tests use exclusive synthetic temporary
+fixtures without native SDK, live account or user-state access. The nearest
+provider DOX contracts were updated with the guard ordering and test-only seam.
+Fresh `cargo xtask verify` passed: 3,650 test executions across 275 result
+blocks, 43 ignored executions explicitly retained, and all 165 exact acceptance
+cases in 257,938 ms. Formatting and all-target/all-feature Clippy passed within
+that run. The serialized final sequence also passed Rust 1.88 workspace/all-target/
+all-feature verification, Windows MSVC auth/security cross-check, default and
+all-feature workspace builds, `cargo audit` and all-feature `cargo deny check`.
+Those six command receipts are recorded in `provider-lock-local-suite-results.json`.
+A new complete thirteen-check candidate matrix remains required before integration;
+earlier remote success does not cover this change.
 
 ## Dependency integrity
 

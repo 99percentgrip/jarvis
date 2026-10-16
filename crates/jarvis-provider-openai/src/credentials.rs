@@ -95,6 +95,15 @@ impl Credentials {
     // TUI and ACP cannot rotate the same refresh token concurrently.
     fn try_process_lock(&self) -> Result<Option<std::fs::File>, CredentialError> {
         #[cfg(test)]
+        let needs_owner_preflight = self.test_store.is_none();
+        #[cfg(not(test))]
+        let needs_owner_preflight = true;
+        if needs_owner_preflight {
+            self.store
+                .prepare_operation_storage()
+                .map_err(|_| CredentialError::Unavailable)?;
+        }
+        #[cfg(test)]
         let path = self
             .test_store
             .as_ref()
@@ -491,6 +500,56 @@ fn account(tokens: &SubscriptionTokens) -> Result<SecretValue, CredentialError> 
         return Err(CredentialError::InvalidSecret);
     }
     Ok(SecretValue::new(value))
+}
+
+#[cfg(test)]
+mod ownership_tests {
+    use super::*;
+
+    #[test]
+    fn owned_vault_operation_lock_preserves_credentials_and_stays_private() {
+        let root =
+            jarvis_security::private_temporary_directory("credential-lease-fixture-").unwrap();
+        let path = root.path().join("credentials.json");
+        let bytes = br#"{"application":"99percentgrip.jarvis","credentials":{}}"#;
+        jarvis_security::write_private_atomic(&path, bytes).unwrap();
+        let credentials = Credentials {
+            store: SecureCredentialStore::new("99percentgrip.jarvis", path.clone()),
+            lock_path: path.with_extension("lock"),
+            lock: Arc::new(Mutex::new(())),
+            test_store: None,
+        };
+        let lease = credentials.try_process_lock().unwrap().unwrap();
+        jarvis_security::validate_private_file(&path.with_extension("lock")).unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+        drop(lease);
+        assert!(credentials.try_process_lock().unwrap().is_some());
+    }
+
+    #[test]
+    fn unowned_vault_refuses_before_creating_an_operation_lock() {
+        let root =
+            jarvis_security::private_temporary_workspace("credential-ownership-fixture-").unwrap();
+        let path = root.path().join("credentials.json");
+        let bytes = br#"{"credentials":{"openai":{"native-auth":"synthetic-foreign-record"}}}"#;
+        std::fs::write(&path, bytes).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        }
+        let credentials = Credentials {
+            store: SecureCredentialStore::new("99percentgrip.jarvis", path.clone()),
+            lock_path: path.with_extension("lock"),
+            lock: Arc::new(Mutex::new(())),
+            test_store: None,
+        };
+        assert!(credentials.try_process_lock().is_err());
+        assert!(!path.with_extension("lock").exists());
+        assert!(!root.path().join(".jarvis-owner").exists());
+        assert_eq!(std::fs::read(path).unwrap(), bytes);
+        assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 1);
+    }
 }
 
 #[cfg(all(test, unix))]
