@@ -347,7 +347,7 @@
       "source": "crates/jarvis-security/src/private_state.rs",
       "symbol": "pub fn is_legacy_private_namespace",
       "source_lines": [
-        212
+        216
       ],
       "writers": "NONE authorized by Stage 3",
       "consumers": "only synthetic negative fixtures are used by verification",
@@ -561,8 +561,8 @@
       "current": "JARVIS_CONFIG_DIR",
       "source": "crates/jarvis-config/src/paths.rs",
       "source_lines": [
-        66,
-        144
+        108,
+        186
       ],
       "owner": "JarvisPrivate",
       "role": "runtime or private helper declaration"
@@ -720,7 +720,9 @@
       "current": "JARVIS_HOME",
       "source": "crates/jarvis-config/src/paths.rs",
       "source_lines": [
-        260
+        57,
+        69,
+        106
       ],
       "owner": "JarvisPrivate",
       "role": "runtime or private helper declaration"
@@ -771,7 +773,9 @@
       "current": "JARVIS_LMSTUDIO_ROOT",
       "source": "crates/jarvis-config/src/paths.rs",
       "source_lines": [
-        257
+        55,
+        71,
+        107
       ],
       "owner": "JarvisPrivate",
       "role": "runtime or private helper declaration"
@@ -1803,11 +1807,11 @@
     {
       "contract": "LM Studio and store-bundle ownership refusal before state adoption",
       "reader": "JarvisPaths::lmstudio_settings_directory/read_lmstudio_settings_at; both hosts; CheckpointStores::open_at and McpStores::open_at",
-      "verification": "lmstudio_override_is_validated_by_real_bootstrap; private_lmstudio_settings_initialize_and_refuse_foreign_state; private_store_bundles_never_open_unowned_roots",
+      "verification": "lmstudio_override_is_validated_by_real_bootstrap; private_lmstudio_settings_initialize_and_refuse_foreign_state; private_store_bundles_never_open_unowned_roots; deep_private_child_initializes_application_owner_before_publication; deep_private_child_refuses_foreign_ancestor_without_mutation",
       "status": "red-first verified locally; fresh exact-head CI and protected integration pending",
       "owner": "JarvisPrivate",
       "writer": "JarvisPaths::prepare_lmstudio_settings_directory; TUI private atomic settings save",
-      "authority": "explicit save initializes owned state; read-only discovery refuses foreign state without mutation"
+      "authority": "explicit save initializes owned state; read-only discovery refuses foreign state without mutation; declared application homes and known .jarvis ancestors are prepared/refused before descendant writes"
     }
   ]
 }

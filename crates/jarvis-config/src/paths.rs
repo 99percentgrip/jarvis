@@ -66,7 +66,9 @@ impl JarvisPaths {
     /// Explicit settings save prepares only the selected private application roots.
     pub fn prepare_lmstudio_settings_directory() -> std::io::Result<PathBuf> {
         let root = Self::lmstudio_settings_directory()?;
-        if std::env::var_os("JARVIS_LMSTUDIO_ROOT").is_none() {
+        if let Some(home) = std::env::var_os("JARVIS_HOME") {
+            jarvis_security::prepare_owned_directory(Path::new(&home))?;
+        } else if std::env::var_os("JARVIS_LMSTUDIO_ROOT").is_none() {
             let home = root
                 .parent()
                 .ok_or_else(|| std::io::Error::other("private settings home unavailable"))?;
@@ -524,7 +526,9 @@ mod runtime_isolation_tests {
                 assert!(root.is_absolute());
                 let cwd = std::env::current_dir().unwrap();
                 let expected = match mode.as_str() {
-                    "home" => cwd.join("private-app-home/lmstudio"),
+                    "home" | "nested" => cwd.join("private-app-home/lmstudio"),
+                    "same" => cwd.join("private-app-home"),
+                    "deep" => cwd.join(".jarvis/deep/lmstudio"),
                     "explicit" => cwd.join("explicit-lmstudio"),
                     _ => cwd.join(".jarvis/lmstudio"),
                 };
@@ -541,8 +545,11 @@ mod runtime_isolation_tests {
                     b"synthetic owned preferences",
                 )
                 .unwrap();
-                if mode != "explicit" {
-                    jarvis_security::validate_owned_directory(root.parent().unwrap()).unwrap();
+                if matches!(mode.as_str(), "default" | "deep") {
+                    jarvis_security::validate_owned_directory(&cwd.join(".jarvis")).unwrap();
+                }
+                if let Some(home) = std::env::var_os("JARVIS_HOME") {
+                    jarvis_security::validate_owned_directory(Path::new(&home)).unwrap();
                 }
                 JarvisPaths::validate_environment().unwrap();
                 assert_eq!(
@@ -556,17 +563,33 @@ mod runtime_isolation_tests {
         let foreign = tmp.path().join("foreign");
         std::fs::create_dir(&foreign).unwrap();
         std::fs::write(foreign.join("settings.json"), b"foreign endpoint").unwrap();
-        for (mode, override_path) in [
-            ("refuse", Some(foreign.clone())),
-            ("refuse", Some(tmp.path().join(".agent-vesper/lmstudio"))),
-            ("refuse", Some(PathBuf::from("relative-private-store"))),
-            ("default", None),
-            ("home", None),
-            ("explicit", Some(tmp.path().join("explicit-lmstudio"))),
+        for mode in [
+            "refuse-foreign",
+            "refuse-legacy",
+            "refuse-relative",
+            "nested",
+            "same",
+            "deep",
+            "default",
+            "home",
+            "explicit",
         ] {
+            // Every precedence case starts fresh: an earlier save must not
+            // conceal a missing owner marker in a later overlapping-root case.
+            let case = tempfile::tempdir_in(tmp.path()).unwrap();
+            let override_path = match mode {
+                "refuse-foreign" => Some(foreign.clone()),
+                "refuse-legacy" => Some(case.path().join(".agent-vesper/lmstudio")),
+                "refuse-relative" => Some(PathBuf::from("relative-private-store")),
+                "nested" => Some(case.path().join("private-app-home/lmstudio")),
+                "same" => Some(case.path().join("private-app-home")),
+                "deep" => Some(case.path().join(".jarvis/deep/lmstudio")),
+                "explicit" => Some(case.path().join("explicit-lmstudio")),
+                _ => None,
+            };
             let mut command = std::process::Command::new(std::env::current_exe().unwrap());
             command.args(["--exact", "paths::runtime_isolation_tests::lmstudio_override_is_validated_by_real_bootstrap", "--nocapture"])
-                .current_dir(tmp.path());
+                .current_dir(case.path());
             command.env_clear();
             for name in ["SystemRoot", "SystemDrive", "WINDIR", "COMSPEC", "PATH"] {
                 if let Some(value) = std::env::var_os(name) {
@@ -574,7 +597,7 @@ mod runtime_isolation_tests {
                 }
             }
             for name in ["TMP", "TEMP", "TMPDIR"] {
-                command.env(name, tmp.path());
+                command.env(name, case.path());
             }
             for name in [
                 "HOME",
@@ -586,16 +609,23 @@ mod runtime_isolation_tests {
                 "APPDATA",
                 "LOCALAPPDATA",
             ] {
-                command.env(name, tmp.path().join(name));
+                command.env(name, case.path().join(name));
             }
-            if mode == "home" || mode == "explicit" {
-                command.env("JARVIS_HOME", tmp.path().join("private-app-home"));
+            if matches!(mode, "home" | "explicit" | "nested" | "same") {
+                command.env("JARVIS_HOME", case.path().join("private-app-home"));
             }
             if let Some(path) = override_path {
                 command.env("JARVIS_LMSTUDIO_ROOT", path);
             }
             let output = command
-                .env("CONFIG_LMSTUDIO_BOOTSTRAP_FIXTURE", mode)
+                .env(
+                    "CONFIG_LMSTUDIO_BOOTSTRAP_FIXTURE",
+                    if mode.starts_with("refuse-") {
+                        "refuse"
+                    } else {
+                        mode
+                    },
+                )
                 .output()
                 .unwrap();
             assert!(

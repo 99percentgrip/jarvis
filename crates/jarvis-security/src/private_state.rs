@@ -116,9 +116,13 @@ pub fn validate_owned_directory(path: &Path) -> io::Result<()> {
 /// Initialize empty private storage. Nonempty unowned storage requires Stage 4 import.
 pub fn prepare_owned_directory(path: &Path) -> io::Result<()> {
     validate_private_path(path)?;
-    if let Some(parent) = path.parent()
-        && parent.file_name().is_some_and(|name| name == ".jarvis")
-    {
+    // An override may insert intermediate directories below the known private
+    // application boundary. Establish/refuse that owner before any child write.
+    if let Some(parent) = path.ancestors().skip(1).find(|ancestor| {
+        ancestor
+            .file_name()
+            .is_some_and(|name| name.to_string_lossy().eq_ignore_ascii_case(".jarvis"))
+    }) {
         prepare_owned_directory(parent)?;
     }
     if path.exists() && fs::read_dir(path)?.next().is_some() {
@@ -417,6 +421,35 @@ mod tests {
         validate_owned_directory(&private).unwrap();
         assert_eq!(fs::read(private.join(OWNER_FILE)).unwrap(), OWNER);
         assert_eq!(fs::read_dir(&private).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn deep_private_child_initializes_application_owner_before_publication() {
+        for name in [".jarvis".to_owned(), ".jarvis".to_ascii_uppercase()] {
+            let fixture = tempfile::tempdir().unwrap();
+            let application = fixture.path().join(name);
+            let child = application.join("deep/settings");
+            prepare_owned_directory(&child).unwrap();
+            validate_owned_directory(&application).unwrap();
+            validate_owned_directory(&child).unwrap();
+        }
+    }
+
+    #[test]
+    fn deep_private_child_refuses_foreign_ancestor_without_mutation() {
+        for name in [".jarvis".to_owned(), ".jarvis".to_ascii_uppercase()] {
+            let fixture = tempfile::tempdir().unwrap();
+            let application = fixture.path().join(name);
+            fs::create_dir(&application).unwrap();
+            let canary = application.join("session.json");
+            fs::write(&canary, b"synthetic-unowned-state").unwrap();
+            let child = application.join("deep/settings");
+            assert!(prepare_owned_directory(&child).is_err());
+            assert!(write_private_atomic(&child.join("settings.json"), b"new").is_err());
+            assert_eq!(fs::read(&canary).unwrap(), b"synthetic-unowned-state");
+            assert_eq!(fs::read_dir(&application).unwrap().count(), 1);
+            assert!(!application.join("deep").exists());
+        }
     }
 
     #[test]

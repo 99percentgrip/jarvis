@@ -5,7 +5,7 @@ owner-authorized native credential correction uses maintained libdbus Secret
 Service through explicit `keyring-core` stores. Local current audit/deny,
 Rust 1.88 auth/default Windows cross-check and real private GNOME
 persistence/encrypted/locked/missing tests passed. Full local verification
-passed 3,675 executions and 165 acceptance cases with 47 ignored limitations;
+passed 3,668 top-level Rust cases and 165 acceptance cases with 47 ignored executions;
 Rust 1.88 workspace/Windows checks, both builds, audit/deny and terminal
 first-launch/authentication regressions pass. A fresh thirteen-check PR head,
 protected merge and four exact-merge workflows remain required. The [execution report](foundation/2026-10-15-runtime-identity-stage3.md)
@@ -32,6 +32,14 @@ all assertions and existing bounded observers remain required. Full local verifi
 Rust 1.88, both builds and fresh audit/all-feature deny pass for the correction. The
 [execution report](foundation/2026-10-15-runtime-identity-stage3.md) retains both
 failures and the pending new exact-head acceptance boundary.
+
+Further source inspection reproduced nested explicit-root first-save and
+deep `.jarvis` ancestor ownership gaps. Red-first config/security regressions
+support the narrow parent-ownership correction; each precedence case now uses
+a fresh workspace. The [execution report](foundation/2026-10-15-runtime-identity-stage3.md)
+records exact-candidate proof, passing current-source local/native gates and the
+pending new exact-head CI matrix.
+Previously green checks do not authorize integration of unverified corrections.
 
 ## Objective and authority
 

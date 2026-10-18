@@ -1107,3 +1107,106 @@ merge and all four exact-merge workflows; no completion is claimed in this
 pre-CI report. Any later superseded-job cancellation remains cancellation rather
 than passing evidence. No release, installation, real RRC operation or Stage 4
 work is authorized or performed.
+
+
+## Overlapping roots and deep private ancestor correction
+
+Continued source inspection while the observer candidate's CI ran identified
+a further first-save gap: an explicit LM Studio override inside an explicitly
+selected application home bypassed preparation of that home. The current
+verified config executable, selected from `journal-frame-full-verify.log`,
+reproduces missing parent ownership on a fresh synthetic home in
+`nested-private-home-current-candidate-probe.log`. Its receipt binds the exact
+executable path and digest to head `f240f42f0282cfffcb0e212d494599857af65495`.
+An initial exploratory cache selection was stale; that separate probe is retained
+and excluded from current-candidate evidence. No production user state was used.
+
+The focused config regression now starts every precedence case in a distinct
+temporary workspace, preventing an earlier save's marker from hiding later
+first-run defects. It covers separate, equal and nested explicit roots, deep
+default `.jarvis` roots, ordinary defaults and foreign/legacy/relative refusal.
+`nested-home-config-red.log` reproduces the uncorrected nested-home failure.
+Two new security cases also fail before correction in
+`nested-ancestor-security-red.log`: deep initialization omitted the `.jarvis`
+application owner, and a deep child could be created below an existing nonempty
+unowned `.jarvis` directory. These are mandatory ownership defects, independent
+of whether the current hosted matrix becomes green.
+
+The minimal correction prepares an explicitly declared application home during
+LM Studio save even when the provider root is overridden. The shared security
+initializer establishes/refuses known `.jarvis` ancestors at arbitrary depth
+before creating descendants. It does not claim arbitrary user-project parents.
+Unknown ancestors refuse before child directory or atomic-file writes; positive
+fresh roots retain normal functionality and existing marker publication remains
+atomic. No active state is imported, adopted or deleted. Config/security tests
+pass after correction in `nested-ownership-focused-green.log`. No dependency,
+credential-service, external protocol, timeout or release-policy change occurs.
+
+Owning config/security DOX record the contract; parent ownership and child indexes
+remain unchanged. The inventory retains 26 resource groups and 96 environment
+mappings, refreshes the changed config/security source-line references, and adds
+the deep-child regression identities to the existing ownership verification
+contract. Full current-source local verification, native credential and terminal
+acceptance and a new exact-head thirteen-check matrix remain required before
+protected integration. The earlier candidate's checks cannot authorize this fix.
+
+The deep-ancestor regressions additionally cover case-variant application names
+in distinct fresh directories. The lowercase-only correction still failed these
+cases (`nested-ancestor-case-red.log`); case-insensitive boundary recognition
+passes both variants with the same ownership policy
+(`nested-ownership-case-green.log`). No new identity or legacy fallback is
+introduced. The earlier full verification was interrupted only within its
+verified task-owned process groups to add this coverage;
+`nested-ownership-interrupted-verification.json` and
+`nested-ownership-interrupted-verify.log` retain that incomplete run, which is
+not passing evidence. Verification restarts from a new frozen source snapshot.
+
+Naming preflight correctly rejected a raw uppercase test spelling. The fixtures
+now derive their uppercase case input from the approved canonical path, exercising
+the same real filesystem cases without introducing another declared identity.
+The guard, all thirteen upstream patterns and frozen baseline are unchanged;
+`nested-ownership-naming-canonical.log` passes. The failed preflight remains
+retained. A full run mistakenly started before that result was inspected was
+stopped only in its verified owned process group and is explicitly INTERRUPTED,
+not passed (`nested-naming-preflight-interrupted-verification.json`). After both
+preflight and focused config/security tests pass, final verification restarts
+from the complete final source snapshot.
+
+Final current-source `cargo xtask verify` passes. Audited top-level counting
+records 3,668 passing Rust cases across 268 result blocks, with 47 ignored
+executions retained; all 165 exact acceptance cases pass in 265,165 ms.
+The log digest is
+`a6a85e0426f15f005453e0cab4677c2bf8c0bca4e8abb68e490b45d53ba030eb`.
+Earlier aggregate totals included variable nested fixture stdout summaries.
+`nested-full-verify-canonical-results.json` excludes only nested harness and
+voice-pack child summaries, preserves repeated documentation-test invocations,
+and confirms the same top-level invocation inventory as the previous candidate
+with exactly two additional security passes (3,666 to 3,668). No test was removed
+or weakened. Raw totals and the canonical counting method are both retained.
+
+All six serialized followup gates pass: Rust 1.88 workspace/all-target/all-feature
+checking; Windows MSVC auth/security/config checking; default and all-feature
+workspace builds; fresh audit; and all-feature deny. Current real private GNOME
+acceptance passes create/read/replace/delete, fresh-process reload, cross-product
+namespace separation, locked/missing refusal without plaintext fallback, and
+encrypted DH session negotiation. These tests use an owned private bus/home, not
+the user's desktop service or accounts. The first private missing-bus invocation
+used a pathname rejected by the existing Rust fixture guard; that setup failure
+is retained separately and the corrected orchestration passes without a source
+or assertion change. KDE interoperability is still not live-tested.
+
+The rebuilt all-feature TUI passes all four signed-out provider first-launch/
+authentication-Back cases, native Settings draft/discard/save/restart behavior and
+the complete journal expand/collapse/copy/restore/FIFO workflow. Receipts are
+`nested-followup-gates.json`, `nested-runtime-acceptance.json`,
+`nested-native-secret-service.log`, `nested-first-launch.log`,
+`nested-settings.log` and `nested-journal.log`. All 956 frozen source/tool/fixture
+inputs still match. Owning DOX and source inventory are current; no manifest,
+lockfile, external dependency or release-policy change accompanies this fix.
+
+The observer candidate's hosted Apple Silicon job passes, including the formerly
+failed journal PTY case and native Keychain persistence. Both Linux targets also
+pass. Those receipts support the earlier fixture correction; they cannot replace
+a fresh thirteen-check matrix for this subsequent ownership correction. Protected
+merge and all four exact-merge workflows remain pending. Stage 3 completion,
+Stage 4 work, installation, real RRC execution and publication are not claimed.
