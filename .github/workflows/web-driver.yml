@@ -33,6 +33,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Prepare native credential build dependencies
+        timeout-minutes: 5
+        run: python3 .github/prepare-credential-runner.py
       - name: Install pinned Rust
         run: rustup toolchain install 1.95.0 --profile minimal
       - name: Build immutable browser and helper image
@@ -90,6 +93,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Prepare native credential build dependencies
+        timeout-minutes: 5
+        run: python3 .github/prepare-credential-runner.py
       - name: Install pinned Rust
         run: rustup toolchain install 1.95.0 --profile minimal
       - name: Build real namespace supervisor

@@ -7,6 +7,17 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- `prepare-credential-runner.py` provisions distro-owned libdbus development files
+  only on disposable hosted Linux; native lanes additionally require GNOME/D-Bus
+  fixture tools. Every active Linux workspace-compiling job runs it before Cargo.
+  `test_credential_backend.py` checks the actual all-feature graph, retained native
+  backend versions, workflow coverage and refusal outside hosted Linux.
+- Linux credential acceptance runs on a fresh private bus and home with a bounded
+  owned foreground GNOME daemon. `linux_secret_service_fixture.py` observes only
+  OpenSession negotiation and requires encrypted DH without plaintext negotiation.
+  Real native receipts, fresh-process reload, namespace isolation and locked/missing
+  refusal remain mandatory; fallback-file receipts cannot satisfy native acceptance.
+
 - Stage 3 fixtures use reviewed current private environment inputs and synthetic
   owned runtime roots. Native credential acceptance keeps UUID-only OS namespaces;
   contained browser/driver fixture paths remain explicit protocol compatibility.
@@ -232,6 +243,9 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 - `verify_native_credentials.py` and `test_verify_native_credentials.py` —
   explicitly hosted native credential acceptance and offline exact-receipt guards.
+- `prepare-credential-runner.py`, `linux_secret_service_fixture.py` and
+  `test_credential_backend.py` — guarded native build prerequisites, private Linux
+  Secret Service acceptance and actual dependency/workflow contracts.
 
 - `workflows/ci.yml` — pull-request canonical gate (`cargo xtask verify`),
   documentation-structure check, and the supply-chain job (`cargo audit` +

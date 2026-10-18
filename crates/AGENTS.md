@@ -18,7 +18,9 @@ test-only conformance support.
 - `jarvis-provider` depends only on `jarvis-domain`.
 - `jarvis-security` depends on no workspace crate.
 - `jarvis-auth` depends only on `jarvis-security`; it owns native OS
-  credential-manager access and the strict owner-only Unix vault fallback
+  credential-manager access and permission-verified retained/explicit file stores;
+  production Linux writes require maintained encrypted Secret Service without
+  automatic plaintext fallback
   (ADRs 0014 and 0032 — authentication and bounded native records).
 - `jarvis-memory` depends only on `jarvis-domain` and `jarvis-security`; it
   owns the durable memory graph, learned skills, user profile, and bounded

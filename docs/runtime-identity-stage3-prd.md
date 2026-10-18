@@ -1,5 +1,16 @@
 # Stage 3 runtime identity isolation PRD
 
+**Current status, 2026-10-18: corrective verification in progress.** The
+owner-authorized native credential correction uses maintained libdbus Secret
+Service through explicit `keyring-core` stores. Local current audit/deny,
+Rust 1.88 auth/default Windows cross-check and real private GNOME
+persistence/encrypted/locked/missing tests passed. Full local verification
+passed 3,653 executions and 165 acceptance cases with 47 ignored limitations;
+Rust 1.88 workspace/Windows checks, both builds, audit/deny and terminal
+first-launch/authentication regressions pass. A fresh thirteen-check PR head,
+protected merge and four exact-merge workflows remain required. The [execution report](foundation/2026-10-15-runtime-identity-stage3.md)
+retains the failed e24 head, all prior evidence and current remediation receipts.
+
 ## Objective and authority
 
 Implement independent application-private runtime ownership from baseline
@@ -90,3 +101,19 @@ after its complete workspace/native credential suites passed. Windows now shares
 Intel macOS's 120-minute total budget, preserving all cases, per-test/per-step
 bounds and check contexts. The new exact-head matrix and four post-merge workflows
 remain mandatory; cancelled/skipped results remain non-passing.
+
+The initial resumed investigation independently reproduced `cargo deny --all-features check`
+failing the three maintenance advisories; `cargo audit` exits zero with warnings.
+A maintained Rust-1.88-compatible native credential path, with reviewed
+compatibility/native-store evidence, is a prerequisite to further integration.
+Advisory suppression, a hidden MSRV increase or removing native credential
+functionality is not an accepted resolution. No source/dependency or policy
+change was made during this investigation. The report/index/PRD closeout stays
+local without another push. Stage 4 remains unauthorized.
+
+The authorized supply-chain correction replaces the retired dependency path,
+retains macOS/Windows backend versions, and requires native Secret Service for
+production Linux writes without automatic plaintext fallback. Existing owned
+retained-vault read precedence and OAuth non-transfer remain. GNOME evidence is
+real private-service proof; KDE and live vendor authorization remain explicitly
+unverified. Native CI and full local verification must cover the new candidate.

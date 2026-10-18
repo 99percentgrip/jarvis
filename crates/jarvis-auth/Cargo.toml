@@ -8,7 +8,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
-keyring.workspace = true
+keyring-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -16,9 +16,18 @@ jarvis-security = { path = "../jarvis-security", version = "=0.24.14" }
 zeroize.workspace = true
 
 [target.'cfg(windows)'.dependencies]
+windows-native-keyring-store = "=1.1.0"
 fs2 = "=0.4.3"
 sha2.workspace = true
 uuid.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+apple-native-keyring-store = { version = "=1.0.1", features = ["keychain"] }
+
+[target.'cfg(all(unix, not(any(target_os = "macos", target_os = "ios", target_os = "android"))))'.dependencies]
+dbus-secret-service-keyring-store = { version = "=1.0.1", features = ["crypto-rust"] }
+# Keep libdbus under the operating system's security/update ownership.
+dbus = "=0.9.12"
 
 [dev-dependencies]
 tempfile.workspace = true

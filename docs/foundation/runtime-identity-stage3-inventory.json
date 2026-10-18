@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Full local verification passed 3653 executions/165 acceptance cases; eleven hosted successes; Windows total-workload timeout corrected to 120 minutes without changing cases or step/test deadlines; fresh exact-head integration pending",
+  "status": "Maintained libdbus correction: full local 3653 executions/165 acceptance/47 ignored; Rust 1.88 workspace/Windows, both builds, audit/deny, private GNOME DH/locked/missing and terminal regressions pass; new exact-head integration pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -47,7 +47,7 @@
       "owner": "JarvisPrivate",
       "resource": "API-key vaults, native services and operation locks",
       "legacy_contract": "agent-vesper service and old provider paths",
-      "current_contract": "99percentgrip.jarvis service; native config directory",
+      "current_contract": "99percentgrip.jarvis service; independent native config; explicit keyring-core backends; encrypted libdbus Secret Service on Linux; no automatic production Linux plaintext fallback",
       "source": "crates/jarvis-auth/src/lib.rs",
       "symbol": "pub fn prepare_operation_storage",
       "source_lines": [
@@ -55,7 +55,7 @@
       ],
       "writers": "SecureCredentialStore; provider operation locks",
       "consumers": "GLM, OpenAI, xAI and both LM Studio host adapters",
-      "verification": "runtime_ownership; runtime_credentials exact terminal fixture; hosted native persistence; both provider unowned_vault_refuses_before_creating_an_operation_lock and owned_vault_operation_lock_preserves_credentials_and_stays_private",
+      "verification": "runtime_ownership; runtime_credentials exact terminal fixture; hosted native persistence; both provider unowned_vault_refuses_before_creating_an_operation_lock and owned_vault_operation_lock_preserves_credentials_and_stays_private; linux_native_persistence_namespace_and_restart; missing_service_never_creates_a_plaintext_vault; real locked collection and encrypted OpenSession observer",
       "stage": 3
     },
     {
@@ -1520,15 +1520,20 @@
   "changed_files": [
     ".gitattributes",
     ".github/AGENTS.md",
+    ".github/linux_secret_service_fixture.py",
+    ".github/prepare-credential-runner.py",
+    ".github/test_credential_backend.py",
     ".github/test_verify_native_credentials.py",
     ".github/verify_native_credentials.py",
     ".github/verify_native_voice.py",
     ".github/workflows/ci.yml",
+    ".github/workflows/msrv.yml",
     ".github/workflows/platform-foundation.yml",
     ".github/workflows/web-driver.yml",
     ".gitignore",
     "AGENTS.md",
     "Cargo.lock",
+    "Cargo.toml",
     "apps/AGENTS.md",
     "apps/jarvis-acp/AGENTS.md",
     "apps/jarvis-acp/Cargo.toml",
@@ -1625,8 +1630,11 @@
     "crates/jarvis-agent/tests/firewall.rs",
     "crates/jarvis-agent/tests/live_react_integration.rs",
     "crates/jarvis-auth/AGENTS.md",
+    "crates/jarvis-auth/Cargo.toml",
     "crates/jarvis-auth/src/lib.rs",
     "crates/jarvis-auth/src/native_records.rs",
+    "crates/jarvis-auth/src/native_store.rs",
+    "crates/jarvis-auth/tests/linux_secret_service.rs",
     "crates/jarvis-auth/tests/native_persistence.rs",
     "crates/jarvis-checkpoints/src/io.rs",
     "crates/jarvis-checkpoints/src/snapshot.rs",
@@ -1730,6 +1738,7 @@
     "docs/AGENTS.md",
     "docs/architecture/AGENTS.md",
     "docs/architecture/runtime-identity-stage3.md",
+    "docs/dependencies.md",
     "docs/foundation/2026-10-15-runtime-identity-stage3.md",
     "docs/foundation/AGENTS.md",
     "docs/foundation/evidence-index.md",
@@ -1775,6 +1784,13 @@
       "executable": "apps/jarvis-acp/tests/support/controlled_cargo_fixture.sh",
       "verification": "concurrent_cargo_fixtures_keep_bindings_private_and_executable_immutable; existing eight ACP governor process cases",
       "authority": "explicit offline process fixture only; no production retries or release operation"
+    },
+    {
+      "contract": "Maintained target-native credential dependency and private Linux Secret Service acceptance",
+      "writer": "crates/jarvis-auth/src/native_store.rs::create_store; .github/prepare-credential-runner.py",
+      "reader": "SecureCredentialStore; .github/verify_native_credentials.py",
+      "verification": ".github/test_credential_backend.py actual all-feature Cargo metadata; linux_secret_service.rs; private GNOME DH negotiation/locked/missing fixtures",
+      "authority": "synthetic private bus/home only; no desktop credentials, OAuth transfer or Vesper state"
     }
   ]
 }

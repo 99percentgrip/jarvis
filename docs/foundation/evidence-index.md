@@ -1,6 +1,6 @@
 # Foundation Evidence Index
 
-- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — source-derived ownership/security inventory, preservation and scoped fixture repairs; latest full local verification passed 3,653 executions and 165 acceptance cases. Eleven hosted checks passed; Windows complete-workload cancellation has a measured whole-job budget correction. Fresh exact-head protected integration and four post-merge workflows remain pending.
+- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — maintained Rust-1.88-compatible native credential correction under verification; actual all-target graph, audit/deny and private GNOME encrypted/persistence/locked/missing tests pass. Failed e24 security evidence and earlier 3,653/165 local proof remain preserved. Complete local verification passes 3,653 executions/165 acceptance cases, Rust 1.88, both builds and terminal regressions, with 47 ignored limitations. Fresh exact-head protected integration and four post-merge workflows remain required.
 
 - [Stage 2 Rust identity migration](2026-10-15-rust-identity-stage2.md) — complete reviewed workspace mapping, explicit legacy executable adapters, local verification and pending protected-merge evidence.
 

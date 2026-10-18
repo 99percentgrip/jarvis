@@ -23,6 +23,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Prepare native credential build dependencies
+        timeout-minutes: 5
+        run: python3 .github/prepare-credential-runner.py
       - name: Prepare native Rust storage
         run: sh .github/prepare-rust-runner.sh
       - name: Install pinned Rust toolchain
@@ -33,6 +36,7 @@ jobs:
           python3 .github/test_verify_pr_matrix.py
           python3 .github/test_prepare_linux_apt.py
           python3 .github/test_workspace_tooling_identity.py
+          python3 .github/test_credential_backend.py
       - name: Verify inherited naming policy before full build
         run: cargo xtask naming-guard
       - name: Verify workspace

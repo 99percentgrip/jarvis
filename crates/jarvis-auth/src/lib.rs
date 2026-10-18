@@ -10,13 +10,13 @@ use std::{
 };
 
 use jarvis_security::SecretValue;
-use keyring::v1::Entry;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use zeroize::{Zeroize, Zeroizing};
 
 #[cfg(any(windows, test))]
 mod native_records;
+mod native_store;
 
 // Composite provider records can contain several independently bounded tokens.
 const MAX_SECRET_BYTES: usize = 16 * 1024;
@@ -203,7 +203,7 @@ impl SecureCredentialStore {
         #[cfg(not(windows))]
         {
             let account = keyring_account(id);
-            if let Ok(entry) = Entry::new(self.service, &account)
+            if let Ok(entry) = native_store::entry(self.service, &account)
                 && let Ok(value) = entry.get_password()
             {
                 let value = Zeroizing::new(value);
@@ -239,7 +239,7 @@ impl SecureCredentialStore {
         }
         #[cfg(not(windows))]
         {
-            if let Ok(entry) = Entry::new(self.service, &account)
+            if let Ok(entry) = native_store::entry(self.service, &account)
                 && entry.set_password(secret).is_ok()
             {
                 // Prevent an older fallback from resurfacing when keyring is down.
@@ -250,6 +250,10 @@ impl SecureCredentialStore {
             }
             #[cfg(unix)]
             {
+                #[cfg(target_os = "linux")]
+                if self.service == "99percentgrip.jarvis" {
+                    return Err(CredentialStoreError::Unavailable);
+                }
                 self.fallback.store(id, secret)
             }
             #[cfg(not(unix))]
@@ -276,7 +280,7 @@ impl SecureCredentialStore {
         }
         #[cfg(not(windows))]
         {
-            if let Ok(entry) = Entry::new(self.service, &account)
+            if let Ok(entry) = native_store::entry(self.service, &account)
                 && entry.delete_credential().is_err()
                 && entry.get_password().is_ok()
             {
@@ -329,22 +333,24 @@ struct NativeBackend(&'static str);
 #[cfg(windows)]
 impl native_records::Backend for NativeBackend {
     fn read(&self, account: &str) -> Result<Option<Zeroizing<String>>, CredentialStoreError> {
-        let entry = Entry::new(self.0, account).map_err(|_| CredentialStoreError::Unavailable)?;
+        let entry =
+            native_store::entry(self.0, account).map_err(|_| CredentialStoreError::Unavailable)?;
         match entry.get_password() {
             Ok(value) => Ok(Some(Zeroizing::new(value))),
-            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(keyring_core::Error::NoEntry) => Ok(None),
             Err(_) => Err(CredentialStoreError::Unavailable),
         }
     }
     fn write(&self, account: &str, value: &str) -> Result<(), CredentialStoreError> {
-        Entry::new(self.0, account)
+        native_store::entry(self.0, account)
             .and_then(|entry| entry.set_password(value))
             .map_err(|_| CredentialStoreError::Unavailable)
     }
     fn delete(&self, account: &str) -> Result<(), CredentialStoreError> {
-        let entry = Entry::new(self.0, account).map_err(|_| CredentialStoreError::Unavailable)?;
+        let entry =
+            native_store::entry(self.0, account).map_err(|_| CredentialStoreError::Unavailable)?;
         match entry.delete_credential() {
-            Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+            Ok(()) | Err(keyring_core::Error::NoEntry) => Ok(()),
             Err(_) => Err(CredentialStoreError::Unavailable),
         }
     }

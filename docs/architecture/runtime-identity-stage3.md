@@ -70,6 +70,18 @@ than prohibiting ordinary authorized project tools or third-party application IP
 
 ## Identity consumers and dependencies
 
+The native credential transport uses explicit `keyring-core` stores. Linux selects
+`dbus-secret-service-keyring-store` with Rust cryptography and encrypted DH
+sessions to the OS Secret Service. Distro-owned libdbus remains dynamically linked
+and receives OS security updates; GNOME Keyring and KDE Wallet are service
+implementations, not replaced by this transport. macOS Keychain and Windows
+Credential Manager keep their existing backend crates/versions. Production Linux
+cannot silently save a plaintext vault when native storage is unavailable.
+Existing owned retained-vault reads and explicit path-fixture behavior remain.
+Independent provider authorization, namespace/ownership guards and OAuth
+non-transfer remain unchanged. Real private GNOME evidence does not establish
+KDE or real-user desktop acceptance.
+
 The [reviewed inventory](../foundation/runtime-identity-stage3-inventory.json)
 records 26 resource groups, source symbols/line references, readers, writers,
 verification entry points and 96 reviewed environment mappings. It includes

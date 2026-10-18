@@ -62,9 +62,12 @@ fn hosted_native_credential_persistence() {
         let record = synthetic_record(phase);
         assert!(record.len() > 16 * 1024);
         let receipt = store.store(ID, &record).unwrap();
-        if cfg!(windows) {
+        if cfg!(any(windows, target_os = "macos", target_os = "linux")) {
             assert_eq!(receipt.backend, StorageBackend::NativeKeyring);
-            assert!(!vault.exists(), "Windows must not write a plaintext vault");
+            assert!(
+                !vault.exists(),
+                "native acceptance must not write a plaintext vault"
+            );
         }
         assert_eq!(store.load(ID).unwrap().unwrap().expose().as_str(), record);
         let child = Command::new(std::env::current_exe().unwrap())

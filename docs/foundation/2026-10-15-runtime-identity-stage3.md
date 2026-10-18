@@ -4,7 +4,13 @@
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
-Status: PR #5 remains unmerged. Full local verification passed 3,653 test
+Current status, 2026-10-18: **CORRECTIVE VERIFICATION IN PROGRESS**.
+The owner-authorized maintained libdbus backend correction passes local
+audit/deny, complete Rust 1.88 workspace checking, both workspace build modes,
+full local verification and real private GNOME acceptance. A new complete
+exact-head CI matrix, protected merge and four post-merge workflows remain required.
+The blocked e24 candidate and its evidence remain recorded below.
+PR #5 remains unmerged. Earlier full local verification passed 3,653 test
 executions and all 165 exact acceptance cases, with 43 ignored executions retained.
 The hosted candidate settled with eleven successful checks; Windows hit its
 90-minute whole-job budget after the workspace and native credentials passed,
@@ -604,7 +610,8 @@ Unreleased behavior: application-private runtime ownership is independent; exist
 private legacy state is neither discovered nor imported. No installation, registry
 publication, release tag or independent release is delivered. Stage 4 import requires
 separate explicit authorization and safe identity translation/no-replay design.
-Completion remains pending until final local, protected PR and post-merge evidence exists.
+Completion still requires verified remediation, protected integration and four
+successful exact-merge workflows. Earlier blocked-head evidence is historical.
 
 ### Excluded research alert readback
 
@@ -613,3 +620,254 @@ Authenticated Dependabot alert #1, `GHSA-2mjx-qc3c-rqvc`, is open against
 Stage 3 and shipping builds; it must be remediated before any future inclusion.
 The active root lockfile retains rustls 0.23.46 and passed audit/deny. The alert
 has not been dismissed or suppressed.
+
+## 2026-10-18 security closeout — blocked
+
+### Exact source and failure
+
+PR #5 head `e24ec27e6d34bfcb3b904e51dd527786c307b12a` has tree
+`832a90094669bb0fc30b9eb5f7009a84c67f7571`. Main remains the approved
+Stage 2 baseline. In `99percentgrip/jarvis`, supply-chain job 117572925434,
+workflow run 39092807142, failed in `cargo deny`. No merge was attempted.
+Other hosted checks retain their actual latest conclusions in the timestamped
+matrix below; an in-progress check is not passing evidence.
+
+| Advisory | Locked package | Classification |
+| --- | --- | --- |
+| RUSTSEC-2026-0370 | zvariant 5.13.1 | Informational: unmaintained |
+| RUSTSEC-2026-0371 | zbus_names 4.3.4 | Informational: unmaintained |
+| RUSTSEC-2026-0372 | zvariant_derive 5.13.1 | Informational: unmaintained |
+
+The primary RustSec records are dated 2026-10-16 and list no patched versions.
+These are maintenance advisories, not newly demonstrated runtime exploits.
+The existing fail-closed policy nevertheless makes them mandatory blockers.
+The [upstream retirement record](https://github.com/z-galaxy/zbus/issues/2043)
+describes consolidating the crates into zbus 6. No advisory ignore, severity
+downgrade, security-policy edit or dependency update was made.
+
+### Dependency and compatibility evidence
+
+An isolated locked/offline all-feature/all-target `cargo tree --invert
+zvariant@5.13.1` passed. Both hosts reach this graph through
+`jarvis-auth` → keyring 4.1.6 → zbus-secret-service-keyring-store 1.0.0 →
+secret-service 5.1.0 / zbus 5.18.0. zbus and its macros introduce the retired
+crates. This shipping credential graph is separate from the excluded research alert.
+
+Read-only crates.io metadata and published archive manifests confirm:
+
+- Latest keyring 4.2.0 still selects the same backend major series.
+- Latest backend 1.0.1 and secret-service 5.2.0 require zbus `^5`.
+- Published zbus 6.0.0 declares Rust 1.89; the project requires Rust 1.88.
+- Same-major updates do not remove the retired crate identities.
+
+No compatible published lockfile-only resolution was found. This does not claim
+that a reviewed implementation/backport is impossible. The minimal prerequisite
+is a maintained native credential dependency path compatible with Rust 1.88,
+including upstream/backport and native-store regression evidence. Replacing the
+native credential backend or raising the MSRV is not silently admitted here.
+Removing Linux native credentials or weakening fallback security is not a fix.
+
+### Commands, receipts and deviations
+
+`maintenance-blocker-local-audit.log` records exit zero for `cargo audit` against
+1,338 current advisories and 557 dependencies, with three maintenance warnings.
+`maintenance-blocker-local-deny-current.log` reproduces exit one for
+`cargo deny --all-features check`: advisories fail; bans/licenses/sources pass.
+An initial deny command placed `--all-features` after `check`, exited two for
+CLI syntax, and is retained separately; the corrected invocation establishes
+the actual failure. No program-suite repeat is needed for this read-only
+investigation and local evidence-only update.
+
+Private `stage3-maintenance-blocker-receipt.json` pins source/tree, job/run,
+primary advisory/registry/archive hashes, local exits and governance readback.
+Published archives were read in memory without extraction or execution.
+Provider secrets and user keyrings were not accessed. Earlier full verification
+remains prior evidence and cannot establish a current complete security pass.
+
+Only this report, the evidence index and owning PRD receive local closeout updates.
+They are not committed or pushed, preserving the exact candidate without a new
+matrix for post-CI receipts. Runtime sources, manifests, lockfile, tests, CI
+definitions, rulesets and permissions are unchanged during this inquiry.
+Hosted verification is left running; later successes cannot override the failed
+mandatory gate. No missing/skipped/cancelled result is classified as passing.
+
+### Preservation, controls and readiness
+
+At 03:23:43 UTC, original Vesper HEAD/status/worktree inventory and 14,598
+protected entries, 158 dirty paths and six older reports matched preservation
+evidence with zero differences. All nine earlier independent-project report
+hashes also match. Authenticated controls retain thirteen strict trusted checks
+(Actions app 15368), zero bypass, active release-tag freeze, a read-only default
+token and three manually disabled publication workflows.
+
+There is no merge SHA or post-merge result: main was not changed. Stage 3 is
+blocked until the native credential dependency blocker is resolved within the
+MSRV/security contract and a new exact-head matrix passes. Stage 4, state import,
+installation, registry migration, releases and real RRC remain unauthorized.
+Root and owning DOX instructions stay unchanged because this closeout changes
+evidence/status rather than ownership or operating rules.
+
+### Exact-head check snapshot
+
+Observed 2026-10-18T03:25:21.768742+00:00. All rows are trusted Actions app 15368.
+
+| Required context | Actual status / conclusion |
+| --- | --- |
+| quality | in_progress / pending |
+| windows-installer | in_progress / pending |
+| supply-chain | completed / failure |
+| rust-1-88 | in_progress / pending |
+| linux-x86_64 | in_progress / pending |
+| linux-arm64 | in_progress / pending |
+| macos-intel | in_progress / pending |
+| macos-apple-silicon | in_progress / pending |
+| windows-x86_64 | in_progress / pending |
+| Contained browser linux-x86_64 | completed / success |
+| Contained browser linux-aarch64 | completed / success |
+| Native namespace Hive | completed / success |
+| `Jarvis` verification | in_progress / pending |
+
+Merge: NOT PERFORMED. Four post-merge workflows: NOT RUN.
+These observations are time-bounded; continuing hosted runs may settle later.
+No later success can clear the current mandatory supply-chain failure.
+
+### Local closeout document checks
+
+The frozen naming guard and whitespace check passed. All changed relative links
+resolve, inventory/evidence JSON parses, and the three local document changes are
+the only unstaged differences from the candidate. Full index inspection also
+retains eleven pre-existing missing historical targets; they are not claimed as
+valid links and no new broken link was added. URL-encoded paths were decoded
+before checking. `maintenance-blocker-doc-validation.json` lists the old gaps.
+At 03:26:41 UTC, read-only Git inspection reconfirmed independent remotes/common
+directories/object databases, no alternates and zero shared object-file inodes.
+No source or repository settings changed during this closeout.
+
+## Authorized maintained Secret Service correction
+
+### Decision and preserved evidence
+
+The owner explicitly authorized investigation and corrective implementation after
+the blocked closeout. All three existing uncommitted reports were first copied
+byte-for-byte and SHA-256 pinned in private `pre-libdbus-local-reports.json`.
+The failed head remains immutable; no earlier failure is converted into a pass.
+Source/lockfile changes remain on the same Stage 3 feature branch and PR #5.
+
+| Option | Evidence and disposition |
+| --- | --- |
+| A: keyring wrapper feature substitution | Published keyring 4.1.6 `v1.rs` hard-codes the zbus store. Its CLI feature also enables that store. Keeping either cannot produce the required clean all-feature graph. Rejected. |
+| B: explicit keyring-core stores | Selected. The maintained libdbus backend supports Rust 1.88 and preserves Secret Service collections, service/username attributes, UTF-8 values and encrypted DH sessions. Existing native macOS/Windows stores remain pinned. |
+| C: another native implementation | Unnecessary broader change while B satisfies the native abstraction. Keyutils has no approved equivalent persistence evidence; plaintext/custom cryptographic stores are not accepted. |
+
+Published upstream manifests/source were read, hash-pinned and retained outside
+Git. The [backend](https://github.com/open-source-cooperative/dbus-secret-service-keyring-store)
+and [transport](https://github.com/open-source-cooperative/dbus-secret-service)
+are the maintained keyring ecosystem alternative. This changes the D-Bus client
+transport, not the operating system's Secret Service implementation.
+
+### Dependencies, platforms and distribution
+
+`keyring = 4.1.6`, zbus 5.18.0, secret-service 5.1.0 and the three retired crates
+leave the shipping lockfile. The explicit core remains 1.0.0; macOS store 1.0.1
+and Windows store 1.1.0 are unchanged. Added packages are dbus store 1.0.1,
+dbus-secret-service 4.1.0, dbus 0.9.12, libdbus-sys 0.2.7 and
+zeroize_derive 1.5.0. Twenty packages become unreachable; no retained external
+version changes. Existing rustls 0.23.46 and quinn-proto 0.11.18 stay fixed.
+The zeroize derive feature is required by the replacement's session-secret type.
+
+Production selects a store directly rather than mutating keyring-core's global
+default. Linux requires `crypto-rust`; the backend negotiates DH and never selects
+plain sessions. The existing macOS/Windows constructors and error variants remain.
+No keyutils, sample/mock production store, OpenSSL alternative or advisory
+exception enters the graph. Pure identity definitions remain side-effect-free.
+
+Linux dynamically links OS-owned `libdbus-1.so.3`, keeping native library updates
+with the supported distro. Build packages are libdbus development files and
+pkg-config; native CI additionally installs GNOME/D-Bus fixture tools. Every active
+Linux workspace-compiling job provisions them before Cargo, with hosted-only
+guards and bounded package commands. No workflow context, assertion, platform,
+publication setting or test deadline is removed. Independent future installers
+must verify the runtime package; no installation/update route is activated here.
+
+Vendored libdbus was evaluated in an initial local build and then removed from
+the candidate: its source snapshot would shift C-library update/distribution
+ownership to the application. No vendored C or OpenSSL code is shipped by this
+selection. Local missing development packages were downloaded as signed Fedora
+RPMs, verified and extracted under private evidence; system packages were not
+installed or replaced. The build uses the already installed distro library.
+
+### Credential security and real native evidence
+
+The missing-service red test reproduced an existing Linux behavior: native failure
+silently wrote an owner-only plaintext fallback. Production service writes now
+return `Unavailable` instead. The test passed after that minimal guard. Existing
+owned retained-vault read precedence, explicit path-fixture behavior and the
+macOS/Windows fallback/native-record contracts remain; no legacy data is adopted.
+Successful native replacement still retires an older retained value. Native
+service/account identities and OAuth non-transfer remain unchanged.
+
+Real Linux acceptance creates a fresh private bus/home and foreground GNOME daemon;
+its synthetic unlock password exists only in memory/pipe input. It proves native
+create/read/replace/delete, fresh-process reload, separate synthetic foreign
+service identities, a genuinely locked collection and missing-service refusal
+without a plaintext vault. A filtered bus observer records only OpenSession
+negotiation, never credential reads/writes, and requires encrypted DH with no
+plain negotiation. The owned daemon is stopped before temporary-home cleanup.
+Default tests never use this native fixture; explicit native CI requires its
+nonzero named passing receipts and all existing persistence cases.
+
+GNOME was executed locally. KDE Wallet interoperability is source-documented for
+UTF-8 secrets but was not executed in an independently configured private KDE
+service; that is an explicit untested integration, not inferred native proof.
+No user's desktop keyring, Vesper credentials, provider OAuth registration or
+live provider account is accessed. macOS/Windows native results must come from
+the fresh five-target matrix, not cross-compilation.
+
+### Focused verification and outstanding gates
+
+`libdbus-five-target-resolution.json` records actual Cargo metadata resolution on
+all five native targets in default and all-feature modes. None reaches the three
+retired crates or zbus; each resolves its correct native backend.
+The deterministic CI graph contract also reads actual all-feature metadata and
+checks retained native versions, encrypted feature selection and all producer
+preparation steps. Offline fixture tests refuse a desktop bus before spawning.
+
+Local `cargo audit` passes with 542 dependencies and no advisory warning.
+All-feature deny passes advisories/bans/licenses/sources with existing duplicate
+warnings retained. Focused auth tests, strict Clippy and Rust 1.88 auth tests /
+Windows MSVC all-target cross-check pass. Red/green missing-service, real private
+GNOME restart/namespace/locked and encrypted-session receipts are retained.
+Formatting passed. Full workspace/MSRV/build/acceptance and the fresh exact-head
+matrix remain pending at preparation of this candidate evidence.
+
+### Complete local correction verification
+
+The serialized seven-command receipt `libdbus-full-local-suite.json` records exit
+zero for full `cargo xtask verify`; Rust 1.88 workspace/all-target/all-feature
+checking; Rust 1.88 Windows MSVC auth/security cross-check; default and all-feature
+workspace builds; current audit; and all-feature deny. The frozen runtime-source
+receipt matched all 1,512 selected files throughout; existing provider/backend
+versions and the lockfile remain pinned. No unsupported MSRV override is used.
+
+Full verification passed 3,653 test executions across 277 result blocks and all
+165 exact acceptance cases in 288,727 ms. Forty-seven ignored executions remain
+explicit limitations: the earlier 43 plus four new opt-in native fixture cases.
+Those new behaviors are separately invoked by exact name on the private real
+service, including spawned reload/locked children; ignored default execution is
+not described as native proof. The default and Rust 1.88 private GNOME runs both
+pass encrypted negotiation, persistence/restart, namespace and locked refusal.
+The missing-service negative also passes. Current audit has no advisory warnings;
+deny advisories/bans/licenses/sources all pass, preserving duplicate warnings.
+
+Twenty-three offline workflow/fixture tests and eleven release-gate contracts
+pass. Naming initially rejected new branded test-only controls; those fixture
+keys/marker were made neutral consistently, with no production environment
+mapping, policy or frozen-baseline change. The guard then passed all 36 frozen
+hits. Current source and documentation changes still need the fresh full remote
+thirteen-check matrix and four exact-merge push workflows; earlier native/check
+successes do not substitute for this correction.
+
+Both `libdbus-first-launch-final.log` and `libdbus-settings-auth-final.log`
+passed against the current all-feature TUI: signed-out landing/all four providers,
+authentication navigation, masking and cancellation remain verified locally.
+These terminal fixtures do not save credentials or claim live provider approval.

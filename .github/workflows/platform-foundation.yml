@@ -69,6 +69,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Prepare Linux native credential dependencies
+        if: runner.os == 'Linux'
+        timeout-minutes: 5
+        run: python3 .github/prepare-credential-runner.py --native
       - name: Install pinned Rust toolchain
         shell: bash
         run: rustup toolchain install 1.95.0 --profile minimal
