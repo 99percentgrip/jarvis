@@ -22,6 +22,8 @@ Apple Silicon also failed the existing fresh-turn voice settlement bound; test-o
 
 Preservation recheck confirms unchanged source checkout/dirty paths/worktrees, but two live Vesper cognition SQLite sidecars changed inode/mtime since capture, with attribution UNKNOWN. The report retains the discrepancy; complete runtime snapshot invariance is not claimed.
 
+Protected-merge audit identified three remaining ownership defects despite thirteen green checks on the previous head. Their red-first corrections and new candidate verification are tracked in the [execution report](foundation/2026-10-15-runtime-identity-stage3.md). No merge or completion is claimed.
+
 ## Objective and authority
 
 Implement independent application-private runtime ownership from baseline
@@ -128,3 +130,8 @@ production Linux writes without automatic plaintext fallback. Existing owned
 retained-vault read precedence and OAuth non-transfer remain. GNOME evidence is
 real private-service proof; KDE and live vendor authorization remain explicitly
 unverified. Native CI and full local verification must cover the new candidate.
+
+The protected-review corrections pass 3,675 local executions/165 acceptance cases,
+Rust 1.88 (including Windows config/auth/security checking), both workspace builds
+and fresh audit/deny. The corrected head requires its own thirteen successful
+checks and normal protected merge, then four exact-merge workflow successes.

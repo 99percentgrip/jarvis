@@ -164,3 +164,5 @@ current private records into old roots. Old product installations/state are unch
 No automatic reverse import or replay is allowed. Stage 4 requires separate owner
 authorization and a designed optional import mechanism; Stage 7 owns independent
 release infrastructure and the controlled future tag-freeze transition.
+
+LM Studio preferences resolve through the shared config path contract in both hosts: explicit private root, then explicit application home, then absolute project `.jarvis/lmstudio`. Readers require directory/file ownership; atomic saves initialize ownership first. Checkpoint and MCP bundle composition opens no store after ownership preparation fails. These guards isolate private state without restricting ordinary user-selected project files.

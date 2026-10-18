@@ -139,7 +139,7 @@ pub const RUNTIME_ENVIRONMENT: &[RuntimeEnvironmentIdentity] = &[
     RuntimeEnvironmentIdentity {
         legacy: "AGENT_VESPER_HOME",
         current: "JARVIS_HOME",
-        source: "apps/jarvis-acp/src/cognition.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     RuntimeEnvironmentIdentity {
         legacy: "AGENT_VESPER_LEGACY_PROFILE",
@@ -164,7 +164,7 @@ pub const RUNTIME_ENVIRONMENT: &[RuntimeEnvironmentIdentity] = &[
     RuntimeEnvironmentIdentity {
         legacy: "AGENT_VESPER_LMSTUDIO_ROOT",
         current: "JARVIS_LMSTUDIO_ROOT",
-        source: "apps/jarvis-acp/src/cognition.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     RuntimeEnvironmentIdentity {
         legacy: "AGENT_VESPER_LMSTUDIO_URL",

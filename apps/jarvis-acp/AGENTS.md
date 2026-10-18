@@ -29,6 +29,8 @@ transport, stderr-only tracing, and orderly shutdown.
 
 ## Local Contracts
 
+- LM Studio provider and cognition preferences use the shared ownership-validated config resolver/reader, including the same `JARVIS_HOME` precedence as the TUI. Read-only startup never initializes missing preferences or adopts unknown/redirected roots.
+
 - Admitted release prompts retain their ACP owner until native settlement and
   stream shared milestones plus the final durable receipt explicitly. Concurrent
   status and cancellation remain available. A recoverable or failed closeout

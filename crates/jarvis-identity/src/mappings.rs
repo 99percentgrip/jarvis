@@ -434,7 +434,7 @@ pub const MAPPINGS: &[Mapping] = &[
         legacy: "AGENT_VESPER_HOME",
         planned: Some("JARVIS_HOME"),
         classification: CompatibilitySensitive,
-        source: "apps/jarvis-acp/src/cognition.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     Mapping {
         surface: Environment,
@@ -476,7 +476,7 @@ pub const MAPPINGS: &[Mapping] = &[
         legacy: "AGENT_VESPER_LMSTUDIO_ROOT",
         planned: Some("JARVIS_LMSTUDIO_ROOT"),
         classification: CompatibilitySensitive,
-        source: "apps/jarvis-acp/src/cognition.rs",
+        source: "crates/jarvis-config/src/paths.rs",
     },
     Mapping {
         surface: Environment,

@@ -254,15 +254,7 @@ impl jarvis_cognition::EmbeddingPort for LmStudioEmbedder {
 /// Minimal persisted LM Studio settings reader
 /// (`.jarvis/lmstudio/settings.json` — same file the TUI hub edits).
 fn lmstudio_persisted_endpoint_and_model() -> Option<(String, String)> {
-    let dir = std::env::var("JARVIS_LMSTUDIO_ROOT")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| {
-            std::env::var("JARVIS_HOME")
-                .map(std::path::PathBuf::from)
-                .unwrap_or_else(|_| std::path::PathBuf::from(".jarvis"))
-                .join("lmstudio")
-        });
-    let text = std::fs::read_to_string(dir.join("settings.json")).ok()?;
+    let text = jarvis_config::JarvisPaths::read_lmstudio_settings().ok()?;
     let parsed: serde_json::Value = serde_json::from_str(&text).ok()?;
     let base = parsed.get("api_base_url")?.as_str()?.trim().to_string();
     if base.is_empty() {

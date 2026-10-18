@@ -7,6 +7,8 @@ configuration, provider envelopes, secret references, and persistence ports.
 
 ## Local Contracts
 
+- LM Studio private settings use one absolute resolver and guarded reader shared by both hosts. `JARVIS_LMSTUDIO_ROOT` participates in bootstrap ownership validation; default resolution remains project `.jarvis/lmstudio` and never creates state while reading. Unknown ownership, redirected files and legacy roots refuse.
+
 - `JarvisPaths` implements the approved platform roots and explicit first-run ownership checks. `VesperPaths` remains a pure legacy specification for provenance/disjointness tests, not an active runtime resolver. Native roots, explicit private overrides and credential-file overrides are validated before startup writes. Project config readers use `.jarvis`, require ownership for existing nonempty stores and refuse redirected paths; no legacy fallback or import.
 
 - The legacy resolver remains descriptive; Stage 3 independently initializes only empty application-private runtime roots. Migration is not implemented.

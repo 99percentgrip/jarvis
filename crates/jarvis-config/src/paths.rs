@@ -50,6 +50,45 @@ pub struct JarvisPaths {
 }
 
 impl JarvisPaths {
+    /// Resolve independent LM Studio preferences without creating application state.
+    pub fn lmstudio_settings_directory() -> std::io::Result<PathBuf> {
+        let root = if let Some(root) = std::env::var_os("JARVIS_LMSTUDIO_ROOT") {
+            PathBuf::from(root)
+        } else if let Some(home) = std::env::var_os("JARVIS_HOME") {
+            PathBuf::from(home).join("lmstudio")
+        } else {
+            std::env::current_dir()?.join(".jarvis").join("lmstudio")
+        };
+        jarvis_security::validate_new_or_owned_directory(&root)?;
+        Ok(root)
+    }
+
+    /// Explicit settings save prepares only the selected private application roots.
+    pub fn prepare_lmstudio_settings_directory() -> std::io::Result<PathBuf> {
+        let root = Self::lmstudio_settings_directory()?;
+        if std::env::var_os("JARVIS_LMSTUDIO_ROOT").is_none() {
+            let home = root
+                .parent()
+                .ok_or_else(|| std::io::Error::other("private settings home unavailable"))?;
+            jarvis_security::prepare_owned_directory(home)?;
+        }
+        jarvis_security::prepare_owned_directory(&root)?;
+        Ok(root)
+    }
+
+    /// Shared host reader: unknown ownership and redirected/private-file failures refuse.
+    pub fn read_lmstudio_settings_at(root: &Path) -> std::io::Result<String> {
+        jarvis_security::validate_owned_directory(root)?;
+        let path = root.join("settings.json");
+        jarvis_security::validate_private_file(&path)?;
+        std::fs::read_to_string(path)
+    }
+
+    /// Read the same independently owned provider preferences in both hosts.
+    pub fn read_lmstudio_settings() -> std::io::Result<String> {
+        Self::read_lmstudio_settings_at(&Self::lmstudio_settings_directory()?)
+    }
+
     /// Validate explicit private overrides, then initialize only independent roots.
     pub fn initialize_environment() -> std::io::Result<Self> {
         let paths = Self::validate_environment()?;
@@ -63,6 +102,7 @@ impl JarvisPaths {
             .map_err(|_| std::io::Error::other("private application roots unavailable"))?;
         for name in [
             "JARVIS_HOME",
+            "JARVIS_LMSTUDIO_ROOT",
             "JARVIS_CONFIG_DIR",
             "JARVIS_MEMORY_ROOT",
             "JARVIS_GLOBAL_MEMORY_ROOT",
@@ -472,6 +512,105 @@ mod tests {
 #[cfg(test)]
 mod runtime_isolation_tests {
     use super::*;
+
+    #[test]
+    fn lmstudio_override_is_validated_by_real_bootstrap() {
+        if let Ok(mode) = std::env::var("CONFIG_LMSTUDIO_BOOTSTRAP_FIXTURE") {
+            if mode == "refuse" {
+                assert!(JarvisPaths::validate_environment().is_err());
+            } else {
+                JarvisPaths::validate_environment().unwrap();
+                let root = JarvisPaths::lmstudio_settings_directory().unwrap();
+                assert!(root.is_absolute());
+                let cwd = std::env::current_dir().unwrap();
+                let expected = match mode.as_str() {
+                    "home" => cwd.join("private-app-home/lmstudio"),
+                    "explicit" => cwd.join("explicit-lmstudio"),
+                    _ => cwd.join(".jarvis/lmstudio"),
+                };
+                assert_eq!(
+                    JarvisPaths::prepare_lmstudio_settings_directory().unwrap(),
+                    root
+                );
+                assert_eq!(
+                    root.canonicalize().unwrap(),
+                    expected.canonicalize().unwrap()
+                );
+                jarvis_security::write_private_atomic(
+                    &root.join("settings.json"),
+                    b"synthetic owned preferences",
+                )
+                .unwrap();
+                if mode != "explicit" {
+                    jarvis_security::validate_owned_directory(root.parent().unwrap()).unwrap();
+                }
+                JarvisPaths::validate_environment().unwrap();
+                assert_eq!(
+                    JarvisPaths::read_lmstudio_settings().unwrap(),
+                    "synthetic owned preferences"
+                );
+            }
+            return;
+        }
+        let tmp = tempfile::tempdir().unwrap();
+        let foreign = tmp.path().join("foreign");
+        std::fs::create_dir(&foreign).unwrap();
+        std::fs::write(foreign.join("settings.json"), b"foreign endpoint").unwrap();
+        for (mode, override_path) in [
+            ("refuse", Some(foreign.clone())),
+            ("refuse", Some(tmp.path().join(".agent-vesper/lmstudio"))),
+            ("refuse", Some(PathBuf::from("relative-private-store"))),
+            ("default", None),
+            ("home", None),
+            ("explicit", Some(tmp.path().join("explicit-lmstudio"))),
+        ] {
+            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+            command.args(["--exact", "paths::runtime_isolation_tests::lmstudio_override_is_validated_by_real_bootstrap", "--nocapture"])
+                .current_dir(tmp.path());
+            command.env_clear();
+            for name in ["SystemRoot", "SystemDrive", "WINDIR", "COMSPEC", "PATH"] {
+                if let Some(value) = std::env::var_os(name) {
+                    command.env(name, value);
+                }
+            }
+            for name in ["TMP", "TEMP", "TMPDIR"] {
+                command.env(name, tmp.path());
+            }
+            for name in [
+                "HOME",
+                "USERPROFILE",
+                "XDG_CONFIG_HOME",
+                "XDG_DATA_HOME",
+                "XDG_STATE_HOME",
+                "XDG_CACHE_HOME",
+                "APPDATA",
+                "LOCALAPPDATA",
+            ] {
+                command.env(name, tmp.path().join(name));
+            }
+            if mode == "home" || mode == "explicit" {
+                command.env("JARVIS_HOME", tmp.path().join("private-app-home"));
+            }
+            if let Some(path) = override_path {
+                command.env("JARVIS_LMSTUDIO_ROOT", path);
+            }
+            let output = command
+                .env("CONFIG_LMSTUDIO_BOOTSTRAP_FIXTURE", mode)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert_eq!(
+                std::fs::read(foreign.join("settings.json")).unwrap(),
+                b"foreign endpoint"
+            );
+            assert_eq!(std::fs::read_dir(&foreign).unwrap().count(), 1);
+        }
+    }
 
     #[test]
     fn first_run_preserves_all_synthetic_vesper_roots_and_user_project_files() {

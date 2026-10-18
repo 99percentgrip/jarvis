@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Maintained native credential correction passes complete local/security and exact-head hosted supply-chain checks; Windows produced two different ACP deadlines, so content-free diagnostic candidate is under verification; no merge",
+  "status": "Three ownership review corrections pass full local verification, Rust 1.88, builds, audit/deny and 3675/165 regressions; new exact-head CI and protected merge pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -718,7 +718,7 @@
     {
       "legacy": "AGENT_VESPER_HOME",
       "current": "JARVIS_HOME",
-      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source": "crates/jarvis-config/src/paths.rs",
       "source_lines": [
         260
       ],
@@ -769,7 +769,7 @@
     {
       "legacy": "AGENT_VESPER_LMSTUDIO_ROOT",
       "current": "JARVIS_LMSTUDIO_ROOT",
-      "source": "apps/jarvis-acp/src/cognition.rs",
+      "source": "crates/jarvis-config/src/paths.rs",
       "source_lines": [
         257
       ],
@@ -1798,6 +1798,15 @@
       "writer": "xai_native.rs::tool_round_trip loopback phase markers",
       "verification": "timeout_diagnostic_bounds_shapes_and_excludes_all_content; full ACP all-feature process suite",
       "authority": "test-only bounded metadata; no raw content, timeout change, retry or production behavior change"
+    },
+    {
+      "contract": "LM Studio and store-bundle ownership refusal before state adoption",
+      "reader": "JarvisPaths::lmstudio_settings_directory/read_lmstudio_settings_at; both hosts; CheckpointStores::open_at and McpStores::open_at",
+      "verification": "lmstudio_override_is_validated_by_real_bootstrap; private_lmstudio_settings_initialize_and_refuse_foreign_state; private_store_bundles_never_open_unowned_roots",
+      "status": "red-first verified locally; fresh exact-head CI and protected integration pending",
+      "owner": "JarvisPrivate",
+      "writer": "JarvisPaths::prepare_lmstudio_settings_directory; TUI private atomic settings save",
+      "authority": "explicit save initializes owned state; read-only discovery refuses foreign state without mutation"
     }
   ]
 }

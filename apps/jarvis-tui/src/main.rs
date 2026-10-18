@@ -15381,18 +15381,31 @@ impl CheckpointStores {
     /// Opens the bundle at `JARVIS_CHECKPOINT_ROOT` (falling back to
     /// `.jarvis/checkpoints/`).
     fn open_default() -> Self {
-        let root = checkpoint_root_path();
-        let _ = jarvis_security::prepare_owned_directory(&root);
+        Self::open_at(checkpoint_root_path())
+    }
+
+    fn open_at(root: std::path::PathBuf) -> Self {
+        let owned = jarvis_security::prepare_owned_directory(&root).is_ok();
         let workspace_root = std::env::current_dir()
             .unwrap_or_else(|_| std::path::PathBuf::from("."))
             .canonicalize()
             .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
         let root_display = root.display().to_string();
-        let ledger = jarvis_checkpoints::CheckpointsLedger::open(&root).ok();
-        let sessions = jarvis_checkpoints::SessionLineage::open(&root).ok();
-        let cron = jarvis_checkpoints::CronRegistry::open(&root).ok();
-        let exporter = jarvis_checkpoints::SessionExporter::open(&root).ok();
-        let clipboard = jarvis_checkpoints::ClipboardPort::open(&root).ok();
+        let ledger = owned
+            .then(|| jarvis_checkpoints::CheckpointsLedger::open(&root).ok())
+            .flatten();
+        let sessions = owned
+            .then(|| jarvis_checkpoints::SessionLineage::open(&root).ok())
+            .flatten();
+        let cron = owned
+            .then(|| jarvis_checkpoints::CronRegistry::open(&root).ok())
+            .flatten();
+        let exporter = owned
+            .then(|| jarvis_checkpoints::SessionExporter::open(&root).ok())
+            .flatten();
+        let clipboard = owned
+            .then(|| jarvis_checkpoints::ClipboardPort::open(&root).ok())
+            .flatten();
         Self {
             ledger,
             sessions,
@@ -16064,13 +16077,24 @@ impl McpStores {
     /// Opens the bundle at `JARVIS_MCP_ROOT` (falling back to
     /// `.jarvis/mcp/`).
     fn open_default() -> Self {
-        let root = mcp_root_path();
-        let _ = jarvis_security::prepare_owned_directory(&root);
+        Self::open_at(mcp_root_path())
+    }
+
+    fn open_at(root: std::path::PathBuf) -> Self {
+        let owned = jarvis_security::prepare_owned_directory(&root).is_ok();
         let root_display = root.display().to_string();
         // Load persisted trusted publishers (best-effort).
-        let trusted = load_trusted_publishers(&root);
-        let registry = jarvis_mcp::McpRegistry::open(&root).ok();
-        let plugin_loader = jarvis_mcp::PluginLoader::open(&root, trusted.clone()).ok();
+        let trusted = if owned {
+            load_trusted_publishers(&root)
+        } else {
+            jarvis_mcp::TrustedPublishers::new()
+        };
+        let registry = owned
+            .then(|| jarvis_mcp::McpRegistry::open(&root).ok())
+            .flatten();
+        let plugin_loader = owned
+            .then(|| jarvis_mcp::PluginLoader::open(&root, trusted.clone()).ok())
+            .flatten();
         Self {
             registry,
             plugin_loader,
@@ -18368,6 +18392,45 @@ mod tests {
                 .as_deref(),
             Some("nord")
         );
+    }
+
+    #[test]
+    fn private_store_bundles_never_open_unowned_roots() {
+        let tmp = tempfile::tempdir().unwrap();
+        for name in ["checkpoints", "mcp"] {
+            let root = tmp.path().join(name);
+            std::fs::create_dir(&root).unwrap();
+            std::fs::write(root.join("foreign-state"), b"preserve foreign state").unwrap();
+            if name == "checkpoints" {
+                let stores = CheckpointStores::open_at(root.clone());
+                assert!(
+                    stores.ledger.is_none()
+                        && stores.sessions.is_none()
+                        && stores.cron.is_none()
+                        && stores.exporter.is_none()
+                        && stores.clipboard.is_none()
+                );
+            } else {
+                let stores = McpStores::open_at(root.clone());
+                assert!(stores.registry.is_none() && stores.plugin_loader.is_none());
+                assert!(stores.trusted.list().is_empty());
+            }
+            assert_eq!(
+                std::fs::read(root.join("foreign-state")).unwrap(),
+                b"preserve foreign state"
+            );
+            assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+        }
+        let checkpoints = CheckpointStores::open_at(tmp.path().join("owned-checkpoints"));
+        assert!(
+            checkpoints.ledger.is_some()
+                && checkpoints.sessions.is_some()
+                && checkpoints.cron.is_some()
+                && checkpoints.exporter.is_some()
+                && checkpoints.clipboard.is_some()
+        );
+        let mcp = McpStores::open_at(tmp.path().join("owned-mcp"));
+        assert!(mcp.registry.is_some() && mcp.plugin_loader.is_some());
     }
 
     #[test]

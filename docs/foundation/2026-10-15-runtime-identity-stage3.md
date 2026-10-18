@@ -2,6 +2,8 @@
 
 ## Objective and current status
 
+Current ownership corrections pass complete local regression/security/MSRV/build verification. Thirteen checks passed on the previous head; the corrected head still requires a fresh exact-head matrix and protected integration. No merge has occurred.
+
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
 Current status, 2026-10-18: **CORRECTIVE VERIFICATION IN PROGRESS**.
@@ -954,3 +956,74 @@ changed-document links/JSON/whitespace checks and live governance readback:
 thirteen required contexts, active no-bypass branch/tag rules and all three
 publishing/recovery workflows disabled. The diagnostic candidate introduces no
 production behavior, dependency, timeout or retry-policy change.
+
+## Protected-merge review closeout
+
+Head `4b2a6bdbda1267bf2193721068e0b6bd69272cee` passed all thirteen required
+contexts, including all five native targets. Windows log retains successful
+synthetic initialization, xAI exactly-once command execution and the real 2 GiB
+Job Object probe. Both earlier native deadline failures remain retained with
+unconfirmed causes; none of their assertions, deadlines or test bodies was
+weakened. All four post-merge workflows are still unexecuted because no merge
+has occurred.
+
+Final protected-merge readiness then correctly refused four unresolved review
+threads from the initial Stage 3 head. Source inspection confirms the credential
+operation-lock ordering finding was already corrected and tested on all five
+native targets. The other three findings remain real acceptance gaps despite
+the green matrix: LM Studio settings could create nonempty unowned state, the
+LM Studio root override was omitted at bootstrap, and checkpoint/MCP composition
+ignored ownership-preparation failures. No thread is dismissed based only on CI.
+
+`review-bootstrap-red.log`, `review-lmstudio-red.log` and
+`review-bundles-red.log` reproduce those failures through actual bootstrap,
+settings save/read and production store-bundle entrypoints before correction.
+The corrective source shares the absolute LM Studio resolver and private-file
+reader in `jarvis-config` across TUI, ACP provider and ACP cognition. Atomic
+private writes initialize the selected settings directory and `.jarvis` parent;
+foreign/legacy/redirected roots and files refuse without adoption. Explicit root
+and home precedence remains deterministic. Checkpoint/MCP composition conditions
+all store opens on successful ownership preparation, leaving stores unavailable
+and publisher trust empty on refusal. Positive owned-store functionality remains.
+
+Synthetic filesystem regressions cover first save/reload, unknown and redirected
+state, absolute defaults and foreign/legacy/relative bootstrap overrides. No real
+user home, credentials or runtime database is used. The three focused red/green
+receipts are retained privately; broader candidate verification remains required.
+There is no dependency or timeout change. The owning config/TUI/ACP DOX contracts
+are updated; parent ownership and child indexes are unchanged.
+
+The two Vesper SQLite sidecars identified earlier still match their original
+content hashes; only inode/mtime metadata differs, with attribution UNKNOWN.
+The unchanged protected content and metadata discrepancy remain separate claims.
+
+The first full review-candidate run passed Clippy but failed the unchanged identity
+source-evidence guards after LM Studio environment reading moved into config.
+`verify-review-stale-registry-failure.log` retains that failure. Both the active
+and legacy mapping source citations now follow the actual config reader, with
+no identity, classification, environment count or guard assertion change.
+
+The next full workspace suite passed, but the existing naming embargo rejected
+a raw application-prefix literal in the new bootstrap test fixture. The fixture
+now clears its child environment and restores only OS execution prerequisites
+and explicit synthetic roots. No guard, baseline or production contract changed;
+`verify-review-fixture-prefix-failure.log` retains the failed gate evidence.
+
+The corrected full local sequence passes: `cargo xtask verify` records 3,675
+passing executions across 277 result blocks, 47 ignored executions retained,
+and 165 exact acceptance cases in 258,384 ms. Its log SHA-256 is
+`9bd744828d09ebadf87491d004c14cca4eb0975be093a4d50cd951dbbd862343`.
+The serialized sequence also passes Rust 1.88 workspace/all-target/all-feature
+checking, Windows MSVC auth/security/config checking, default and all-feature
+workspace builds, fresh audit and all-feature deny. No manifest/lockfile or
+third-party version changes accompany this review correction. The 1,028 frozen
+source/tool/fixture hashes still match after verification. Runtime changes are
+limited to the three proven isolation defects and host-parity settings reading;
+no release, updater, import or protocol behavior is enabled.
+
+Current all-feature binaries also pass the real signed-out four-provider landing/
+authentication-Back/clean-Quit matrix (`review-first-launch-final.log`) and native
+Settings navigation/discard/keep-editing/grouped-save/restart persistence
+(`review-settings-final.log`). These terminal checks use isolated homes/workspaces
+and submit no provider prompt. Fresh exact-head hosted verification is still
+required; the previously green head is not substituted for the new correction.

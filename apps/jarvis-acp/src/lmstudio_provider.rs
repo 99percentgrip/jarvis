@@ -833,17 +833,7 @@ pub(crate) fn factory_from_settings() -> LmStudioFactory {
 
 /// Reads `(api_base_url, model)` from the shared LM Studio settings file.
 fn lmstudio_settings() -> (String, String) {
-    let root = std::env::var("JARVIS_LMSTUDIO_ROOT").map_or_else(
-        |_| {
-            std::env::current_dir()
-                .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                .join(".jarvis")
-                .join("lmstudio")
-        },
-        std::path::PathBuf::from,
-    );
-    let path = root.join("settings.json");
-    let Ok(raw) = std::fs::read_to_string(path) else {
+    let Ok(raw) = jarvis_config::JarvisPaths::read_lmstudio_settings() else {
         return (String::new(), String::new());
     };
     let Ok(json) = serde_json::from_str::<serde_json::Value>(&raw) else {

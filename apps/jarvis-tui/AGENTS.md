@@ -766,6 +766,8 @@ and composes the existing bounded atomic session writer.
 
 ## Local Contracts
 
+- LM Studio settings initialize owned roots before atomic publication and use the shared config reader; unknown/redirected state never seeds provider settings. Checkpoint and MCP bundles leave every store unavailable when ownership preparation fails; no reader, writer or plugin loader may continue after that refusal.
+
 - UI choices/theme/provider preferences, keybindings and trusted-publisher metadata
   validate private leaves and owned stores; grouped-save snapshots and rollback
   use the same guards. User projects remain outside this storage policy.
