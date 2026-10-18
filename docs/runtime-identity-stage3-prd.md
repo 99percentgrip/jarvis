@@ -44,7 +44,7 @@ followed by normal protected merge, integrated-tree verification and all four
 exact-merge push workflows. Missing, ignored, skipped, cancelled or failing checks
 never count as success. Final receipts remain in the linked report; candidate
 hosted evidence is pending until actually observed. Final local verification passed
-3,650 test executions and all 165 exact acceptance cases, plus Rust 1.88, both
+3,653 test executions and all 165 exact acceptance cases, plus Rust 1.88, both
 build modes and shipping audit/deny; 43 ignored executions remain limitations.
 The first PR #5 candidate
 failed native fixture/voice-path checks and left macOS Intel cancelled; the linked
@@ -82,3 +82,11 @@ excluded from shipping builds and separately tracked.
 Stage 4 requires separate authorization. No automatic Vesper import/replay,
 credential sharing, installer execution, registry migration, release activation,
 tag or public artifact is delivered by this stage.
+
+The immutable-wrapper candidate subsequently passed full local verification:
+3,653 executions, 165 exact acceptance cases and 43 ignored limitations. Its
+hosted matrix retained eleven successes; Windows exhausted the 90-minute total
+after its complete workspace/native credential suites passed. Windows now shares
+Intel macOS's 120-minute total budget, preserving all cases, per-test/per-step
+bounds and check contexts. The new exact-head matrix and four post-merge workflows
+remain mandatory; cancelled/skipped results remain non-passing.

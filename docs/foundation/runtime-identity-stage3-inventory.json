@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Constrained Windows probe activation and recurrent generated-executable fixture corrections have focused red/green proof; prior runtime/security evidence retained; fresh full local and exact-head integration pending",
+  "status": "Full local verification passed 3653 executions/165 acceptance cases; eleven hosted successes; Windows total-workload timeout corrected to 120 minutes without changing cases or step/test deadlines; fresh exact-head integration pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",

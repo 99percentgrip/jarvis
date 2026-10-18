@@ -4,13 +4,14 @@
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
-Status: PR #5 remains unmerged. The Windows constrained-probe launcher correction
-passed focused identity/MSRV checks. A fresh full local run then reproduced the
-previous ACP fixture's Linux ETXTBSY failure at immediate execution of a generated
-Cargo wrapper. That wrapper now uses checked-in immutable code and fixture-local
-path bindings; all nine focused process tests passed. Fresh full local and thirteen
-exact-head hosted checks remain mandatory, followed by protected merge and four
-successful post-merge workflows.
+Status: PR #5 remains unmerged. Full local verification passed 3,653 test
+executions and all 165 exact acceptance cases, with 43 ignored executions retained.
+The hosted candidate settled with eleven successful checks; Windows hit its
+90-minute whole-job budget after the workspace and native credentials passed,
+and the dependent aggregate failed. Windows now receives the same bounded
+120-minute total as Intel macOS, with every test/step deadline and case preserved.
+A fresh thirteen-check exact-head matrix, protected merge and four successful
+post-merge workflows remain required.
 The [PRD](../runtime-identity-stage3-prd.md), [architecture](../architecture/runtime-identity-stage3.md)
 and [source inventory](runtime-identity-stage3-inventory.json) own the acceptance trace.
 
@@ -508,6 +509,33 @@ syntax, LF/executable attributes, the frozen naming guard and changed report
 links/JSON/whitespace all passed. This removes the write/execute hazard instead of
 retrying an executable failure. Full local verification and the complete new exact-head matrix are still
 required. Earlier successful source receipts remain prior-candidate evidence.
+
+## Windows complete-workload budget correction
+
+Candidate `701ca42c9a08d5fcdc662d20b973999c74c80871` retained eleven successful
+mandatory checks. Windows job 116899939976 in run 38878713014 exhausted its
+90-minute total budget during fixture/architecture validation. Its complete
+workspace tests passed in 5,224 seconds, and native credential persistence/reload
+passed in 58 seconds. The frozen routing-quality matrix alone passed after
+3,767.61 seconds; compilation took 7 minutes 29 seconds. No assertion failure
+was reported in those completed suites. Later cancelled/skipped stages remain
+unverified, including the corrected constrained-job probe. This is measured total
+workload, not an asserted external outage or a reason to omit the expensive cases.
+
+The foundation workflow gives Windows the existing Intel macOS 120-minute total
+budget. Linux and Apple Silicon retain 90 minutes; serial Windows execution,
+all test cases, individual timing assertions, all step deadlines, five targets,
+thirteen required contexts and the exact-head aggregate remain unchanged.
+`windows-whole-job-budget-evidence.json` retains the native step timings and log
+digest outside Git. A new complete exact-head matrix must run; successful results
+from the cancelled candidate cannot substitute for it.
+
+The latest runtime/test source passed `verify-immutable-wrapper-candidate.log`:
+3,653 executions across 276 result blocks, 43 ignored executions, all 165 exact
+acceptance cases in 209,425 ms, formatting, Clippy, architecture/naming/identity
+and fixture/host verification. The budget-only repair leaves those runtime and
+test sources unchanged. Offline workflow/trigger guards, parsed YAML and the frozen naming guard passed;
+the structural diff confirms that only the intended whole-job budget changes.
 
 ## Dependency integrity
 

@@ -73,7 +73,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   cases run on all targets; Windows additionally runs a real constrained Job Object
   fixture against the production policy, proving unavailable/unsafe capacity is
   withheld without substituting synthetic lifecycle telemetry.
-- The macOS Intel job has a bounded 120-minute total budget for observed cold compilation plus the complete acceptance matrix; other native jobs retain 90 minutes. Individual test/step deadlines and all required checks remain unchanged.
+- macOS Intel and Windows have bounded 120-minute total budgets for their observed complete native workloads; the other targets retain 90 minutes. Windows retains its serial workspace tests and the complete frozen routing matrix. Individual test/step deadlines and all required checks remain unchanged.
 - Keep the five release-target families explicit in the matrix: linux-x86_64,
   linux-arm64, macos-intel, macos-apple-silicon, windows-x86_64.
 - Five-target foundation explicitly invokes ADR 0032 native credential
@@ -214,7 +214,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   fixture and offline CPU int8/VAD; readiness/imports alone cannot pass. All five prerequisite lanes require these named receipts before
   tagging. Its dependencies use fixed integrity pins; no microphone, speakers,
   provider or user credentials are exercised. OS prompt/device acceptance remains
-  separate. The 90-minute lane budget includes the 20-minute bounded speech step.
+  separate. Each platform's total budget includes the unchanged 20-minute bounded speech step.
 
 - Validate YAML syntax locally where tooling exists.
 - Run `cargo xtask verify` and the MSRV workflow; record exact-SHA terminal

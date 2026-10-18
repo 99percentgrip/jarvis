@@ -41,10 +41,10 @@ jobs:
   foundation:
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
-    # Intel's cold workspace compilation and complete acceptance matrix exceeded
-    # the former total budget after workspace tests passed. Individual test and
-    # step deadlines stay fixed; every lane still executes its entire matrix.
-    timeout-minutes: ${{ matrix.target == 'macos-intel' && 120 || 90 }}
+    # These complete native matrices exceeded the former total budget after
+    # workspace tests passed. Individual test and step deadlines stay fixed;
+    # every lane still executes its entire matrix, including frozen routing cases.
+    timeout-minutes: ${{ (matrix.target == 'macos-intel' || matrix.target == 'windows-x86_64') && 120 || 90 }}
     strategy:
       fail-fast: false
       matrix:
