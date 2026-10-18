@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Maintained libdbus correction: full local 3653 executions/165 acceptance/47 ignored; Rust 1.88 workspace/Windows, both builds, audit/deny, private GNOME DH/locked/missing and terminal regressions pass; new exact-head integration pending",
+  "status": "Maintained native credential correction passes complete local/security and exact-head hosted supply-chain checks; Windows produced two different ACP deadlines, so content-free diagnostic candidate is under verification; no merge",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -1791,6 +1791,13 @@
       "reader": "SecureCredentialStore; .github/verify_native_credentials.py",
       "verification": ".github/test_credential_backend.py actual all-feature Cargo metadata; linux_secret_service.rs; private GNOME DH negotiation/locked/missing fixtures",
       "authority": "synthetic private bus/home only; no desktop credentials, OAuth transfer or Vesper state"
+    },
+    {
+      "contract": "Content-free ACP timeout diagnostics with unchanged execution bounds",
+      "reader": "apps/jarvis-acp/tests/support/mod.rs::protocol_diagnostic; ProcessHarness::next",
+      "writer": "xai_native.rs::tool_round_trip loopback phase markers",
+      "verification": "timeout_diagnostic_bounds_shapes_and_excludes_all_content; full ACP all-feature process suite",
+      "authority": "test-only bounded metadata; no raw content, timeout change, retry or production behavior change"
     }
   ]
 }

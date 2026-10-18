@@ -103,7 +103,7 @@ Verify terminal interaction through the production TUI binary with isolated stat
   owns settlement rather than racing a successful fake-player exit; it restores
   the marker before the following recovery case. The suite verifies cumulative
   progress across the latency-sized
-  multi-piece unit, and verifies new-generation FIFO playback after Stop.
+  multi-piece unit, and verifies new-generation FIFO playback after Stop. Settlement failures retain worker-stage/busy state, numeric progress, synthetic terminal outcomes and fixture-player counts; deadlines and ordering assertions remain unchanged.
 
 - `voice_execution_policy.rs` proves the clarified-R16 no-NPU matrix through the
   production selection seams (`voice_accel`, `jarvis_voice::execution`, real

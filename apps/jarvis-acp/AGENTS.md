@@ -468,6 +468,12 @@ into exactly one always-safe, argument-dependent, or interrupting class.
 
 ## Verification
 
+- Shared process receive failures retain the expected numeric RPC id, child exit
+  state and twelve allowlisted protocol shapes. Never dump prompts, tool arguments,
+  raw outputs, credentials or arbitrary error messages. The xAI tool fixture also
+  records its loopback server phase and marker presence/length before resuming
+  the original failure. Deadlines and exactly-once assertions remain unchanged.
+
 - `acp_host_registry_settles_large_command_output_and_recovers` exercises the
   real ACP hosted registry for mixed large output, truncation, timeout,
   cancellation, descendant-held pipes, and a successful following command.

@@ -59,6 +59,7 @@ pub struct ProcessHarness {
     lines: mpsc::Receiver<String>,
     transcript: Vec<Value>,
     pending_responses: BTreeMap<String, Value>,
+    expected_response: Option<u64>,
     reader_gate: ReaderGate,
     reader: Option<thread::JoinHandle<()>>,
     stderr: Option<thread::JoinHandle<String>>,
@@ -232,6 +233,7 @@ impl ProcessHarness {
             lines,
             transcript: Vec::new(),
             pending_responses: BTreeMap::new(),
+            expected_response: None,
             reader_gate: gate,
             reader: Some(reader),
             stderr: Some(stderr),
@@ -287,9 +289,11 @@ impl ProcessHarness {
         if let Some(value) = self.pending_responses.remove(&key) {
             return value;
         }
+        self.expected_response = Some(id);
         loop {
             let value = self.next();
             if value["id"] == id {
+                self.expected_response = None;
                 return value;
             }
             if !value["id"].is_null() {
@@ -300,7 +304,14 @@ impl ProcessHarness {
     }
 
     pub fn next(&mut self) -> Value {
-        let line = self.lines.recv_timeout(TIMEOUT).unwrap();
+        let expected_response = self.expected_response;
+        let line = self.lines.recv_timeout(TIMEOUT).unwrap_or_else(|error| {
+            let status = self.child.try_wait().ok().flatten();
+            panic!(
+                "ACP receive failed: {error}; expected_response={expected_response:?}; child_status={status:?}; events={}; recent_shapes={:?}",
+                self.transcript.len(), protocol_diagnostic(&self.transcript)
+            )
+        });
         assert!(!line.contains(CANARY), "secret reached ACP stdout");
         let value: Value = serde_json::from_str(&line).expect("stdout contained non-JSON text");
         self.transcript.push(value.clone());
@@ -343,6 +354,40 @@ impl ProcessHarness {
         let _ = fs::remove_dir_all(&self.temp);
         (std::mem::take(&mut self.transcript), stderr)
     }
+}
+
+/// Diagnostic allowlist: never print prompt/tool content, credentials or arbitrary fields.
+pub fn protocol_diagnostic(values: &[Value]) -> Vec<Value> {
+    values
+        .iter()
+        .rev()
+        .take(12)
+        .map(|value| {
+            let update = &value["params"]["update"];
+            let kind = match update["sessionUpdate"].as_str() {
+                Some("tool_call") => "tool_call",
+                Some("tool_call_update") => "tool_call_update",
+                Some("agent_message_chunk") => "agent_message_chunk",
+                Some("agent_thought_chunk") => "agent_thought_chunk",
+                Some("available_commands_update") => "available_commands_update",
+                _ => "other",
+            };
+            let status = match update["status"].as_str() {
+                Some("pending") => "pending",
+                Some("in_progress") => "in_progress",
+                Some("completed") => "completed",
+                Some("failed") => "failed",
+                _ => "other",
+            };
+            let method = match value["method"].as_str() {
+                Some("session/update") => "session/update",
+                Some("session/request_permission") => "session/request_permission",
+                _ => "other",
+            };
+            json!({"response_id": value["id"].as_u64(), "has_error": value.get("error").is_some(),
+               "rpc_method": method, "session_update": kind, "tool_status": status})
+        })
+        .collect()
 }
 
 impl Drop for ProcessHarness {
@@ -526,4 +571,28 @@ pub fn signed_out_openai_fixture() -> tempfile::NamedTempFile {
     )
     .unwrap();
     file
+}
+
+#[cfg(test)]
+mod diagnostic_tests {
+    use super::*;
+
+    #[test]
+    fn timeout_diagnostic_bounds_shapes_and_excludes_all_content() {
+        let secret = "synthetic-diagnostic-secret-must-not-appear";
+        let mut events = vec![
+            json!({"id": 9, "params": {"update": {
+            "sessionUpdate": "tool_call_update", "status": "in_progress",
+            "content": secret, "rawOutput": secret, "title": secret}}, "error": {"message": secret}});
+            20
+        ];
+        events.push(json!({"id": secret, "params": {"update": {"sessionUpdate": secret, "status": secret}}}));
+        let observed = protocol_diagnostic(&events);
+        assert_eq!(observed.len(), 12);
+        let encoded = serde_json::to_string(&observed).unwrap();
+        assert!(!encoded.contains(secret));
+        assert!(encoded.contains("in_progress"));
+        assert_eq!(observed[0]["response_id"], Value::Null);
+        assert_eq!(observed[0]["session_update"], "other");
+    }
 }

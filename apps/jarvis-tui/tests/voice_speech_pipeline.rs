@@ -413,7 +413,14 @@ fn run_fixture() {
             std::thread::sleep(Duration::from_millis(10));
         }
     }
-    assert!(settled, "fresh turn segment must settle");
+    assert!(
+        settled,
+        "fresh turn segment must settle; stage={}; busy={}; progress={progress:?}; terminal={done:?}; player_starts={:?}; release_present={}",
+        worker.stage_status(),
+        worker.is_busy(),
+        fs::read_to_string(root.join("player-starts")).map(|text| text.lines().count()),
+        root.join("release-player").exists()
+    );
     // Onset protection: the first piece is clause-sized (early PCM), and
     // the successor is sentence-level — so a long sentence uses exactly
     // 2 pieces under the superseding policy (not >=4 micro-pieces).

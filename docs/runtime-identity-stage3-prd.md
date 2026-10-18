@@ -11,6 +11,17 @@ first-launch/authentication regressions pass. A fresh thirteen-check PR head,
 protected merge and four exact-merge workflows remain required. The [execution report](foundation/2026-10-15-runtime-identity-stage3.md)
 retains the failed e24 head, all prior evidence and current remediation receipts.
 
+The maintained correction's hosted supply-chain, both contained browsers,
+namespace Hive and Windows installer passed on head `5b2eb925ed5414b777a53b06da5fcc29cd52c14c`.
+Its Windows native attempts failed at different ACP deadlines: initialize at five
+seconds, then a command round-trip at thirty seconds. Neither is assumed flaky.
+Test-only bounded content-free diagnostics preserve every original assertion and
+deadline; the complete local ACP suite passes 138 executions with one ignored
+case and Rust 1.88 checking passes. Production runtime/dependencies are unchanged.
+Apple Silicon also failed the existing fresh-turn voice settlement bound; test-only worker/fixture diagnostics retain its original assertions and timing. A new exact-head full matrix and resolved native results remain required.
+
+Preservation recheck confirms unchanged source checkout/dirty paths/worktrees, but two live Vesper cognition SQLite sidecars changed inode/mtime since capture, with attribution UNKNOWN. The report retains the discrepancy; complete runtime snapshot invariance is not claimed.
+
 ## Objective and authority
 
 Implement independent application-private runtime ownership from baseline

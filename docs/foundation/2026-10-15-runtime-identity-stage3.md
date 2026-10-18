@@ -871,3 +871,86 @@ Both `libdbus-first-launch-final.log` and `libdbus-settings-auth-final.log`
 passed against the current all-feature TUI: signed-out landing/all four providers,
 authentication navigation, masking and cancellation remain verified locally.
 These terminal fixtures do not save credentials or claim live provider approval.
+
+## Hosted correction and ACP diagnostic follow-up
+
+Corrective head `5b2eb925ed5414b777a53b06da5fcc29cd52c14c`, tree
+`e5040da722cd26e1c6d8b48ecbb6262c79108e00`, includes the maintained native
+backend and all local evidence above. Its hosted supply-chain job 117586362147
+in run 39097325497 passed: audit scanned 542 dependencies; deny passed
+advisories/bans/licenses/sources. Both contained browsers, namespace Hive and
+Windows installer also passed on that exact head. These results do not yet
+establish the full thirteen-check matrix or authorization to merge.
+
+Windows foundation job 117586362344 in run 39097325500 failed in
+`provider_selection::synthetic_provider_serves_an_acp_prompt_lifecycle_without_network_io`:
+no initialize response arrived within the existing five-second bound and its
+transcript was empty. The test/shared isolation/bootstrap source matched the
+earlier candidate byte-for-byte; that earlier individual case passed in 0.35 s,
+although its complete Windows job was later cancelled for total capacity.
+The first failed log does not establish why the child had not responded.
+
+A one-job diagnostic rerun request was rejected because the workflow was still
+running. After retaining the first failure, the already-failed non-publishing
+foundation attempt was cancelled and one complete five-target debug attempt
+started on the unchanged SHA. Cancelled jobs remain non-passing evidence.
+In attempt two, `provider_selection` passed, but Windows job 117589405830 failed
+later in `xai_native::grok_session_run_command_executes_once` after the unchanged
+30-second channel deadline. Four other xAI cases passed. This is a different
+failure, not a reproduced five-second initialization timeout, and neither is
+dismissed as harmless flakiness or an external outage.
+
+The receive helper's bare unwrap discarded the pending RPC and protocol state.
+The test-only diagnostic correction retains numeric expected-response id, child
+exit status and at most twelve allowlisted event shapes/statuses/method classes.
+It never dumps prompt/tool contents, credentials, arbitrary errors or raw JSON.
+The xAI loopback fixture additionally records six atomic server phases and marker
+presence/length before resuming the original panic. All exactly-once, cache-key,
+opaque-reasoning and marker assertions, five/30-second bounds and server socket
+timeouts remain. No retry is added. This improves diagnosis; it is not a claimed
+causal fix for either Windows event.
+
+`acp-diagnostic-full-acp.log` passes the complete all-feature ACP suite: 138 test
+executions across 21 result blocks with one inherited ignored case. The new
+diagnostic privacy/bounds regression passes alongside the original xAI cases.
+Rust 1.88 all-target/all-feature ACP checking passes. Production host source,
+all foundational crate source, manifests, lockfile and skills match the fully
+verified correction head byte-for-byte; only test diagnostics and owned evidence
+change. `acp-diagnostic-local-summary.json` records that comparison and log hash.
+The previous complete local runtime/security receipts remain scope-appropriate
+evidence; a fresh exact-head hosted full matrix remains mandatory for the changed
+test candidate. Windows causal diagnosis and native completion remain open.
+
+The completed debug attempt records ten successful required checks; Windows and
+Apple Silicon foundation plus the aggregate fail. Linux x86_64, Linux ARM64 and
+macOS Intel foundation passed. Linux native-credential acceptance ran against the
+private encrypted Secret Service fixture successfully. Apple Silicon job
+117589406011 failed at the existing 30-second fresh-turn settlement assertion in
+`voice_speech_pipeline::synthesis_overlaps_playback_and_stop_discards_lookahead`.
+Its log does not identify the outstanding worker stage. The test now retains
+stage/busy state, numeric progress, synthetic terminal outcomes and fixture-player
+counts on failure; it changes no deadline, synchronization or assertion. This is
+diagnostic evidence collection, not a voice defect correction or a flaky-test claim.
+
+The 2026-10-18 11:22 UTC preservation recheck retains unchanged Vesper HEAD,
+status, worktree inventory and all 158 dirty paths. Of 14,598 protected entries,
+two live SQLite sidecars (`cognition.db-wal` and `cognition.db-shm`) have different
+inode/mtime metadata from the original capture; their sizes remain 0 and 32,768
+bytes. Attribution is UNKNOWN. This task has not written to or opened that
+runtime database. `preservation-sidecar-discrepancy.json` retains the original
+and observed metadata; no restoration, deletion or baseline replacement occurs.
+The source checkout invariants pass; whole-runtime snapshot invariance cannot be
+claimed after this discrepancy.
+
+The final focused ACP suite passes 138 executions in 21 result blocks (one
+inherited ignored case), `acp-diagnostic-full-acp-corrected.log`. Corrected helper
+Rust 1.88 checking passes, and both voice pipeline cases pass with unchanged
+bounds in `voice-diagnostic-pipeline.log`. Naming verification retains all 36
+frozen hits. Owning ACP and TUI-test DOX describe the diagnostic contracts;
+parent ownership/index boundaries remain unchanged and require no new entries.
+
+Both-host all-target/all-feature Clippy passes with `-D warnings`, as do format,
+changed-document links/JSON/whitespace checks and live governance readback:
+thirteen required contexts, active no-bypass branch/tag rules and all three
+publishing/recovery workflows disabled. The diagnostic candidate introduces no
+production behavior, dependency, timeout or retry-policy change.

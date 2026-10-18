@@ -1,6 +1,6 @@
 # Foundation Evidence Index
 
-- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — maintained Rust-1.88-compatible native credential correction under verification; actual all-target graph, audit/deny and private GNOME encrypted/persistence/locked/missing tests pass. Failed e24 security evidence and earlier 3,653/165 local proof remain preserved. Complete local verification passes 3,653 executions/165 acceptance cases, Rust 1.88, both builds and terminal regressions, with 47 ignored limitations. Fresh exact-head protected integration and four post-merge workflows remain required.
+- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — maintained native credential correction passes complete local 3,653/165, Rust 1.88, both builds, security/private GNOME/terminal proof and hosted supply-chain/browser/installer gates. Windows native showed two different ACP deadlines; bounded content-free diagnostics pass 138 ACP executions and preserve all assertions/deadlines. Apple Silicon also failed fresh-turn voice settlement; test-only worker/fixture diagnostics preserve that bound. Causal native diagnosis, fresh complete exact-head integration and four post-merge workflows remain open; ignored limitations and failed/cancelled evidence are retained.
 
 - [Stage 2 Rust identity migration](2026-10-15-rust-identity-stage2.md) — complete reviewed workspace mapping, explicit legacy executable adapters, local verification and pending protected-merge evidence.
 
