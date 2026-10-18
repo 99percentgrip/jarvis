@@ -23,11 +23,15 @@ Verify terminal interaction through the production TUI binary with isolated stat
   private non-Git workspace, never a model POST. Tab refuses native/unknown slash
   commands without losing the draft; Enter reports unknown commands immediately.
   `message_queue_pty.rs` enrolls it under Unix `integration-test-harness` using
-  `VESPER_TEST_PYTHON` or Python 3. State and credentials are synthetic/private;
+  `JARVIS_TEST_PYTHON` or Python 3. State and credentials are synthetic/private;
   it changes no invoking RRC state. The Rust fixture has a 270-second outer
   lifetime; Python requests ordinary cleanup at 240 seconds.
   `test_terminal_writer.py` pins partial-byte fidelity, output-draining
   backpressure, input deadlines/flag restoration and real bounded duplex I/O.
+  Collapsed journal prompts wait for the rendered Show more control through the
+  existing bounded observer, not a fixed pump after provider dispatch. A gated
+  real-PTY frame regression preserves missing-frame refusal and all collapsed,
+  expanded, stale-composer, restore, copy and FIFO assertions.
   Native Windows/macOS proof is reported
   separately when executed; a portable script is not native-platform evidence.
 

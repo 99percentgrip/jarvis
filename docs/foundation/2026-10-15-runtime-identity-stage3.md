@@ -1027,3 +1027,83 @@ Settings navigation/discard/keep-editing/grouped-save/restart persistence
 (`review-settings-final.log`). These terminal checks use isolated homes/workspaces
 and submit no provider prompt. Fresh exact-head hosted verification is still
 required; the previously green head is not substituted for the new correction.
+
+
+## Native runner interruption and journal observer correction
+
+The exact `ddac77d2ae2b950f3d2c2bc3a7ddd633709b664c` first hosted matrix
+settled with eleven successes and two failures: Windows native and its dependent
+aggregate. GitHub's Windows annotation reports lost runner/server communication
+during foundational tests. The job log returns BlobNotFound, and the downloaded
+run archive contains only the four successful native targets. The underlying
+Windows cause remains UNKNOWN; this is not evidence of an external outage or
+a passing test suite. The annotation, job state and available archive remain in
+`windows-annotations-resume.json`, `windows-job-resume.json` and
+`ddac-foundation-logs.zip` in the private evidence directory.
+
+One bounded complete native diagnostic repeat, run 39133950058 attempt 2 with
+debug logging, preserves the same source, all five targets, assertions and
+deadlines. The aggregate is separately rerun to validate the complete current
+attempt. No publication workflow is invoked. The four first-attempt native logs
+confirm each new LM Studio/bootstrap/store-bundle ownership case executed and
+passed; both Linux logs also confirm real private Secret Service persistence,
+restart/namespace evidence and encrypted DH negotiation. They do not substitute
+for the current complete matrix.
+
+The repeat exposes a separate Apple Silicon failure in
+`terminal_show_more_restore_copy_and_queue_are_distinct`: the journal fixture
+samples Show more after one 600 ms pump following provider dispatch. Its captured
+frame contains only the beginning of the collapsed prompt and the stale composer.
+The identical fixed-delay observation exists in the unchanged Stage 2 baseline;
+source comparison establishes inherited coverage, not a claimed baseline native
+reproduction. A provider-request event is not a terminal-frame readiness event.
+
+`test_terminal_writer.py::test_collapsed_prompt_observes_frame_not_provider_dispatch`
+reproduces this observer defect deterministically through a real gated PTY child:
+the title is visible before an independently released Show more frame. The old
+single-pump observer fails (`journal-frame-observer-red.log`); the corrected
+observer passes (`journal-frame-observer-green.log`) without sleeping longer.
+The fixture now uses the existing bounded `Host.wait` reader for the actual
+control on first submission and restoration, preserving all collapsed-body,
+indentation/Unicode, stale-composer, expansion, copy, journal, restart, wire and
+FIFO assertions. Missing frames still fail under the unchanged 20-second reader
+budget, the Rust outer lifetime stays 270 seconds, and the held provider remains
+bounded at 45 seconds. Dedicated negative tests reject missing, expanded and
+stale frames. No production runtime, dependency, workflow or timeout is changed.
+
+Five complete real-TUI journal repetitions pass against the current all-feature
+binary with synthetic private homes, state and loopback provider:
+`journal-native-frame-repeat-1.log` through `journal-native-frame-repeat-5.log`,
+summarized in `journal-native-frame-repeats.json`. The terminal writer suite
+passes nine cases. The full local verification receipt for this correction and
+a new exact-head thirteen-check matrix remain required before protected merge.
+
+The DOX pass updates the owning terminal-test synchronization contract and corrects
+three stale parent descriptions of the application root, same-product voice
+environment reuse and native voice-pack data location. Parent ownership and child
+indexes are unchanged; no new file or subsystem boundary is introduced. The
+existing two Vesper SQLite-sidecar metadata discrepancies remain explicit, with
+unchanged original content hashes and UNKNOWN attribution. No restoration or
+baseline replacement occurs.
+
+The corrected complete local `cargo xtask verify` passes 3,675 executions in
+277 result blocks, retaining 47 ignored executions. All 165 exact acceptance
+cases pass in 202,211 ms. Log SHA-256:
+`e4cc9d6b97d0d024a1bdb24dc9116fd3e9e3b8a2a9f826d9d5002b17df4841b4`.
+All 956 frozen executable source/tool/fixture inputs still match. The serialized
+followup gates also pass Rust 1.88 workspace/all-target/all-feature checking,
+Windows MSVC auth/security/config checking, both workspace build modes, fresh
+`cargo audit` (1,338 advisory records; 542 dependencies) and
+`cargo deny --all-features check` (advisories/bans/licenses/sources all OK).
+`journal-full-verify-summary.json` and `journal-followup-gates.json` retain exact
+commands and outcomes. No Rust source, Cargo manifest or lockfile changes are
+in this observer correction. The source inventory now accounts for 250 changed
+paths, including the previously unchanged terminal-writer regression file.
+
+Both Linux targets pass the diagnostic repeat and retain complete native logs.
+The superseded failed native matrix cannot authorize integration. A new candidate
+requires all thirteen successful checks, resolved reviews, a normal protected
+merge and all four exact-merge workflows; no completion is claimed in this
+pre-CI report. Any later superseded-job cancellation remains cancellation rather
+than passing evidence. No release, installation, real RRC operation or Stage 4
+work is authorized or performed.

@@ -86,6 +86,15 @@ def user_rows(screen):
     return ["".join(row).strip() for row in screen if "".join(row).strip().startswith("›")]
 
 
+def observe_collapsed_prompt(host):
+    # Provider dispatch precedes the native redraw. Observe the control through
+    # the existing bounded terminal reader rather than sampling a partial frame.
+    host.wait("Show more")
+    assert "MARKER-TAIL-UNIQUE" not in host.text(), host.text()
+    assert "MARKER-TITLE" in host.text(), host.text()
+    assert "/paste" not in host.text(), host.text()
+
+
 def run(binary):
     Handler.requests = []
     Handler.first_seen.clear()
@@ -115,11 +124,7 @@ def run(binary):
             paste(host, BODY)
             host.key("\r")
             assert Handler.first_seen.wait(20), "provider did not see the long prompt"
-            host.pump(0.6)
-            assert "Show more" in host.text(), host.text()
-            assert "MARKER-TAIL-UNIQUE" not in host.text(), host.text()
-            assert "MARKER-TITLE" in host.text(), host.text()
-            assert "/paste" not in host.text(), host.text()
+            observe_collapsed_prompt(host)
             host.key("\t")
             host.wait("Show more is focused")
             host.key("\r")
@@ -164,9 +169,7 @@ def run(binary):
             host.wait("grok-4.7")
             host.key(f"/history {record['session_id']}\r")
             host.wait("Resumed")
-            host.pump(0.4)
-            assert "MARKER-TAIL-UNIQUE" not in host.text(), host.text()
-            assert "Show more" in host.text(), host.text()
+            observe_collapsed_prompt(host)
             host.key("\t")
             host.wait("Show more is focused")
             host.key("\r")

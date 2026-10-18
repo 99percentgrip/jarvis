@@ -5,7 +5,7 @@ owner-authorized native credential correction uses maintained libdbus Secret
 Service through explicit `keyring-core` stores. Local current audit/deny,
 Rust 1.88 auth/default Windows cross-check and real private GNOME
 persistence/encrypted/locked/missing tests passed. Full local verification
-passed 3,653 executions and 165 acceptance cases with 47 ignored limitations;
+passed 3,675 executions and 165 acceptance cases with 47 ignored limitations;
 Rust 1.88 workspace/Windows checks, both builds, audit/deny and terminal
 first-launch/authentication regressions pass. A fresh thirteen-check PR head,
 protected merge and four exact-merge workflows remain required. The [execution report](foundation/2026-10-15-runtime-identity-stage3.md)
@@ -23,6 +23,15 @@ Apple Silicon also failed the existing fresh-turn voice settlement bound; test-o
 Preservation recheck confirms unchanged source checkout/dirty paths/worktrees, but two live Vesper cognition SQLite sidecars changed inode/mtime since capture, with attribution UNKNOWN. The report retains the discrepancy; complete runtime snapshot invariance is not claimed.
 
 Protected-merge audit identified three remaining ownership defects despite thirteen green checks on the previous head. Their red-first corrections and new candidate verification are tracked in the [execution report](foundation/2026-10-15-runtime-identity-stage3.md). No merge or completion is claimed.
+
+The current hosted head's first Windows attempt lost runner/server communication,
+with no recoverable job log. Its bounded diagnostic repeat exposed an inherited
+Apple Silicon journal observer synchronization defect. A real gated-PTY red/green
+regression and five complete real-TUI repetitions support the test-only correction;
+all assertions and existing bounded observers remain required. Full local verification,
+Rust 1.88, both builds and fresh audit/all-feature deny pass for the correction. The
+[execution report](foundation/2026-10-15-runtime-identity-stage3.md) retains both
+failures and the pending new exact-head acceptance boundary.
 
 ## Objective and authority
 

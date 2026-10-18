@@ -1064,7 +1064,7 @@ and composes the existing bounded atomic session writer.
   prompts, tool payloads, reasoning, paths, commands, and credentials are
   excluded from JSONL events.
 - Provider selection first uses the saved preference under `JARVIS_HOME`
-  (default `.agent-vesper`), then `JARVIS_PROVIDER`, then `zai`.
+  (default `.jarvis`), then `JARVIS_PROVIDER`, then `zai`.
 - Missing credentials never intercept the native landing screen. Provider setup
   is the first Settings category, including when adapter controls exceed one
   viewport. Authentication is explicit through Settings or `/auth`; cancelling
@@ -1230,7 +1230,7 @@ and composes the existing bounded atomic session writer.
   receipts prove backend handoff, never human audibility. Stop retires the stream.
   `voice_pcm.rs` owns bounded rate conversion; `platform_voice.rs` owns native
   executable suffixes, interpreter layouts and application data paths. Existing
-  macOS legacy environments are reused. Native readiness checks compiled backend
+  owned same-product environments are reused. Native readiness checks compiled backend
   availability; real devices are checked only on activation. Missing native data
   paths refuse capture/setup, never relocate audio into shared temporary or
   workspace directories.
@@ -1393,7 +1393,7 @@ five-target CI matrix.
   assessment the F9 gate and the panel both read (enabled-but-blocked
   names the prerequisite; no silent engine fallback). The adapter crate
   `jarvis-voice-kokoro` owns the pack cache under
-  `~/.local/share/agent-vesper/voice-pack`; the TUI never seeds or
+  the native application data root plus `voice-pack`; the TUI never seeds or
   bypasses setup. Default/`voice-conversation`-only builds compile none
   of this and offer no install that can never work.
 
