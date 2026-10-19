@@ -21734,7 +21734,7 @@ mod tests {
             .expect("interview tool succeeds");
         let html = lens.html.lock().unwrap().clone();
         assert!(html.contains("Architecture choices"));
-        assert!(html.contains("data-vesper-question=\"framework\""));
+        assert!(html.contains("data-jarvis-question=\"framework\""));
         assert!(result.text.as_str().contains("Planning answers (1):"));
         assert!(result.text.as_str().contains("framework: Rust"));
     }
