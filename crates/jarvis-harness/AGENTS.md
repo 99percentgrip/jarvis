@@ -571,6 +571,8 @@ Z.ai and Playwright MCP server descriptors.
 
 ## Local Contracts
 
+- Shared `/version` reports `J.A.R.V.I.S.` plus the crate version. Web scope's default user agent is `jarvis-web`. Release asset names and vendor OAuth client identifiers stay deferred.
+
 - Project settings readers refuse nonempty unowned state before parsing existing
   activation. `tests/runtime_private_settings.rs` generates valid records through
   actual writers, withholds their ownership and proves cross-subsystem refusal

@@ -21,7 +21,7 @@ use jarvis_domain::{
 pub fn truthful_initialize_response(protocol: ProtocolVersion) -> InitializeResponse {
     InitializeResponse::new(protocol)
         .agent_info(Implementation::new(
-            "agent-vesper",
+            crate::ACP_AGENT_NAME,
             env!("CARGO_PKG_VERSION"),
         ))
         .auth_methods(vec![AuthMethod::Terminal(
@@ -328,6 +328,8 @@ mod tests {
         let value =
             serde_json::to_value(truthful_initialize_response(ProtocolVersion::V1)).unwrap();
         assert_eq!(value["protocolVersion"], 1);
+        assert_eq!(value["agentInfo"]["name"], crate::ACP_AGENT_NAME);
+        assert_eq!(crate::ACP_AGENT_NAME, "jarvis-acp");
         assert_eq!(
             value["agentCapabilities"]["promptCapabilities"]["image"],
             true

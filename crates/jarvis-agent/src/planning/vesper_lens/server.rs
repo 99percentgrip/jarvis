@@ -385,7 +385,7 @@ async fn dispatch(
             == Some(expected_origin.as_str())
             && request
                 .headers
-                .get("x-vesper-lens-token")
+                .get("x-jarvis-lens-token")
                 .map(String::as_str)
                 == Some(session.token.as_str())
             && content_type_ok;
@@ -563,7 +563,7 @@ mod tests {
         let body = r#"{"action":"approve","annotations":[],"notes":"","answers":[]}"#;
         let forged = request(address, format!("POST /s/{token}/feedback HTTP/1.1\r\nHost: {address}\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{body}", body.len())).await;
         assert!(forged.starts_with("HTTP/1.1 403"));
-        let valid = request(address, format!("POST /s/{token}/feedback HTTP/1.1\r\nHost: {address}\r\nOrigin: http://{address}\r\nContent-Type: application/json\r\nX-Vesper-Lens-Token: {token}\r\nContent-Length: {}\r\n\r\n{body}", body.len())).await;
+        let valid = request(address, format!("POST /s/{token}/feedback HTTP/1.1\r\nHost: {address}\r\nOrigin: http://{address}\r\nContent-Type: application/json\r\n{header}: {token}\r\nContent-Length: {}\r\n\r\n{body}", body.len(), header = super::super::LENS_FEEDBACK_HEADER)).await;
         assert!(valid.starts_with("HTTP/1.1 200"));
         assert_eq!(
             session
@@ -586,7 +586,7 @@ mod tests {
         session.begin_round();
         let (address, token) = address_and_token(session.url());
         let body = r#"{"action":"answer","annotations":[],"notes":"Approved: implement all findings.","answers":[{"question":"scope","value":"Full completion"}]}"#;
-        let response = request(address, format!("POST /s/{token}/feedback HTTP/1.1\r\nHost: {address}\r\nOrigin: http://{address}\r\nContent-Type: application/json\r\nX-Vesper-Lens-Token: {token}\r\nContent-Length: {}\r\n\r\n{body}", body.len())).await;
+        let response = request(address, format!("POST /s/{token}/feedback HTTP/1.1\r\nHost: {address}\r\nOrigin: http://{address}\r\nContent-Type: application/json\r\n{header}: {token}\r\nContent-Length: {}\r\n\r\n{body}", body.len(), header = super::super::LENS_FEEDBACK_HEADER)).await;
         assert!(response.starts_with("HTTP/1.1 200"));
         let feedback = session.next_feedback(Duration::from_secs(1)).await.unwrap();
         let context = crate::vro::feedback_as_context_message(&feedback);

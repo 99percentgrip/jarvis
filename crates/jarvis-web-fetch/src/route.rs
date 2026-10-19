@@ -51,7 +51,7 @@ impl WebSandboxRouteConfig {
             writable_root,
             egress: EgressPolicy::default(),
             timeout_seconds: crate::DEFAULT_FETCH_TIMEOUT_SECONDS,
-            user_agent: "agent-vesper".into(),
+            user_agent: "jarvis-web".into(),
         }
     }
 }

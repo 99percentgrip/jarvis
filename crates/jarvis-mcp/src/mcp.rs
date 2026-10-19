@@ -21,6 +21,8 @@ use crate::plugins::{append_line, read_all_jsonl};
 /// MCP protocol version this client advertises (mirrors the oracle's
 /// `MCP_PROTOCOL_VERSION = "2025-06-18"`).
 pub const MCP_PROTOCOL_VERSION: &str = "2025-06-18";
+/// Application-owned MCP client name. User-selected server names are unchanged.
+const MCP_CLIENT_NAME: &str = "jarvis-mcp";
 /// Maximum bytes of a single MCP server id.
 pub const MAX_SERVER_ID_CHARS: usize = 64;
 /// Maximum bytes of a configured command string.
@@ -440,7 +442,7 @@ impl McpClient {
                 serde_json::json!({
                     "protocolVersion": MCP_PROTOCOL_VERSION,
                     "capabilities": {},
-                    "clientInfo": {"name": "agent-vesper-tui", "version": env!("CARGO_PKG_VERSION")}
+                    "clientInfo": {"name": MCP_CLIENT_NAME, "version": env!("CARGO_PKG_VERSION")}
                 }),
                 None,
                 credentials,
@@ -489,7 +491,7 @@ fn http_tools(
         serde_json::json!({
             "protocolVersion": MCP_PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name": "agent-vesper-tui", "version": env!("CARGO_PKG_VERSION")}
+            "clientInfo": {"name": MCP_CLIENT_NAME, "version": env!("CARGO_PKG_VERSION")}
         }),
         None,
         credentials,
@@ -852,7 +854,7 @@ impl McpProcess {
             "initialize",
             serde_json::json!({
                 "protocolVersion": MCP_PROTOCOL_VERSION, "capabilities": {},
-                "clientInfo": {"name": "agent-vesper", "version": env!("CARGO_PKG_VERSION")}
+                "clientInfo": {"name": MCP_CLIENT_NAME, "version": env!("CARGO_PKG_VERSION")}
             }),
             deadline,
             cancelled,
@@ -1033,6 +1035,12 @@ mod tests {
     use super::*;
     use std::fs;
     use tempfile::TempDir;
+
+    #[test]
+    fn mcp_client_name_is_independent_of_vesper() {
+        assert_eq!(MCP_CLIENT_NAME, "jarvis-mcp");
+        assert!(!MCP_CLIENT_NAME.to_ascii_lowercase().contains("vesper"));
+    }
 
     fn registry_under(temp: &TempDir) -> (PathBuf, McpRegistry) {
         let root = temp.path().join("mcp-root");

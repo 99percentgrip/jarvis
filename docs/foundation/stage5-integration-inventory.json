@@ -1,0 +1,76 @@
+{
+  "baseline": "f7f360ab648913428db79e6d48b3ad3ae61b1673",
+  "tree": "d1aa9423a116295d8149eecf489052ebd2af6c2d",
+  "items": [
+    {
+      "surface": "acp-agent-name",
+      "previous": "agent-vesper-acp",
+      "current": "jarvis-acp",
+      "source": "crates/jarvis-acp-protocol/src/adapter.rs",
+      "class": "A"
+    },
+    {
+      "surface": "acp-initialize",
+      "previous": "agent-vesper",
+      "current": "jarvis-acp",
+      "source": "crates/jarvis-acp-protocol/src/mapping.rs",
+      "class": "A"
+    },
+    {
+      "surface": "mcp-client",
+      "previous": "agent-vesper",
+      "current": "jarvis-mcp",
+      "source": "crates/jarvis-mcp/src/mcp.rs",
+      "class": "A"
+    },
+    {
+      "surface": "lens-header",
+      "previous": "X-Vesper-Lens-Token",
+      "current": "X-Jarvis-Lens-Token",
+      "source": "crates/jarvis-agent/src/planning/vesper_lens/server.rs",
+      "class": "A"
+    },
+    {
+      "surface": "web-user-agent",
+      "previous": "agent-vesper",
+      "current": "jarvis-web",
+      "source": "crates/jarvis-config/src/web_config.rs",
+      "class": "A"
+    },
+    {
+      "surface": "registry-manifest",
+      "previous": "agent-vesper",
+      "current": "unchanged",
+      "source": "registry/agent.json",
+      "class": "D"
+    },
+    {
+      "surface": "provider-originator",
+      "previous": "agent-vesper",
+      "current": "unchanged",
+      "source": "crates/jarvis-provider-openai/src/transport.rs",
+      "class": "C"
+    },
+    {
+      "surface": "xai-client",
+      "previous": "agent-vesper",
+      "current": "unchanged",
+      "source": "crates/jarvis-provider-xai/src/transport.rs",
+      "class": "C"
+    },
+    {
+      "surface": "bridge-session",
+      "previous": "BridgeSessionId",
+      "current": "unchanged",
+      "source": "crates/jarvis-bridge/src/identity.rs",
+      "class": "B"
+    },
+    {
+      "surface": "release-assets",
+      "previous": "agent-vesper-acp-*",
+      "current": "unchanged",
+      "source": "crates/jarvis-harness/src/release_closeout.rs",
+      "class": "D"
+    }
+  ]
+}

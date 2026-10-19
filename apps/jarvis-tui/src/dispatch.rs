@@ -720,12 +720,12 @@ fn apply_outcome(
         CommandOutcome::InterviewLimit(limit) => {
             controls.interview_question_limit = limit;
             let label = limit.label();
-            transcript.push(format!("VesperLens interview limit → {label}"));
-            *status = Some(format!("VesperLens interview limit: {label}."));
+            transcript.push(format!("JarvisLens interview limit → {label}"));
+            *status = Some(format!("JarvisLens interview limit: {label}."));
         }
         CommandOutcome::InterviewLimitStatus => {
             *status = Some(format!(
-                "VesperLens interview limit: {}. Set with `/interview-limit auto|1-12`.",
+                "JarvisLens interview limit: {}. Set with `/interview-limit auto|1-12`.",
                 controls.interview_question_limit.label()
             ));
         }

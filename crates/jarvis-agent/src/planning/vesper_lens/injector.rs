@@ -12,7 +12,7 @@ pub(crate) const CHROME_SCRIPT: &str = r#"(function(){
   const root=document.body, token=root.dataset.token, frame=document.getElementById('artifact');
   const notes=document.getElementById('notes'), list=document.getElementById('annotations');
   const status=document.getElementById('status'), failures=document.getElementById('failures');
-  const storageKey='vesper-lens:'+token, state=load();
+  const storageKey='jarvis-lens:'+token, state=load();
   let annotations=Array.isArray(state.annotations)?state.annotations:[];
   let layoutWarnings=Array.isArray(state.layoutWarnings)?state.layoutWarnings:[];
   let answers=Array.isArray(state.answers)?state.answers:[];
@@ -39,7 +39,7 @@ pub(crate) const CHROME_SCRIPT: &str = r#"(function(){
       card.querySelector('.comment').addEventListener('input',function(event){annotations[index].comment=event.target.value;save()});
       card.querySelector('.suggested').addEventListener('input',function(event){annotations[index].suggested_html=event.target.value||null;save()});
       card.querySelector('button').addEventListener('click',function(){
-        const removed=annotations.splice(index,1)[0];post({type:'vesper:remove-highlight',id:removed.id});save();renderAnnotations();
+        const removed=annotations.splice(index,1)[0];post({type:'jarvis:remove-highlight',id:removed.id});save();renderAnnotations();
       });
       list.appendChild(card);
     });
@@ -64,7 +64,7 @@ pub(crate) const CHROME_SCRIPT: &str = r#"(function(){
     submitting=true;setStatus('Sending feedback…','working');
     const selectedDiagnostics=layoutWarnings.filter(function(warning){return warning.selected}).map(function(warning){return '[Layout: '+warning.rule+'] '+warning.message+' ('+warning.selector+')'}).join('\n');
     const submittedNotes=[notes.value,selectedDiagnostics].filter(Boolean).join('\n');
-    fetch('/s/'+token+'/feedback',{method:'POST',headers:{'content-type':'application/json','x-vesper-lens-token':token},
+    fetch('/s/'+token+'/feedback',{method:'POST',headers:{'content-type':'application/json','x-jarvis-lens-token':token},
       body:JSON.stringify({action:interviewMode&&action==='modify'?'answer':action,annotations:annotations,notes:submittedNotes,answers:answers,end_session:Boolean(endSession)})})
       .then(function(response){if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
       .then(function(){setStatus(endSession?'Session ended.':'Feedback delivered. Keep this tab open for the next round.','ok');submitting=false})
@@ -78,21 +78,21 @@ pub(crate) const CHROME_SCRIPT: &str = r#"(function(){
   document.getElementById('annotate').addEventListener('click',function(event){
     pickMode=!pickMode;event.currentTarget.setAttribute('aria-pressed',String(pickMode));
     event.currentTarget.textContent=pickMode?'Interact with page':'Annotate page';
-    post({type:'vesper:set-mode',annotating:pickMode});
+    post({type:'jarvis:set-mode',annotating:pickMode});
   });
-  document.getElementById('reload').addEventListener('click',function(){post({type:'vesper:request-state'});setTimeout(function(){frame.src=frame.dataset.src+'?r='+Date.now()},30)});
+  document.getElementById('reload').addEventListener('click',function(){post({type:'jarvis:request-state'});setTimeout(function(){frame.src=frame.dataset.src+'?r='+Date.now()},30)});
   notes.addEventListener('input',save);
 
   window.addEventListener('message',function(event){
     if(event.source!==frame.contentWindow||!event.data||typeof event.data.type!=='string')return;
     const message=event.data;
-    if(message.type==='vesper:ready'){
-      post({type:'vesper:restore',answers:answers,annotations:annotations,scrollY:Number(state.scrollY||0),annotating:pickMode});
-    }else if(message.type==='vesper:annotation'&&message.annotation){
+    if(message.type==='jarvis:ready'){
+      post({type:'jarvis:restore',answers:answers,annotations:annotations,scrollY:Number(state.scrollY||0),annotating:pickMode});
+    }else if(message.type==='jarvis:annotation'&&message.annotation){
       const existing=annotations.findIndex(function(item){return item.id===message.annotation.id});
       if(existing>=0)annotations[existing]=message.annotation;else annotations.push(message.annotation);
       save();renderAnnotations();
-    }else if(message.type==='vesper:review-state'){
+    }else if(message.type==='jarvis:review-state'){
       answers=Array.isArray(message.answers)?message.answers:[];
       expected=Array.isArray(message.expected)?message.expected:[];
       interviewMode=Boolean(message.interview);
@@ -103,9 +103,9 @@ pub(crate) const CHROME_SCRIPT: &str = r#"(function(){
       annotate.hidden=interviewMode;annotate.disabled=interviewMode;
       end.hidden=interviewMode;end.disabled=interviewMode;
       state.scrollY=Number(message.scrollY||0);save();
-    }else if(message.type==='vesper:artifact-failure'){
+    }else if(message.type==='jarvis:artifact-failure'){
       failures.hidden=false;failures.textContent='Artifact issue: '+String(message.message||'unknown resource failure');
-    }else if(message.type==='vesper:layout-diagnostics'){
+    }else if(message.type==='jarvis:layout-diagnostics'){
       const previous=new Map(layoutWarnings.map(function(warning){return [warning.id,Boolean(warning.selected)]}));
       layoutWarnings=(Array.isArray(message.warnings)?message.warnings:[]).map(function(warning){warning.selected=previous.get(warning.id)||false;return warning});
       save();renderLayoutWarnings();
@@ -116,7 +116,7 @@ pub(crate) const CHROME_SCRIPT: &str = r#"(function(){
     fetch('/s/'+token+'/state',{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error();return response.json()}).then(function(next){
       const nextRound=Number(next.round||0), nextRevision=String(next.revision||'');
       if(round&&nextRound!==round)setStatus('The agent started review round '+nextRound+'.','ok');
-      if(revision&&nextRevision&&nextRevision!==revision){post({type:'vesper:request-state'});setTimeout(function(){frame.src=frame.dataset.src+'?revision='+encodeURIComponent(nextRevision)},40)}
+      if(revision&&nextRevision&&nextRevision!==revision){post({type:'jarvis:request-state'});setTimeout(function(){frame.src=frame.dataset.src+'?revision='+encodeURIComponent(nextRevision)},40)}
       round=nextRound;revision=nextRevision;save();
       setTimeout(poll,1000);
     }).catch(function(){setStatus('Review server disconnected. Re-run the review tool to resume.','error');setTimeout(poll,2500)});
@@ -128,7 +128,7 @@ pub(crate) const CHROME_SCRIPT: &str = r#"(function(){
 /// messages to its parent, but contains no fetch call and no feedback action.
 pub(crate) const ARTIFACT_SDK_SCRIPT: &str = r#"(function(){
   'use strict';
-  if(window.__vesperLensSdk)return;window.__vesperLensSdk=true;
+  if(window.__jarvisLensSdk)return;window.__jarvisLensSdk=true;
   let annotating=false,hovered=null,shadow=null,highlights=new Map();
   function send(message){parent.postMessage(message,'*')}
   function selector(el){
@@ -151,24 +151,24 @@ pub(crate) const ARTIFACT_SDK_SCRIPT: &str = r#"(function(){
     return {id:annotationId,selector:sel,comment:'',suggested_html:null,target:{type:'element',selector:sel,tag:(el.localName||''),text:text}};
   }
   function ensureStyle(){
-    if(document.getElementById('vesper-lens-sdk-style'))return;
-    const style=document.createElement('style');style.id='vesper-lens-sdk-style';style.textContent='.vl-hover{outline:2px dashed #60a5fa!important;outline-offset:2px}.vl-highlight{outline:2px solid #fbbf24!important;outline-offset:2px}';document.head.appendChild(style);
+    if(document.getElementById('jarvis-lens-sdk-style'))return;
+    const style=document.createElement('style');style.id='jarvis-lens-sdk-style';style.textContent='.vl-hover{outline:2px dashed #60a5fa!important;outline-offset:2px}.vl-highlight{outline:2px solid #fbbf24!important;outline-offset:2px}';document.head.appendChild(style);
   }
   function onMove(event){if(!annotating)return;if(hovered)hovered.classList.remove('vl-hover');hovered=event.target;if(hovered)hovered.classList.add('vl-hover')}
-  function onClick(event){if(!annotating)return;event.preventDefault();event.stopPropagation();const el=event.target;if(!el)return;const annotation=annotationFor(el,null);mark(el,annotation.id);send({type:'vesper:annotation',annotation:annotation})}
-  function onSelection(){if(!annotating)return;const selection=getSelection();if(!selection||selection.rangeCount===0||selection.isCollapsed)return;const range=selection.getRangeAt(0);const el=range.commonAncestorContainer.nodeType===1?range.commonAncestorContainer:range.commonAncestorContainer.parentElement;if(!el)return;const annotation=annotationFor(el,range);mark(el,annotation.id);send({type:'vesper:annotation',annotation:annotation});selection.removeAllRanges()}
+  function onClick(event){if(!annotating)return;event.preventDefault();event.stopPropagation();const el=event.target;if(!el)return;const annotation=annotationFor(el,null);mark(el,annotation.id);send({type:'jarvis:annotation',annotation:annotation})}
+  function onSelection(){if(!annotating)return;const selection=getSelection();if(!selection||selection.rangeCount===0||selection.isCollapsed)return;const range=selection.getRangeAt(0);const el=range.commonAncestorContainer.nodeType===1?range.commonAncestorContainer:range.commonAncestorContainer.parentElement;if(!el)return;const annotation=annotationFor(el,range);mark(el,annotation.id);send({type:'jarvis:annotation',annotation:annotation});selection.removeAllRanges()}
   function controls(){
-    const grouped={},required=new Set();document.querySelectorAll('[data-vesper-question]').forEach(function(control){
-      const question=control.dataset.vesperQuestion;if(!question)return;const field=control.closest('[data-vesper-required]');if(field&&field.dataset.vesperRequired==='true')required.add(question);
+    const grouped={},required=new Set();document.querySelectorAll('[data-jarvis-question]').forEach(function(control){
+      const question=control.dataset.jarvisQuestion;if(!question)return;const field=control.closest('[data-jarvis-required]');if(field&&field.dataset.jarvisRequired==='true')required.add(question);
       const type=String(control.type||'').toLowerCase();if((type==='radio'||type==='checkbox')&&!control.checked)return;
       const value=String(control.value||'').trim();if(!value)return;(grouped[question]||(grouped[question]=[])).push(value);
     });
-    return {answers:Object.keys(grouped).map(function(question){return {question:question,value:grouped[question].join(', ')}}),expected:Array.from(required),scrollY:window.scrollY||0,interview:Boolean(document.querySelector('[data-vesper-question]'))};
+    return {answers:Object.keys(grouped).map(function(question){return {question:question,value:grouped[question].join(', ')}}),expected:Array.from(required),scrollY:window.scrollY||0,interview:Boolean(document.querySelector('[data-jarvis-question]'))};
   }
-  function report(){const value=controls();send({type:'vesper:review-state',answers:value.answers,expected:value.expected,scrollY:value.scrollY,interview:value.interview})}
+  function report(){const value=controls();send({type:'jarvis:review-state',answers:value.answers,expected:value.expected,scrollY:value.scrollY,interview:value.interview})}
   function restore(message){
     const byQuestion={};(message.answers||[]).forEach(function(answer){byQuestion[answer.question]=String(answer.value||'').split(', ')});
-    document.querySelectorAll('[data-vesper-question]').forEach(function(control){const values=byQuestion[control.dataset.vesperQuestion]||[];const type=String(control.type||'').toLowerCase();if(type==='radio'||type==='checkbox')control.checked=values.includes(String(control.value));else if(values.length)control.value=values.join(', ')});
+    document.querySelectorAll('[data-jarvis-question]').forEach(function(control){const values=byQuestion[control.dataset.jarvisQuestion]||[];const type=String(control.type||'').toLowerCase();if(type==='radio'||type==='checkbox')control.checked=values.includes(String(control.value));else if(values.length)control.value=values.join(', ')});
     (message.annotations||[]).forEach(function(annotation){try{mark(document.querySelector(annotation.selector),annotation.id)}catch(_){}});
     window.scrollTo(0,Number(message.scrollY||0));annotating=Boolean(message.annotating);report();
   }
@@ -176,27 +176,27 @@ pub(crate) const ARTIFACT_SDK_SCRIPT: &str = r#"(function(){
     const warnings=[],root=document.documentElement;
     if(root.scrollWidth>window.innerWidth+2)warnings.push({id:'horizontal-overflow:document',rule:'horizontal-overflow',selector:'html',message:'Page content extends '+(root.scrollWidth-window.innerWidth)+'px beyond the viewport.'});
     Array.from(document.body?document.body.querySelectorAll('*'):[]).slice(0,800).forEach(function(el){
-      if(warnings.length>=20||el.id==='vesper-lens-sdk-style')return;const style=getComputedStyle(el),clips=style.overflow==='hidden'||style.overflow==='clip'||style.overflowX==='hidden'||style.overflowY==='hidden';
+      if(warnings.length>=20||el.id==='jarvis-lens-sdk-style')return;const style=getComputedStyle(el),clips=style.overflow==='hidden'||style.overflow==='clip'||style.overflowX==='hidden'||style.overflowY==='hidden';
       if(!clips||!String(el.textContent||'').trim())return;const horizontal=el.scrollWidth>el.clientWidth+2,vertical=el.scrollHeight>el.clientHeight+2;if(!horizontal&&!vertical)return;
       const sel=selector(el),axis=horizontal&&vertical?'width and height':horizontal?'width':'height';warnings.push({id:'clipped-content:'+sel,rule:'clipped-content',selector:sel,message:'Content appears clipped along its '+axis+'.'});
     });
-    send({type:'vesper:layout-diagnostics',warnings:warnings});
+    send({type:'jarvis:layout-diagnostics',warnings:warnings});
   }
-  window.addEventListener('message',function(event){const message=event.data||{};if(message.type==='vesper:set-mode')annotating=Boolean(message.annotating);else if(message.type==='vesper:remove-highlight'){const el=highlights.get(message.id);if(el){el.classList.remove('vl-highlight');delete el.dataset.vlAnnotation}highlights.delete(message.id)}else if(message.type==='vesper:request-state')report();else if(message.type==='vesper:restore')restore(message)});
-  window.addEventListener('error',function(event){const target=event.target;if(target&&target!==window&&(target.src||target.href))send({type:'vesper:artifact-failure',message:'Could not load '+String(target.src||target.href)})},true);
+  window.addEventListener('message',function(event){const message=event.data||{};if(message.type==='jarvis:set-mode')annotating=Boolean(message.annotating);else if(message.type==='jarvis:remove-highlight'){const el=highlights.get(message.id);if(el){el.classList.remove('vl-highlight');delete el.dataset.vlAnnotation}highlights.delete(message.id)}else if(message.type==='jarvis:request-state')report();else if(message.type==='jarvis:restore')restore(message)});
+  window.addEventListener('error',function(event){const target=event.target;if(target&&target!==window&&(target.src||target.href))send({type:'jarvis:artifact-failure',message:'Could not load '+String(target.src||target.href)})},true);
   document.addEventListener('mousemove',onMove,true);document.addEventListener('click',onClick,true);document.addEventListener('mouseup',onSelection,true);
   document.addEventListener('input',report,true);document.addEventListener('change',report,true);window.addEventListener('scroll',report,{passive:true});
   let auditTimer=0;window.addEventListener('resize',function(){clearTimeout(auditTimer);auditTimer=setTimeout(auditLayout,150)});
-  ensureStyle();send({type:'vesper:ready'});report();requestAnimationFrame(function(){requestAnimationFrame(auditLayout)});
+  ensureStyle();send({type:'jarvis:ready'});report();requestAnimationFrame(function(){requestAnimationFrame(auditLayout)});
 })();"#;
 
 /// Render the trusted outer review page.
 #[must_use]
 pub(crate) fn render_review_chrome(token: &str) -> String {
     format!(
-        r#"<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VesperLens Review</title><style>
+        r#"<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JarvisLens Review</title><style>
 *{{box-sizing:border-box}}:root{{color-scheme:dark;font-family:ui-sans-serif,system-ui,sans-serif;background:#0b0f17;color:#e6edf7}}body{{margin:0;height:100vh;overflow:hidden}}.layout{{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 340px}}.frame{{padding:12px;background:#090d14}}iframe{{width:100%;height:100%;border:1px solid #334155;border-radius:10px;background:white}}aside{{overflow:auto;padding:16px;background:#111827;border-left:1px solid #334155}}h1{{font-size:16px;margin:0 0 4px}}h2{{font-size:13px;margin:12px 0 4px}}.subtle,#status{{font-size:12px;color:#94a3b8}}.actions{{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}}button{{border:1px solid #475569;border-radius:7px;background:#1e293b;color:#e2e8f0;padding:8px 10px;cursor:pointer}}button:hover{{background:#334155}}button:disabled{{cursor:wait;opacity:.55}}#approve{{background:#86efac;color:#052e16}}#changes{{background:#fde68a;color:#422006}}#reject,#end{{background:#fda4af;color:#4c0519}}#annotate[aria-pressed=true]{{background:#60a5fa;color:#082f49}}label{{display:grid;gap:5px;font-size:12px;margin-top:10px}}textarea{{width:100%;resize:vertical;border:1px solid #475569;border-radius:7px;background:#0f172a;color:#e2e8f0;padding:8px;font:inherit}}.annotation{{border:1px solid #334155;border-left:3px solid #fbbf24;border-radius:8px;padding:9px;margin-top:10px;background:#0f172a}}.annotation-head{{display:flex;gap:6px;align-items:start}}.annotation-head code{{font-size:10px;color:#93c5fd;word-break:break-all;flex:1}}.annotation-head button{{padding:1px 7px}}.diagnostic{{grid-template-columns:auto 1fr;align-items:start;border:1px solid #78350f;border-radius:7px;padding:7px;background:#1c1917}}.diagnostic span{{display:grid;gap:3px}}.diagnostic code{{font-size:10px;color:#fbbf24;word-break:break-all}}#status{{min-height:20px;margin-top:8px}}#status[data-kind=error],#failures{{color:#fda4af}}#status[data-kind=ok]{{color:#86efac}}#failures{{font-size:12px;margin:8px 0}}@media(max-width:800px){{.layout{{grid-template-columns:1fr;grid-template-rows:60vh 40vh}}aside{{border-left:0;border-top:1px solid #334155}}}}
-</style></head><body data-token="{token}"><div class="layout"><div class="frame"><iframe id="artifact" title="Artifact under review" sandbox="allow-scripts allow-forms allow-popups allow-downloads" data-src="/s/{token}/artifact/index.html" src="/s/{token}/artifact/index.html"></iframe></div><aside><h1>VesperLens Review <span id="annotation-count"></span></h1><div class="subtle">Operate the artifact normally, or enter annotation mode to target changes.</div><div class="actions"><button id="approve" type="button" disabled>Approve</button><button id="changes" type="button" disabled>Send changes</button><button id="reject" type="button" disabled>Reject</button><button id="annotate" type="button" aria-pressed="false" disabled>Annotate page</button><button id="reload" type="button">Reload</button><button id="end" type="button" disabled>End session</button></div><div id="status" role="status" aria-live="polite"></div><div id="failures" hidden></div><section id="diagnostics" hidden><h2>Possible layout issues</h2><div class="subtle">Select only confirmed issues to include in feedback.</div><div id="diagnostic-items"></div></section><div id="annotations"></div><label>Overall notes (optional)<textarea id="notes" rows="4" placeholder="Feedback for the agent"></textarea></label></aside></div><script src="/s/{token}/chrome.js" defer></script></body></html>"#
+</style></head><body data-token="{token}"><div class="layout"><div class="frame"><iframe id="artifact" title="Artifact under review" sandbox="allow-scripts allow-forms allow-popups allow-downloads" data-src="/s/{token}/artifact/index.html" src="/s/{token}/artifact/index.html"></iframe></div><aside><h1>JarvisLens Review <span id="annotation-count"></span></h1><div class="subtle">Operate the artifact normally, or enter annotation mode to target changes.</div><div class="actions"><button id="approve" type="button" disabled>Approve</button><button id="changes" type="button" disabled>Send changes</button><button id="reject" type="button" disabled>Reject</button><button id="annotate" type="button" aria-pressed="false" disabled>Annotate page</button><button id="reload" type="button">Reload</button><button id="end" type="button" disabled>End session</button></div><div id="status" role="status" aria-live="polite"></div><div id="failures" hidden></div><section id="diagnostics" hidden><h2>Possible layout issues</h2><div class="subtle">Select only confirmed issues to include in feedback.</div><div id="diagnostic-items"></div></section><div id="annotations"></div><label>Overall notes (optional)<textarea id="notes" rows="4" placeholder="Feedback for the agent"></textarea></label></aside></div><script src="/s/{token}/chrome.js" defer></script></body></html>"#
     )
 }
 
@@ -234,7 +234,7 @@ fn strip_csp_meta_tags(html: &str) -> String {
 pub fn inject_review_sdk(html: &str, sdk_path: &str) -> String {
     let html = strip_csp_meta_tags(html);
     let script = format!(
-        "\n<!-- VesperLens sandbox SDK -->\n<script src=\"{}\" defer></script>\n",
+        "\n<!-- JarvisLens sandbox SDK -->\n<script src=\"{}\" defer></script>\n",
         escape_html(sdk_path)
     );
     if let Some(index) = html.to_ascii_lowercase().rfind("</body") {
@@ -262,7 +262,7 @@ pub fn render_interview_artifact(title: &str, questions: &[super::LensQuestion])
         let id = escape_html(question.id.trim());
         let prompt = escape_html(question.prompt.trim());
         fields.push_str(&format!(
-            "<fieldset data-vesper-required=\"{}\"><legend>{prompt}</legend>",
+            "<fieldset data-jarvis-required=\"{}\"><legend>{prompt}</legend>",
             question.required
         ));
         if !question.description.trim().is_empty() {
@@ -278,7 +278,7 @@ pub fn render_interview_artifact(title: &str, questions: &[super::LensQuestion])
             ));
         }
         if question.options.is_empty() {
-            fields.push_str(&format!("<textarea data-vesper-question=\"{id}\" rows=\"3\" placeholder=\"Type your answer\"></textarea>"));
+            fields.push_str(&format!("<textarea data-jarvis-question=\"{id}\" rows=\"3\" placeholder=\"Type your answer\"></textarea>"));
         } else {
             let input_type = if question.allow_multiple {
                 "checkbox"
@@ -287,16 +287,16 @@ pub fn render_interview_artifact(title: &str, questions: &[super::LensQuestion])
             };
             for option in &question.options {
                 let option = escape_html(option);
-                fields.push_str(&format!("<label><input type=\"{input_type}\" name=\"{id}\" data-vesper-question=\"{id}\" value=\"{option}\"> <span>{option}</span></label>"));
+                fields.push_str(&format!("<label><input type=\"{input_type}\" name=\"{id}\" data-jarvis-question=\"{id}\" value=\"{option}\"> <span>{option}</span></label>"));
             }
             if question.allow_other {
-                fields.push_str(&format!("<label class=\"other\">Other <input type=\"text\" data-vesper-question=\"{id}\" placeholder=\"Enter another answer\"></label>"));
+                fields.push_str(&format!("<label class=\"other\">Other <input type=\"text\" data-jarvis-question=\"{id}\" placeholder=\"Enter another answer\"></label>"));
             }
         }
         fields.push_str("</fieldset>");
     }
     format!(
-        r#"<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title><style>:root{{color-scheme:dark;font-family:ui-sans-serif,system-ui,sans-serif;background:#0b0f17;color:#e6edf7}}body{{margin:0;padding:42px;max-width:850px}}main{{display:grid;gap:18px}}h1{{margin:0}}header>p,.description{{color:#9aa8ba}}fieldset{{border:1px solid #334155;border-radius:10px;padding:18px;display:grid;gap:10px}}legend{{font-weight:650;padding:0 8px}}label{{display:flex;gap:10px;align-items:flex-start;padding:9px;border-radius:7px;background:#111827}}textarea,input[type=text]{{box-sizing:border-box;width:100%;border:1px solid #475569;border-radius:7px;background:#0f172a;color:#e6edf7;padding:10px;font:inherit}}.recommended{{color:#86efac;margin:0}}.other{{display:grid}}</style></head><body><main><header><h1>{title}</h1><p>Answer the planning questions, add optional context in VesperLens, then send your answers.</p></header>{fields}</main></body></html>"#,
+        r#"<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title><style>:root{{color-scheme:dark;font-family:ui-sans-serif,system-ui,sans-serif;background:#0b0f17;color:#e6edf7}}body{{margin:0;padding:42px;max-width:850px}}main{{display:grid;gap:18px}}h1{{margin:0}}header>p,.description{{color:#9aa8ba}}fieldset{{border:1px solid #334155;border-radius:10px;padding:18px;display:grid;gap:10px}}legend{{font-weight:650;padding:0 8px}}label{{display:flex;gap:10px;align-items:flex-start;padding:9px;border-radius:7px;background:#111827}}textarea,input[type=text]{{box-sizing:border-box;width:100%;border:1px solid #475569;border-radius:7px;background:#0f172a;color:#e6edf7;padding:10px;font:inherit}}.recommended{{color:#86efac;margin:0}}.other{{display:grid}}</style></head><body><main><header><h1>{title}</h1><p>Answer the planning questions, add optional context in JarvisLens, then send your answers.</p></header>{fields}</main></body></html>"#,
         title = escape_html(title.trim())
     )
 }
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn chrome_owns_submission_and_requires_the_session_header() {
-        assert!(CHROME_SCRIPT.contains("x-vesper-lens-token"));
+        assert!(CHROME_SCRIPT.contains("x-jarvis-lens-token"));
         assert!(CHROME_SCRIPT.contains("/feedback"));
         assert!(!ARTIFACT_SDK_SCRIPT.contains("/feedback"));
     }
@@ -371,7 +371,7 @@ mod tests {
         );
         assert!(html.contains("Plan &lt;review&gt;"));
         assert!(html.contains("Choose &lt;carefully&gt;"));
-        assert!(html.contains("data-vesper-required=\"false\""));
+        assert!(html.contains("data-jarvis-required=\"false\""));
         assert!(html.contains("Recommended: Web"));
         assert!(html.contains("Other"));
     }
@@ -381,7 +381,7 @@ mod tests {
         assert!(ARTIFACT_SDK_SCRIPT.contains("text-range"));
         assert!(ARTIFACT_SDK_SCRIPT.contains("start:boundary"));
         assert!(CHROME_SCRIPT.contains("suggested_html"));
-        assert!(CHROME_SCRIPT.contains("vesper:remove-highlight"));
+        assert!(CHROME_SCRIPT.contains("jarvis:remove-highlight"));
     }
 
     #[test]

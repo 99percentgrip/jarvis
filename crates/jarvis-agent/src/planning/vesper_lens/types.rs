@@ -136,7 +136,7 @@ pub struct LensFeedback {
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub notes: String,
     /// Structured planning/interview answers gathered from controls carrying
-    /// a `data-vesper-question` id. Empty for ordinary artifact reviews.
+    /// a `data-jarvis-question` id. Empty for ordinary artifact reviews.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub answers: Vec<LensAnswer>,
     /// True when the reviewer explicitly ended the reusable browser session.

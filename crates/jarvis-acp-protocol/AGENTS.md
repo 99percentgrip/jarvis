@@ -7,6 +7,8 @@ update mapping, and bounded asynchronous dispatch into `jarvis-runtime`.
 
 ## Local Contracts
 
+- Initialize `agentInfo.name` and the SDK agent builder both use `jarvis-acp`. Protocol method names and schemas are unchanged.
+
 - `/acceptance` is argument-dependent for concurrency: status/settings inspection is
   safe, while start/resume/revise/stop/export interrupt or serialize against active
   work. Native completion reports remain host-owned results rather than model-supplied

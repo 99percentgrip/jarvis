@@ -401,7 +401,7 @@ impl AcpHarnessEngine {
             if let Some(sink) = &sink {
                 sink.event(jarvis_acp_protocol::AcpEngineEvent::ContentDelta {
                     text: format!(
-                        "\n[VesperLens] Open this review and submit your response:\n{url}\n"
+                        "\n[JarvisLens] Open this review and submit your response:\n{url}\n"
                     ),
                 });
             }

@@ -188,9 +188,11 @@ When the user requests a durable behavior change, record it here or in the relev
   download routes and RRC publication ownership remain compatibility/deferred contracts.
   Stage 3 separately authorizes private runtime roots and credential/environment isolation.
   New compiled filenames use explicit discovery/private-fixture compatibility;
-  Stage 3 owns independent private runtime storage and process identities;
-  Stage 4 import and all later installation/registration/publication remain
-  unauthorized. No automatic data import, installation or release is permitted.
+  Stage 3 owns independent private runtime storage and process identities.
+  Stage 4 import remains deferred and unauthorized. Stage 5 owns external integration advertisement: ACP `jarvis-acp`, MCP `jarvis-mcp`, Lens wire tokens,
+  and the `jarvis-web` user agent. Registry publication, installer destinations,
+  release assets, and vendor OAuth client identifiers stay inactive.
+  No automatic data import, installation or release is permitted.
 - Private runtime defaults and application environment readers use independent
   namespaces. Nonempty private stores require an ownership marker; legacy user
   state is never adopted. User-selected projects retain ordinary tool authority.

@@ -1,3 +1,5 @@
+- [Stage 5 integration identity](2026-10-20-stage5-integration-identity.md) — ACP, MCP, Lens, and web client identities on baseline `f7f360ab648913428db79e6d48b3ad3ae61b1673`. Registry publication and historical import remain deferred.
+
 # Foundation Evidence Index
 
 - [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — PR #5 passed all thirteen exact-head checks and merged normally. Exact-merge Intel macOS then reproduced the native speech settlement failure. Red-first proof identifies pending blocking cancellation, an unenforced subprocess deadline and an unregistered worker synthesis token; the scoped correction passes voice/TTS/worker suites and twenty exact pipeline repetitions with original bounds unchanged. Corrective exact-head CI, protected merge and four green exact-merge workflows remain required. Earlier security/ownership failures, ignored limitations and the Vesper metadata discrepancy remain explicit.

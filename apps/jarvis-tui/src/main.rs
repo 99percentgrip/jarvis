@@ -10301,7 +10301,7 @@ fn drain_lens_urls(session: &mut TuiSession) {
                 if looks_like_url(line.as_str()) {
                     session.last_lens_url = Some(line.clone());
                     session.state.status = Some(
-                        "VesperLens response pending — use the browser; Ctrl+O opens or reopens it."
+                        "JarvisLens response pending — use the browser; Ctrl+O opens or reopens it."
                             .into(),
                     );
                 }
@@ -10397,7 +10397,7 @@ fn open_url_in_browser(session: &mut TuiSession, url: &str) {
 fn open_last_lens_review(session: &mut TuiSession) {
     let Some(url) = session.last_lens_url.clone() else {
         session.state.status =
-            Some("No VesperLens review URL yet — request a review first.".into());
+            Some("No JarvisLens review URL yet — request a review first.".into());
         return;
     };
     open_url_in_browser(session, &url);
@@ -13131,7 +13131,7 @@ fn request_human_review_definition() -> jarvis_domain::ToolDefinition {
         harness_name: jarvis_domain::HarnessToolName::new("request_human_review")
             .expect("bounded harness name"),
         provider_name: None,
-        description: "Request human review of a workspace-confined HTML artifact via VesperLens. Opens trusted review chrome around a sandboxed page and BLOCKS until the human submits feedback (approve/reject/modify). Use only when the user requested visual review or visual/interaction choices materially need inspection; do not use for ordinary source code or fully specified HTML that deterministic checks can verify.".to_string(),
+        description: "Request human review of a workspace-confined HTML artifact via JarvisLens. Opens trusted review chrome around a sandboxed page and BLOCKS until the human submits feedback (approve/reject/modify). Use only when the user requested visual review or visual/interaction choices materially need inspection; do not use for ordinary source code or fully specified HTML that deterministic checks can verify.".to_string(),
         input_schema: serde_json::json!({
             "type": "object",
             "properties": {
@@ -13167,7 +13167,7 @@ fn request_human_input_definition(limit: InterviewQuestionLimit) -> jarvis_domai
             .expect("bounded harness name"),
         provider_name: None,
         description: format!(
-            "Open a VesperLens browser interview and BLOCK until the human answers planning questions. Use this before finalizing a plan when requirements, choices, preferences, scope, or tradeoffs are unresolved. {policy} Options are optional and produce free text when omitted."
+            "Open a JarvisLens browser interview and BLOCK until the human answers planning questions. Use this before finalizing a plan when requirements, choices, preferences, scope, or tradeoffs are unresolved. {policy} Options are optional and produce free text when omitted."
         ),
         input_schema: serde_json::json!({
             "type": "object",
@@ -13216,10 +13216,10 @@ fn lens_url_callback(
         Some(tx) => Box::new(move |url: &str| {
             let message = match spawn_browser_detached(url) {
                 Ok(()) => {
-                    "[VesperLens] Review opened in your browser. Use the page, then submit your response."
+                    "[JarvisLens] Review opened in your browser. Use the page, then submit your response."
                 }
                 Err(_) => {
-                    "[VesperLens] Could not open a browser automatically. Click the link below, or press Ctrl+O:"
+                    "[JarvisLens] Could not open a browser automatically. Click the link below, or press Ctrl+O:"
                 }
             };
             let _ = tx.send(message.to_string());
@@ -13364,7 +13364,7 @@ impl TuiToolService {
         let lens = self
             .lens_review
             .clone()
-            .ok_or_else(|| tui_tool_failure("VesperLens", "no review port configured"))?;
+            .ok_or_else(|| tui_tool_failure("JarvisLens", "no review port configured"))?;
         let limit = self.interview_question_policy.get();
         Ok(jarvis_harness::lens_tools::LensToolService::new(
             self.inner.clone(),
@@ -21620,8 +21620,8 @@ mod tests {
         assert_eq!(def.id.as_str(), "request_human_review");
         assert_eq!(def.harness_name.as_str(), "request_human_review");
         assert!(
-            def.description.contains("VesperLens"),
-            "description must name VesperLens: {}",
+            def.description.contains("JarvisLens"),
+            "description must name JarvisLens: {}",
             def.description
         );
         assert!(
@@ -21834,13 +21834,13 @@ mod tests {
     async fn vro114_drain_lens_urls_pushes_to_live_trajectory() {
         let mut session = fresh_tui_session_for_trajectory_tests();
         let (tx, rx) = mpsc::unbounded_channel::<String>();
-        let _ = tx.send("> [VesperLens] open http://127.0.0.1:1234/".to_string());
+        let _ = tx.send("> [JarvisLens] open http://127.0.0.1:1234/".to_string());
         session.lens_url_rx = Some(rx);
 
         assert!(session.live_trajectory.is_empty());
         drain_lens_urls(&mut session);
         assert_eq!(session.live_trajectory.len(), 1);
-        assert!(session.live_trajectory[0].contains("VesperLens"));
+        assert!(session.live_trajectory[0].contains("JarvisLens"));
         assert!(session.live_trajectory[0].contains("127.0.0.1:1234"));
     }
 
@@ -21851,7 +21851,7 @@ mod tests {
         assert!(looks_like_url("http://127.0.0.1:1234/review/abc"));
         assert!(looks_like_url("https://example.test/x"));
         assert!(!looks_like_url(
-            "[VesperLens] Artifact ready for review. Open: http://127.0.0.1:1234/"
+            "[JarvisLens] Artifact ready for review. Open: http://127.0.0.1:1234/"
         ));
         assert!(!looks_like_url("see http://127.0.0.1:1234/ here"));
         assert!(!looks_like_url(""));
@@ -21901,7 +21901,7 @@ mod tests {
         // it. The message line alone must NOT clobber the stash.
         let mut session = fresh_tui_session_for_trajectory_tests();
         let (tx, rx) = mpsc::unbounded_channel::<String>();
-        let _ = tx.send("[VesperLens] Artifact ready for review.".to_string());
+        let _ = tx.send("[JarvisLens] Artifact ready for review.".to_string());
         let _ = tx.send("http://127.0.0.1:41277/review/dash".to_string());
         session.lens_url_rx = Some(rx);
 
@@ -21940,7 +21940,7 @@ mod tests {
                 .status
                 .as_deref()
                 .unwrap_or_default()
-                .contains("No VesperLens review URL yet"),
+                .contains("No JarvisLens review URL yet"),
             "guidance status expected: {:?}",
             session.state.status
         );

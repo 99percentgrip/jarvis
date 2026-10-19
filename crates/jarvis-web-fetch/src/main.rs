@@ -209,7 +209,7 @@ impl Default for HelperPolicy {
             allow_plain_http: false,
             allowed_hosts: Vec::new(),
             respect_robots: true,
-            user_agent: "agent-vesper".into(),
+            user_agent: "jarvis-web".into(),
         }
     }
 }

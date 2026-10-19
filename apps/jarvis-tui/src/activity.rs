@@ -14,7 +14,7 @@ pub(crate) fn project(entries: &[String], running: bool, expanded: bool) -> Vec<
     while index < entries.len() {
         let entry = entries[index].trim();
         let Some(action) = entry.strip_prefix('⏺') else {
-            if entry.starts_with("http") || entry.contains("VesperLens") {
+            if entry.starts_with("http") || entry.contains("JarvisLens") {
                 out.push(entries[index].clone());
             }
             index += 1;
@@ -90,7 +90,7 @@ pub(crate) fn project(entries: &[String], running: bool, expanded: bool) -> Vec<
         out.extend(
             entries[index + 1..end]
                 .iter()
-                .filter(|s| s.starts_with("http") || s.contains("VesperLens"))
+                .filter(|s| s.starts_with("http") || s.contains("JarvisLens"))
                 .cloned(),
         );
         index = end;

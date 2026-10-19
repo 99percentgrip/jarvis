@@ -116,7 +116,7 @@ pub fn looks_like_html_artifact(text: &str) -> bool {
 /// when a review starts. Matches the PRD §4 spec verbatim.
 #[must_use]
 pub fn diagnostic_for_review(url: &str) -> String {
-    format!("[VesperLens] Artifact ready for review. Open: {url}")
+    format!("[JarvisLens] Artifact ready for review. Open: {url}")
 }
 
 /// Render a [`LensFeedback`] as a structured context-window annotation
@@ -138,7 +138,7 @@ pub fn feedback_as_context_message(feedback: &LensFeedback) -> String {
         Action::Modify => "NEEDS MODIFICATION",
         Action::Answer => "PLANNING ANSWERS SUBMITTED (read answers and overall notes)",
     };
-    let mut out = format!("VesperLens human review: {verdict}\n");
+    let mut out = format!("JarvisLens human review: {verdict}\n");
     if !feedback.notes.is_empty() {
         out.push_str(&format!("Overall notes: {}\n", feedback.notes));
     }
@@ -167,7 +167,7 @@ pub fn feedback_as_context_message(feedback: &LensFeedback) -> String {
         }
     }
     if feedback.end_session {
-        out.push_str("The reviewer ended this VesperLens session.\n");
+        out.push_str("The reviewer ended this JarvisLens session.\n");
     }
     out
 }
@@ -322,7 +322,7 @@ mod tests {
         let line = diagnostic_for_review("http://127.0.0.1:4321/");
         assert_eq!(
             line,
-            "[VesperLens] Artifact ready for review. Open: http://127.0.0.1:4321/"
+            "[JarvisLens] Artifact ready for review. Open: http://127.0.0.1:4321/"
         );
     }
 
@@ -333,7 +333,7 @@ mod tests {
             ..Default::default()
         };
         let msg = feedback_as_context_message(&fb);
-        assert!(msg.contains("VesperLens human review: APPROVED"));
+        assert!(msg.contains("JarvisLens human review: APPROVED"));
         assert!(!msg.contains("Overall notes:"));
         assert!(!msg.contains("Annotations"));
     }

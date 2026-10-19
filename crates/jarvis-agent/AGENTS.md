@@ -515,6 +515,8 @@ the multi-turn, tool-executing layer above it.
 
 ## Local Contracts
 
+- JarvisLens wire tokens (`x-jarvis-lens-token`, `jarvis:remove-highlight` messages, `jarvis-lens:` storage) are paired inside this crate. The Rust type remains `VesperLens`. The legacy header does not authorize feedback.
+
 - Bounded composition roles may use `with_tool_iteration_ceiling` to tighten the
   total turn allowance, including planned continuation. Zero clamps to one;
   this port cannot raise the shared absolute ceiling. Ordinary hosts retain

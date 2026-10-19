@@ -1841,7 +1841,7 @@ impl CommandRegistry {
         buffer.push_str("  /statusline        show or hide the session sidebar\n");
         buffer.push_str("  /max-iterations    show the per-turn tool-call iteration cap\n");
         buffer.push_str(
-            "  /interview-limit    show or set VesperLens questions (auto|1-12; default 4)\n",
+            "  /interview-limit    show or set JarvisLens questions (auto|1-12; default 4)\n",
         );
         buffer.push_str("  /usage             show the current usage summary\n");
         buffer.push_str("  /history           browse and resume persisted sessions\n");
@@ -2136,7 +2136,7 @@ const ORACLE_COMMAND_SURFACE: &[OracleCommandEntry] = &[
     OracleCommandEntry { name: "toggle-thinking",   description: "Alias for /reasoning-panel" },
     OracleCommandEntry { name: "clear-view",        description: "Clear only the visible transcript" },
     OracleCommandEntry { name: "max-iterations",    description: "Show or set the per-turn tool-call iteration cap" },
-    OracleCommandEntry { name: "interview-limit",   description: "Show or set the VesperLens interview question limit (auto or 1-12)" },
+    OracleCommandEntry { name: "interview-limit",   description: "Show or set the JarvisLens interview question limit (auto or 1-12)" },
     OracleCommandEntry { name: "recap",             description: "Show a one-line summary of the session so far" },
     OracleCommandEntry { name: "blocks",            description: "Pick a code block from recent responses to copy or save" },
     OracleCommandEntry { name: "statusline",        description: "Choose which sidebar segments are visible" },
@@ -2717,7 +2717,7 @@ mod tests {
         }
         assert!(
             registry.contains("interview-limit"),
-            "VesperLens-native /interview-limit must be registered"
+            "JarvisLens-native /interview-limit must be registered"
         );
         assert!(
             registry.contains("chat-only"),

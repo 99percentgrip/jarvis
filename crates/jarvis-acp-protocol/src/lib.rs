@@ -19,6 +19,9 @@ pub use engine::{
     AcpPermissionRequester, AcpPromptEngine, AcpPromptFuture, AcpPromptRequest, AcpPromptResult,
 };
 pub use mapping::truthful_initialize_response;
+
+/// ACP agent name advertised at initialization and by the SDK session.
+pub const ACP_AGENT_NAME: &str = "jarvis-acp";
 pub use vro_events::{
     RecordingVroEventSink, VroEvent, VroEventSink, VroEventSinkError, sample_happy_path_sequence,
     translate_vro_event_to_acp,
