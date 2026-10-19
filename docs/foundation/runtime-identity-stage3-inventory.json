@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "508ab4d962a9aa90eb4e6e37b7e340a6569af90b",
-  "status": "Three ownership review corrections pass full local verification, Rust 1.88, builds, audit/deny and 3675/165 regressions; new exact-head CI and protected merge pending",
+  "status": "PR #5 merged after thirteen successful checks; exact-merge native voice settlement exposed three cancellation/deadline defects now corrected with red-first local proof; corrective exact-head CI pending",
   "ownership_categories": [
     "JarvisPrivate",
     "VesperPrivate",
@@ -250,6 +250,22 @@
       "writers": "managed capture and independent voice setup/child ownership",
       "consumers": "speech capture, synthesis, playback and optional dependency setup",
       "verification": "voice suites; lost-wakeup regression; capture lease and cleanup tests",
+      "stage": 3
+    },
+    {
+      "id": "voice-synthesis-process",
+      "owner": "JarvisPrivate",
+      "resource": "Active synthesis token and owned system speech-engine process group",
+      "legacy_contract": "generation checks around a fresh unregistered token; configured deadline not enforced",
+      "current_contract": "generation-bound cancellation; deadline/cancel terminates and reaps the exact owned engine group and frees its executor lane",
+      "source": "crates/jarvis-voice/src/tts_subprocess.rs",
+      "symbol": "fn synthesize_blocking",
+      "source_lines": [
+        272
+      ],
+      "writers": "SpeechControl active synthesis registration and SubprocessTts",
+      "consumers": "native TUI speech worker",
+      "verification": "blocking cancellation; pending-stream Stop settlement; configured deadline/fresh-lane proof; exact speech pipeline regression",
       "stage": 3
     },
     {
@@ -1595,6 +1611,7 @@
     "apps/jarvis-tui/src/voice_flm.rs",
     "apps/jarvis-tui/src/voice_flm_vad.rs",
     "apps/jarvis-tui/src/voice_shared_stt.rs",
+    "apps/jarvis-tui/src/voice_speech_worker.rs",
     "apps/jarvis-tui/tests/AGENTS.md",
     "apps/jarvis-tui/tests/bridge_at01_pty.py",
     "apps/jarvis-tui/tests/dependency_setup_pty.py",
@@ -1606,6 +1623,7 @@
     "apps/jarvis-tui/tests/openai_startup_responsiveness.rs",
     "apps/jarvis-tui/tests/pr4_f9_gate.rs",
     "apps/jarvis-tui/tests/pr4_wiring.rs",
+    "apps/jarvis-tui/tests/r3_speech_worker.rs",
     "apps/jarvis-tui/tests/r3_loop_pty.py",
     "apps/jarvis-tui/tests/r3_voice_pack.rs",
     "apps/jarvis-tui/tests/release_hosts_pty.py",
@@ -1615,6 +1633,7 @@
     "apps/jarvis-tui/tests/skill_routing_pty.py",
     "apps/jarvis-tui/tests/skill_routing_submission_pty.py",
     "apps/jarvis-tui/tests/test_terminal_writer.py",
+    "apps/jarvis-tui/tests/test_windows_child_cleanup.py",
     "apps/jarvis-tui/tests/usage_pty.py",
     "apps/jarvis-tui/tests/voice_execution_policy.rs",
     "apps/jarvis-tui/tests/voice_lifecycle.rs",
@@ -1736,8 +1755,11 @@
     "crates/jarvis-voice-kokoro/src/pack.rs",
     "crates/jarvis-voice-kokoro/src/setup.rs",
     "crates/jarvis-voice/AGENTS.md",
+    "crates/jarvis-voice/src/composition/blocking.rs",
     "crates/jarvis-voice/src/config.rs",
     "crates/jarvis-voice/src/stt_sidecar.rs",
+    "crates/jarvis-voice/src/tts_subprocess.rs",
+    "crates/jarvis-voice/tests/pr2_tts.rs",
     "crates/jarvis-web-fetch/AGENTS.md",
     "crates/jarvis-web-fetch/src/browser.rs",
     "docs/AGENTS.md",
@@ -1812,6 +1834,15 @@
       "owner": "JarvisPrivate",
       "writer": "JarvisPaths::prepare_lmstudio_settings_directory; TUI private atomic settings save",
       "authority": "explicit save initializes owned state; read-only discovery refuses foreign state without mutation; declared application homes and known .jarvis ancestors are prepared/refused before descendant writes"
+    },
+    {
+      "contract": "Generation-bound speech cancellation and bounded owned subprocess synthesis",
+      "reader": "apps/jarvis-tui/src/voice_speech_worker.rs::prepare_one; crates/jarvis-voice/src/tts_subprocess.rs::synthesize_blocking",
+      "writer": "SpeechControl active synthesis token; EngineChild owned process group",
+      "verification": "stop_cancels_pending_synthesis_and_settles_exactly_once; cancellation_settles_the_awaiter_before_uncancellable_work_finishes; slow_engine_is_deadline_bounded; synthesis_overlaps_playback_and_stop_discards_lookahead",
+      "status": "red-first focused proof and twenty exact pipeline repetitions pass locally; corrective exact-head native CI pending",
+      "owner": "JarvisPrivate",
+      "authority": "only the active Jarvis speech token and its exact owned child/process group; no device, external speech service or Vesper process ownership"
     }
   ]
 }

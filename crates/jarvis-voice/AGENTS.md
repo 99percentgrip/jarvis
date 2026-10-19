@@ -35,9 +35,9 @@ types, and deterministic in-memory fakes.
   egress recheck; attempt bound), `PartialGate` (buffered-repass
   partials; whole-capture budget; final priority; stale rejection; no
   turn-submission surface exists), `run_blocking` (cancellable bridge;
-  honest computation-continues limit documented in-module). Completion registers
-  its waker before checking the result, so delivery cannot strand an awaiter
-  between those operations; the forced-registration regression pins this order.
+  honest computation-continues limit documented in-module). Completion and
+  cancellation both register their wakers while awaiting blocking work, so either
+  event settles the caller; forced-registration regressions pin both paths.
 - `hygiene` (PR-2): the stateful bounded sentence gate — hygiene runs
   on gated segments; protected spans (reasoning/code/PEM) tracked
   across chunk and sentence boundaries; credential/blob redaction with
@@ -77,6 +77,11 @@ types, and deterministic in-memory fakes.
   (no bundling; licenses recorded in the PR-2 execution report). Spawning a
   newly published executable retries only the transient `ExecutableFileBusy`
   classification twice with a 50 ms delay; other failures remain immediate.
+  The configured request deadline and `VoiceCancel` terminate and reap the owned
+  child/process group, close its stdout reader and release the blocking executor
+  lane; returning from the await alone is insufficient cleanup.
+  Group signaling uses an explicit `--` before the negative owned PGID and a
+  non-ignorable signal; a helper retaining stdout must not strand reader cleanup.
   Executable paths with spaces remain one typed command argument; shell
   metacharacters are rejected. Hosts resolve native installation paths.
 - The crate must never depend on runtime, agent, harness, or provider
@@ -123,6 +128,9 @@ types, and deterministic in-memory fakes.
   are executable POSIX shell wrappers run only on Unix; Windows still compiles
   and runs the platform-neutral adapter validation, HTTP, composition, and
   contract cases.
+  Deadline/lane-reuse proof uses a native shell builtin WAV fixture for the
+  fresh request, excluding unrelated interpreter cold-start time while keeping
+  the same deadline, real subprocess parsing and executor reuse assertions.
 - `cargo xtask architecture` enforces the dependency allowlist
   (jarvis-domain, jarvis-security only).
 - Pure core must build with no features; adapter features must stay

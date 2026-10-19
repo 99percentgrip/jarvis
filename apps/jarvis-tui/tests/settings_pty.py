@@ -198,6 +198,12 @@ class Host:
                     return
                 params, final = match.groups()
                 self.pending = self.pending[match.end():]
+                if final == 'c' and params in ('', '0'):
+                    # ConPTY can forward its primary-device query before the
+                    # application's first frame. Answer as the emulated VT100
+                    # terminal; never treat a response (?...) as another query.
+                    self.write(b'\x1b[?1;2c')
+                    continue
                 if params.startswith(('?', '<', '>')):
                     continue
                 values = [int(v or 0) for v in params.split(';')] if ':' not in params else []

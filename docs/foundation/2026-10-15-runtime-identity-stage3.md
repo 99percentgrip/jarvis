@@ -2,7 +2,68 @@
 
 ## Objective and current status
 
-Current ownership corrections pass complete local regression/security/MSRV/build verification. Thirteen checks passed on the previous head; the corrected head still requires a fresh exact-head matrix and protected integration. No merge has occurred.
+Current status, 2026-10-19: PR #5 merged normally at
+`a26de15cc452ce2d397c3c4877230da2fa25858d` after thirteen successful required
+checks. All four workflows on that merge now report success, including the
+bounded native reruns. The reproduced speech cancellation/deadline defects and
+their corrective branch remain subject to a new protected PR and full CI matrix.
+
+The corrective snapshot passes `cargo xtask verify` (165 exact acceptance cases),
+`cargo audit`, `cargo deny --all-features check`, default/all-feature workspace
+builds, and every command in the Rust 1.88 workflow, including workspace tests,
+fixture/contracts/provider/session checks and 165 exact acceptance cases.
+Native SDK metadata was supplied through the existing private `PKG_CONFIG_PATH`;
+an initial invocation without it failed dependency setup before testing.
+
+The latest fixture correction additionally passes all four real Linux signed-out
+first-launch/provider Settings cases, 17 terminal/cleanup tests, 22 subprocess
+tests on current Rust and Rust 1.88, naming, formatting, Python syntax, JSON and
+whitespace checks. Hosted Intel follow-up timeout and Windows terminal negotiation
+evidence are recorded below. Its fresh thirteen-check matrix remains required.
+
+### Earlier candidate checkpoints
+
+Head `9d60c1f89ab5c5dbeb435814ae52784a87785f96` passed full local verification
+and 165 exact acceptance cases. Hosted quality, MSRV, security, four native
+targets and both browsers passed, but Intel macOS and Windows installer failed;
+the dependent aggregate correctly failed. Intel's diagnostic now identifies
+`speech engine deadline exceeded` at 1.075 seconds for the fresh follow-up
+engine. This deadline begins inside the admitted blocking closure, excluding
+executor queue wait. The Python-based fresh fixture is replaced with fixed valid
+WAV bytes emitted by a native shell builtin; the 250 ms timeout and one-second
+follow-up bounds, real subprocess parsing and same executor are preserved.
+The TERM-ignoring descendant cleanup regression passed on Intel.
+
+Windows failed first launch with only `ESC[1t ESC[c ESC[?1004h ESC[?9001h` visible
+before its unchanged ten-second bound. The common terminal fixture ignored the
+observed primary device query. A gated real-PTY peer reproduced the blank wait
+before correction; replying with standard device attributes closes that protocol
+gap without creating UI output. Seventeen terminal/cleanup tests pass, including
+fragmentation and no response-loop checks. This is source/controlled-peer proof;
+resolution of the actual Windows failure still requires native CI. No timeout,
+required context, production runtime behavior or dependency changed in this
+fixture correction. All 22 subprocess tests pass locally in 0.27 seconds.
+
+PR #6 head `f7823c67996e023b343ec1e8e91b2e38ade6fda3` obtained all thirteen
+successful trusted checks. A normal merge attempt was correctly rejected by
+the unresolved review-thread rule. Review identified ambiguous negative-PGID
+argument parsing and TERM-ignoring descendants retaining stdout. A real owned
+shell/helper regression reproduced the cleanup defect in 2.004 seconds against
+a 250 ms deadline. The correction sends `-KILL -- -<owned-pgid>` before direct
+child reaping, without signaling unrelated processes. The review and previous
+green matrix cannot certify this further source correction; fresh focused and
+complete exact-head verification are required.
+
+Corrective PR #6 head `03768b3bcbfd5e48f33f02cf4d5e30cbd0eb7bc9` passed
+quality, Rust 1.88, supply-chain, both Linux native platforms, both contained
+browsers, namespace Hive and Windows installer verification. Intel macOS job
+117908093270 in run 39205750500 failed the new
+`slow_engine_is_deadline_bounded` follow-up success assertion. The configured
+250 ms timeout assertion passed. The original assertion discarded the returned
+error; no root cause or transient classification is established. A diagnostic
+correction retains the same deadlines and success/lane-reuse requirements while
+reporting the bounded typed error and elapsed duration. Protected integration
+remains blocked pending a successful complete matrix.
 
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
@@ -1210,3 +1271,72 @@ pass. Those receipts support the earlier fixture correction; they cannot replace
 a fresh thirteen-check matrix for this subsequent ownership correction. Protected
 merge and all four exact-merge workflows remain pending. Stage 3 completion,
 Stage 4 work, installation, real RRC execution and publication are not claimed.
+
+## Exact-merge native speech settlement correction
+
+PR #5 reached final head `f8bdd0897b268036cd3e30c91969bb468e2b4e6f`
+with candidate tree `33dfd4897467c4374ca66b453bec16768f3ebdf9`.
+All thirteen required exact-head checks succeeded and the protected merge produced
+`a26de15cc452ce2d397c3c4877230da2fa25858d`, with parents `508ab4d9…`
+and `f8bdd089…` and the exact candidate tree. No ruleset bypass occurred.
+
+The exact-merge push workflows then separated two native observations. Windows
+installer acceptance first failed the unchanged ten-second signed-out xAI launch
+bound after its Z.ai and OpenAI cases passed; a bounded same-SHA failed-job rerun
+passed the complete workflow. Its causal trigger remains UNKNOWN, so no timeout or
+speculative Windows source change is made. Intel macOS failed
+`synthesis_overlaps_playback_and_stop_discards_lookahead` after 30.63 seconds,
+remaining busy in `Synthesizing voice` for a fresh turn. The same failure family
+had already appeared on Apple Silicon. A green rerun alone therefore cannot close
+the recurring contract defect.
+
+Source inspection and three red-first regressions establish three independent
+causes that can strand settlement:
+
+- `run_blocking` checked cancellation before submission and after completion but
+  never registered the cancellation waker while pending. A future explicitly
+  polled into its wait slot remained pending past the 250 ms cancellation bound.
+- `SubprocessTtsConfig::deadline` was unused. The previous slow-engine test used a
+  ten-second configuration against a two-second fixture and asserted only a
+  thirty-second outer bound. A real 250 ms configuration returned after 2.01
+  seconds before correction.
+- `SpeechControl::stop` advanced only a generation and flushed playback. The
+  worker created an unregistered synthesis token, so a cancellation-aware pending
+  stream stayed busy beyond the deterministic two-second Stop bound.
+
+The correction makes completion and cancellation co-wake the blocking bridge,
+registers exactly one generation-bound active synthesis token under the existing
+admission lock, and makes Stop take and cancel it. The system TTS closure now
+observes that shared token and its configured deadline, bounds stdout on a reader
+thread, terminates/reaps only its owned child/process group and releases the
+single-worker executor lane. Stopped stream errors resolve once as `Stale`; no
+timeout, playback assertion, device behavior, dependency, feature or user-state
+path changes.
+
+Focused green evidence on the corrective branch:
+
+- `jarvis-voice` library: 87 passed; subprocess TTS: 21 passed.
+- `r3_speech_worker`: 7 passed, including pending-stream cancellation and
+  exactly-one stale settlement in 0.02 seconds.
+- The configured 250 ms slow-engine case passes in 0.26 seconds and a fresh
+  synthesis immediately succeeds on the same one-worker executor.
+- The exact failed native pipeline regression passes once plus twenty consecutive
+  repetitions, with its original ordering assertions and deadlines unchanged.
+- `cargo fmt --all -- --check` passes.
+
+The first repetition command omitted the already required private libdbus
+`PKG_CONFIG_PATH` and failed during dependency build setup before executing a
+test. The corrected environment ran all twenty repetitions successfully; the
+setup failure is excluded from behavior evidence. Complete workspace, security,
+Rust 1.88, five-platform and exact-head verification remains required on the
+final corrective candidate. Those local commands subsequently all passed as
+recorded in the current status above; native CI remains required for the new PR.
+
+The new code owns only the active speech token and its exact child process
+group. It does not signal an original-product process, use a real audio device, contact a
+provider, alter credentials/state, activate updater/RRC paths or change a Cargo
+dependency. The original source checkout remains untouched by this correction.
+Its previously recorded two SQLite sidecar inode/mtime discrepancies retain
+UNKNOWN attribution and matching content hashes; strict metadata preservation is
+not claimed. Stage 3 remains pending a protected corrective merge and four green
+workflows on that exact merge commit.

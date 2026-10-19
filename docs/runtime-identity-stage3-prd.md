@@ -1,15 +1,25 @@
 # Stage 3 runtime identity isolation PRD
 
-**Current status, 2026-10-18: corrective verification in progress.** The
-owner-authorized native credential correction uses maintained libdbus Secret
-Service through explicit `keyring-core` stores. Local current audit/deny,
-Rust 1.88 auth/default Windows cross-check and real private GNOME
-persistence/encrypted/locked/missing tests passed. Full local verification
-passed 3,668 top-level Rust cases and 165 acceptance cases with 47 ignored executions;
-Rust 1.88 workspace/Windows checks, both builds, audit/deny and terminal
-first-launch/authentication regressions pass. A fresh thirteen-check PR head,
-protected merge and four exact-merge workflows remain required. The [execution report](foundation/2026-10-15-runtime-identity-stage3.md)
-retains the failed e24 head, all prior evidence and current remediation receipts.
+**Current status, 2026-10-19: exact-merge native correction in progress.** PR #5
+merged normally after all thirteen exact-head checks succeeded. Its exact merge
+commit exposed a recurring native speech settlement failure on Intel macOS.
+Three red-first regressions prove missing pending cancellation in the blocking
+bridge, an unenforced system-TTS deadline and an unregistered worker synthesis
+token. All four workflows on that merge now pass after bounded native reruns;
+the independently reproduced defects still require correction. The scoped
+correction passes complete local verification, security gates, both build modes,
+the full Rust 1.88 workflow and twenty exact pipeline repetitions without
+changing existing deadlines. A new protected
+corrective PR, thirteen-check matrix and four exact-merge workflows remain
+required. The [execution report](foundation/2026-10-15-runtime-identity-stage3.md)
+retains all earlier security, ownership, native and preservation evidence.
+
+Corrective PR #6 also fixes owned helper-group termination after red-first proof.
+Its current fixture repair removes Python cold-start from the unchanged
+one-second executor-reuse assertion and answers primary terminal device queries.
+Focused Rust 1.88, real Linux first-launch and terminal-peer checks pass; native
+Intel/Windows acceptance and a new full matrix remain required. No merge of PR #6
+or Stage 3 completion is claimed.
 
 The maintained correction's hosted supply-chain, both contained browsers,
 namespace Hive and Windows installer passed on head `5b2eb925ed5414b777a53b06da5fcc29cd52c14c`.

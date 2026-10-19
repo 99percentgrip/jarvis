@@ -3,9 +3,10 @@
 //! The event thread only enqueues and drains outcomes. A synthesis worker owns
 //! the selected engine; a playback lane owns delivery. Their zero-capacity
 //! rendezvous allows at most one prepared lookahead while one unit plays.
-//! Stop and selection replacement invalidate generations and flush the player;
-//! stream admission is serialized with Stop, never pipe writes or drain waits.
-//! In-flight native inference is non-preemptible; stale output is discarded.
+//! Stop and selection replacement invalidate generations, cancel the active
+//! synthesis scope, and flush the player; stream admission is serialized with
+//! Stop, never pipe writes or drain waits. Backends that cannot preempt native
+//! inference still discard stale output through the generation boundary.
 //! Text remains in chat. Transport/drain outcomes never prove human audibility.
 
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
@@ -66,13 +67,44 @@ struct SpeechControl {
     generation: AtomicU64,
     // Serializes stream admission with Stop, never pipe writes or drain waits.
     admission: Mutex<()>,
+    // Exactly one synthesis scope can be active on the single producer lane.
+    // Stop takes this token while holding admission, closing the race between
+    // the generation check and registration of a pending stream.
+    active_synthesis: Mutex<Option<(u64, jarvis_voice::VoiceCancel)>>,
 }
 
 impl SpeechControl {
     fn stop(&self, playback: &PlaybackOwner) {
         let _guard = self.admission.lock();
         self.generation.fetch_add(1, Ordering::AcqRel);
+        if let Ok(mut active) = self.active_synthesis.lock()
+            && let Some((_, cancel)) = active.take()
+        {
+            cancel.cancel();
+        }
         playback.stop_flush();
+    }
+
+    fn begin_synthesis(&self, expected_generation: u64) -> Option<jarvis_voice::VoiceCancel> {
+        let _admission = self.admission.lock().ok()?;
+        if self.generation.load(Ordering::Acquire) != expected_generation {
+            return None;
+        }
+        let cancel = jarvis_voice::VoiceCancel::new();
+        let mut active = self.active_synthesis.lock().ok()?;
+        debug_assert!(active.is_none(), "the synthesis producer is single-lane");
+        *active = Some((expected_generation, cancel.clone()));
+        Some(cancel)
+    }
+
+    fn finish_synthesis(&self, expected_generation: u64) {
+        if let Ok(mut active) = self.active_synthesis.lock()
+            && active
+                .as_ref()
+                .is_some_and(|(generation, _)| *generation == expected_generation)
+        {
+            active.take();
+        }
     }
 }
 
@@ -456,7 +488,7 @@ fn run_worker(
                             engine.tts(),
                             &part,
                             job_generation,
-                            &generation.generation,
+                            &generation,
                             &results,
                             &voice_id,
                         )
@@ -765,7 +797,7 @@ fn prepare_one(
     inner: &dyn jarvis_voice::ports::VoiceTts,
     job: &SpeechJob,
     expected_generation: u64,
-    generation: &AtomicU64,
+    control: &SpeechControl,
     results: &WorkerFeedback,
     voice_id: &str,
 ) -> Result<Vec<u8>, SpeechOutcome> {
@@ -781,28 +813,37 @@ fn prepare_one(
     let stale = || SpeechOutcome::Stale {
         segment: job.segment,
     };
-    if generation.load(Ordering::Acquire) != expected_generation {
+    let Some(cancel) = control.begin_synthesis(expected_generation) else {
         return Err(stale());
-    }
+    };
     results.stage("Synthesizing voice");
-    let cancel = jarvis_voice::VoiceCancel::new();
-    let stream =
-        match jarvis_voice::test_util::block_on(inner.synthesize(&job.text, &profile, &cancel)) {
-            Ok(stream) => stream,
-            Err(error) => {
-                if generation.load(Ordering::Acquire) != expected_generation {
-                    return Err(stale());
+    let outcome = (|| {
+        let stream =
+            match jarvis_voice::test_util::block_on(inner.synthesize(&job.text, &profile, &cancel))
+            {
+                Ok(stream) => stream,
+                Err(error) => {
+                    if control.generation.load(Ordering::Acquire) != expected_generation {
+                        return Err(stale());
+                    }
+                    return Err(SpeechOutcome::Failed {
+                        segment: job.segment,
+                        error: error.to_string(),
+                    });
                 }
-                return Err(SpeechOutcome::Failed {
-                    segment: job.segment,
-                    error: error.to_string(),
-                });
-            }
-        };
-    if generation.load(Ordering::Acquire) != expected_generation {
-        return Err(stale());
-    }
-    collect_pcm(stream, job.segment, expected_generation, generation)
+            };
+        if control.generation.load(Ordering::Acquire) != expected_generation {
+            return Err(stale());
+        }
+        collect_pcm(
+            stream,
+            job.segment,
+            expected_generation,
+            &control.generation,
+        )
+    })();
+    control.finish_synthesis(expected_generation);
+    outcome
 }
 
 fn collect_pcm(
@@ -832,6 +873,9 @@ fn collect_pcm(
                 pcm.extend_from_slice(frame.bytes());
             }
             Some(Err(error)) => {
+                if generation.load(Ordering::Acquire) != expected_generation {
+                    return Err(stale());
+                }
                 return Err(SpeechOutcome::Failed {
                     segment,
                     error: error.to_string(),
@@ -1305,6 +1349,7 @@ mod regression_tests {
             Arc::new(SpeechControl {
                 generation: AtomicU64::new(1),
                 admission: Mutex::new(()),
+                active_synthesis: Mutex::new(None),
             }),
             Arc::new(AtomicBool::new(false)),
             Arc::new(AtomicUsize::new(1)),

@@ -112,6 +112,33 @@ sys.stdout.buffer.write(header + samples)
     wrapper
 }
 
+/// A fixed, valid WAV emitted by the native shell builtin. Executor reuse must
+/// not depend on cold startup of the unrelated Python interpreter on a runner.
+#[cfg(unix)]
+fn immediate_fixture_engine(dir: &std::path::Path) -> PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut wav = Vec::new();
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&44u32.to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&22050u32.to_le_bytes());
+    wav.extend_from_slice(&44100u32.to_le_bytes());
+    wav.extend_from_slice(&2u16.to_le_bytes());
+    wav.extend_from_slice(&16u16.to_le_bytes());
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&8u32.to_le_bytes());
+    wav.extend_from_slice(&[16, 0, 32, 0, 16, 0, 32, 0]);
+    let escaped: String = wav.iter().map(|byte| format!("\\0{byte:03o}")).collect();
+    let engine = dir.join("immediate_engine");
+    std::fs::write(&engine, format!("#!/bin/sh\nprintf '%b' '{escaped}'\n")).unwrap();
+    std::fs::set_permissions(&engine, std::fs::Permissions::from_mode(0o755)).unwrap();
+    engine
+}
+
 #[derive(Clone, Copy, Debug)]
 #[cfg(unix)]
 enum FixtureKind {
@@ -295,15 +322,94 @@ fn mid_stream_cancellation_suppresses_remaining_audio() {
 
 #[test]
 #[cfg(unix)]
+fn deadline_terminates_owned_descendant_holding_stdout() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let engine = dir.path().join("engine_with_owned_helper");
+    // The helper inherits both stdout and an ignored TERM disposition. Killing
+    // only the leader, or sending TERM alone, leaves the reader blocked until
+    // the helper's two-second sleep finishes. No external service is involved.
+    std::fs::write(&engine, "#!/bin/sh\ntrap '' TERM\nsleep 2 &\nwait\n").unwrap();
+    std::fs::set_permissions(&engine, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let tts = SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable: engine,
+            voice: "en".into(),
+            deadline: Duration::from_millis(250),
+            max_output_bytes: 2 * 1024 * 1024,
+            max_text_bytes: 8192,
+        },
+        Arc::new(ThreadPoolExecutor::new(1)),
+    )
+    .unwrap();
+    let voice = profile(&tts);
+    let started = std::time::Instant::now();
+    let cancel = VoiceCancel::new();
+    let outcome = block_on(tts.synthesize("owned helper", &voice, &cancel));
+    assert!(outcome.is_err(), "deadline expiry cannot produce audio");
+    assert!(
+        started.elapsed() < Duration::from_secs(1),
+        "owned helper retained stdout beyond the deadline: {:?}",
+        started.elapsed()
+    );
+}
+
+#[test]
+#[cfg(unix)]
 fn slow_engine_is_deadline_bounded() {
-    let tts = tts_with(FixtureKind::Slow);
+    let dir = tempfile::tempdir().unwrap();
+    let executor = Arc::new(ThreadPoolExecutor::new(1));
+    let tts = SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable: fixture_engine(dir.path(), FixtureKind::Slow),
+            voice: "en".into(),
+            deadline: Duration::from_millis(250),
+            max_output_bytes: 2 * 1024 * 1024,
+            max_text_bytes: 8192,
+        },
+        executor.clone(),
+    )
+    .unwrap();
     let cancel = VoiceCancel::new();
     let start = std::time::Instant::now();
     let voice = profile(&tts);
-    let _ = block_on(tts.synthesize("x", &voice, &cancel));
+    let outcome = block_on(tts.synthesize("x", &voice, &cancel));
     assert!(
-        start.elapsed() < Duration::from_secs(30),
-        "slow engine must be bounded by deadline, not hang"
+        start.elapsed() < Duration::from_secs(1),
+        "the configured 250 ms deadline must terminate the owned engine"
+    );
+    assert!(
+        outcome.is_err(),
+        "deadline expiry cannot yield synthetic audio"
+    );
+
+    // A deadline must terminate and reap the owned process, not merely stop
+    // awaiting it. Prove the same one-worker executor can immediately service
+    // a fresh request after the timed-out engine.
+    let followup = SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable: immediate_fixture_engine(dir.path()),
+            voice: "en".into(),
+            deadline: Duration::from_secs(1),
+            max_output_bytes: 2 * 1024 * 1024,
+            max_text_bytes: 8192,
+        },
+        executor,
+    )
+    .unwrap();
+    let followup_start = std::time::Instant::now();
+    let followup_voice = profile(&followup);
+    if let Err(error) = block_on(followup.synthesize("fresh", &followup_voice, &VoiceCancel::new()))
+    {
+        panic!(
+            "fresh synthesis must use the released executor lane: {error:?}; elapsed={:?}",
+            followup_start.elapsed()
+        );
+    }
+    assert!(
+        followup_start.elapsed() < Duration::from_secs(1),
+        "timed-out backend work kept the one-worker executor occupied"
     );
 }
 

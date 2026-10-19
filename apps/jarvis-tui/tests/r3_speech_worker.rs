@@ -122,6 +122,61 @@ fn enqueue_never_blocks_for_synthesis() {
     );
 }
 
+/// Stop must cancel the synthesis scope that is already pending inside the
+/// production worker. Generation checks around synthesis are insufficient: a
+/// provider stream can remain Pending until its token is cancelled.
+#[test]
+fn stop_cancels_pending_synthesis_and_settles_exactly_once() {
+    let tts = Arc::new(jarvis_voice::fakes::FakeTts::on_device());
+    tts.set_script(jarvis_voice::fakes::FakeTtsScript::HangUntilCancelled);
+    let worker = SpeechWorker::spawn_with_tts_for_test(
+        EngineSelection::System {
+            voice_name: "en".into(),
+        },
+        Arc::new(PlaybackOwner::new("/nonexistent-player".into(), None)),
+        tts.clone(),
+    );
+    worker.enqueue(SpeechJob {
+        segment: 71,
+        text: "Wait for explicit cancellation.".into(),
+    });
+    let opened = Instant::now() + Duration::from_secs(2);
+    while tts.opened_texts().is_empty() && Instant::now() < opened {
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    assert_eq!(
+        tts.opened_texts().len(),
+        1,
+        "synthesis must be pending before Stop"
+    );
+
+    worker.stop();
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let mut terminal = Vec::new();
+    while Instant::now() < deadline {
+        terminal.extend(
+            worker
+                .drain()
+                .into_iter()
+                .filter(|outcome| !matches!(outcome, SpeechOutcome::Progress { .. })),
+        );
+        if !worker.is_busy() {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    assert!(
+        !worker.is_busy(),
+        "Stop left cancellation-aware synthesis pending"
+    );
+    assert_eq!(
+        terminal,
+        vec![SpeechOutcome::Stale { segment: 71 }],
+        "the stopped segment must settle exactly once as stale"
+    );
+    worker.shutdown();
+}
+
 /// Stop invalidates a job enqueued BEFORE it: the outcome is Stale.
 /// (A job enqueued AFTER a stop is fresh — the PR-4 "new speech after
 /// stop must work" contract — so this test races the stop in first.)
