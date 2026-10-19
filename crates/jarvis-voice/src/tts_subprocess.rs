@@ -199,13 +199,14 @@ impl EngineChild {
         }
         drop(self.stdin.take());
         // Unix children are started in their own process group. Signal that
-        // exact negative pgid so a helper inherited by the configured engine
-        // cannot keep stdout open after cancellation. The direct kill below
-        // remains the bounded fallback and the child is always reaped.
+        // exact negative pgid after the option terminator. KILL also closes
+        // stdout inherited by helpers that ignore TERM; otherwise joining the
+        // reader could retain the executor lane indefinitely. The direct kill
+        // below remains the fallback and the child is always reaped.
         #[cfg(unix)]
         {
             let _ = Command::new("kill")
-                .args(["-TERM", &format!("-{}", self.child.id())])
+                .args(["-KILL", "--", &format!("-{}", self.child.id())])
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .status();

@@ -295,6 +295,41 @@ fn mid_stream_cancellation_suppresses_remaining_audio() {
 
 #[test]
 #[cfg(unix)]
+fn deadline_terminates_owned_descendant_holding_stdout() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let engine = dir.path().join("engine_with_owned_helper");
+    // The helper inherits both stdout and an ignored TERM disposition. Killing
+    // only the leader, or sending TERM alone, leaves the reader blocked until
+    // the helper's two-second sleep finishes. No external service is involved.
+    std::fs::write(&engine, "#!/bin/sh\ntrap '' TERM\nsleep 2 &\nwait\n").unwrap();
+    std::fs::set_permissions(&engine, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let tts = SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable: engine,
+            voice: "en".into(),
+            deadline: Duration::from_millis(250),
+            max_output_bytes: 2 * 1024 * 1024,
+            max_text_bytes: 8192,
+        },
+        Arc::new(ThreadPoolExecutor::new(1)),
+    )
+    .unwrap();
+    let voice = profile(&tts);
+    let started = std::time::Instant::now();
+    let cancel = VoiceCancel::new();
+    let outcome = block_on(tts.synthesize("owned helper", &voice, &cancel));
+    assert!(outcome.is_err(), "deadline expiry cannot produce audio");
+    assert!(
+        started.elapsed() < Duration::from_secs(1),
+        "owned helper retained stdout beyond the deadline: {:?}",
+        started.elapsed()
+    );
+}
+
+#[test]
+#[cfg(unix)]
 fn slow_engine_is_deadline_bounded() {
     let dir = tempfile::tempdir().unwrap();
     let executor = Arc::new(ThreadPoolExecutor::new(1));

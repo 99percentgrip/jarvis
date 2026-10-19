@@ -80,6 +80,8 @@ types, and deterministic in-memory fakes.
   The configured request deadline and `VoiceCancel` terminate and reap the owned
   child/process group, close its stdout reader and release the blocking executor
   lane; returning from the await alone is insufficient cleanup.
+  Group signaling uses an explicit `--` before the negative owned PGID and a
+  non-ignorable signal; a helper retaining stdout must not strand reader cleanup.
   Executable paths with spaces remain one typed command argument; shell
   metacharacters are rejected. Hosts resolve native installation paths.
 - The crate must never depend on runtime, agent, harness, or provider

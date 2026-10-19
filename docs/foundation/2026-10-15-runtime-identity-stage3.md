@@ -17,6 +17,16 @@ an initial invocation without it failed dependency setup before testing.
 
 ### Earlier candidate checkpoints
 
+PR #6 head `f7823c67996e023b343ec1e8e91b2e38ade6fda3` obtained all thirteen
+successful trusted checks. A normal merge attempt was correctly rejected by
+the unresolved review-thread rule. Review identified ambiguous negative-PGID
+argument parsing and TERM-ignoring descendants retaining stdout. A real owned
+shell/helper regression reproduced the cleanup defect in 2.004 seconds against
+a 250 ms deadline. The correction sends `-KILL -- -<owned-pgid>` before direct
+child reaping, without signaling unrelated processes. The review and previous
+green matrix cannot certify this further source correction; fresh focused and
+complete exact-head verification are required.
+
 Corrective PR #6 head `03768b3bcbfd5e48f33f02cf4d5e30cbd0eb7bc9` passed
 quality, Rust 1.88, supply-chain, both Linux native platforms, both contained
 browsers, namespace Hive and Windows installer verification. Intel macOS job
