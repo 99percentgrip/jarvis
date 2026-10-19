@@ -338,10 +338,13 @@ fn slow_engine_is_deadline_bounded() {
     .unwrap();
     let followup_start = std::time::Instant::now();
     let followup_voice = profile(&followup);
-    assert!(
-        block_on(followup.synthesize("fresh", &followup_voice, &VoiceCancel::new())).is_ok(),
-        "fresh synthesis must use the released executor lane"
-    );
+    if let Err(error) = block_on(followup.synthesize("fresh", &followup_voice, &VoiceCancel::new()))
+    {
+        panic!(
+            "fresh synthesis must use the released executor lane: {error:?}; elapsed={:?}",
+            followup_start.elapsed()
+        );
+    }
     assert!(
         followup_start.elapsed() < Duration::from_secs(1),
         "timed-out backend work kept the one-worker executor occupied"

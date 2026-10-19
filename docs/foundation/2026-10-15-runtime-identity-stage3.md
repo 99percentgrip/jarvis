@@ -17,6 +17,17 @@ an initial invocation without it failed dependency setup before testing.
 
 ### Earlier candidate checkpoints
 
+Corrective PR #6 head `03768b3bcbfd5e48f33f02cf4d5e30cbd0eb7bc9` passed
+quality, Rust 1.88, supply-chain, both Linux native platforms, both contained
+browsers, namespace Hive and Windows installer verification. Intel macOS job
+117908093270 in run 39205750500 failed the new
+`slow_engine_is_deadline_bounded` follow-up success assertion. The configured
+250 ms timeout assertion passed. The original assertion discarded the returned
+error; no root cause or transient classification is established. A diagnostic
+correction retains the same deadlines and success/lane-reuse requirements while
+reporting the bounded typed error and elapsed duration. Protected integration
+remains blocked pending a successful complete matrix.
+
 Implement only the owner's revised Stage 3 directive in the isolated branch
 `feat/stage3-runtime-identity-isolation`.
 Current status, 2026-10-18: **CORRECTIVE VERIFICATION IN PROGRESS**.
