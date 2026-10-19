@@ -112,6 +112,33 @@ sys.stdout.buffer.write(header + samples)
     wrapper
 }
 
+/// A fixed, valid WAV emitted by the native shell builtin. Executor reuse must
+/// not depend on cold startup of the unrelated Python interpreter on a runner.
+#[cfg(unix)]
+fn immediate_fixture_engine(dir: &std::path::Path) -> PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut wav = Vec::new();
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&44u32.to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&22050u32.to_le_bytes());
+    wav.extend_from_slice(&44100u32.to_le_bytes());
+    wav.extend_from_slice(&2u16.to_le_bytes());
+    wav.extend_from_slice(&16u16.to_le_bytes());
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&8u32.to_le_bytes());
+    wav.extend_from_slice(&[16, 0, 32, 0, 16, 0, 32, 0]);
+    let escaped: String = wav.iter().map(|byte| format!("\\0{byte:03o}")).collect();
+    let engine = dir.join("immediate_engine");
+    std::fs::write(&engine, format!("#!/bin/sh\nprintf '%b' '{escaped}'\n")).unwrap();
+    std::fs::set_permissions(&engine, std::fs::Permissions::from_mode(0o755)).unwrap();
+    engine
+}
+
 #[derive(Clone, Copy, Debug)]
 #[cfg(unix)]
 enum FixtureKind {
@@ -362,7 +389,7 @@ fn slow_engine_is_deadline_bounded() {
     // a fresh request after the timed-out engine.
     let followup = SubprocessTts::new(
         SubprocessTtsConfig {
-            executable: fixture_engine(dir.path(), FixtureKind::Ok),
+            executable: immediate_fixture_engine(dir.path()),
             voice: "en".into(),
             deadline: Duration::from_secs(1),
             max_output_bytes: 2 * 1024 * 1024,

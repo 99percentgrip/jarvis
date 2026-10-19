@@ -1633,6 +1633,7 @@
     "apps/jarvis-tui/tests/skill_routing_pty.py",
     "apps/jarvis-tui/tests/skill_routing_submission_pty.py",
     "apps/jarvis-tui/tests/test_terminal_writer.py",
+    "apps/jarvis-tui/tests/test_windows_child_cleanup.py",
     "apps/jarvis-tui/tests/usage_pty.py",
     "apps/jarvis-tui/tests/voice_execution_policy.rs",
     "apps/jarvis-tui/tests/voice_lifecycle.rs",

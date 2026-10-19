@@ -1,9 +1,27 @@
-"""Offline ConPTY cleanup races; no Windows device or process is opened."""
+"""Offline terminal negotiation and ConPTY cleanup; no native device opened."""
 import subprocess
 import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
-from settings_pty import WindowsChild
+from settings_pty import Host, WindowsChild
+
+
+class TerminalNegotiationTests(unittest.TestCase):
+    def test_fragmented_primary_query_is_answered_once_without_response_loop(self):
+        host = Host.__new__(Host)
+        host.screen = [[' '] * 120 for _ in range(40)]
+        host.x = host.y = 0
+        host.pending = host.raw = ''
+        replies = []
+        host.write = replies.append
+        host.feed('\x1b[')
+        self.assertEqual(replies, [])
+        host.feed('c')
+        self.assertEqual(replies, [b'\x1b[?1;2c'])
+        host.feed('\x1b[?1;2c')
+        self.assertEqual(replies, [b'\x1b[?1;2c'])
+        host.feed('\x1b[0c')
+        self.assertEqual(replies, [b'\x1b[?1;2c', b'\x1b[?1;2c'])
 
 
 class WindowsCleanupTests(unittest.TestCase):

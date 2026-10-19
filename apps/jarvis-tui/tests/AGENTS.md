@@ -40,8 +40,11 @@ Verify terminal interaction through the production TUI binary with isolated stat
   provider, all four Settings authentication routes, benign Back and clean Quit.
   Never seed a Z.ai key in this case; malformed private GLM vaults deliberately
   block native-keyring lookup while OpenAI/xAI use signed-out tombstones.
-- `settings_pty.py` supplies the common rendered-screen observer. POSIX uses
-  stdlib PTYs; Windows uses the exact hashed Python 3.13 pywinpty wheel in
+- `settings_pty.py` supplies the common rendered-screen observer.
+  The observer answers complete primary device-attribute queries, including
+  fragmented input, without answering device responses or inventing UI frames.
+  A gated real-PTY peer regression pins the negotiation before frame rendering.
+  POSIX uses stdlib PTYs; Windows uses the exact hashed Python 3.13 pywinpty wheel in
   `windows-terminal-requirements.txt`, explicitly ConPTY. Reads, exits and
   cleanup are bounded; POSIX writes are nonblocking, retain all partial bytes,
   drain output while blocked and restore descriptor flags. Owned child cleanup

@@ -14,6 +14,34 @@ from message_journal_ux_pty import observe_collapsed_prompt
 
 @unittest.skipIf(os.name == 'nt', 'POSIX writer; ConPTY has its own writer')
 class TerminalWriterTests(unittest.TestCase):
+    def test_primary_device_query_unblocks_real_terminal_peer(self):
+        import codecs
+        import pty
+        import tty
+        master, slave = pty.openpty()
+        tty.setraw(slave)
+        child = subprocess.Popen([sys.executable, '-c',
+            'import os; os.write(1, b"\\x1b[c"); '
+            'reply=os.read(0, 32); '
+            'assert reply == b"\\x1b[?1;2c", repr(reply); '
+            'os.write(1, b"Start coding")'],
+            stdin=slave, stdout=slave, stderr=slave)
+        os.close(slave)
+        host = Host.__new__(Host)
+        host.child, host.master = child, master
+        host.screen = [[' '] * 120 for _ in range(40)]
+        host.x = host.y = 0
+        host.pending = host.raw = ''
+        host.decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
+        try:
+            host.wait('Start coding', timeout=1)
+            self.assertEqual(child.wait(timeout=1), 0)
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait(timeout=2)
+            os.close(master)
+
     def test_collapsed_prompt_missing_frame_keeps_existing_deadline(self):
         host = Host.__new__(Host)
         host.child = type('Child', (), {'poll': lambda _self: None})()

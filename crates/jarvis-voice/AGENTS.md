@@ -128,6 +128,9 @@ types, and deterministic in-memory fakes.
   are executable POSIX shell wrappers run only on Unix; Windows still compiles
   and runs the platform-neutral adapter validation, HTTP, composition, and
   contract cases.
+  Deadline/lane-reuse proof uses a native shell builtin WAV fixture for the
+  fresh request, excluding unrelated interpreter cold-start time while keeping
+  the same deadline, real subprocess parsing and executor reuse assertions.
 - `cargo xtask architecture` enforces the dependency allowlist
   (jarvis-domain, jarvis-security only).
 - Pure core must build with no features; adapter features must stay

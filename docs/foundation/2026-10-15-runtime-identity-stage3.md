@@ -15,7 +15,34 @@ fixture/contracts/provider/session checks and 165 exact acceptance cases.
 Native SDK metadata was supplied through the existing private `PKG_CONFIG_PATH`;
 an initial invocation without it failed dependency setup before testing.
 
+The latest fixture correction additionally passes all four real Linux signed-out
+first-launch/provider Settings cases, 17 terminal/cleanup tests, 22 subprocess
+tests on current Rust and Rust 1.88, naming, formatting, Python syntax, JSON and
+whitespace checks. Hosted Intel follow-up timeout and Windows terminal negotiation
+evidence are recorded below. Its fresh thirteen-check matrix remains required.
+
 ### Earlier candidate checkpoints
+
+Head `9d60c1f89ab5c5dbeb435814ae52784a87785f96` passed full local verification
+and 165 exact acceptance cases. Hosted quality, MSRV, security, four native
+targets and both browsers passed, but Intel macOS and Windows installer failed;
+the dependent aggregate correctly failed. Intel's diagnostic now identifies
+`speech engine deadline exceeded` at 1.075 seconds for the fresh follow-up
+engine. This deadline begins inside the admitted blocking closure, excluding
+executor queue wait. The Python-based fresh fixture is replaced with fixed valid
+WAV bytes emitted by a native shell builtin; the 250 ms timeout and one-second
+follow-up bounds, real subprocess parsing and same executor are preserved.
+The TERM-ignoring descendant cleanup regression passed on Intel.
+
+Windows failed first launch with only `ESC[1t ESC[c ESC[?1004h ESC[?9001h` visible
+before its unchanged ten-second bound. The common terminal fixture ignored the
+observed primary device query. A gated real-PTY peer reproduced the blank wait
+before correction; replying with standard device attributes closes that protocol
+gap without creating UI output. Seventeen terminal/cleanup tests pass, including
+fragmentation and no response-loop checks. This is source/controlled-peer proof;
+resolution of the actual Windows failure still requires native CI. No timeout,
+required context, production runtime behavior or dependency changed in this
+fixture correction. All 22 subprocess tests pass locally in 0.27 seconds.
 
 PR #6 head `f7823c67996e023b343ec1e8e91b2e38ade6fda3` obtained all thirteen
 successful trusted checks. A normal merge attempt was correctly rejected by

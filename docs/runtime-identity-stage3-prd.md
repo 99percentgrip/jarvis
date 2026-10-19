@@ -14,6 +14,13 @@ corrective PR, thirteen-check matrix and four exact-merge workflows remain
 required. The [execution report](foundation/2026-10-15-runtime-identity-stage3.md)
 retains all earlier security, ownership, native and preservation evidence.
 
+Corrective PR #6 also fixes owned helper-group termination after red-first proof.
+Its current fixture repair removes Python cold-start from the unchanged
+one-second executor-reuse assertion and answers primary terminal device queries.
+Focused Rust 1.88, real Linux first-launch and terminal-peer checks pass; native
+Intel/Windows acceptance and a new full matrix remain required. No merge of PR #6
+or Stage 3 completion is claimed.
+
 The maintained correction's hosted supply-chain, both contained browsers,
 namespace Hive and Windows installer passed on head `5b2eb925ed5414b777a53b06da5fcc29cd52c14c`.
 Its Windows native attempts failed at different ACP deadlines: initialize at five
