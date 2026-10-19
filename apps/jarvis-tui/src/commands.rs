@@ -265,7 +265,7 @@ pub enum ViewKind {
     /// `/firewall` — command firewall panel (view + disable-with-restart).
     Firewall,
     /// `/sandbox` — scope-demanded sandbox panel (view + backend choice,
-    /// resolved once at boot from `[sandbox]` + `AGENT_VESPER_SANDBOX`).
+    /// resolved once at boot from `[sandbox]` + `JARVIS_SANDBOX`).
     Sandbox,
 }
 
@@ -278,7 +278,7 @@ pub enum SandboxControl {
     /// `/sandbox on` — the demand lives in `[sandbox]`; explains the
     /// edit-config-and-restart step.
     On,
-    /// `/sandbox off` — explains the `AGENT_VESPER_SANDBOX=off` restart.
+    /// `/sandbox off` — explains the `JARVIS_SANDBOX=off` restart.
     Off,
 }
 
@@ -693,7 +693,7 @@ fn cognition_scope_and_body(argument: &str) -> Result<(CognitionScope, String), 
 /// ADR 0016 — `/embedding` slash command. The command lives in the
 /// Vesper-native surface (next to `/auth`, `/provider`, `/lmstudio`) and
 /// lets the user inspect or mutate
-/// `.agent-vesper/cognition/embedding.json` from the composer. Mutations
+/// `.jarvis/cognition/embedding.json` from the composer. Mutations
 /// trigger a hot-reload of the embedder at drain time.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EmbeddingOp {
@@ -1004,7 +1004,7 @@ impl CommandRegistry {
             "context" => CommandOutcome::ContextView(ViewKind::Context),
             "status" => CommandOutcome::ContextView(ViewKind::Status),
             // VRO-13 PR-2: view-only firewall panel. Disabling requires an
-            // env restart (AGENT_VESPER_FIREWALL=off); there is no runtime
+            // env restart (JARVIS_FIREWALL=off); there is no runtime
             // toggle by design.
             "firewall" => CommandOutcome::ContextView(ViewKind::Firewall),
             // VRO-13 PR-4: sandbox panel with `on|off|status` argument

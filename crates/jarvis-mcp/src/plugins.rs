@@ -288,6 +288,7 @@ impl PluginLoader {
     }
 
     fn validate_root(root: &Path) -> Result<(), McpError> {
+        jarvis_security::validate_private_path(root).map_err(|_| McpError::InvalidRoot)?;
         if !root.is_absolute() {
             return Err(McpError::InvalidRoot);
         }

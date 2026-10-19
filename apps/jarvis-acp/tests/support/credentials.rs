@@ -8,5 +8,5 @@ use std::process::Command;
 /// process must receive this explicit store path.
 #[allow(dead_code)]
 pub fn set_signed_out_xai_credentials(command: &mut Command, fixture: &tempfile::NamedTempFile) {
-    command.env("AGENT_VESPER_XAI_CREDENTIALS_PATH", fixture.path());
+    command.env("JARVIS_XAI_CREDENTIALS_PATH", fixture.path());
 }

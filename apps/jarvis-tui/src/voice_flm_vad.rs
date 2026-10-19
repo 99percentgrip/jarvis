@@ -46,7 +46,7 @@ impl VadChild {
         let python = venv_python()?;
         let mut command = Command::new(&python);
         command
-            .arg(worker_path())
+            .args(["-u", "-c", include_str!("voice_vad.py")])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -169,54 +169,9 @@ fn venv_python() -> Result<PathBuf, VoiceError> {
     })
 }
 
-/// The fixed worker script (shipped source; same file the protocol
-/// regression tests exercise). Materialized once per process into a
-/// private per-PID directory; stale directories from dead processes are
-/// reclaimed opportunistically when a new one is created (bounded,
-/// PID-prefixed, this-application-owned namespace only).
-fn worker_path() -> PathBuf {
-    static WORKER: &str = include_str!("voice_vad.py");
-    static MATERIALIZED: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
-    MATERIALIZED
-        .get_or_init(|| {
-            let dir = std::env::temp_dir().join(format!("vesper-flm-vad-{}", std::process::id()));
-            let _ = std::fs::create_dir_all(&dir);
-            reclaim_stale_worker_dirs(&dir);
-            let path = dir.join("voice_vad.py");
-            let _ = std::fs::write(&path, WORKER);
-            path
-        })
-        .clone()
-}
-
-/// Removes `vesper-flm-vad-*` directories owned by processes that are
-/// provably no longer running (never another live process's copy).
-fn reclaim_stale_worker_dirs(current: &std::path::Path) {
-    let Some(parent) = current.parent() else {
-        return;
-    };
-    let Ok(entries) = std::fs::read_dir(parent) else {
-        return;
-    };
-    let prefix = "vesper-flm-vad-";
-    for entry in entries.flatten() {
-        let name = entry.file_name();
-        let Some(name) = name.to_str() else {
-            continue;
-        };
-        let Some(pid_text) = name.strip_prefix(prefix) else {
-            continue;
-        };
-        let Ok(pid) = pid_text.parse::<u32>() else {
-            continue;
-        };
-        if pid == std::process::id() {
-            continue;
-        }
-        if !std::path::Path::new(&format!("/proc/{pid}")).exists() {
-            let _ = std::fs::remove_dir_all(entry.path());
-        }
-    }
+/// Fresh private audio workspace; no prefix scan or foreign-directory reclamation.
+fn private_vad_work() -> std::io::Result<jarvis_security::PrivateTemporaryDirectory> {
+    jarvis_security::private_temporary_directory("jarvis-flm-vad-work-")
 }
 
 /// The shared worker owner: one lazily-started child per process,
@@ -308,15 +263,11 @@ pub async fn preprocess(pcm: &[u8], cancel: &VoiceCancel) -> Result<Option<Vec<u
         return Err(VoiceError::Cancelled);
     }
     // Private managed directory (removed on drop; audio never persists).
-    let dir = std::env::temp_dir().join(format!(
-        "vesper-flm-vad-work-{}-{}",
-        std::process::id(),
-        WORK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-    ));
-    std::fs::create_dir_all(&dir).map_err(|_| unavailability("work dir"))?;
+    let private_work = private_vad_work().map_err(|_| unavailability("work dir"))?;
+    let dir = private_work.path().to_path_buf();
     let wav = dir.join("capture.wav");
     let write_result = write_canonical_wav(&wav, pcm);
-    let result = match write_result {
+    match write_result {
         Ok(()) => {
             let filtered = dir.join("speech.wav");
             let owner = shared_worker();
@@ -326,17 +277,18 @@ pub async fn preprocess(pcm: &[u8], cancel: &VoiceCancel) -> Result<Option<Vec<u
             blocking::run_blocking(
                 executor.as_ref(),
                 cancel,
-                Box::new(move || owner.filter(&wav_path, &out_path)),
+                Box::new(move || {
+                    // A cancelled caller must not remove audio while the owned
+                    // blocking worker can still write it. Cleanup follows settlement.
+                    let _private_work = private_work;
+                    owner.filter(&wav_path, &out_path)
+                }),
             )
             .await
         }
         Err(error) => Err(error),
-    };
-    let _ = std::fs::remove_dir_all(&dir);
-    result
+    }
 }
-
-static WORK_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 /// The one process-wide VAD worker owner.
 fn shared_worker() -> &'static VadWorker {
@@ -351,7 +303,6 @@ fn shared_worker() -> &'static VadWorker {
 /// Writes canonical PCM as the WAV the worker requires (44-byte header,
 /// 16 kHz mono i16 — same shape as the sidecar's writer).
 fn write_canonical_wav(path: &std::path::Path, pcm: &[u8]) -> Result<(), VoiceError> {
-    let mut file = std::fs::File::create(path).map_err(|_| unavailability("capture file"))?;
     let mut header = Vec::with_capacity(44);
     header.extend_from_slice(b"RIFF");
     header.extend_from_slice(&((36 + pcm.len()) as u32).to_le_bytes());
@@ -366,7 +317,37 @@ fn write_canonical_wav(path: &std::path::Path, pcm: &[u8]) -> Result<(), VoiceEr
     header.extend_from_slice(&16u16.to_le_bytes());
     header.extend_from_slice(b"data");
     header.extend_from_slice(&(pcm.len() as u32).to_le_bytes());
-    file.write_all(&header)
-        .and_then(|()| file.write_all(pcm))
-        .map_err(|_| unavailability("capture data"))
+    header.extend_from_slice(pcm);
+    jarvis_security::write_private_atomic(path, &header).map_err(|_| unavailability("capture data"))
+}
+
+#[cfg(test)]
+mod ownership_tests {
+    use super::*;
+
+    #[test]
+    fn vad_workspaces_are_unique_private_and_cleanup_only_their_own_audio() {
+        let foreign = tempfile::Builder::new()
+            .prefix("jarvis-flm-vad-foreign-")
+            .tempdir()
+            .unwrap();
+        let canary = foreign.path().join("capture.wav");
+        std::fs::write(&canary, b"foreign audio").unwrap();
+        let first = private_vad_work().unwrap();
+        let second = private_vad_work().unwrap();
+        assert_ne!(first.path(), second.path());
+        jarvis_security::validate_owned_directory(first.path()).unwrap();
+        jarvis_security::validate_owned_directory(second.path()).unwrap();
+        let audio = first.path().join("capture.wav");
+        write_canonical_wav(&audio, &[0, 0, 1, 0]).unwrap();
+        jarvis_security::validate_private_file(&audio).unwrap();
+        assert_eq!(&std::fs::read(&audio).unwrap()[..4], b"RIFF");
+        let first_path = first.path().to_path_buf();
+        let second_path = second.path().to_path_buf();
+        drop(first);
+        drop(second);
+        assert!(!first_path.exists());
+        assert!(!second_path.exists());
+        assert_eq!(std::fs::read(canary).unwrap(), b"foreign audio");
+    }
 }

@@ -32,9 +32,21 @@ from email.mime.text import MIMEText
 from pathlib import Path
 
 def _agent_vesper_home() -> Path:
-    return Path(
-        os.environ.get("AGENT_VESPER_HOME", str(Path.home() / ".agent-vesper"))
-    ).expanduser()
+    # Proposed storage only. No OAuth store is opened until independent
+    # authorization and native secure storage have been implemented.
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "Jarvis" / "Config"
+    if os.name == "nt":
+        return Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "Jarvis"
+    return Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "jarvis"
+
+
+def _require_independent_authorization():
+    raise RuntimeError(
+        "Bundled Google OAuth is unavailable pending independent authorization "
+        "and secure credential storage. Existing Vesper tokens are never read, "
+        "refreshed, revoked, or imported."
+    )
 
 
 AV_HOME = _agent_vesper_home()
@@ -61,6 +73,7 @@ def _normalize_authorized_user_payload(payload: dict) -> dict:
 
 
 def _ensure_authenticated():
+    _require_independent_authorization()
     if not TOKEN_PATH.exists():
         print("Not authenticated. Run the setup script first:", file=sys.stderr)
         print(f"  python {Path(__file__).parent / 'setup.py'}", file=sys.stderr)
@@ -79,7 +92,7 @@ def _stored_token_scopes() -> list[str]:
 
 
 def _gws_binary() -> str | None:
-    override = os.getenv("AGENT_VESPER_GWS_BIN")
+    override = os.getenv("JARVIS_GWS_BIN")
     if override:
         return override
     return shutil.which("gws")
@@ -1221,4 +1234,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        _require_independent_authorization()
+        main()
+    except RuntimeError as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(1)

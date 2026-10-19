@@ -17,10 +17,10 @@ whole classes of mistakes; a bloated one wastes context and misleads.
 
 ## Where skills live
 
-- **Project-local (writable):** `.agent-vesper/memory/skills/<slug>.md` —
+- **Project-local (writable):** `.jarvis/memory/skills/<slug>.md` —
   created by `learn_skill`, listed by `/skills`. Learned skills belong here.
 - **Cross-project library (read layer):**
-  `~/.agent-vesper/memory/skills/<slug>.md` — curated reference skills
+  `~/.jarvis/memory/skills/<slug>.md` — curated reference skills
   available in every project. Local skills shadow global ones with the same
   slug. Resource directories (`references/`, `scripts/`, `templates/`) sit
   next to the skill file at `<root>/skills/<slug>/`.
@@ -72,7 +72,7 @@ condition ("Use when the user asks for X"), not a table of contents.
   `delegate_task`, `worktree_worker`, `cronjob`, `apply_patch_set`, ...)
   before shipping a skill that names them.
 - State absolute paths for skill resources
-  (`~/.agent-vesper/memory/skills/<slug>/references/...`).
+  (`~/.jarvis/memory/skills/<slug>/references/...`).
 - Slugs: lowercase `[a-z0-9-]`, ≤ 64 chars. Bodies ≤ 200 KB — a skill that
   needs the ceiling is usually several skills.
 - Prefer one focused skill over a mega-skill; bundles group them.

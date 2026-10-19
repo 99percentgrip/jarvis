@@ -38,9 +38,9 @@
 //! ## Crash-leak prevention (no unsafe)
 //!
 //! Crate-level `forbid(unsafe_code)` (lib.rs) stands: the crash-leak
-//! repair uses a durable child registry (`~/.local/share/agent-vesper/
-//! flm-child-registry/`) plus `/proc` identity checks and the `kill`
-//! command — the same escalation the Drop teardown already used. No
+//! repair uses a private native-state child registry plus process-generation
+//! checks and pinned Linux pidfd handles for orphan signals. Foreground Drop
+//! teardown retains its owned child handle. No
 //! PDEATHSIG/pre_exec unsafe block is needed; see
 //! `docs/foundation/voice-verify-read-failure-repair.md`.
 
@@ -178,15 +178,9 @@ struct FlmProcess {
 /// with a live parent is NEVER touched.
 #[cfg(unix)]
 fn owned_child_registry() -> std::path::PathBuf {
-    let base = std::env::var_os("XDG_DATA_HOME")
-        .map(std::path::PathBuf::from)
-        .or_else(|| {
-            std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".local/share"))
-        })
-        .unwrap_or_else(std::env::temp_dir);
-    base.join("agent-vesper")
-        .join("flm-child-registry")
-        .join("children")
+    jarvis_config::JarvisPaths::from_environment()
+        .map(|p| p.state.join("flm-child-registry/children"))
+        .unwrap_or_default()
 }
 
 /// One registry record: the exact owned launch identity plus the
@@ -197,12 +191,37 @@ fn owned_child_registry() -> std::path::PathBuf {
 #[cfg(unix)]
 #[derive(serde::Serialize, serde::Deserialize)]
 struct OwnedChildRecord {
+    application: String,
+    #[serde(default)]
+    started_ticks: Option<u64>,
     pid: u32,
     port: u16,
     /// The host process that spawned and owns this child.
     host_pid: u32,
     /// Startup monotonic-ish marker (wall clock; advisory only).
     started_unix: u64,
+}
+
+#[cfg(unix)]
+fn process_start_ticks(pid: u32) -> Option<u64> {
+    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    stat.rsplit_once(')')?
+        .1
+        .split_whitespace()
+        .nth(19)?
+        .parse()
+        .ok()
+}
+
+#[cfg(target_os = "linux")]
+fn owned_process_handle(pid: u32, expected: Option<u64>) -> Option<std::os::fd::OwnedFd> {
+    let expected = expected?;
+    let handle = rustix::process::pidfd_open(
+        rustix::process::Pid::from_raw(pid as i32)?,
+        rustix::process::PidfdFlags::empty(),
+    )
+    .ok()?;
+    (process_start_ticks(pid) == Some(expected)).then_some(handle)
 }
 
 impl FlmProcess {
@@ -236,19 +255,28 @@ impl FlmProcess {
     #[cfg(unix)]
     fn reap_stale_owned_children() {
         let registry = owned_child_registry();
+        if jarvis_security::validate_owned_directory(&registry).is_err() {
+            return;
+        }
         let Ok(entries) = std::fs::read_dir(&registry) else {
             return;
         };
         for entry in entries.flatten() {
             let path = entry.path();
+            if path.extension().is_none_or(|extension| extension != "json")
+                || jarvis_security::validate_private_path(&path).is_err()
+            {
+                continue;
+            }
             let Ok(raw) = std::fs::read_to_string(&path) else {
-                let _ = std::fs::remove_file(&path);
                 continue;
             };
             let Ok(record) = serde_json::from_str::<OwnedChildRecord>(&raw) else {
-                let _ = std::fs::remove_file(&path);
-                continue;
+                continue; // Unknown records are not ours to remove.
             };
+            if record.application != "99percentgrip.jarvis" {
+                continue;
+            }
             let pid = record.pid;
             let status_path = format!("/proc/{pid}/status");
             if !std::path::Path::new(&status_path).exists() {
@@ -283,26 +311,20 @@ impl FlmProcess {
                 let _ = std::fs::remove_file(&path);
                 continue;
             }
-            // Truly orphaned owned-shape child: TERM, bounded wait,
-            // then KILL — the same escalation as our own Drop teardown.
-            let pid_text = pid.to_string();
-            let _ = Command::new("kill")
-                .args(["-TERM", &pid_text])
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status();
-            for _ in 0..30 {
-                if !std::path::Path::new(&status_path).exists() {
-                    break;
+            // Pin process generation before signalling; never use a reusable PID.
+            #[cfg(target_os = "linux")]
+            if let Some(handle) = owned_process_handle(pid, record.started_ticks) {
+                let _ = rustix::process::pidfd_send_signal(&handle, rustix::process::Signal::TERM);
+                for _ in 0..30 {
+                    if process_start_ticks(pid) != record.started_ticks {
+                        break;
+                    }
+                    std::thread::sleep(Duration::from_millis(100));
                 }
-                std::thread::sleep(Duration::from_millis(100));
-            }
-            if std::path::Path::new(&status_path).exists() {
-                let _ = Command::new("kill")
-                    .args(["-KILL", &pid_text])
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null())
-                    .status();
+                if process_start_ticks(pid) == record.started_ticks {
+                    let _ =
+                        rustix::process::pidfd_send_signal(&handle, rustix::process::Signal::KILL);
+                }
             }
             let _ = std::fs::remove_file(&path);
         }
@@ -312,10 +334,12 @@ impl FlmProcess {
     #[cfg(unix)]
     fn record_child(&self) {
         let dir = owned_child_registry();
-        if std::fs::create_dir_all(&dir).is_err() {
+        if jarvis_security::prepare_owned_directory(&dir).is_err() {
             return;
         }
         let record = OwnedChildRecord {
+            application: "99percentgrip.jarvis".into(),
+            started_ticks: process_start_ticks(self.child.id()),
             pid: self.child.id(),
             port: self.port,
             host_pid: std::process::id(),
@@ -327,12 +351,18 @@ impl FlmProcess {
         let Ok(json) = serde_json::to_string(&record) else {
             return;
         };
-        let _ = std::fs::write(dir.join(format!("{}.json", self.child.id())), json);
+        let _ = jarvis_security::write_private_atomic(
+            &dir.join(format!("{}.json", self.child.id())),
+            json.as_bytes(),
+        );
     }
 
     /// Removes this child's registry entry (normal teardown).
     #[cfg(unix)]
     fn clear_child_record(&self) {
+        if jarvis_security::validate_private_path(&owned_child_registry()).is_err() {
+            return;
+        }
         let _ =
             std::fs::remove_file(owned_child_registry().join(format!("{}.json", self.child.id())));
     }
@@ -382,15 +412,30 @@ impl FlmProcess {
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr({
-                let log = std::env::temp_dir().join("vesper-flm-child-stderr.log");
-                match std::fs::OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open(&log)
-                {
-                    Ok(file) => Stdio::from(file),
-                    Err(_) => Stdio::piped(),
-                }
+                let private_log = || -> std::io::Result<std::fs::File> {
+                    let paths = jarvis_config::JarvisPaths::from_environment()
+                        .map_err(|_| std::io::Error::other("private log root unavailable"))?;
+                    jarvis_security::prepare_owned_directory(&paths.logs)?;
+                    let log = paths.logs.join("jarvis-flm-child-stderr.log");
+                    jarvis_security::validate_private_path(&log)?;
+                    let mut options = std::fs::OpenOptions::new();
+                    options.create(true).append(true);
+                    #[cfg(unix)]
+                    {
+                        use std::os::unix::fs::OpenOptionsExt;
+                        options.mode(0o600);
+                    }
+                    options.open(log)
+                };
+                Stdio::from(private_log().map_err(|_| {
+                    VoiceError::Unavailable {
+                        provider: provider.clone(),
+                        reason: jarvis_domain::BoundedString::new(
+                            "private voice log storage unavailable",
+                        )
+                        .expect("bounded"),
+                    }
+                })?)
             });
         #[cfg(unix)]
         {
@@ -533,7 +578,7 @@ impl Drop for FlmProcess {
 /// WAV body, bounded read, no redirects, no proxy, `Connection: close`.
 fn transcribe_request(port: u16, wav: &[u8]) -> Result<String, VoiceError> {
     let provider = ProviderId::new(PROVIDER_ID).expect("static id fits");
-    let boundary = "vesper-flm-7f3a9c1d";
+    let boundary = "jarvis-flm-7f3a9c1d";
     let mut body: Vec<u8> = Vec::with_capacity(wav.len() + 256);
     body.extend_from_slice(
         format!(
@@ -897,5 +942,38 @@ impl VoiceStt for FlmNpuStt {
 
     fn descriptor(&self) -> &SttDescriptor {
         &self.descriptor
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod process_ownership_tests {
+    use super::*;
+
+    struct OwnedChild(std::process::Child);
+    impl Drop for OwnedChild {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+
+    #[test]
+    fn mismatched_process_generation_never_obtains_a_signal_handle() {
+        let mut child = OwnedChild(Command::new("/bin/sleep").arg("30").spawn().unwrap());
+        let pid = child.0.id();
+        let ticks = process_start_ticks(pid).unwrap();
+        assert!(owned_process_handle(pid, None).is_none());
+        assert!(owned_process_handle(pid, Some(ticks.wrapping_add(1))).is_none());
+        assert!(
+            child.0.try_wait().unwrap().is_none(),
+            "foreign generation was signalled"
+        );
+        let handle = owned_process_handle(pid, Some(ticks)).expect("owned process generation");
+        rustix::process::pidfd_send_signal(&handle, rustix::process::Signal::TERM).unwrap();
+        child.0.wait().unwrap();
+        // The retained descriptor cannot ever refer to a later reused PID.
+        assert!(
+            rustix::process::pidfd_send_signal(&handle, rustix::process::Signal::TERM).is_err()
+        );
     }
 }

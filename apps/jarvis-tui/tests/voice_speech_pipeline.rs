@@ -12,7 +12,7 @@ use std::{
 
 #[test]
 fn synthesis_overlaps_playback_and_stop_discards_lookahead() {
-    if std::env::var_os("VESPER_PIPELINE_FIXTURE").is_some() {
+    if std::env::var_os("JARVIS_PIPELINE_FIXTURE").is_some() {
         run_fixture();
         return;
     }
@@ -30,7 +30,7 @@ fn synthesis_overlaps_playback_and_stop_discards_lookahead() {
         &(script.clone()
             + r#"import io, os, sys, wave, time
 from pathlib import Path
-root = Path(os.environ['VESPER_PIPELINE_FIXTURE'])
+root = Path(os.environ['JARVIS_PIPELINE_FIXTURE'])
 text = sys.stdin.read()
 if len(text) > 120:
     time.sleep(6)
@@ -51,7 +51,7 @@ sys.stdout.buffer.write(buf.getvalue())
         &(script
             + r#"import os, sys, time
 from pathlib import Path
-root = Path(os.environ['VESPER_PIPELINE_FIXTURE'])
+root = Path(os.environ['JARVIS_PIPELINE_FIXTURE'])
 with (root / 'player-starts').open('a') as out:
     out.write('start\n')
     out.flush()
@@ -70,7 +70,7 @@ if not (root / 'release-player').exists():
             "synthesis_overlaps_playback_and_stop_discards_lookahead",
             "--nocapture",
         ])
-        .env("VESPER_PIPELINE_FIXTURE", dir.path())
+        .env("JARVIS_PIPELINE_FIXTURE", dir.path())
         .env("PATH", dir.path())
         .env("HOME", dir.path())
         .env("XDG_DATA_HOME", dir.path())
@@ -86,7 +86,7 @@ if not (root / 'release-player').exists():
 
 #[test]
 fn unit_boundary_gap_next_unit_synthesis_must_overlap_previous_drain() {
-    if std::env::var_os("VESPER_PIPELINE_FIXTURE").is_some() {
+    if std::env::var_os("JARVIS_PIPELINE_FIXTURE").is_some() {
         run_boundary_fixture();
         return;
     }
@@ -143,7 +143,7 @@ with open('player-boundary.log', 'a') as log:
             "unit_boundary_gap_next_unit_synthesis_must_overlap_previous_drain",
             "--nocapture",
         ])
-        .env("VESPER_PIPELINE_FIXTURE", dir.path())
+        .env("JARVIS_PIPELINE_FIXTURE", dir.path())
         .env("PATH", dir.path())
         .env("HOME", dir.path())
         .env("XDG_DATA_HOME", dir.path())
@@ -159,7 +159,7 @@ with open('player-boundary.log', 'a') as log:
 }
 
 fn run_boundary_fixture() {
-    let root = std::path::PathBuf::from(std::env::var_os("VESPER_PIPELINE_FIXTURE").unwrap());
+    let root = std::path::PathBuf::from(std::env::var_os("JARVIS_PIPELINE_FIXTURE").unwrap());
     let worker = SpeechWorker::spawn(
         EngineSelection::System {
             voice_name: "en".into(),
@@ -245,7 +245,7 @@ fn wait_for(mut condition: impl FnMut() -> bool) -> bool {
 }
 
 fn run_fixture() {
-    let root = std::path::PathBuf::from(std::env::var_os("VESPER_PIPELINE_FIXTURE").unwrap());
+    let root = std::path::PathBuf::from(std::env::var_os("JARVIS_PIPELINE_FIXTURE").unwrap());
     let worker = SpeechWorker::spawn(
         EngineSelection::System {
             voice_name: "en".into(),
@@ -413,7 +413,14 @@ fn run_fixture() {
             std::thread::sleep(Duration::from_millis(10));
         }
     }
-    assert!(settled, "fresh turn segment must settle");
+    assert!(
+        settled,
+        "fresh turn segment must settle; stage={}; busy={}; progress={progress:?}; terminal={done:?}; player_starts={:?}; release_present={}",
+        worker.stage_status(),
+        worker.is_busy(),
+        fs::read_to_string(root.join("player-starts")).map(|text| text.lines().count()),
+        root.join("release-player").exists()
+    );
     // Onset protection: the first piece is clause-sized (early PCM), and
     // the successor is sentence-level — so a long sentence uses exactly
     // 2 pieces under the superseding policy (not >=4 micro-pieces).

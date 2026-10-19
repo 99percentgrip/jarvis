@@ -96,6 +96,9 @@ pub fn daemon_lock_path(state_root: &Path) -> PathBuf {
 #[must_use]
 pub fn read_daemon_lock_status(state_root: &Path) -> DaemonLockStatus {
     let path = daemon_lock_path(state_root);
+    if jarvis_security::validate_private_path(&path).is_err() {
+        return DaemonLockStatus::Corrupt;
+    }
     let Ok(text) = fs::read_to_string(&path) else {
         return DaemonLockStatus::NotHeld;
     };
@@ -120,7 +123,7 @@ pub fn read_daemon_lock_status(state_root: &Path) -> DaemonLockStatus {
 /// [`DaemonLockError::Io`] when the lock directory cannot be created or
 /// the lock file cannot be written after a legitimate takeover.
 pub fn acquire_daemon_lock(state_root: &Path) -> Result<DaemonLockGuard, DaemonLockError> {
-    std::fs::create_dir_all(state_root).map_err(|_| DaemonLockError::Io)?;
+    jarvis_security::prepare_owned_directory(state_root).map_err(|_| DaemonLockError::Io)?;
     let path = daemon_lock_path(state_root);
     // First attempt: the common case (no daemon running).
     if let Ok(guard) = try_create(&path) {
@@ -163,12 +166,15 @@ fn lock_payload(pid: u32) -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|elapsed| elapsed.as_secs())
         .unwrap_or(0);
-    format!("{pid}\n{started_at}\n")
+    format!("99percentgrip.jarvis\n{pid}\n{started_at}\n")
 }
 
 /// Parses a lock payload back into `(pid, started_at)`.
 fn parse_lock_payload(text: &str) -> Option<(u32, SystemTime)> {
     let mut lines = text.lines();
+    if lines.next()? != "99percentgrip.jarvis" {
+        return None;
+    }
     let pid = lines.next()?.trim().parse::<u32>().ok()?;
     let seconds = lines.next()?.trim().parse::<u64>().ok()?;
     Some((pid, unix_seconds_to_system_time(seconds)))
@@ -238,6 +244,7 @@ mod tests {
         );
         let base = std::env::temp_dir().join(unique);
         std::fs::create_dir_all(&base).expect("create temp state root");
+        jarvis_security::prepare_owned_directory(&base).expect("declare synthetic storage owner");
         (base.clone(), base)
     }
 
@@ -286,7 +293,7 @@ mod tests {
         }
         std::fs::write(
             daemon_lock_path(&state),
-            format!("{dead}\n{}\n", 1_700_000_000u64),
+            format!("99percentgrip.jarvis\n{dead}\n{}\n", 1_700_000_000u64),
         )
         .unwrap();
         assert!(matches!(
@@ -321,7 +328,7 @@ mod tests {
             .expect("payload timestamp must not be in the future");
         assert!(age.as_secs() < 60, "timestamp must be recent: {age:?}");
         // A fixed historical payload parses to its exact instant.
-        let fixed = "42\n1700000000\n";
+        let fixed = "99percentgrip.jarvis\n42\n1700000000\n";
         let (pid, at) = parse_lock_payload(fixed).expect("parse fixed");
         assert_eq!(pid, 42);
         assert_eq!(

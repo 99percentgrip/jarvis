@@ -31,6 +31,13 @@ derived `.meta` sidecars.
 
 ## Local Contracts
 
+- Stage 3 application compositions use owned-store reader/writer constructors.
+  Missing readers remain read-only and empty; first writes establish only an empty
+  owned root, with the original existing-parent rule. Unmarked nonempty roots refuse.
+  Generic compatibility constructors remain available for explicit offline fixtures.
+  The security foundation supplies private ownership validation; serialized markers
+  and historical records remain unchanged.
+
 - Read-path modules remain strictly read-only: no filesystem writes, no
   directory creation, no mutation APIs. The `cargo xtask architecture` source
   scan enforces this for every module except `writer.rs`.

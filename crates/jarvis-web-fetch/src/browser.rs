@@ -567,7 +567,7 @@ mod live_tests {
     #[ignore = "requires a real image/runtime and explicitly permits public website access"]
     async fn real_navigation_and_chunked_fetch() {
         use jarvis_web::transport::{FetchRequest, FetchTransport};
-        let image = std::env::var("VESPER_WEB_TEST_IMAGE").expect("set VESPER_WEB_TEST_IMAGE");
+        let image = std::env::var("JARVIS_WEB_TEST_IMAGE").expect("set JARVIS_WEB_TEST_IMAGE");
         let root = tempfile::tempdir().unwrap();
         let backend = Arc::new(DockerBackend::new(DockerSandboxConfig {
             image: Some(image),
@@ -606,10 +606,10 @@ mod live_tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires VESPER_WEB_TEST_IMAGE and a real container runtime"]
+    #[ignore = "requires JARVIS_WEB_TEST_IMAGE and a real container runtime"]
     async fn real_pipe_browser_actions_redaction_and_stale_indices() {
-        let image = std::env::var("VESPER_WEB_TEST_IMAGE")
-            .expect("set VESPER_WEB_TEST_IMAGE; this acceptance test never silently skips");
+        let image = std::env::var("JARVIS_WEB_TEST_IMAGE")
+            .expect("set JARVIS_WEB_TEST_IMAGE; this acceptance test never silently skips");
         let root = tempfile::tempdir().unwrap();
         let backend = Arc::new(DockerBackend::new(DockerSandboxConfig {
             image: Some(image),

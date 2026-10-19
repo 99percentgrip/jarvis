@@ -3,6 +3,11 @@
 # Idempotent: safe to run multiple times.
 set -euo pipefail
 
+# The inherited helper writes a legacy application configuration directly.
+# Native MCP configuration remains available; this helper awaits its own adapter.
+echo "Bundled TouchDesigner setup is unavailable pending independent configuration ownership." >&2
+exit 1
+
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 OK="${GREEN}✔${NC}"; FAIL="${RED}✘${NC}"; WARN="${YELLOW}⚠${NC}"
 

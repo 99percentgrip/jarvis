@@ -9,14 +9,15 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from settings_pty import Host
+from settings_pty import Host, fixture_owned_directory
 
 
 def signed_out_vault(path: Path, provider: str, account: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    fixture_owned_directory(path.parent)
     path.write_text(
         json.dumps(
             {
+                "application": "99percentgrip.jarvis",
                 "credentials": {
                     provider: {account: json.dumps({"mode": "signed-out"})}
                 }
@@ -46,17 +47,17 @@ def arrow_navigation(binary: str) -> None:
             binary,
             root,
             {
-                "AGENT_VESPER_HOME": str(root / "state"),
-                "AGENT_VESPER_PROVIDER": "zai",
-                "AGENT_VESPER_XAI_CREDENTIALS_PATH": str(root / "config" / "xai-credentials.json"),
-                "AGENT_VESPER_OPENAI_CREDENTIALS_PATH": str(
+                "JARVIS_HOME": str(root / "state"),
+                "JARVIS_PROVIDER": "zai",
+                "JARVIS_XAI_CREDENTIALS_PATH": str(root / "config" / "xai-credentials.json"),
+                "JARVIS_OPENAI_CREDENTIALS_PATH": str(
                     root / "config" / "openai-credentials.json"
                 ),
-                "AGENT_VESPER_LMSTUDIO_CREDENTIALS_PATH": str(
+                "JARVIS_LMSTUDIO_CREDENTIALS_PATH": str(
                     root / "config" / "lmstudio-credentials.json"
                 ),
-                "AGENT_VESPER_VRO_ENABLED": "0",
-                "AGENT_VESPER_SANDBOX": "off",
+                "JARVIS_VRO_ENABLED": "0",
+                "JARVIS_SANDBOX": "off",
             },
         )
         try:
@@ -135,17 +136,17 @@ def main(binary: str) -> None:
             binary,
             root,
             {
-                "AGENT_VESPER_HOME": str(root / "state"),
-                "AGENT_VESPER_PROVIDER": "zai",
-                "AGENT_VESPER_XAI_CREDENTIALS_PATH": str(root / "config" / "xai-credentials.json"),
-                "AGENT_VESPER_OPENAI_CREDENTIALS_PATH": str(
+                "JARVIS_HOME": str(root / "state"),
+                "JARVIS_PROVIDER": "zai",
+                "JARVIS_XAI_CREDENTIALS_PATH": str(root / "config" / "xai-credentials.json"),
+                "JARVIS_OPENAI_CREDENTIALS_PATH": str(
                     root / "config" / "openai-credentials.json"
                 ),
-                "AGENT_VESPER_LMSTUDIO_CREDENTIALS_PATH": str(
+                "JARVIS_LMSTUDIO_CREDENTIALS_PATH": str(
                     root / "config" / "lmstudio-credentials.json"
                 ),
-                "AGENT_VESPER_VRO_ENABLED": "0",
-                "AGENT_VESPER_SANDBOX": "off",
+                "JARVIS_VRO_ENABLED": "0",
+                "JARVIS_SANDBOX": "off",
             },
         )
         try:

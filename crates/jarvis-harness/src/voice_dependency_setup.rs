@@ -61,13 +61,13 @@ async fn prepare_windows_runtime(
     if vc_runtime_present(&root) {
         return Ok(());
     }
-    let stage =
-        tempfile::tempdir().map_err(|_| "Cannot stage the native speech runtime installer.")?;
+    let stage = jarvis_security::private_temporary_workspace("jarvis-voice-setup-")
+        .map_err(|_| "Cannot stage the native speech runtime installer.")?;
     let path = stage.path().join("VC_redist.x64.exe");
     download(&VC_RUNTIME, &path, progress, cancel).await?;
     progress("Installing Microsoft C++ runtime · complete the Windows administrator prompt…");
     let mut command = Command::new("powershell.exe");
-    command.env("VESPER_SETUP_PACKAGE", &path).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $p = Start-Process -FilePath $env:VESPER_SETUP_PACKAGE -Verb RunAs -Wait -PassThru -ArgumentList @('/install', '/passive', '/norestart'); exit $p.ExitCode"]);
+    command.env("JARVIS_SETUP_PACKAGE", &path).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $p = Start-Process -FilePath $env:JARVIS_SETUP_PACKAGE -Verb RunAs -Wait -PassThru -ArgumentList @('/install', '/passive', '/norestart'); exit $p.ExitCode"]);
     run(command, 1200).await?;
     if !vc_runtime_present(&root) {
         return Err("Native speech runtime installation is unconfirmed. Complete any required restart, then Retry setup.".into());
@@ -349,7 +349,8 @@ async fn prepare_uv(
         }
     }
     let package = uv_package(std::env::consts::OS, std::env::consts::ARCH)?;
-    let stage = tempfile::tempdir().map_err(|_| "Cannot stage the voice environment manager.")?;
+    let stage = jarvis_security::private_temporary_workspace("jarvis-voice-setup-")
+        .map_err(|_| "Cannot stage the voice environment manager.")?;
     let archive = stage
         .path()
         .join(if cfg!(windows) { "uv.zip" } else { "uv.tar.gz" });
@@ -399,12 +400,13 @@ async fn install_phonemizer(
 ) -> Result<(), String> {
     match std::env::consts::OS {
         "windows" => {
-            let stage = tempfile::tempdir().map_err(|_| "Cannot stage pronunciation setup.")?;
+            let stage = jarvis_security::private_temporary_workspace("jarvis-voice-setup-")
+                .map_err(|_| "Cannot stage pronunciation setup.")?;
             let path = stage.path().join("espeak-ng.msi");
             download(&ESPEAK, &path, progress, cancel).await?;
             progress("Installing pronunciation tools · complete the Windows administrator prompt…");
             let mut command = Command::new("powershell.exe");
-            command.env("VESPER_SETUP_PACKAGE", &path).env("VESPER_SETUP_REPAIR", if repair { "1" } else { "0" }).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $args = @('/i', ('\"' + $env:VESPER_SETUP_PACKAGE + '\"'), '/passive', '/norestart'); if ($env:VESPER_SETUP_REPAIR -eq '1') { $args += @('REINSTALL=ALL', 'REINSTALLMODE=amus') }; $p = Start-Process msiexec.exe -Verb RunAs -Wait -PassThru -ArgumentList $args; exit $p.ExitCode"]);
+            command.env("JARVIS_SETUP_PACKAGE", &path).env("JARVIS_SETUP_REPAIR", if repair { "1" } else { "0" }).args(["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; $args = @('/i', ('\"' + $env:JARVIS_SETUP_PACKAGE + '\"'), '/passive', '/norestart'); if ($env:JARVIS_SETUP_REPAIR -eq '1') { $args += @('REINSTALL=ALL', 'REINSTALLMODE=amus') }; $p = Start-Process msiexec.exe -Verb RunAs -Wait -PassThru -ArgumentList $args; exit $p.ExitCode"]);
             run(command, 1200).await?;
         }
         "macos" => {
@@ -415,7 +417,8 @@ async fn install_phonemizer(
                     .find(|p| p.is_file())
             });
             if brew.is_none() {
-                let stage = tempfile::tempdir().map_err(|_| "Cannot stage pronunciation setup.")?;
+                let stage = jarvis_security::private_temporary_workspace("jarvis-voice-setup-")
+                    .map_err(|_| "Cannot stage pronunciation setup.")?;
                 let path = stage.path().join("Homebrew.pkg");
                 download(&BREW, &path, progress, cancel).await?;
                 progress("Installing Homebrew · complete the macOS administrator prompt…");

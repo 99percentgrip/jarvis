@@ -285,7 +285,7 @@ fn frozen_quality_matrix_records_every_prediction_and_does_not_hide_failed_gates
         println!("QUALITY {key} {metric:?}");
     }
     let output = serde_json::json!({"columns":["n","hit1","recall3","false_abstention","false_activation","harmful_sibling","literal_explicit_error"],"summary":summary,"snapshots_sha256":snapshots,"predictions":records,"order_permutations":3,"status":"measurement; promotion requires PRD review"});
-    if let Ok(path) = std::env::var("VESPER_ROUTING_EVAL_OUTPUT") {
+    if let Ok(path) = std::env::var("JARVIS_ROUTING_EVAL_OUTPUT") {
         std::fs::write(path, serde_json::to_vec_pretty(&output).unwrap()).unwrap();
     }
 }

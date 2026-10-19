@@ -25,6 +25,41 @@ if os.name != "nt":
     import termios
 
 
+def private_config_root(root):
+    if os.name == "nt":
+        return root / "config" / "Jarvis"
+    if sys.platform == "darwin":
+        return root / "home" / "Library" / "Application Support" / "Jarvis" / "Config"
+    return root / "config" / "jarvis"
+
+
+def private_data_root(root):
+    if os.name == "nt":
+        return root / "data" / "Jarvis" / "Data"
+    if sys.platform == "darwin":
+        return root / "home" / "Library" / "Application Support" / "Jarvis" / "Data"
+    return root / "data" / "jarvis"
+
+
+def fixture_owned_directory(path):
+    """Declare synthetic test data before a child loads it; never a runtime importer."""
+    path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if os.name == "nt":
+        code = """$ErrorActionPreference='Stop'; $p=$env:FIXTURE_PRIVATE_PATH;
+$user=[System.Security.Principal.WindowsIdentity]::GetCurrent().User;
+$acl=Get-Acl -LiteralPath $p;
+# Python 3.13 mkdir(0700) adds an explicit OWNER RIGHTS ACE. Removing only
+# inherited rules leaves it behind; replace the fixture DACL with exact SIDs.
+$sddl='D:P(A;OICI;FA;;;{0})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)' -f $user.Value;
+$acl.SetSecurityDescriptorSddlForm($sddl,[System.Security.AccessControl.AccessControlSections]::Access);
+Set-Acl -LiteralPath $p -AclObject $acl"""
+        subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", code],
+                       env=dict(os.environ, FIXTURE_PRIVATE_PATH=str(path)), check=True, capture_output=True, timeout=15)
+    else:
+        path.chmod(0o700)
+    (path / ".jarvis-owner").write_bytes(b"99percentgrip.jarvis/runtime-v1\n")
+
+
 class WindowsChild:
     """ConPTY child with the bounded subset of Popen used by these fixtures."""
     def __init__(self, binary, root, env):
@@ -82,15 +117,33 @@ class Host:
         self.decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
         home = root / 'home'
         home.mkdir(exist_ok=True)
+        for directory in [root / "global-memory", root / "global-cognition", root / ".jarvis"]:
+            if directory.exists():
+                fixture_owned_directory(directory)
+        fixture_credentials = root / "fixture-credentials"
+        fixture_owned_directory(fixture_credentials)
+        for provider in ["openai", "xai"]:
+            path = fixture_credentials / f"{provider}.json"
+            path.write_text(json.dumps({"application": "99percentgrip.jarvis", "credentials": {
+                provider: {"native-auth": json.dumps({"mode": "signed-out"})}}}))
+            path.chmod(0o600)
+        # Inactive optional providers must fail before native credential lookup.
+        blocker = fixture_credentials / "unavailable.json"
+        blocker.write_text("{}")
+        blocker.chmod(0o600)
         env = dict(PATH=os.environ['PATH'], HOME=str(home), USERPROFILE=str(home),
                    XDG_DATA_HOME=str(root/'data'), XDG_CONFIG_HOME=str(root/'config'),
+                   XDG_STATE_HOME=str(root/'app-state'), XDG_CACHE_HOME=str(root/'cache'),
+                   JARVIS_OPENAI_CREDENTIALS_PATH=str(fixture_credentials/'openai.json'),
+                   JARVIS_XAI_CREDENTIALS_PATH=str(fixture_credentials/'xai.json'),
+                   JARVIS_LMSTUDIO_CREDENTIALS_PATH=str(blocker), JARVIS_CREDENTIALS_PATH=str(blocker),
                    TERM='xterm-256color', LANG='C.UTF-8', ZAI_API_KEY='fixture-not-a-real-key',
-                   AGENT_VESPER_PROVIDER='zai', AGENT_VESPER_SANDBOX='off',
+                   JARVIS_PROVIDER='zai', JARVIS_SANDBOX='off',
                    HTTP_PROXY='http://127.0.0.1:9', HTTPS_PROXY='http://127.0.0.1:9',
                    ALL_PROXY='http://127.0.0.1:9', NO_PROXY='',
-                   AGENT_VESPER_LMSTUDIO_ROOT=str(root/'lmstudio'),
-                   AGENT_VESPER_GLOBAL_MEMORY_ROOT=str(root/'global-memory'),
-                   AGENT_VESPER_GLOBAL_COGNITION_ROOT=str(root/'global-cognition'))
+                   JARVIS_LMSTUDIO_ROOT=str(root/'lmstudio'),
+                   JARVIS_GLOBAL_MEMORY_ROOT=str(root/'global-memory'),
+                   JARVIS_GLOBAL_COGNITION_ROOT=str(root/'global-cognition'))
         if os.name == "nt":
             # OS console/process initialization needs these; no user settings or
             # credentials are inherited. Scratch directories remain private.
@@ -207,8 +260,21 @@ class Host:
     def key(self, value):
         self.write(value.encode())
         self.pump()
+    def reveal_menu_label(self, label):
+        # Settings renders at most fourteen rows and scrolls with the focus.
+        # Drive the existing native Down handler before clicking a hidden row;
+        # retain the original observation deadline and never activate a choice.
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            self.pump(.1)
+            if label in self.text():
+                return
+            if self.child.poll() is not None:
+                break
+            self.key('\x1b[B')
+        raise AssertionError(f'Missing menu item {label!r}\n{self.text()}')
     def choose(self, label):
-        self.wait(label)
+        self.reveal_menu_label(label)
         for _ in range(30):
             target = next((y for y, row in enumerate(self.screen)
                            if label in ''.join(row) and ''.join(row).strip().startswith('│')), None)
@@ -225,7 +291,7 @@ class Host:
             # ConPTY fixtures drive native key events; POSIX retains mouse proof.
             self.choose(label)
             return
-        self.wait(label)
+        self.reveal_menu_label(label)
         for y,row in enumerate(self.screen):
             line=''.join(row)
             if label in line and line.strip().startswith("│"):
@@ -250,7 +316,7 @@ class Host:
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='vesper-settings-pty-') as temp:
         root=Path(temp)
-        saved=root/'home/.agent-vesper/ui/settings.json'
+        saved=private_config_root(root)/'ui/settings.json'
         host=Host(binary,root)
         try:
             host.wait('Start coding')
@@ -267,7 +333,7 @@ def run(binary):
             host.click('Providers')
             host.click('openai')
             host.click('Cancel')
-            assert not (root/'.agent-vesper/provider').exists()
+            assert not (root/'.jarvis/provider').exists()
             for category,value in [('Primary model','glm-5.2'),('Reasoning depth','high'),
                                    ('Auxiliary model','glm-4.7'),('Generation style','precise'),
                                    ('Mixture of Agents','enabled'),('Permissions','bypass'),
@@ -301,9 +367,9 @@ def run(binary):
             assert data['providers']['zai']['/auxiliary']=='/auxiliary glm-4.7'
             assert data['providers']['zai']['/generation']=='/generation precise'
             assert data['providers']['zai']['/mixture']=='/mixture enabled'
-            assert json.loads((root/'.agent-vesper/acceptance-settings.json').read_text())==dict(enabled=True,prd='')
-            assert json.loads((root/'.agent-vesper/swarm-settings.json').read_text())['enabled']
-            assert json.loads((root/'.agent-vesper/web-settings.json').read_text())['enabled']
+            assert json.loads((root/'.jarvis/acceptance-settings.json').read_text())==dict(enabled=True,prd='')
+            assert json.loads((root/'.jarvis/swarm-settings.json').read_text())['enabled']
+            assert json.loads((root/'.jarvis/web-settings.json').read_text())['enabled']
             host.click('Start coding')
             host.key('/permission\r')
             host.wait('Bypass')
@@ -311,9 +377,12 @@ def run(binary):
         host=Host(binary,root)
         try:
             host.wait('Start coding')
-            host.wait('glm-5.2')
             host.key('s')
             host.wait('current Bypass')
+            host.click('Primary model')
+            host.wait('glm-5.2 (current)')
+            host.key('\x1b')
+            host.reveal_menu_label('Session mode')
             host.wait('current Plan')
             host.click('Implementation acceptance')
             host.wait('Enforced completion: ON')

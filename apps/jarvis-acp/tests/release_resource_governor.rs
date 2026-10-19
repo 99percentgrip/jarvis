@@ -23,6 +23,11 @@ use support::ProcessHarness;
 
 struct GateRelease(PathBuf);
 
+const CONTROLLED_CARGO_SCRIPT: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/controlled_cargo_fixture.sh"
+);
+
 impl Drop for GateRelease {
     fn drop(&mut self) {
         // If an assertion fails before normal settlement, release the owned
@@ -48,6 +53,54 @@ fn controlled_cargo_metadata_emits_valid_json() {
     let metadata: serde_json::Value = serde_json::from_slice(&output.stdout)
         .expect("controlled metadata must be valid JSON under the host POSIX shell");
     assert_eq!(metadata, json!({"packages": []}));
+}
+
+#[test]
+fn concurrent_cargo_fixtures_keep_bindings_private_and_executable_immutable() {
+    let source_before = fs::read(CONTROLLED_CARGO_SCRIPT).unwrap();
+    let fixtures = (0..8)
+        .map(|_| {
+            let root = tempfile::Builder::new()
+                .prefix("controlled Cargo 'fixture' ")
+                .tempdir()
+                .unwrap();
+            let cargo = root.path().join("cargo");
+            write_controlled_cargo(
+                &cargo,
+                &root.path().join("receipts"),
+                &root.path().join("release"),
+            );
+            assert_eq!(
+                fs::read_link(&cargo).unwrap(),
+                Path::new(CONTROLLED_CARGO_SCRIPT)
+            );
+            root
+        })
+        .collect::<Vec<_>>();
+    std::thread::scope(|scope| {
+        let children = fixtures
+            .iter()
+            .map(|fixture| {
+                scope.spawn(move || {
+                    let output = Command::new(fixture.path().join("cargo"))
+                        .arg("metadata")
+                        .output()
+                        .unwrap();
+                    assert!(output.status.success());
+                    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+                    assert_eq!(value, json!({"packages": []}));
+                    let receipt = fs::read_to_string(fixture.path().join("receipts")).unwrap();
+                    assert_eq!(receipt.lines().count(), 1);
+                    assert!(receipt.starts_with("metadata|"));
+                    assert!(!fixture.path().join("release").exists());
+                })
+            })
+            .collect::<Vec<_>>();
+        for child in children {
+            child.join().unwrap();
+        }
+    });
+    assert_eq!(fs::read(CONTROLLED_CARGO_SCRIPT).unwrap(), source_before);
 }
 
 #[test]
@@ -82,10 +135,7 @@ fn acp_release_rejection_and_unadvertised_approval_finish_without_mutation() {
         listener.set_nonblocking(true).unwrap();
         let mut process = ProcessHarness::spawn_resource_governor_test_driver(
             listener.local_addr().unwrap(),
-            [(
-                "AGENT_VESPER_RELEASE_ROOT",
-                state_root.display().to_string(),
-            )],
+            [("JARVIS_RELEASE_ROOT", state_root.display().to_string())],
         );
         let session = process.initialize_and_new_session_in(&workspace);
         // Keep the native default Ask; no fabricated approval or model call.
@@ -131,10 +181,7 @@ fn acp_release_pending_approval_cancel_ignores_late_allow() {
     listener.set_nonblocking(true).unwrap();
     let mut process = ProcessHarness::spawn_resource_governor_test_driver(
         listener.local_addr().unwrap(),
-        [(
-            "AGENT_VESPER_RELEASE_ROOT",
-            state_root.display().to_string(),
-        )],
+        [("JARVIS_RELEASE_ROOT", state_root.display().to_string())],
     );
     let session = process.initialize_and_new_session_in(&workspace);
     process.prompt(3, &session, "/release patch", "release-pending-cancel");
@@ -226,10 +273,7 @@ fn acp_completed_release_delivers_final_receipt_without_provider_or_new_release(
     listener.set_nonblocking(true).unwrap();
     let mut process = ProcessHarness::spawn_resource_governor_test_driver(
         listener.local_addr().unwrap(),
-        [(
-            "AGENT_VESPER_RELEASE_ROOT",
-            state_root.display().to_string(),
-        )],
+        [("JARVIS_RELEASE_ROOT", state_root.display().to_string())],
     );
     let session = process.initialize_and_new_session_in(&workspace);
     process.prompt(3, &session, "/release resume", "fixture-closeout-delivery");
@@ -292,10 +336,7 @@ fn acp_conflicting_published_target_returns_clarification_without_observing_old_
     listener.set_nonblocking(true).unwrap();
     let mut process = ProcessHarness::spawn_resource_governor_test_driver(
         listener.local_addr().unwrap(),
-        [(
-            "AGENT_VESPER_RELEASE_ROOT",
-            state_root.display().to_string(),
-        )],
+        [("JARVIS_RELEASE_ROOT", state_root.display().to_string())],
     );
     let session = process.initialize_and_new_session_in(&workspace);
     process.prompt(
@@ -338,10 +379,7 @@ fn governed_release_process(request: &str, ask: bool) {
     let mut process = ProcessHarness::spawn_resource_governor_test_driver(
         listener.local_addr().expect("listener address"),
         [
-            (
-                "AGENT_VESPER_RELEASE_ROOT",
-                release_root.display().to_string(),
-            ),
+            ("JARVIS_RELEASE_ROOT", release_root.display().to_string()),
             ("PATH", path),
         ],
     );
@@ -513,19 +551,19 @@ fn create_release_fixture(workspace: &Path) {
 }
 
 fn write_controlled_cargo(path: &Path, receipts: &Path, release: &Path) {
-    let quote = |value: &Path| value.display().to_string().replace('\'', "'\"'\"'");
     fs::write(
-        path,
-        format!(
-            "#!/bin/sh\ntag=gate\ncase \" $* \" in\n  *\" metadata \"*) tag=metadata ;;\n  *\" check \"*) tag=check ;;\nesac\nprintf '%s|%s|%s|%s\\n' \"$tag\" \"${{CARGO_BUILD_JOBS-}}\" \"${{RUST_TEST_THREADS-}}\" \"${{CARGO_TARGET_DIR-}}\" >> '{}'\nif [ \"$tag\" = metadata ]; then\n  printf '%s\\n' '{{\"packages\":[]}}'\n  exit 0\nfi\nif [ \"$tag\" = check ]; then\n  exit 0\nfi\nwhile [ ! -e '{}' ]; do sleep 0.02; done\nexit 7\n",
-            quote(receipts),
-            quote(release),
-        ),
+        path.with_extension("receipts-path"),
+        format!("{}\n", receipts.display()),
     )
-    .expect("write controlled Cargo command");
-    use std::os::unix::fs::PermissionsExt;
-    fs::set_permissions(path, fs::Permissions::from_mode(0o755))
-        .expect("make controlled Cargo executable");
+    .expect("write controlled Cargo receipt binding");
+    fs::write(
+        path.with_extension("release-path"),
+        format!("{}\n", release.display()),
+    )
+    .expect("write controlled Cargo release binding");
+    // Concurrent fork/exec must never inherit a writer for the executable inode.
+    std::os::unix::fs::symlink(CONTROLLED_CARGO_SCRIPT, path)
+        .expect("link immutable controlled Cargo executable");
 }
 
 fn run_git(workspace: &Path, args: &[&str]) {

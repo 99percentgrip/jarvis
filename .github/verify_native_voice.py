@@ -142,7 +142,7 @@ def main():
         home = Path.home()
         env.setdefault("CARGO_HOME", str(home / ".cargo"))
         env.setdefault("RUSTUP_HOME", str(home / ".rustup"))
-        for key in ("HOME", "USERPROFILE", "LOCALAPPDATA", "XDG_DATA_HOME", "XDG_CACHE_HOME", "UV_CACHE_DIR", "UV_PYTHON_INSTALL_DIR", "AGENT_VESPER_HOME"):
+        for key in ("HOME", "USERPROFILE", "LOCALAPPDATA", "XDG_DATA_HOME", "XDG_CACHE_HOME", "UV_CACHE_DIR", "UV_PYTHON_INSTALL_DIR", "JARVIS_HOME"):
             destination = root / key
             destination.mkdir()
             env[key] = str(destination)

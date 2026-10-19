@@ -42,12 +42,12 @@ class Host:
         env = dict(PATH=os.environ['PATH'], HOME=str(home), USERPROFILE=str(home),
                    XDG_DATA_HOME=str(root / 'data'), XDG_CONFIG_HOME=str(root / 'config'),
                    TERM='xterm-256color', LANG='C.UTF-8', ZAI_API_KEY='fixture-not-a-real-key',
-                   AGENT_VESPER_PROVIDER='zai', AGENT_VESPER_SANDBOX='off',
+                   JARVIS_PROVIDER='zai', JARVIS_SANDBOX='off',
                    HTTP_PROXY='http://127.0.0.1:9', HTTPS_PROXY='http://127.0.0.1:9',
                    ALL_PROXY='http://127.0.0.1:9', NO_PROXY='',
-                   AGENT_VESPER_LMSTUDIO_ROOT=str(root / 'lmstudio'),
-                   AGENT_VESPER_GLOBAL_MEMORY_ROOT=str(root / 'global-memory'),
-                   AGENT_VESPER_GLOBAL_COGNITION_ROOT=str(root / 'global-cognition'))
+                   JARVIS_LMSTUDIO_ROOT=str(root / 'lmstudio'),
+                   JARVIS_GLOBAL_MEMORY_ROOT=str(root / 'global-memory'),
+                   JARVIS_GLOBAL_COGNITION_ROOT=str(root / 'global-cognition'))
         if extra_env:
             env.update(extra_env)
         self.child = subprocess.Popen([binary], cwd=root, env=env, stdin=slave,
@@ -182,7 +182,7 @@ def observe(binary, enable_bridge):
     with tempfile.TemporaryDirectory(prefix='vesper-bridge-at01-') as temp:
         root = Path(temp).resolve()
         if enable_bridge:
-            state = root / '.agent-vesper'
+            state = root / '.jarvis'
             state.mkdir(parents=True, exist_ok=True)
             (state / 'bridge-settings.json').write_text(json.dumps({'enabled': True}))
         host = Host(binary, root)

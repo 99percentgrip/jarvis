@@ -20,6 +20,43 @@ use support::{
 };
 
 #[test]
+fn process_fixture_platform_roots_are_explicit_private_and_read_only() {
+    let home = tempfile::tempdir().unwrap();
+    let mut command = std::process::Command::new("fixture-never-executed");
+    command
+        .env_clear()
+        .env("HOME", home.path())
+        .env("USERPROFILE", "forbidden-parent-profile")
+        .env("APPDATA", "forbidden-parent-roaming")
+        .env("LOCALAPPDATA", "forbidden-parent-local");
+    support::restore_isolated_environment(&mut command);
+    let environment: std::collections::BTreeMap<_, _> = command
+        .get_envs()
+        .map(|(key, value)| (key.to_os_string(), value.unwrap().to_os_string()))
+        .collect();
+    for (key, expected) in [
+        ("HOME", home.path().to_path_buf()),
+        ("USERPROFILE", home.path().to_path_buf()),
+        ("APPDATA", home.path().join("roaming")),
+        ("LOCALAPPDATA", home.path().join("local")),
+    ] {
+        assert_eq!(
+            environment.get(std::ffi::OsStr::new(key)),
+            Some(&expected.into_os_string())
+        );
+    }
+    assert!(
+        !support::critical_environment_keys().iter().any(|key| [
+            "USERPROFILE",
+            "APPDATA",
+            "LOCALAPPDATA"
+        ]
+        .contains(key))
+    );
+    assert_eq!(std::fs::read_dir(home.path()).unwrap().count(), 0);
+}
+
+#[test]
 fn full_harness_streams_ordered_content_once_before_end_turn() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let address = listener.local_addr().unwrap();
@@ -40,6 +77,7 @@ fn full_harness_streams_ordered_content_once_before_end_turn() {
     });
 
     let cognition = tempfile::tempdir().unwrap();
+    jarvis_security::prepare_owned_directory(cognition.path()).unwrap();
     let global_cognition = tempfile::tempdir().unwrap();
     std::fs::write(
         cognition.path().join("embedding.json"),
@@ -49,14 +87,14 @@ fn full_harness_streams_ordered_content_once_before_end_turn() {
     let mut process = ProcessHarness::spawn_with_environment(
         address,
         [
-            ("AGENT_VESPER_FULL_HARNESS", "1".to_owned()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".to_owned()),
+            ("JARVIS_FULL_HARNESS", "1".to_owned()),
+            ("JARVIS_VRO_ENABLED", "0".to_owned()),
             (
-                "AGENT_VESPER_COGNITION_ROOT",
+                "JARVIS_COGNITION_ROOT",
                 cognition.path().display().to_string(),
             ),
             (
-                "AGENT_VESPER_GLOBAL_COGNITION_ROOT",
+                "JARVIS_GLOBAL_COGNITION_ROOT",
                 global_cognition.path().display().to_string(),
             ),
         ],

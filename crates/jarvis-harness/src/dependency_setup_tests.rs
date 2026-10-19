@@ -73,9 +73,9 @@ async fn browser_probe_cleans_up_after_failure_and_never_hides_cleanup_failure()
     engine.connection = Some(MACHINE.into());
     verify_browser(&engine, "sha256:fixture").await.unwrap();
     let calls = std::fs::read_to_string(root.path().join("calls")).unwrap();
-    assert!(calls.contains("--connection agent-vesper run --pull=never"));
+    assert!(calls.contains(&format!("--connection {MACHINE} run --pull=never")));
     assert!(calls.contains("--network none --read-only --cap-drop=ALL"));
-    assert!(calls.contains("--connection agent-vesper rm -f vesper-setup-"));
+    assert!(calls.contains(&format!("--connection {MACHINE} rm -f jarvis-setup-")));
     assert!(!calls.contains("--mount"));
     std::fs::write(root.path().join("browser-failed"), "").unwrap();
     assert!(verify_browser(&engine, "sha256:fixture").await.is_err());
@@ -117,10 +117,10 @@ async fn an_unhealthy_first_engine_does_not_mask_a_healthy_alternative() {
 #[tokio::test]
 #[ignore = "explicit contained runtime acceptance; requires isolated engine storage and a pinned image"]
 async fn real_dependency_browser_readiness() {
-    let binary = std::env::var_os("VESPER_DEPENDENCY_TEST_ENGINE")
+    let binary = std::env::var_os("JARVIS_DEPENDENCY_TEST_ENGINE")
         .expect("explicit test engine")
         .into();
-    let image = std::env::var("VESPER_DEPENDENCY_TEST_IMAGE").expect("explicit pinned image");
+    let image = std::env::var("JARVIS_DEPENDENCY_TEST_IMAGE").expect("explicit pinned image");
     assert!(jarvis_config::is_digest_pinned_image(&image));
     let engine = Engine {
         binary,
@@ -203,7 +203,9 @@ async fn managed_machine_resume_is_idempotent_and_runtime_never_initializes() {
     assert_eq!(
         after
             .lines()
-            .filter(|line| line.contains("machine start --update-connection=false agent-vesper"))
+            .filter(|line| line.contains(&format!(
+                "machine start --update-connection=false {MACHINE}"
+            )))
             .count(),
         2
     );

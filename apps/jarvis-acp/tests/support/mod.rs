@@ -59,6 +59,7 @@ pub struct ProcessHarness {
     lines: mpsc::Receiver<String>,
     transcript: Vec<Value>,
     pending_responses: BTreeMap<String, Value>,
+    expected_response: Option<u64>,
     reader_gate: ReaderGate,
     reader: Option<thread::JoinHandle<()>>,
     stderr: Option<thread::JoinHandle<String>>,
@@ -79,8 +80,8 @@ impl ProcessHarness {
             env!("CARGO_BIN_EXE_jarvis-acp-test-driver"),
             address,
             [
-                ("AGENT_VESPER_TEST_DISPATCH_GATE", gate.to_string()),
-                ("AGENT_VESPER_FULL_HARNESS", "0".to_owned()),
+                ("JARVIS_TEST_DISPATCH_GATE", gate.to_string()),
+                ("JARVIS_FULL_HARNESS", "0".to_owned()),
             ],
         )
     }
@@ -99,8 +100,8 @@ impl ProcessHarness {
             env!("CARGO_BIN_EXE_jarvis-acp-test-driver"),
             address,
             [
-                ("AGENT_VESPER_TEST_DISPATCH_GATE", address.to_string()),
-                ("AGENT_VESPER_FULL_HARNESS", "1".to_owned()),
+                ("JARVIS_TEST_DISPATCH_GATE", address.to_string()),
+                ("JARVIS_FULL_HARNESS", "1".to_owned()),
             ]
             .into_iter()
             .chain(extra),
@@ -112,6 +113,22 @@ impl ProcessHarness {
         extra: impl IntoIterator<Item = (&'static str, String)>,
     ) -> Self {
         Self::spawn_binary(env!("CARGO_BIN_EXE_jarvis-acp"), address, extra)
+    }
+
+    pub fn spawn_legacy_format_fixture(
+        address: std::net::SocketAddr,
+        extra: impl IntoIterator<Item = (&'static str, String)>,
+    ) -> Self {
+        Self::spawn_binary(
+            env!("CARGO_BIN_EXE_jarvis-acp-test-driver"),
+            address,
+            [
+                ("JARVIS_TEST_DISPATCH_GATE", address.to_string()),
+                ("JARVIS_FULL_HARNESS", "0".to_owned()),
+            ]
+            .into_iter()
+            .chain(extra),
+        )
     }
 
     fn spawn_binary(
@@ -132,7 +149,7 @@ impl ProcessHarness {
         fs::write(
             &openai_fixture,
             serde_json::to_vec(&serde_json::json!({
-                "credentials": {
+                "application": "99percentgrip.jarvis", "credentials": {
                     "openai": {"native-auth": "{\"mode\":\"signed-out\"}"},
                     "xai": {"native-auth": "{\"mode\":\"signed-out\"}"}
                 }
@@ -154,16 +171,16 @@ impl ProcessHarness {
             .current_dir(&temp)
             .env_clear()
             .env("HOME", &temp)
-            .env("AGENT_VESPER_OPENAI_CREDENTIALS_PATH", &openai_fixture)
-            .env("AGENT_VESPER_XAI_CREDENTIALS_PATH", &openai_fixture)
+            .env("JARVIS_OPENAI_CREDENTIALS_PATH", &openai_fixture)
+            .env("JARVIS_XAI_CREDENTIALS_PATH", &openai_fixture)
             .env("XDG_CONFIG_HOME", temp.join("config"))
             .env("XDG_CACHE_HOME", temp.join("cache"))
             .env("XDG_DATA_HOME", temp.join("data"))
             .env("XDG_STATE_HOME", temp.join("state"))
             .env("ZAI_API_KEY", CANARY)
-            .env("AGENT_VESPER_GLM_BASE_URL", format!("http://{address}/v4"))
-            .env("AGENT_VESPER_ALLOW_INSECURE_LOOPBACK", "1")
-            .env("AGENT_VESPER_FULL_HARNESS", "0")
+            .env("JARVIS_GLM_BASE_URL", format!("http://{address}/v4"))
+            .env("JARVIS_ALLOW_INSECURE_LOOPBACK", "1")
+            .env("JARVIS_FULL_HARNESS", "0")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
@@ -181,11 +198,7 @@ impl ProcessHarness {
         // None of these expose the user's real `ZAI_API_KEY` or any
         // `AGENT_VESPER_*` configuration; isolation of those secrets is
         // preserved because they are set explicitly above after env_clear.
-        for key in critical_environment_keys() {
-            if let Ok(value) = std::env::var(key) {
-                command.env(key, value);
-            }
-        }
+        restore_isolated_environment(&mut command);
         for (key, value) in extra {
             command.env(key, value);
         }
@@ -220,6 +233,7 @@ impl ProcessHarness {
             lines,
             transcript: Vec::new(),
             pending_responses: BTreeMap::new(),
+            expected_response: None,
             reader_gate: gate,
             reader: Some(reader),
             stderr: Some(stderr),
@@ -232,7 +246,7 @@ impl ProcessHarness {
             json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}),
         );
         assert_eq!(self.response(1)["result"]["protocolVersion"], 1);
-        self.send(json!({"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/tmp","mcpServers":[]}}));
+        self.send(json!({"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":self.temp.to_string_lossy(),"mcpServers":[]}}));
         self.response(2)["result"]["sessionId"]
             .as_str()
             .unwrap()
@@ -275,9 +289,11 @@ impl ProcessHarness {
         if let Some(value) = self.pending_responses.remove(&key) {
             return value;
         }
+        self.expected_response = Some(id);
         loop {
             let value = self.next();
             if value["id"] == id {
+                self.expected_response = None;
                 return value;
             }
             if !value["id"].is_null() {
@@ -288,7 +304,14 @@ impl ProcessHarness {
     }
 
     pub fn next(&mut self) -> Value {
-        let line = self.lines.recv_timeout(TIMEOUT).unwrap();
+        let expected_response = self.expected_response;
+        let line = self.lines.recv_timeout(TIMEOUT).unwrap_or_else(|error| {
+            let status = self.child.try_wait().ok().flatten();
+            panic!(
+                "ACP receive failed: {error}; expected_response={expected_response:?}; child_status={status:?}; events={}; recent_shapes={:?}",
+                self.transcript.len(), protocol_diagnostic(&self.transcript)
+            )
+        });
         assert!(!line.contains(CANARY), "secret reached ACP stdout");
         let value: Value = serde_json::from_str(&line).expect("stdout contained non-JSON text");
         self.transcript.push(value.clone());
@@ -331,6 +354,40 @@ impl ProcessHarness {
         let _ = fs::remove_dir_all(&self.temp);
         (std::mem::take(&mut self.transcript), stderr)
     }
+}
+
+/// Diagnostic allowlist: never print prompt/tool content, credentials or arbitrary fields.
+pub fn protocol_diagnostic(values: &[Value]) -> Vec<Value> {
+    values
+        .iter()
+        .rev()
+        .take(12)
+        .map(|value| {
+            let update = &value["params"]["update"];
+            let kind = match update["sessionUpdate"].as_str() {
+                Some("tool_call") => "tool_call",
+                Some("tool_call_update") => "tool_call_update",
+                Some("agent_message_chunk") => "agent_message_chunk",
+                Some("agent_thought_chunk") => "agent_thought_chunk",
+                Some("available_commands_update") => "available_commands_update",
+                _ => "other",
+            };
+            let status = match update["status"].as_str() {
+                Some("pending") => "pending",
+                Some("in_progress") => "in_progress",
+                Some("completed") => "completed",
+                Some("failed") => "failed",
+                _ => "other",
+            };
+            let method = match value["method"].as_str() {
+                Some("session/update") => "session/update",
+                Some("session/request_permission") => "session/request_permission",
+                _ => "other",
+            };
+            json!({"response_id": value["id"].as_u64(), "has_error": value.get("error").is_some(),
+               "rpc_method": method, "session_update": kind, "tool_status": status})
+        })
+        .collect()
 }
 
 impl Drop for ProcessHarness {
@@ -451,12 +508,33 @@ fn unique_suffix() -> u128 {
     nanos.wrapping_add(seq as u128)
 }
 
-/// Returns the platform-specific minimum env-var keys the spawned
-/// `agent-vesper-acp` process must inherit even after `env_clear()`, so the
-/// binary can initialize its platform runtime (Windows Winsock, DLL search
-/// paths; macOS temp/subprocess resolution; Linux defensive PATH). Tests
-/// still set `HOME`, `XDG_*`, `ZAI_API_KEY`, and `AGENT_VESPER_*` explicitly
-/// above, so secret isolation is not weakened by inheriting these keys.
+/// Preserve OS execution prerequisites without inheriting real private runtime roots.
+#[allow(dead_code)] // Shared across separately compiled integration test modules.
+pub fn restore_isolated_environment(command: &mut Command) {
+    let home = command
+        .get_envs()
+        .find(|(key, _)| *key == "HOME")
+        .and_then(|(_, value)| value)
+        .map(PathBuf::from)
+        .or_else(|| command.get_current_dir().map(PathBuf::from))
+        .expect("process fixture requires an explicit synthetic home or cwd");
+    assert!(
+        home.is_absolute(),
+        "fixture home must be native and absolute"
+    );
+    for key in critical_environment_keys() {
+        if let Ok(value) = std::env::var(key) {
+            command.env(key, value);
+        }
+    }
+    command
+        .env("HOME", &home)
+        .env("USERPROFILE", &home)
+        .env("APPDATA", home.join("roaming"))
+        .env("LOCALAPPDATA", home.join("local"));
+}
+
+/// OS execution inputs only; application-private roots are always synthetic.
 pub fn critical_environment_keys() -> &'static [&'static str] {
     if cfg!(target_os = "windows") {
         &[
@@ -467,9 +545,6 @@ pub fn critical_environment_keys() -> &'static [&'static str] {
             "TMP",
             "PATHEXT",
             "PATH",
-            "USERPROFILE",
-            "APPDATA",
-            "LOCALAPPDATA",
             "PROGRAMDATA",
             "COMSPEC",
         ]
@@ -491,9 +566,33 @@ pub fn signed_out_openai_fixture() -> tempfile::NamedTempFile {
     serde_json::to_writer(
         &mut file,
         &serde_json::json!({
-            "credentials": {"openai": {"native-auth": "{\"mode\":\"signed-out\"}"}}
+            "application": "99percentgrip.jarvis", "credentials": {"openai": {"native-auth": "{\"mode\":\"signed-out\"}"}}
         }),
     )
     .unwrap();
     file
+}
+
+#[cfg(test)]
+mod diagnostic_tests {
+    use super::*;
+
+    #[test]
+    fn timeout_diagnostic_bounds_shapes_and_excludes_all_content() {
+        let secret = "synthetic-diagnostic-secret-must-not-appear";
+        let mut events = vec![
+            json!({"id": 9, "params": {"update": {
+            "sessionUpdate": "tool_call_update", "status": "in_progress",
+            "content": secret, "rawOutput": secret, "title": secret}}, "error": {"message": secret}});
+            20
+        ];
+        events.push(json!({"id": secret, "params": {"update": {"sessionUpdate": secret, "status": secret}}}));
+        let observed = protocol_diagnostic(&events);
+        assert_eq!(observed.len(), 12);
+        let encoded = serde_json::to_string(&observed).unwrap();
+        assert!(!encoded.contains(secret));
+        assert!(encoded.contains("in_progress"));
+        assert_eq!(observed[0]["response_id"], Value::Null);
+        assert_eq!(observed[0]["session_update"], "other");
+    }
 }

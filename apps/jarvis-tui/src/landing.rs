@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph, Wrap},
 };
 
-pub const RELEASES_URL: &str = "https://github.com/99percentgrip/agent-vesper/releases/latest";
+pub const RELEASES_URL: &str = "https://github.com/99percentgrip/jarvis/releases";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LandingAction {

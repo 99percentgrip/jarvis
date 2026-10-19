@@ -6,6 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-15-runtime-identity-stage3.md` and `runtime-identity-stage3-inventory.json` own runtime isolation evidence, capability limitations and exact-candidate verification.
+
 - `2026-10-15-rust-identity-stage2.md` and its source-inventory JSON own exact Stage 2 source, verification, compatibility boundaries and protected-merge receipts.
 
 - `2026-10-14-identity-stage1.md` and `stage1-source-provenance.json` own Stage 1
@@ -915,6 +917,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
   requested dynamic microphone control implementation boundaries.
 
 ## Local Contracts
+
+- `2026-10-15-runtime-identity-stage3.md` and `runtime-identity-stage3-inventory.json` own the Stage 3 source-linked inventory, preservation evidence, actual checks and explicit incomplete acceptance.
 
 - Native `release-v*-closeout.md` reports own immutable publication, current-main
   matrix, existing-registry-PR readback and completion receipts for one version.

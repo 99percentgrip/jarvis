@@ -99,11 +99,11 @@ def run(binary):
     with tempfile.TemporaryDirectory(prefix="vesper-queue-pty-") as temporary:
         root = Path(temporary)
         environment = {
-            "AGENT_VESPER_HOME": str(root / "state"),
-            "AGENT_VESPER_SESSION_ROOT": str(root / "sessions"),
-            "AGENT_VESPER_PROVIDER": "xai",
-            "AGENT_VESPER_XAI_TEST_URL": f"http://127.0.0.1:{server.server_address[1]}/responses",
-            "AGENT_VESPER_VRO_ENABLED": "0",
+            "JARVIS_HOME": str(root / "state"),
+            "JARVIS_SESSION_ROOT": str(root / "sessions"),
+            "JARVIS_PROVIDER": "xai",
+            "JARVIS_XAI_TEST_URL": f"http://127.0.0.1:{server.server_address[1]}/responses",
+            "JARVIS_VRO_ENABLED": "0",
             "NO_PROXY": "127.0.0.1", "no_proxy": "127.0.0.1",
         }
         host = Host(binary, root, environment)
@@ -211,8 +211,8 @@ def run(binary):
             Handler.tool_next = first
             Handler.first_seen.clear()
             Handler.release.clear()
-            scoped_env = dict(environment, AGENT_VESPER_HOME=str(owned / "state"),
-                              AGENT_VESPER_SESSION_ROOT=str(owned / "sessions"))
+            scoped_env = dict(environment, JARVIS_HOME=str(owned / "state"),
+                              JARVIS_SESSION_ROOT=str(owned / "sessions"))
             host = Host(binary, owned, scoped_env)
             host.wait("Start coding")
             host.key("\r")
@@ -258,8 +258,8 @@ def run(binary):
                 Handler.fail_next = next_request if scenario == "error" else 0
                 Handler.first_seen.clear()
                 Handler.release.clear()
-                scoped_env = dict(environment, AGENT_VESPER_HOME=str(owned / "state"),
-                                  AGENT_VESPER_SESSION_ROOT=str(owned / "sessions"))
+                scoped_env = dict(environment, JARVIS_HOME=str(owned / "state"),
+                                  JARVIS_SESSION_ROOT=str(owned / "sessions"))
                 host = Host(binary, owned, scoped_env)
                 host.wait("Start coding")
                 host.key("\r")

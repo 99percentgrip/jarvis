@@ -234,7 +234,7 @@ impl Audio {
     #[cfg(test)]
     fn new() -> Result<Self, String> {
         let dir = tempfile::Builder::new()
-            .prefix("vesper-voice-")
+            .prefix("jarvis-voice-")
             .tempdir()
             .map_err(|_| "Cannot create private audio directory.")?;
         let path = dir.path().join("recording.wav");
@@ -563,8 +563,8 @@ impl Worker {
         // parallel with recording; missing setup is handled at transcription.
         if self.sidecar.is_none() {
             let (configured, explicit) = super::vesper_python_interpreter_from(
-                std::env::var_os("VESPER_PYTHON_PATH").as_deref(),
-                std::env::var_os("GLM_VENV_PATH").as_deref(),
+                std::env::var_os("JARVIS_PYTHON_PATH").as_deref(),
+                std::env::var_os("JARVIS_VOICE_VENV_PATH").as_deref(),
             );
             let installed = jarvis_tui::platform_voice::venv_python(&jarvis_tui::voice_venv_root());
             let python = self.python.clone().or_else(|| {
@@ -935,6 +935,12 @@ impl Sidecar {
         command
             .arg("-c")
             .arg(SCRIPT)
+            // Preserve the private sidecar wire parameter, but never inherit
+            // another application's model choice through the legacy name.
+            .env(
+                "GLM_ACP_WHISPER_MODEL",
+                std::env::var("JARVIS_WHISPER_MODEL").unwrap_or_else(|_| "base".into()),
+            )
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null());

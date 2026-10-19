@@ -1,10 +1,26 @@
 """Offline parser/guard tests; these never invoke Cargo or native storage."""
 
 import unittest
+from unittest.mock import patch
+from pathlib import Path
+import tempfile
+import linux_secret_service_fixture as fixture
 from verify_native_credentials import has_exact_receipt, require_hosted_fixture
 
 
 class NativeReceiptTests(unittest.TestCase):
+    def test_private_session_refuses_a_desktop_bus_before_starting_any_child(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".native-credential-test-home").write_text("synthetic-only\n")
+            with patch.dict(fixture.os.environ, {
+                "HOME": str(root), "NATIVE_SECRET_SERVICE_FIXTURE_HOME": str(root),
+                "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1234/bus",
+            }, clear=True), patch.object(fixture.subprocess, "Popen") as spawn:
+                with self.assertRaises(RuntimeError):
+                    fixture.inside_private_bus(["cargo", "test"])
+                spawn.assert_not_called()
+
     def test_accepts_one_exact_pass_with_lf_or_crlf(self):
         output = "test fixture::required ... ok\ntest result: ok. 1 passed; 0 failed; 0 ignored; 9 filtered out; finished in 0.01s\n"
         for text in [output, output.replace("\n", "\r\n")]:
@@ -23,7 +39,7 @@ class NativeReceiptTests(unittest.TestCase):
     def test_hosted_scope_requires_all_explicit_guards(self):
         allowed = {
             "GITHUB_ACTIONS": "true", "RUNNER_OS": "Windows",
-            "VESPER_NATIVE_CREDENTIAL_ACCEPTANCE": "isolated-hosted-fixture",
+            "JARVIS_NATIVE_CREDENTIAL_ACCEPTANCE": "isolated-hosted-fixture",
         }
         require_hosted_fixture(allowed)
         for omitted in allowed:

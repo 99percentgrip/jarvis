@@ -53,19 +53,18 @@ impl WebRuntime {
 
     #[cfg(feature = "docker")]
     fn initialize(&self) -> Result<State, FetchError> {
-        if std::env::var("AGENT_VESPER_SANDBOX")
-            .is_ok_and(|value| value.eq_ignore_ascii_case("off"))
-        {
+        if std::env::var("JARVIS_SANDBOX").is_ok_and(|value| value.eq_ignore_ascii_case("off")) {
             return Err(FetchError::Sandbox(
-                "sandbox disabled by AGENT_VESPER_SANDBOX=off".into(),
+                "sandbox disabled by JARVIS_SANDBOX=off".into(),
             ));
         }
-        let root = tempfile::tempdir().map_err(|e| FetchError::Sandbox(e.to_string()))?;
+        let root = jarvis_security::private_temporary_workspace("jarvis-browser-")
+            .map_err(|e| FetchError::Sandbox(e.to_string()))?;
         let image = self
             .scope
             .driver_image
             .clone()
-            .or_else(|| std::env::var("VESPER_DOCKER_IMAGE").ok())
+            .or_else(|| std::env::var("JARVIS_DOCKER_IMAGE").ok())
             .or_else(|| crate::web_settings::bundled_image_id().ok())
             .ok_or_else(|| {
                 FetchError::Sandbox(

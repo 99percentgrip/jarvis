@@ -17,6 +17,13 @@ fn path(root: &Path) -> std::path::PathBuf {
 }
 fn load(root: &Path) -> Result<SavedChoices, String> {
     use std::io::Read;
+    jarvis_security::validate_new_or_owned_directory(root)
+        .map_err(|_| "Saved Settings ownership refused")?;
+    match jarvis_security::validate_private_file(&path(root)) {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(SavedChoices::default()),
+        Err(_) => return Err("Saved Settings private file refused".into()),
+    }
     let file = match std::fs::File::open(path(root)) {
         Ok(file) => file,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(SavedChoices::default()),
@@ -32,15 +39,9 @@ fn load(root: &Path) -> Result<SavedChoices, String> {
     serde_json::from_slice(&bytes).map_err(|_| "Saved Settings are malformed".into())
 }
 fn save(root: &Path, choices: &SavedChoices) -> Result<(), String> {
-    std::fs::create_dir_all(root).map_err(|_| "Could not create Settings directory")?;
-    let mut file = tempfile::NamedTempFile::new_in(root).map_err(|_| "Could not stage Settings")?;
-    serde_json::to_writer(&mut file, choices).map_err(|_| "Could not encode Settings")?;
-    file.as_file()
-        .sync_all()
-        .map_err(|_| "Could not sync Settings")?;
-    file.persist(path(root))
-        .map_err(|_| "Could not save Settings")?;
-    Ok(())
+    let bytes = serde_json::to_vec(choices).map_err(|_| "Could not encode Settings")?;
+    jarvis_security::write_private_atomic(&path(root), &bytes)
+        .map_err(|_| "Could not save private Settings".into())
 }
 fn ordinary(command: &str, surface: &ProviderSuperpowerSurface) -> bool {
     matches!(
@@ -545,22 +546,22 @@ pub(super) async fn open(
                             paths.push(jarvis_harness::skill_routing_settings::path(&root));
                         }
                         if acceptance != initial_acceptance {
-                            paths.push(root.join(".agent-vesper/acceptance-settings.json"));
+                            paths.push(root.join(".jarvis/acceptance-settings.json"));
                         }
                         if web != initial_web {
-                            paths.push(root.join(".agent-vesper/web-settings.json"));
+                            paths.push(root.join(".jarvis/web-settings.json"));
                         }
                         #[cfg(feature = "voice-conversation")]
                         if voice != initial_voice {
-                            paths.push(root.join(".agent-vesper/config.toml"));
+                            paths.push(root.join(".jarvis/config.toml"));
                         }
                         #[cfg(feature = "swarm")]
                         if swarm.settings != initial_swarm {
-                            paths.push(root.join(".agent-vesper/swarm-settings.json"));
+                            paths.push(root.join(".jarvis/swarm-settings.json"));
                         }
                         #[cfg(feature = "bridge")]
                         if bridge != initial_bridge {
-                            paths.push(root.join(".agent-vesper/bridge-settings.json"));
+                            paths.push(root.join(".jarvis/bridge-settings.json"));
                         }
                         let result = save_group(&paths, || {
                             if skills != initial_skills {
@@ -2067,9 +2068,15 @@ fn save_group(
     paths: &[std::path::PathBuf],
     write: impl FnOnce() -> Result<(), String>,
 ) -> Result<(), String> {
-    use std::io::{Read, Write};
+    use std::io::Read;
     let mut previous = Vec::new();
     for path in paths {
+        jarvis_security::validate_private_path(path)
+            .map_err(|_| "Settings private path refused")?;
+        if let Some(parent) = path.parent() {
+            jarvis_security::validate_new_or_owned_directory(parent)
+                .map_err(|_| "Settings private directory refused")?;
+        }
         if path.parent().is_some_and(|p| {
             p.symlink_metadata()
                 .is_ok_and(|m| m.file_type().is_symlink())
@@ -2082,6 +2089,8 @@ fn save_group(
                     && !metadata.file_type().is_symlink()
                     && metadata.len() <= 65536 =>
             {
+                jarvis_security::validate_private_file(path)
+                    .map_err(|_| "Previous Settings private file refused")?;
                 let mut bytes = Vec::new();
                 std::fs::File::open(path)
                     .map_err(|_| "Cannot read previous Settings")?
@@ -2107,15 +2116,9 @@ fn save_group(
         let mut failed = false;
         for (path, bytes) in previous {
             let restored: Result<(), std::io::Error> = (|| {
+                jarvis_security::validate_private_path(path)?;
                 match bytes {
-                    Some(bytes) => {
-                        let mut file = tempfile::NamedTempFile::new_in(
-                            path.parent().expect("settings parent"),
-                        )?;
-                        file.write_all(&bytes)?;
-                        file.as_file().sync_all()?;
-                        file.persist(path).map_err(|e| e.error)?;
-                    }
+                    Some(bytes) => jarvis_security::write_private_atomic(path, &bytes)?,
                     None => match std::fs::remove_file(path) {
                         Ok(()) => {}
                         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
@@ -2145,7 +2148,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let first = root.path().join("first.json");
         let second = root.path().join("second.json");
-        std::fs::write(&first, "original\n").unwrap();
+        jarvis_security::write_private_atomic(&first, b"original\n").unwrap();
         assert!(
             save_group(&[first.clone(), second.clone()], || {
                 std::fs::write(&first, "changed").unwrap();
@@ -2219,6 +2222,67 @@ mod tests {
             "provider choices must not leak across providers"
         );
     }
+    #[cfg(unix)]
+    #[test]
+    fn grouped_save_refuses_redirected_ancestors_before_read_or_callback() {
+        let root = tempfile::tempdir().unwrap();
+        let foreign = tempfile::tempdir().unwrap();
+        let target = foreign.path().join("settings.json");
+        std::fs::write(&target, b"foreign settings").unwrap();
+        std::os::unix::fs::symlink(foreign.path(), root.path().join("redirect")).unwrap();
+        let invoked = std::cell::Cell::new(false);
+        assert!(
+            save_group(&[root.path().join("redirect/settings.json")], || {
+                invoked.set(true);
+                Ok(())
+            })
+            .is_err()
+        );
+        assert!(!invoked.get());
+        assert_eq!(std::fs::read(target).unwrap(), b"foreign settings");
+    }
+
+    #[test]
+    fn missing_settings_discovery_is_read_only() {
+        let root = tempfile::tempdir().unwrap();
+        assert!(load(root.path()).is_ok());
+        assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn unowned_settings_are_not_read_or_adopted_by_save() {
+        let root = tempfile::tempdir().unwrap();
+        let settings = path(root.path());
+        let original = br#"{"providers":{},"common":{"/permission":"/permission bypass"}}"#;
+        std::fs::write(&settings, original).unwrap();
+        assert!(load(root.path()).is_err());
+        assert!(save(root.path(), &SavedChoices::default()).is_err());
+        assert_eq!(std::fs::read(&settings).unwrap(), original);
+        assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn redirected_or_public_settings_refuse_without_changing_foreign_bytes() {
+        use std::os::unix::{fs::PermissionsExt, fs::symlink};
+        let root = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let foreign = outside.path().join("old-settings.json");
+        let original = b"foreign private settings remain unchanged";
+        std::fs::write(&foreign, original).unwrap();
+        jarvis_security::prepare_owned_directory(root.path()).unwrap();
+        symlink(&foreign, path(root.path())).unwrap();
+        assert!(load(root.path()).is_err());
+        assert!(save(root.path(), &SavedChoices::default()).is_err());
+        assert_eq!(std::fs::read(&foreign).unwrap(), original);
+        std::fs::remove_file(path(root.path())).unwrap();
+        save(root.path(), &SavedChoices::default()).unwrap();
+        std::fs::set_permissions(path(root.path()), std::fs::Permissions::from_mode(0o644))
+            .unwrap();
+        assert!(load(root.path()).is_err());
+        assert_eq!(std::fs::read(&foreign).unwrap(), original);
+    }
+
     #[test]
     fn saved_commands_cannot_execute_unrelated_actions() {
         let provider = ProviderId::new("zai").unwrap();

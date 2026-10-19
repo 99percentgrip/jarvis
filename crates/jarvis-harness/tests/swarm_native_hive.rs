@@ -298,7 +298,7 @@ async fn run_hive(
                 #[cfg(feature = "docker")]
                 {
                     assert!(
-                        std::env::var("VESPER_DOCKER_IMAGE").is_ok(),
+                        std::env::var("JARVIS_DOCKER_IMAGE").is_ok(),
                         "explicit local image required"
                     );
                     Arc::new(jarvis_sandbox::DockerBackend::new(Default::default()))

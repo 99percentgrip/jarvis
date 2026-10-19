@@ -26,6 +26,7 @@ use crate::error::CheckpointError;
 /// sibling of `target` (so the rename stays intra-directory), `fsync`ed,
 /// then renamed. Returns `Ok(())` only after the rename has succeeded.
 pub(crate) fn write_atomic(target: &Path, payload: &[u8]) -> Result<(), CheckpointError> {
+    jarvis_security::validate_private_path(target).map_err(|_| CheckpointError::InvalidRoot)?;
     let parent = target.parent().ok_or(CheckpointError::InvalidRoot)?;
     let temp = parent.join(format!(
         ".{}.tmp",
@@ -34,6 +35,7 @@ pub(crate) fn write_atomic(target: &Path, payload: &[u8]) -> Result<(), Checkpoi
             .and_then(|name| name.to_str())
             .unwrap_or("checkpoint")
     ));
+    jarvis_security::validate_private_path(&temp).map_err(|_| CheckpointError::InvalidRoot)?;
     {
         // Scoped: the `File` is dropped at the closing brace, freeing the
         // descriptor before the rename. This is the RAII contract that
@@ -52,6 +54,7 @@ pub(crate) fn write_atomic(target: &Path, payload: &[u8]) -> Result<(), Checkpoi
 /// concurrent writers; the store wraps every mutation in a process-local
 /// `Mutex` to serialize them.
 pub(crate) fn append_line(target: &Path, line: &str) -> Result<(), CheckpointError> {
+    jarvis_security::validate_private_path(target).map_err(|_| CheckpointError::InvalidRoot)?;
     use std::io::Write;
     // Scoped: the `File` is dropped at the closing brace.
     let mut file = fs::OpenOptions::new()
@@ -70,6 +73,7 @@ pub(crate) fn append_line(target: &Path, line: &str) -> Result<(), CheckpointErr
 pub(crate) fn read_all_jsonl<T: serde::de::DeserializeOwned>(
     target: &Path,
 ) -> Result<Vec<T>, CheckpointError> {
+    jarvis_security::validate_private_path(target).map_err(|_| CheckpointError::InvalidRoot)?;
     let bytes = match fs::read(target) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
@@ -95,6 +99,7 @@ pub(crate) fn read_all_jsonl<T: serde::de::DeserializeOwned>(
 /// vector when the file does not exist.
 #[allow(dead_code)] // reserved for future ad-hoc text reads
 pub(crate) fn read_all_lines(target: &Path) -> Result<Vec<String>, CheckpointError> {
+    jarvis_security::validate_private_path(target).map_err(|_| CheckpointError::InvalidRoot)?;
     let bytes = match fs::read(target) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),

@@ -11,14 +11,16 @@ test-only conformance support.
 - `jarvis-identity` owns side-effect-free current Stage 2 Rust identities, explicit legacy
   package ownership and deferred planned runtime identities. It has no production dependencies or runtime
   consumers; only xtask verification may link it. Its dev-only config dependency
-  compares planned paths against the real Vesper defaults.
+  compares planned paths against the real current and legacy platform resolvers.
 
 
 - `jarvis-domain` depends on no workspace crate.
 - `jarvis-provider` depends only on `jarvis-domain`.
 - `jarvis-security` depends on no workspace crate.
 - `jarvis-auth` depends only on `jarvis-security`; it owns native OS
-  credential-manager access and the strict owner-only Unix vault fallback
+  credential-manager access and permission-verified retained/explicit file stores;
+  production Linux writes require maintained encrypted Secret Service without
+  automatic plaintext fallback
   (ADRs 0014 and 0032 — authentication and bounded native records).
 - `jarvis-memory` depends only on `jarvis-domain` and `jarvis-security`; it
   owns the durable memory graph, learned skills, user profile, and bounded
@@ -50,7 +52,7 @@ test-only conformance support.
   runtime/provider events into voice-owned inputs. PRD:
   `docs/voice-oracle-extraction-prd.md`.
 - `jarvis-voice-kokoro` depends on `jarvis-domain`, `jarvis-security`,
-  and `jarvis-voice`; it owns the R3 Natural Voice pack composition
+  `jarvis-voice`, and the shared `jarvis-config` path resolver; it owns the R3 Natural Voice pack composition
   adapter — pack descriptor/integrity/lifecycle over one managed
   per-user cache, the espeak-ng IPA pronunciation bridge (reimplemented
   algorithm, no port), the bounded ONNX engine (ORT loaded dynamically
@@ -125,7 +127,7 @@ test-only conformance support.
   isolated API-key Responses and Grok-session proxy transports,
   passive Grok-session subscription usage, and
   stream/error translation;
-  it may depend on auth/domain/provider/security and HTTP. API-key and
+  it may depend on auth/domain/provider/config/security and HTTP. API-key and
   Grok-account billing paths remain explicitly isolated.
 - `jarvis-runtime` may depend on domain/provider and the read-only repository,
   converted-state, and transactional write ports from `jarvis-sessions`;

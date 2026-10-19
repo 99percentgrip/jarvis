@@ -92,8 +92,8 @@ fn voice_only_change_is_dirty_prompts_save_and_persists() {
     // The pre-fix code nested save_voice_scope inside `web != initial_web`
     // and omitted voice from the dirty check — both assertions fail there.
     let root = tempfile::tempdir().unwrap();
-    let dir = root.path().join(".agent-vesper");
-    std::fs::create_dir_all(&dir).unwrap();
+    let dir = root.path().join(".jarvis");
+    jarvis_security::prepare_owned_directory(&dir).unwrap();
     // Starting state: disabled (default), web tools untouched.
     std::fs::write(
         dir.join("config.toml"),
@@ -138,8 +138,8 @@ fn failed_voice_save_surfaces_actionable_error() {
     // A failed save must report an error, never silently succeed. Force
     // failure with an unwritable config path (root made read-only file).
     let root = tempfile::tempdir().unwrap();
-    let dir = root.path().join(".agent-vesper");
-    std::fs::create_dir_all(&dir).unwrap();
+    let dir = root.path().join(".jarvis");
+    jarvis_security::prepare_owned_directory(&dir).unwrap();
     let config = dir.join("config.toml");
     std::fs::write(&config, "[voice]\nenabled = false\n").unwrap();
     // Make the config a directory: writes fail with an actionable error.
@@ -174,8 +174,8 @@ fn settings_menu_offers_voice_entry_and_scope_persists() {
     // Persistence through the established config path: write a scope,
     // read it back (the panel's save/load round trip).
     let root = tempfile::tempdir().unwrap();
-    let dir = root.path().join(".agent-vesper");
-    std::fs::create_dir_all(&dir).unwrap();
+    let dir = root.path().join(".jarvis");
+    jarvis_security::prepare_owned_directory(&dir).unwrap();
     std::fs::write(
         dir.join("config.toml"),
         "[voice]\nenabled = true\npartials = true\n",
@@ -382,9 +382,9 @@ fn unconfigured_startup_constructs_nothing_and_refusal_sits_at_the_gate() {
             .unwrap()
             .as_nanos()
     ));
-    std::fs::create_dir_all(root.join(".agent-vesper")).unwrap();
+    jarvis_security::prepare_owned_directory(&root.join(".jarvis")).unwrap();
     std::fs::write(
-        root.join(".agent-vesper/config.toml"),
+        root.join(".jarvis/config.toml"),
         "[voice]\nenabled = false\n",
     )
     .unwrap();
@@ -416,9 +416,9 @@ fn production_gate_enabled_ready_yields_ready_then_host_constructs_and_submits()
             .unwrap()
             .as_nanos()
     ));
-    std::fs::create_dir_all(root.join(".agent-vesper")).unwrap();
+    jarvis_security::prepare_owned_directory(&root.join(".jarvis")).unwrap();
     std::fs::write(
-        root.join(".agent-vesper/config.toml"),
+        root.join(".jarvis/config.toml"),
         "[voice]\nenabled = true\npartials = true\n",
     )
     .unwrap();

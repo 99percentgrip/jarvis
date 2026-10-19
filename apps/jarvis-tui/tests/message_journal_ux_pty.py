@@ -86,6 +86,15 @@ def user_rows(screen):
     return ["".join(row).strip() for row in screen if "".join(row).strip().startswith("›")]
 
 
+def observe_collapsed_prompt(host):
+    # Provider dispatch precedes the native redraw. Observe the control through
+    # the existing bounded terminal reader rather than sampling a partial frame.
+    host.wait("Show more")
+    assert "MARKER-TAIL-UNIQUE" not in host.text(), host.text()
+    assert "MARKER-TITLE" in host.text(), host.text()
+    assert "/paste" not in host.text(), host.text()
+
+
 def run(binary):
     Handler.requests = []
     Handler.first_seen.clear()
@@ -99,12 +108,12 @@ def run(binary):
         with tempfile.TemporaryDirectory(prefix="vesper-journal-ux-") as temporary:
             root = Path(temporary)
             env = {
-                "AGENT_VESPER_HOME": str(root / "state"),
-                "AGENT_VESPER_SESSION_ROOT": str(root / "sessions"),
-                "AGENT_VESPER_CHECKPOINT_ROOT": str(root / "checkpoints"),
-                "AGENT_VESPER_PROVIDER": "xai",
-                "AGENT_VESPER_XAI_TEST_URL": f"http://127.0.0.1:{port}/responses",
-                "AGENT_VESPER_VRO_ENABLED": "0",
+                "JARVIS_HOME": str(root / "state"),
+                "JARVIS_SESSION_ROOT": str(root / "sessions"),
+                "JARVIS_CHECKPOINT_ROOT": str(root / "checkpoints"),
+                "JARVIS_PROVIDER": "xai",
+                "JARVIS_XAI_TEST_URL": f"http://127.0.0.1:{port}/responses",
+                "JARVIS_VRO_ENABLED": "0",
                 "NO_PROXY": "127.0.0.1",
                 "no_proxy": "127.0.0.1",
             }
@@ -115,11 +124,7 @@ def run(binary):
             paste(host, BODY)
             host.key("\r")
             assert Handler.first_seen.wait(20), "provider did not see the long prompt"
-            host.pump(0.6)
-            assert "Show more" in host.text(), host.text()
-            assert "MARKER-TAIL-UNIQUE" not in host.text(), host.text()
-            assert "MARKER-TITLE" in host.text(), host.text()
-            assert "/paste" not in host.text(), host.text()
+            observe_collapsed_prompt(host)
             host.key("\t")
             host.wait("Show more is focused")
             host.key("\r")
@@ -164,9 +169,7 @@ def run(binary):
             host.wait("grok-4.7")
             host.key(f"/history {record['session_id']}\r")
             host.wait("Resumed")
-            host.pump(0.4)
-            assert "MARKER-TAIL-UNIQUE" not in host.text(), host.text()
-            assert "Show more" in host.text(), host.text()
+            observe_collapsed_prompt(host)
             host.key("\t")
             host.wait("Show more is focused")
             host.key("\r")

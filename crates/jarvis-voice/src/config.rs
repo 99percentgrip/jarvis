@@ -274,14 +274,30 @@ pub fn parse_voice_table(text: &str) -> Result<VoiceScope, VoiceScopeError> {
     Ok(scope)
 }
 
-/// Reads the scope from `.agent-vesper/config.toml` under `root`.
+/// Reads the scope from `.jarvis/config.toml` under `root`.
 ///
 /// # Errors
 ///
 /// [`VoiceScopeError`] per the variant docs; a missing file yields the
 /// disabled default.
 pub fn read_voice_scope(root: &Path) -> Result<VoiceScope, VoiceScopeError> {
-    let path = root.join(".agent-vesper").join("config.toml");
+    let root = match root.canonicalize() {
+        Ok(root) => root,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(VoiceScope::default());
+        }
+        Err(error) => {
+            return Err(VoiceScopeError::Read {
+                path: "selected workspace".into(),
+                reason: error.to_string(),
+            });
+        }
+    };
+    let path = root.join(".jarvis").join("config.toml");
+    jarvis_security::validate_private_path(&path).map_err(|_| VoiceScopeError::Read {
+        path: "private voice settings".into(),
+        reason: "private settings ownership refused".into(),
+    })?;
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -339,7 +355,7 @@ mod tests {
             .prefix("vesper-voice-cfg-")
             .tempdir()
             .unwrap();
-        let target = dir.path().join(".agent-vesper");
+        let target = dir.path().join(".jarvis");
         std::fs::create_dir_all(&target).unwrap();
         std::fs::write(target.join("config.toml"), contents).unwrap();
         dir

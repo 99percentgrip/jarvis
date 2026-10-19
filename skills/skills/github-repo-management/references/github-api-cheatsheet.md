@@ -4,9 +4,9 @@ Base URL: `https://api.github.com`
 
 All requests need: `-H "Authorization: token $GITHUB_TOKEN"`
 
-Use the `gh-env.sh` helper to set `$GITHUB_TOKEN`, `$GH_OWNER`, `$GH_REPO` automatically:
+Use the `gh-env.sh` helper to set `$GITHUB_TOKEN`, `$GH_OWNER`, `$GH_REPO` automatically. Resolve the resource directory from the selected skill store; never discover it through a Vesper home:
 ```bash
-source "${AGENT_VESPER_HOME:-$HOME/.agent-vesper}/memory/skills/github-auth/scripts/gh-env.sh"
+source "<RESOLVED_SKILL_RESOURCE_DIRECTORY>/github-auth/scripts/gh-env.sh"
 ```
 
 ## Repositories

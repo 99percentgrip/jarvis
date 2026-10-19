@@ -6,9 +6,11 @@ use std::path::Path;
 
 #[cfg(feature = "voice-conversation")]
 pub fn save_voice_scope(root: &Path, scope: &jarvis_voice::VoiceScope) -> Result<(), String> {
-    let dir = root.join(".agent-vesper");
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let root = root.canonicalize().map_err(|error| error.to_string())?;
+    let dir = root.join(".jarvis");
+    jarvis_security::prepare_owned_directory(&dir).map_err(|e| e.to_string())?;
     let path = dir.join("config.toml");
+    jarvis_security::validate_private_path(&path).map_err(|error| error.to_string())?;
     // Preserve unknown tables/keys by rewriting only the [voice] block:
     // read existing text, replace-or-append the block. VRO-17 R3: the
     // selected speech engine and voice persist alongside enablement
@@ -46,7 +48,8 @@ pub fn save_voice_scope(root: &Path, scope: &jarvis_voice::VoiceScope) -> Result
     } else {
         format!("{}\n{}", existing.trim_end(), block)
     };
-    std::fs::write(&path, updated).map_err(|e| e.to_string())
+    jarvis_security::write_private_atomic(&path, updated.as_bytes())
+        .map_err(|error| error.to_string())
 }
 
 /// The production save/skip decision for the voice scope within the

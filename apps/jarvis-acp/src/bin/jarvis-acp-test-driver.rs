@@ -86,11 +86,12 @@ fn gate_error(operation: &str) -> ProviderError {
 
 #[tokio::main]
 async fn main() -> ExitCode {
-    let Ok(gate_address) = std::env::var("AGENT_VESPER_TEST_DISPATCH_GATE") else {
+    let Ok(gate_address) = std::env::var("JARVIS_TEST_DISPATCH_GATE") else {
         eprintln!("integration dispatch gate is required");
         return ExitCode::FAILURE;
     };
     jarvis_harness::release_executor::enable_permissive_resource_governor_for_process_tests();
+    jarvis_acp::enable_legacy_session_fixture_reads();
     let factory = DispatchGateFactory {
         inner: GlmFactory::default(),
         gate_address,

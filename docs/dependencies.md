@@ -1,3 +1,27 @@
+# Stage 3 native credential dependency correction
+
+`jarvis-auth` uses explicit `keyring-core = 1.0.0` stores. Linux selects
+`dbus-secret-service-keyring-store = 1.0.1` with `crypto-rust`,
+`dbus-secret-service = 4.1.0` and `dbus = 0.9.12`. The keyring v1 wrapper and
+retired zbus/zvariant credential graph are removed. Existing external versions,
+including rustls 0.23.46, remain unchanged; the exact dependency delta and current
+security evidence live in the [Stage 3 report](foundation/2026-10-15-runtime-identity-stage3.md).
+
+Linux builds require pkg-config and distro libdbus development files
+(`libdbus-1-dev` on Debian/Ubuntu; `dbus-devel` on Fedora). Executables dynamically
+require `libdbus-1.so.3` (`libdbus-1-3` / `dbus-libs` runtime packages).
+The OS retains library security/update ownership; no C library or daemon is
+vendored. Future independent installer/distribution work must verify this runtime
+prerequisite on supported distributions. Stage 3 does not activate installers.
+Credential use additionally requires an available/unlocked Secret Service such
+as GNOME Keyring or KDE Wallet; this transport does not replace those services.
+Encrypted DH sessions are required. Production Linux writes fail unavailable
+instead of silently saving plaintext when the service is inaccessible.
+
+macOS Keychain and Windows Credential Manager retain their existing native store
+versions. No OpenSSL crypto alternative, keyutils, custom crypto store, advisory
+exception, license-policy change or MSRV increase is introduced.
+
 # Stage 2 dependency integrity
 
 Rust package identities follow the [current migration map](architecture/rust-identity-stage2.md).

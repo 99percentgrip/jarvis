@@ -6,7 +6,7 @@
 //! palette. Tier C Phase 6 (ADR 0010) drives the full multi-turn
 //! [`jarvis_agent::AgentLoop`] end-to-end.
 //!
-//! 1. Select a provider via `AGENT_VESPER_PROVIDER` (default `zai`).
+//! 1. Select a provider via `JARVIS_PROVIDER` (default `zai`).
 //! 2. Query the runtime registry for that provider's advertised superpowers.
 //! 3. Build an `AgentLoop` over the same shared registry that backs the
 //!    reasoning-override supervisor.
@@ -70,7 +70,7 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 use tokio::sync::mpsc;
 use tracing::{error, warn};
 
-/// Default provider identity when `AGENT_VESPER_PROVIDER` is unset.
+/// Default provider identity when `JARVIS_PROVIDER` is unset.
 const DEFAULT_PROVIDER: &str = "zai";
 
 /// Shared session policy consulted both when advertising and executing the
@@ -110,36 +110,13 @@ mod update_host;
 type Backend = CrosstermBackend<io::Stdout>;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+pub(crate) async fn main() -> io::Result<()> {
     if let Some(success) = jarvis_harness::web_settings::handle_setup_flag().await {
         return if success {
             Ok(())
         } else {
             Err(io::Error::other("web driver setup failed"))
         };
-    }
-    // VRO-13 PR-2: resolve AGENT_VESPER_FIREWALL once at boot. First
-    // resolution wins; the resulting Arc is shared by the TUI session and
-    // (via the same process global) any nested loop it spawns. `off`
-    // leaves `shared()` as None → executors never scan (legacy path).
-    let _firewall_state = jarvis_policy::firewall::holder::install_from_env();
-    // VRO-13 PR-4: resolve the process-global sandbox route once at boot,
-    // mirroring the firewall holder. `AGENT_VESPER_SANDBOX=docker|off` plus
-    // the scope `[sandbox]` demand from `.agent-vesper/config.toml`; with no
-    // demand the holder stays `None` → the executor keeps the legacy path.
-    let _sandbox_route = jarvis_harness::sandbox_backend::holder::install_from_env();
-    // VRO-14 PR-5: resolve the opt-in `[web]` scope once at boot (identical
-    // derivation in both hosts). Absent/disabled → the holder reports
-    // `disabled()` and no web tool is registered (zero-cost legacy path).
-    let _web_scope = jarvis_harness::web_service::holder::install_from_env();
-    // VRO-13 PR-5: resolve the WorkspaceScope once at boot (identity, layers,
-    // per-scope skills, firewall composition). Scope resolution is strictly
-    // a host-boot concern: the loop layer never sees or re-resolves scopes.
-    // Resolving before the sandbox route keeps `.agent-vesper/config.toml`
-    // single-read per boot. Resolution failure degrades gracefully (the
-    // legacy un-scoped path) — it never blocks startup.
-    if let Err(error) = jarvis_harness::scope_holder::holder::install_from_env() {
-        tracing::warn!(%error, "workspace scope resolution failed; using unscoped defaults");
     }
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args
@@ -172,6 +149,32 @@ async fn main() -> io::Result<()> {
         })?;
         return run_rrc_terminal_ownership_probe(std::path::Path::new(program));
     }
+    jarvis_config::JarvisPaths::initialize_environment()?;
+    jarvis_security::validate_new_or_owned_directory(&std::env::current_dir()?.join(".jarvis"))?;
+    // VRO-13 PR-2: resolve JARVIS_FIREWALL once at boot. First
+    // resolution wins; the resulting Arc is shared by the TUI session and
+    // (via the same process global) any nested loop it spawns. `off`
+    // leaves `shared()` as None → executors never scan (legacy path).
+    let _firewall_state = jarvis_policy::firewall::holder::install_from_env();
+    // VRO-13 PR-4: resolve the process-global sandbox route once at boot,
+    // mirroring the firewall holder. `JARVIS_SANDBOX=docker|off` plus
+    // the scope `[sandbox]` demand from `.jarvis/config.toml`; with no
+    // demand the holder stays `None` → the executor keeps the legacy path.
+    let _sandbox_route = jarvis_harness::sandbox_backend::holder::install_from_env();
+    // VRO-14 PR-5: resolve the opt-in `[web]` scope once at boot (identical
+    // derivation in both hosts). Absent/disabled → the holder reports
+    // `disabled()` and no web tool is registered (zero-cost legacy path).
+    let _web_scope = jarvis_harness::web_service::holder::install_from_env();
+    // VRO-13 PR-5: resolve the WorkspaceScope once at boot (identity, layers,
+    // per-scope skills, firewall composition). Scope resolution is strictly
+    // a host-boot concern: the loop layer never sees or re-resolves scopes.
+    // Resolving before the sandbox route keeps `.jarvis/config.toml`
+    // single-read per boot. Resolution failure degrades gracefully (the
+    // legacy un-scoped path) — it never blocks startup.
+    if let Err(error) = jarvis_harness::scope_holder::holder::install_from_env() {
+        tracing::warn!(%error, "workspace scope resolution failed; using unscoped defaults");
+    }
+
     // Parse `--resume <id>` or `--resume=<id>`.
     let resume_id: Option<String> = args
         .iter()
@@ -220,12 +223,12 @@ async fn run_headless_daemon() -> io::Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .try_init();
     // Same durable roots the interactive TUI derives (env override first).
-    let state_root = std::env::var("AGENT_VESPER_CHECKPOINT_ROOT")
+    let state_root = std::env::var("JARVIS_CHECKPOINT_ROOT")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| {
             std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                .join(".agent-vesper")
+                .join(".jarvis")
                 .join("checkpoints")
         });
     // The daemon lock lives beside the cron store it serializes.
@@ -288,12 +291,12 @@ async fn run_headless_daemon() -> io::Result<()> {
     let scheduler = jarvis_harness::HarnessToolService::new(
         Arc::new(jarvis_harness::MemoryStores::open_default()),
         state_root,
-        std::env::var("AGENT_VESPER_MCP_ROOT")
+        std::env::var("JARVIS_MCP_ROOT")
             .map(std::path::PathBuf::from)
             .unwrap_or_else(|_| {
                 std::env::current_dir()
                     .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                    .join(".agent-vesper")
+                    .join(".jarvis")
                     .join("mcp")
             }),
         Some(Arc::new(factory)),
@@ -345,13 +348,13 @@ async fn run(resume_id: Option<String>) -> Result<(), String> {
     // The active provider's superpower policy (model/plan/reasoning logic),
     // routed provider-neutrally — the harness never names a concrete provider.
     let policy = registry.superpower_policy(&provider_id).await;
-    // VRO orchestrator: opt-in via AGENT_VESPER_VRO_ENABLED=1. When disabled
+    // VRO orchestrator: opt-in via JARVIS_VRO_ENABLED=1. When disabled
     // (the default), every turn routes through the direct AgentLoop — zero
     // behavior change. When enabled, non-Direct profiles go through VRO.
     // VesperLens is exposed only through the explicit human-input tools at
     // the TUI composition boundary. VRO does not retain a dead implicit or
     // final-output interception seam.
-    let vro = if std::env::var("AGENT_VESPER_VRO_ENABLED")
+    let vro = if std::env::var("JARVIS_VRO_ENABLED")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false)
     {
@@ -378,7 +381,7 @@ async fn run(resume_id: Option<String>) -> Result<(), String> {
 
     let registry_commands = CommandRegistry::stage_11b();
     // Phase 8 (ADR 0011): open the durable memory subsystem rooted at
-    // `AGENT_VESPER_MEMORY_ROOT` (falling back to `.agent-vesper/memory/`
+    // `JARVIS_MEMORY_ROOT` (falling back to `.jarvis/memory/`
     // under the current directory). The stores handle confinement and
     // atomic writes themselves; the binary owns only the root path. If the
     // root cannot be opened we keep going so the rest of the TUI works —
@@ -408,12 +411,12 @@ async fn run(resume_id: Option<String>) -> Result<(), String> {
     cognition_bundle.spawn_background_probe();
     let _ = &cognition_bundle;
     // Phase 9 (ADR 0012): open the durable checkpoints subsystem rooted at
-    // `AGENT_VESPER_CHECKPOINT_ROOT` (falling back to
-    // `.agent-vesper/checkpoints/`). Same confinement + atomic-write
+    // `JARVIS_CHECKPOINT_ROOT` (falling back to
+    // `.jarvis/checkpoints/`). Same confinement + atomic-write
     // discipline as the memory subsystem; the binary owns the root path.
     let mut checkpoint_stores = CheckpointStores::open_default();
     // Phase 10 (ADR 0013): open the durable MCP + plugins subsystem rooted
-    // at `AGENT_VESPER_MCP_ROOT` (falling back to `.agent-vesper/mcp/`).
+    // at `JARVIS_MCP_ROOT` (falling back to `.jarvis/mcp/`).
     // Same confinement + atomic-write discipline; the binary owns the root
     // path and the trusted-publishers registry.
     let mut mcp_stores = McpStores::open_default();
@@ -504,9 +507,9 @@ async fn run(resume_id: Option<String>) -> Result<(), String> {
         capabilities: capability_index_for(&provider_id, &lm_factory),
         state: {
             let mut state = SessionState::new();
-            let legacy = std::env::var("AGENT_VESPER_HOME")
+            let legacy = std::env::var("JARVIS_HOME")
                 .map(std::path::PathBuf::from)
-                .unwrap_or_else(|_| std::path::PathBuf::from(".agent-vesper"));
+                .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default().join(".jarvis"));
             match theme_preference_root().and_then(|root| migrate_theme_preference(&root, &legacy))
             {
                 Ok(Some(theme)) => state.preferences.theme = theme,
@@ -762,13 +765,9 @@ fn reasoning_seq() -> u64 {
 const _: Option<Revision> = None;
 
 fn theme_preference_root() -> std::io::Result<std::path::PathBuf> {
-    let variable = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
-    let home = std::env::var_os(variable)
-        .filter(|value| !value.is_empty())
-        .map(std::path::PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .ok_or_else(|| std::io::Error::other("User home directory is unavailable"))?;
-    Ok(home.join(".agent-vesper").join("ui"))
+    jarvis_config::JarvisPaths::from_environment()
+        .map(|p| p.config.join("ui"))
+        .map_err(|_| std::io::Error::other("User configuration directory is unavailable"))
 }
 
 /// Import an existing local choice once; a user-wide choice always takes precedence.
@@ -788,6 +787,8 @@ fn migrate_theme_preference(
 
 fn load_theme_preference(root: &std::path::Path) -> Option<String> {
     use std::io::Read;
+    jarvis_security::validate_owned_directory(root).ok()?;
+    jarvis_security::validate_private_file(&root.join("theme")).ok()?;
     let file = std::fs::File::open(root.join("theme")).ok()?;
     let mut value = String::new();
     file.take(64).read_to_string(&mut value).ok()?;
@@ -800,24 +801,28 @@ fn load_theme_preference(root: &std::path::Path) -> Option<String> {
 }
 
 fn save_theme_preference(root: &std::path::Path, theme: &str) -> std::io::Result<()> {
-    std::fs::create_dir_all(root)?;
-    std::fs::write(root.join("theme"), theme)
+    jarvis_security::write_private_atomic(&root.join("theme"), theme.as_bytes())
 }
 
 fn provider_name_from_env() -> String {
     // 1. Persisted preference (from /provider command).
-    let pref_path = std::env::var("AGENT_VESPER_HOME")
+    let pref_path = std::env::var("JARVIS_HOME")
         .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| std::path::PathBuf::from(".agent-vesper"))
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default().join(".jarvis"))
         .join("provider");
-    if let Ok(text) = std::fs::read_to_string(&pref_path) {
+    if pref_path
+        .parent()
+        .is_some_and(|parent| jarvis_security::validate_owned_directory(parent).is_ok())
+        && jarvis_security::validate_private_file(&pref_path).is_ok()
+        && let Ok(text) = std::fs::read_to_string(&pref_path)
+    {
         let trimmed = text.trim();
         if !trimmed.is_empty() {
             return trimmed.to_string();
         }
     }
     // 2. Env var override.
-    if let Ok(env) = std::env::var("AGENT_VESPER_PROVIDER") {
+    if let Ok(env) = std::env::var("JARVIS_PROVIDER") {
         return env;
     }
     // 3. Default.
@@ -826,12 +831,14 @@ fn provider_name_from_env() -> String {
 
 /// Saves the provider preference so the next TUI launch uses it.
 fn save_provider_preference(provider: &str) -> Result<(), String> {
-    let dir = std::env::var("AGENT_VESPER_HOME")
+    let dir = std::env::var("JARVIS_HOME")
         .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| std::path::PathBuf::from(".agent-vesper"));
-    std::fs::create_dir_all(&dir).map_err(|e| format!("create provider dir: {e}"))?;
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default().join(".jarvis"));
+    jarvis_security::prepare_owned_directory(&dir)
+        .map_err(|e| format!("create provider dir: {e}"))?;
     let path = dir.join("provider");
-    std::fs::write(&path, provider).map_err(|e| format!("write provider preference: {e}"))
+    jarvis_security::write_private_atomic(&path, provider.as_bytes())
+        .map_err(|e| format!("write provider preference: {e}"))
 }
 
 async fn register_default_providers(
@@ -845,7 +852,7 @@ async fn register_default_providers(
     jarvis_runtime::RuntimeError,
 > {
     #[cfg(feature = "integration-test-harness")]
-    let openai = match std::env::var("AGENT_VESPER_OPENAI_TEST_URL") {
+    let openai = match std::env::var("JARVIS_OPENAI_TEST_URL") {
         Ok(endpoint) => jarvis_provider_openai::OpenAiFactory::for_loopback(
             &endpoint,
             jarvis_provider_openai::auth::AuthenticationMode::ApiKey,
@@ -874,7 +881,7 @@ async fn register_default_providers(
         .register_with_all(glm, glm_superpowers, glm_credentials, glm_policy)
         .await?;
     #[cfg(feature = "integration-test-harness")]
-    let xai = match std::env::var("AGENT_VESPER_XAI_TEST_URL") {
+    let xai = match std::env::var("JARVIS_XAI_TEST_URL") {
         Ok(endpoint) => jarvis_provider_xai::XaiFactory::for_loopback_grok_session(&endpoint)
             .map_err(|_| jarvis_runtime::RuntimeError::Provider)?,
         Err(_) => jarvis_provider_xai::XaiFactory::default(),
@@ -4880,14 +4887,13 @@ fn push_unique(candidates: &mut Vec<String>, c: String) {
 }
 
 /// Resolve the harness-owned voice backend venv root. Precedence:
-/// `$AGENT_VESPER_VOICE_VENV` (explicit venv dir) →
-/// `$XDG_DATA_HOME/agent-vesper/voice-venv` →
-/// `~/.local/share/agent-vesper/voice-venv`. This venv is auto-bootstrapped
+/// `$JARVIS_VOICE_VENV` (explicit venv dir) →
+/// the native application data root plus `voice-venv`. This venv is auto-bootstrapped
 /// by the voice worker on first F5 so that a fresh installer user
 /// gets a working `faster-whisper` backend with no separate setup.
 /// Ordered candidate Python interpreters to probe for `faster-whisper`,
 /// requiring **no user configuration**. Precedence:
-/// 1. Explicit env override (`VESPER_PYTHON_PATH` / `GLM_VENV_PATH`).
+/// 1. Explicit env override (`JARVIS_PYTHON_PATH` / `JARVIS_VOICE_VENV_PATH`).
 /// 2. Harness-owned voice venv at [`voice_venv_root`] (auto-bootstrapped).
 /// 3. Sibling project venvs under `$HOME/Projects/`, alphabetical
 ///    (`.venv`/`venv`/`.virtualenv` layouts).
@@ -4900,8 +4906,8 @@ fn candidate_whisper_pythons() -> Vec<String> {
     candidate_whisper_pythons_in(
         Some(&voice_venv),
         projects_dir.as_deref(),
-        std::env::var_os("VESPER_PYTHON_PATH").as_deref(),
-        std::env::var_os("GLM_VENV_PATH").as_deref(),
+        std::env::var_os("JARVIS_PYTHON_PATH").as_deref(),
+        std::env::var_os("JARVIS_VOICE_VENV_PATH").as_deref(),
     )
 }
 
@@ -4949,9 +4955,8 @@ fn candidate_whisper_pythons_in(
     candidates
 }
 
-/// Resolve the `uv` binary the installer bundles into the agent-vesper
-/// bundle dir, if present. Checks `$AGENT_VESPER_BUNDLE_DIR`, then
-/// `$XDG_DATA_HOME/agent-vesper`, then `~/.local/share/agent-vesper`. Returns
+/// Resolve `uv` from an explicitly selected bundle or native application data
+/// and its `voice-tools` directory. Checks `$JARVIS_BUNDLE_DIR` first. Returns
 /// the first location containing a `uv` file. When the installer ships `uv`,
 /// the bundled-uv bootstrap path needs no external venv toolchain. (The
 /// voice worker’s `python3 -m venv` fallback still requires
@@ -4959,11 +4964,9 @@ fn candidate_whisper_pythons_in(
 fn bundled_uv_path() -> Option<std::path::PathBuf> {
     let name = if cfg!(windows) { "uv.exe" } else { "uv" };
     let candidates: Vec<std::path::PathBuf> = [
-        std::env::var_os("AGENT_VESPER_BUNDLE_DIR").map(std::path::PathBuf::from),
+        std::env::var_os("JARVIS_BUNDLE_DIR").map(std::path::PathBuf::from),
         jarvis_tui::platform_voice::data_root(),
         jarvis_tui::platform_voice::data_root().map(|root| root.join("voice-tools")),
-        std::env::var_os("LOCALAPPDATA")
-            .map(|d| std::path::PathBuf::from(d).join("Programs/AgentVesper")),
         std::env::current_exe()
             .ok()
             .and_then(|exe| exe.parent().map(std::path::Path::to_path_buf)),
@@ -5372,21 +5375,18 @@ fn voice_turn_agent(agent: &Arc<AgentLoop>) -> Arc<AgentLoop> {
 }
 
 fn keybindings_path() -> std::path::PathBuf {
-    if let Some(root) = std::env::var_os("AGENT_VESPER_CONFIG_DIR") {
-        return std::path::PathBuf::from(root).join("keybinds.json");
-    }
-    if let Some(root) = std::env::var_os("XDG_CONFIG_HOME") {
-        return std::path::PathBuf::from(root).join("agent-vesper/keybinds.json");
-    }
-    std::env::var_os("HOME")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(std::env::temp_dir)
-        .join(".config/agent-vesper/keybinds.json")
+    jarvis_config::JarvisPaths::from_environment()
+        .map(|p| p.config.join("keybinds.json"))
+        .unwrap_or_default()
 }
 
 fn load_keybindings() -> std::collections::BTreeMap<String, String> {
     let defaults = default_keybindings();
-    let Ok(bytes) = std::fs::read(keybindings_path()) else {
+    let path = keybindings_path();
+    if jarvis_security::validate_private_file(&path).is_err() {
+        return defaults;
+    }
+    let Ok(bytes) = std::fs::read(path) else {
         return defaults;
     };
     let Ok(overrides) =
@@ -5413,17 +5413,13 @@ fn edit_keybindings(
         let parent = path
             .parent()
             .ok_or_else(|| "invalid keybinding path".to_string())?;
-        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-        set_private_permissions(parent, true).map_err(|error| error.to_string())?;
-        let draft = std::env::temp_dir().join(format!(
-            "agent-vesper-keybinds-{}-{}.json",
-            std::process::id(),
-            reasoning_seq()
-        ));
+        jarvis_security::prepare_owned_directory(parent).map_err(|error| error.to_string())?;
+        let private_edit = jarvis_security::private_temporary_directory("jarvis-keybinds-")
+            .map_err(|error| error.to_string())?;
+        let draft = private_edit.path().join("keybindings.json");
         let bytes =
             serde_json::to_vec_pretty(&session.keybindings).map_err(|error| error.to_string())?;
-        std::fs::write(&draft, bytes).map_err(|error| error.to_string())?;
-        set_private_permissions(&draft, false).map_err(|error| error.to_string())?;
+        jarvis_security::write_private_atomic(&draft, &bytes).map_err(|error| error.to_string())?;
         let editor = std::env::var("VISUAL")
             .or_else(|_| std::env::var("EDITOR"))
             .unwrap_or_else(|_| "vi".into());
@@ -5440,6 +5436,7 @@ fn edit_keybindings(
             let _ = std::fs::remove_file(&draft);
             return Err(format!("editor exited with {status}"));
         }
+        jarvis_security::validate_private_path(&draft).map_err(|error| error.to_string())?;
         let edited = std::fs::read(&draft).map_err(|error| error.to_string())?;
         let mapping = serde_json::from_slice::<std::collections::BTreeMap<String, String>>(&edited)
             .map_err(|error| format!("keybindings must be a JSON object: {error}"))?;
@@ -5452,11 +5449,7 @@ fn edit_keybindings(
                 return Err(format!("unsupported key syntax `{key}`"));
             }
         }
-        let temporary = path.with_extension("json.tmp");
-        std::fs::write(&temporary, &edited).map_err(|error| error.to_string())?;
-        set_private_permissions(&temporary, false).map_err(|error| error.to_string())?;
-        std::fs::rename(&temporary, &path).map_err(|error| error.to_string())?;
-        let _ = std::fs::remove_file(&draft);
+        jarvis_security::write_private_atomic(&path, &edited).map_err(|error| error.to_string())?;
         session.keybindings = load_keybindings();
         session.state.status = Some("Keybindings updated and applied live.".into());
         Ok(())
@@ -5464,22 +5457,6 @@ fn edit_keybindings(
     enter_raw_mode(session.state.preferences.native_mouse).map_err(|error| error.to_string())?;
     terminal.clear().map_err(|error| error.to_string())?;
     result
-}
-
-fn set_private_permissions(path: &std::path::Path, directory: bool) -> std::io::Result<()> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(
-            path,
-            std::fs::Permissions::from_mode(if directory { 0o700 } else { 0o600 }),
-        )
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = (path, directory);
-        Ok(())
-    }
 }
 
 fn parse_keybinding(value: &str) -> Option<(KeyCode, KeyModifiers)> {
@@ -5828,14 +5805,13 @@ fn edit_prompt_in_external_editor(
     terminal: &mut Terminal<Backend>,
     session: &mut TuiSession,
 ) -> Result<(), String> {
+    let private_edit = jarvis_security::private_temporary_directory("jarvis-prompt-")
+        .map_err(|error| error.to_string())?;
+    let path = private_edit.path().join("prompt.md");
     leave_raw_mode().map_err(|error| error.to_string())?;
-    let path = std::env::temp_dir().join(format!(
-        "agent-vesper-prompt-{}-{}.md",
-        std::process::id(),
-        reasoning_seq()
-    ));
     let result = (|| {
-        std::fs::write(&path, session.input.as_bytes()).map_err(|error| error.to_string())?;
+        jarvis_security::write_private_atomic(&path, session.input.as_bytes())
+            .map_err(|error| error.to_string())?;
         let editor = std::env::var("VISUAL")
             .or_else(|_| std::env::var("EDITOR"))
             .unwrap_or_else(|_| "vi".into());
@@ -5851,6 +5827,7 @@ fn edit_prompt_in_external_editor(
         if !status.success() {
             return Err(format!("editor exited with {status}"));
         }
+        jarvis_security::validate_private_path(&path).map_err(|error| error.to_string())?;
         let prompt = std::fs::read_to_string(&path).map_err(|error| error.to_string())?;
         if prompt.len() > 1_048_576 {
             return Err("edited prompt exceeds 1 MiB".into());
@@ -5886,17 +5863,16 @@ fn annotate_diff_in_external_editor(
         return Err("working-tree diff exceeds the 1 MiB annotation bound".into());
     }
 
+    let private_edit = jarvis_security::private_temporary_directory("jarvis-annotate-")
+        .map_err(|error| error.to_string())?;
+    let path = private_edit.path().join("annotations.md");
     leave_raw_mode().map_err(|error| error.to_string())?;
-    let path = std::env::temp_dir().join(format!(
-        "agent-vesper-annotate-{}-{}.md",
-        std::process::id(),
-        reasoning_seq()
-    ));
     let result = (|| {
         let template = format!(
             "# Working-tree diff (read-only)\n# Add one or more lines beginning with `ANNOTATION ` after the diff.\n# Format: ANNOTATION path:line — requested change\n\n{diff}\n\n# Annotations\nANNOTATION "
         );
-        std::fs::write(&path, template).map_err(|error| error.to_string())?;
+        jarvis_security::write_private_atomic(&path, template.as_bytes())
+            .map_err(|error| error.to_string())?;
         let editor = std::env::var("VISUAL")
             .or_else(|_| std::env::var("EDITOR"))
             .unwrap_or_else(|_| "vi".into());
@@ -5912,6 +5888,7 @@ fn annotate_diff_in_external_editor(
         if !status.success() {
             return Err(format!("editor exited with {status}"));
         }
+        jarvis_security::validate_private_path(&path).map_err(|error| error.to_string())?;
         let edited = std::fs::read_to_string(&path).map_err(|error| error.to_string())?;
         let comments = edited
             .lines()
@@ -6921,11 +6898,17 @@ fn image_media_type(bytes: &[u8]) -> Option<&'static str> {
 }
 
 fn capture_screenshot(session: &mut TuiSession) -> Result<(), String> {
-    let path = std::env::temp_dir().join(format!(
-        "agent-vesper-screenshot-{}-{}.png",
-        std::process::id(),
-        reasoning_seq()
-    ));
+    let cache = jarvis_config::JarvisPaths::from_environment()
+        .map_err(|_| "private screenshot cache is unavailable")?
+        .cache
+        .join("screenshots");
+    jarvis_security::prepare_owned_directory(&cache).map_err(|error| error.to_string())?;
+    let capture = tempfile::Builder::new()
+        .prefix("capture-")
+        .suffix(".png")
+        .tempfile_in(&cache)
+        .map_err(|error| error.to_string())?;
+    let path = capture.path().to_path_buf();
     let candidates: &[(&str, &[&str])] =
         &[("gnome-screenshot", &["-f"]), ("grim", &[]), ("scrot", &[])];
     let mut last_error = None;
@@ -6935,7 +6918,21 @@ fn capture_screenshot(session: &mut TuiSession) -> Result<(), String> {
             .arg(&path)
             .status()
         {
-            Ok(status) if status.success() => return queue_image(&path, session),
+            Ok(status) if status.success() => {
+                jarvis_security::validate_private_path(&path).map_err(|error| error.to_string())?;
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
+                        .map_err(|error| error.to_string())?;
+                }
+                jarvis_security::validate_private_file(&path).map_err(|error| error.to_string())?;
+                let result = queue_image(&path, session);
+                if result.is_ok() {
+                    capture.keep().map_err(|error| error.to_string())?;
+                }
+                return result;
+            }
             Ok(status) => last_error = Some(format!("{program} exited with {status}")),
             Err(error) if error.kind() == io::ErrorKind::NotFound => {}
             Err(error) => last_error = Some(format!("{program}: {error}")),
@@ -7007,7 +7004,7 @@ fn render_last_image(protocol: Option<&str>, session: &mut TuiSession) -> Result
 /// `glm-5.3`; the synthetic provider gets its deterministic defaults.
 ///
 /// Returns `Err` for an unknown provider id so a misconfigured
-/// `AGENT_VESPER_PROVIDER` fails fast at startup instead of mid-prompt.
+/// `JARVIS_PROVIDER` fails fast at startup instead of mid-prompt.
 ///
 /// When `cognition_enabled` is `true`, a cognitive-memory capability
 /// instruction is appended to the system instructions so the model knows
@@ -7167,7 +7164,7 @@ fn provider_configuration_for(provider_id: &ProviderId) -> Result<ProviderConfig
             #[cfg(feature = "integration-test-harness")]
             let configuration = {
                 let mut configuration = configuration;
-                if std::env::var_os("AGENT_VESPER_XAI_TEST_STALE_HOSTED").is_some() {
+                if std::env::var_os("JARVIS_XAI_TEST_STALE_HOSTED").is_some() {
                     configuration
                         .values
                         .values
@@ -10813,7 +10810,7 @@ fn session_storage_root(session: &TuiSession) -> std::path::PathBuf {
 
 fn persist_tui_conversation(session: &TuiSession) -> Result<(), String> {
     let root = session_storage_root(session);
-    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    jarvis_security::prepare_owned_directory(&root).map_err(|error| error.to_string())?;
     let messages = session
         .conversation
         .iter()
@@ -11324,15 +11321,14 @@ fn build_user_message_with_images(text: &str, images: Vec<ImageDescriptor>) -> C
 /// (`USERPROFILE` on Windows, `HOME` elsewhere). Never created here; a
 /// missing directory simply disables the global skill read layer.
 fn home_memory_root() -> std::path::PathBuf {
-    let variable = if cfg!(target_os = "windows") {
-        "USERPROFILE"
-    } else {
-        "HOME"
-    };
-    let home = std::env::var(variable)
+    std::env::var_os("JARVIS_GLOBAL_MEMORY_ROOT")
         .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| std::path::PathBuf::from("."));
-    home.join(".agent-vesper").join("memory")
+        .or_else(|| {
+            jarvis_config::JarvisPaths::from_environment()
+                .ok()
+                .map(|p| p.data.join("memory"))
+        })
+        .unwrap_or_default()
 }
 
 /// Bundle of the four durable memory stores, all rooted at the same path.
@@ -11349,23 +11345,23 @@ struct MemoryStores {
 }
 
 impl MemoryStores {
-    /// Opens the bundle at `AGENT_VESPER_MEMORY_ROOT` (falling back to
-    /// `.agent-vesper/memory/` under the current directory). The skill
+    /// Opens the bundle at `JARVIS_MEMORY_ROOT` (falling back to
+    /// `.jarvis/memory/` under the current directory). The skill
     /// store additionally reads a cross-project global layer at
-    /// `AGENT_VESPER_GLOBAL_MEMORY_ROOT` (falling back to
-    /// `~/.agent-vesper/memory/`): global skills appear after local ones,
+    /// `JARVIS_GLOBAL_MEMORY_ROOT` (falling back to
+    /// `~/.jarvis/memory/`): global skills appear after local ones,
     /// local slugs shadow, and writes always stay project-local. If opening
     /// any store fails the bundle stays `None` for that store and memory
     /// commands surface a clear error rather than crashing the TUI.
     fn open_default() -> Self {
-        let root = match std::env::var("AGENT_VESPER_MEMORY_ROOT") {
+        let root = match std::env::var("JARVIS_MEMORY_ROOT") {
             Ok(value) => std::path::PathBuf::from(value),
             Err(_) => std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                .join(".agent-vesper")
+                .join(".jarvis")
                 .join("memory"),
         };
-        let global_memory_root = match std::env::var("AGENT_VESPER_GLOBAL_MEMORY_ROOT") {
+        let global_memory_root = match std::env::var("JARVIS_GLOBAL_MEMORY_ROOT") {
             Ok(value) => std::path::PathBuf::from(value),
             Err(_) => home_memory_root(),
         };
@@ -11628,29 +11624,18 @@ struct CognitionBundle {
 }
 
 fn global_cognition_root() -> std::path::PathBuf {
-    if let Ok(value) = std::env::var("AGENT_VESPER_GLOBAL_COGNITION_ROOT") {
-        return std::path::PathBuf::from(value);
-    }
-    if let Ok(value) = std::env::var("XDG_DATA_HOME") {
-        return std::path::PathBuf::from(value)
-            .join("agent-vesper")
-            .join("cognition");
-    }
-    if let Ok(value) = std::env::var("HOME") {
-        return std::path::PathBuf::from(value)
-            .join(".local")
-            .join("share")
-            .join("agent-vesper")
-            .join("cognition");
-    }
-    std::env::current_dir()
-        .unwrap_or_else(|_| std::path::PathBuf::from("."))
-        .join(".agent-vesper")
-        .join("global-cognition")
+    std::env::var_os("JARVIS_GLOBAL_COGNITION_ROOT")
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            jarvis_config::JarvisPaths::from_environment()
+                .ok()
+                .map(|p| p.data.join("cognition"))
+        })
+        .unwrap_or_default()
 }
 
 /// ADR 0016 — Provider-Independent Embedding Layer. Deserializes from
-/// `.agent-vesper/cognition/embedding.json` and selects an embedder that is
+/// `.jarvis/cognition/embedding.json` and selects an embedder that is
 /// INDEPENDENT of the active chat provider. Switching chat providers (ZAI ↔
 /// LM Studio ↔ future X) no longer changes the embedding source — so cosine
 /// similarity across stored memories never breaks and no migration is ever
@@ -11692,25 +11677,28 @@ struct EmbeddingConfig {
 }
 
 impl EmbeddingConfig {
-    /// Load from `$AGENT_VESPER_COGNITION_ROOT/embedding.json`. Returns
+    /// Load from `$JARVIS_COGNITION_ROOT/embedding.json`. Returns
     /// `Default` (all-None) when the file is absent or unparseable —
     /// backward-compat with v0.20.13 and earlier.
     fn load(root: &std::path::Path) -> Self {
         let path = root.join("embedding.json");
+        if jarvis_security::validate_private_path(&path).is_err() {
+            return Self::default();
+        }
         match std::fs::read_to_string(&path) {
             Ok(text) => serde_json::from_str(&text).unwrap_or_default(),
             Err(_) => Self::default(),
         }
     }
 
-    /// Persist back to `$AGENT_VESPER_COGNITION_ROOT/embedding.json`. Used
+    /// Persist back to `$JARVIS_COGNITION_ROOT/embedding.json`. Used
     /// by future `/embedding` slash commands to update config without
     /// editing JSON by hand.
     #[allow(dead_code)]
     fn save(&self, root: &std::path::Path) -> std::io::Result<()> {
         let path = root.join("embedding.json");
         let text = serde_json::to_string_pretty(self).unwrap_or_else(|_| "{}".into());
-        std::fs::write(path, text)
+        jarvis_security::write_private_atomic(&path, text.as_bytes())
     }
 
     /// Returns true when this config actively overrides the embedder
@@ -11722,8 +11710,8 @@ impl EmbeddingConfig {
 
 impl CognitionBundle {
     /// Opens the cognitive-memory SQLite database at
-    /// `AGENT_VESPER_COGNITION_ROOT` (falling back to
-    /// `.agent-vesper/cognition/`).
+    /// `JARVIS_COGNITION_ROOT` (falling back to
+    /// `.jarvis/cognition/`).
     ///
     /// **Provider-neutral (multi-provider harness):** the engine opens
     /// regardless of which provider is active. Embeddings always use the
@@ -11852,14 +11840,14 @@ impl CognitionBundle {
         credential_source: Arc<dyn jarvis_provider_glm::GlmCredentialSource>,
         active_provider: &str,
     ) -> Self {
-        let root = match std::env::var("AGENT_VESPER_COGNITION_ROOT") {
+        let root = match std::env::var("JARVIS_COGNITION_ROOT") {
             Ok(value) => std::path::PathBuf::from(value),
             Err(_) => std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                .join(".agent-vesper")
+                .join(".jarvis")
                 .join("cognition"),
         };
-        let _ = std::fs::create_dir_all(&root);
+        let project_owned = jarvis_security::prepare_owned_directory(&root).is_ok();
         let db_path = root.join("cognition.db");
         let root_display = root.display().to_string();
         let project_display = std::env::current_dir()
@@ -11869,7 +11857,7 @@ impl CognitionBundle {
             .display()
             .to_string();
         let global_root = global_cognition_root();
-        let _ = std::fs::create_dir_all(&global_root);
+        let global_owned = jarvis_security::prepare_owned_directory(&global_root).is_ok();
         let global_db_path = global_root.join("cognition.db");
         let global_root_display = global_root.display().to_string();
 
@@ -11881,7 +11869,11 @@ impl CognitionBundle {
         // is ever needed mid-session. Backward-compat: when the file is
         // absent or has no `source`, fall back to the v0.20.13 provider-
         // routed behavior (embedder follows the active provider).
-        let embedding_config = EmbeddingConfig::load(&root);
+        let embedding_config = if project_owned {
+            EmbeddingConfig::load(&root)
+        } else {
+            EmbeddingConfig::default()
+        };
         let default_dim = jarvis_cognition::CognitiveConfig::default().embedding_dim;
         let (embedder, probed_dim, mut search_mode_hint): (
             Arc<dyn jarvis_cognition::EmbeddingPort>,
@@ -11967,11 +11959,17 @@ impl CognitionBundle {
             fusion_strategy: config.fusion_strategy,
             max_injection_tokens: config.max_injection_tokens,
         };
-        let engine = jarvis_cognition::open(&db_path, ports.clone(), config)
+        let engine = project_owned
+            .then(|| jarvis_cognition::open(&db_path, ports.clone(), config))
+            .transpose()
             .ok()
+            .flatten()
             .map(Arc::new);
-        let global_engine = jarvis_cognition::open(&global_db_path, ports, global_config)
+        let global_engine = global_owned
+            .then(|| jarvis_cognition::open(&global_db_path, ports, global_config))
+            .transpose()
             .ok()
+            .flatten()
             .map(Arc::new);
         // ADR 0016: apply the startup-determined search mode.
         if let Some(engine) = engine.as_ref() {
@@ -12190,7 +12188,7 @@ impl CognitionBundle {
                         "cognition: no LM Studio settings; using LocalHashEmbedder \
                          (zero-network bag-of-words). Run /lmstudio or /provider to \
                          configure a neural embedder. To make embeddings provider-\
-                         independent, write .agent-vesper/cognition/embedding.json \
+                         independent, write .jarvis/cognition/embedding.json \
                          with {{\"source\":\"lmstudio\"}} (ADR 0016)."
                     );
                     let arc: Arc<dyn jarvis_cognition::EmbeddingPort> =
@@ -12199,8 +12197,7 @@ impl CognitionBundle {
                 }
             },
             _ => {
-                if std::env::var("AGENT_VESPER_COGNITION_EMBEDDING_API").as_deref()
-                    == Ok("bigmodel")
+                if std::env::var("JARVIS_COGNITION_EMBEDDING_API").as_deref() == Ok("bigmodel")
                     && jarvis_provider_glm::resolve_credential(credential_source.as_ref()).is_ok()
                 {
                     let arc: Arc<dyn jarvis_cognition::EmbeddingPort> =
@@ -12230,7 +12227,7 @@ struct LmStudioExtractionAdapter {
 
 impl LmStudioExtractionAdapter {
     /// Builds an adapter from the persisted LM Studio settings
-    /// (`.agent-vesper/lmstudio/settings.json`). Returns `None` when no
+    /// (`.jarvis/lmstudio/settings.json`). Returns `None` when no
     /// endpoint is configured.
     #[must_use]
     fn from_persisted_settings() -> Option<Self> {
@@ -12243,7 +12240,7 @@ impl LmStudioExtractionAdapter {
         let model = settings
             .model()
             .map(str::to_string)
-            .or_else(|| std::env::var("AGENT_VESPER_COGNITION_MODEL").ok())
+            .or_else(|| std::env::var("JARVIS_COGNITION_MODEL").ok())
             .unwrap_or_else(|| String::from("local-model"));
         Some(Self {
             endpoint_url,
@@ -12423,7 +12420,7 @@ impl LmStudioEmbedder {
         let endpoint_url = format!("{base}/embeddings");
         // Prefer an explicit embedding model override; otherwise fall back to
         // the chat model; otherwise let LM Studio pick a default.
-        let model = std::env::var("AGENT_VESPER_COGNITION_EMBEDDING_MODEL")
+        let model = std::env::var("JARVIS_COGNITION_EMBEDDING_MODEL")
             .ok()
             .or_else(|| settings.model().map(str::to_string))
             .unwrap_or_else(|| "text-embedding-nomic-embed-text-v1.5".into());
@@ -12441,7 +12438,7 @@ impl LmStudioEmbedder {
 
     /// ADR 0016 — provider-independent path. Builds an adapter from explicit
     /// config fields (typically loaded from
-    /// `.agent-vesper/cognition/embedding.json`). Decoupled from the chat
+    /// `.jarvis/cognition/embedding.json`). Decoupled from the chat
     /// provider's settings file so switching chat providers does NOT change
     /// the embedding source.
     #[must_use]
@@ -12613,7 +12610,7 @@ impl LmStudioEmbedder {
 /// Zai chat completions with `response_format={"type":"json_object"}` for
 /// extraction. Uses the Standard plan endpoint (api.z.ai) — chat completions
 /// are available on the global endpoint. Default model `glm-4.6`; override
-/// via `AGENT_VESPER_COGNITION_MODEL`.
+/// via `JARVIS_COGNITION_MODEL`.
 #[derive(Clone)]
 struct ZaiExtractionAdapter {
     credential_source: Arc<dyn jarvis_provider_glm::GlmCredentialSource>,
@@ -12636,7 +12633,7 @@ impl ZaiExtractionAdapter {
                 .build()
                 .expect("reqwest blocking client"),
             endpoint_url,
-            model: std::env::var("AGENT_VESPER_COGNITION_MODEL")
+            model: std::env::var("JARVIS_COGNITION_MODEL")
                 .unwrap_or_else(|_| String::from("glm-4.6")),
         }
     }
@@ -14182,9 +14179,8 @@ async fn execute_worktree_worker(
                     reason: "base_ref must not begin with '-'".into(),
                 });
             }
-            let path_text = optional_string("worker_path").unwrap_or_else(|| {
-                format!(".agent-vesper/worktrees/worker-{}", std::process::id())
-            });
+            let path_text = optional_string("worker_path")
+                .unwrap_or_else(|| format!(".jarvis/worktrees/worker-{}", std::process::id()));
             if let Some(parent) = std::path::Path::new(&path_text).parent() {
                 let parent = if parent.is_absolute() {
                     parent.to_path_buf()
@@ -14469,8 +14465,11 @@ fn persist_trusted_publishers(
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| tui_tool_failure("plugin_package", error))?
         .join("\n");
-    std::fs::write(root.join("publishers.jsonl"), format!("{body}\n"))
-        .map_err(|error| tui_tool_failure("plugin_package", error))
+    jarvis_security::write_private_atomic(
+        &root.join("publishers.jsonl"),
+        format!("{body}\n").as_bytes(),
+    )
+    .map_err(|error| tui_tool_failure("plugin_package", error))
 }
 
 fn execute_tui_tool(
@@ -15303,21 +15302,21 @@ fn list_awareness(
 // ---------------------------------------------------------------------------
 
 fn checkpoint_root_path() -> std::path::PathBuf {
-    match std::env::var("AGENT_VESPER_CHECKPOINT_ROOT") {
+    match std::env::var("JARVIS_CHECKPOINT_ROOT") {
         Ok(value) => std::path::PathBuf::from(value),
         Err(_) => std::env::current_dir()
             .unwrap_or_else(|_| std::path::PathBuf::from("."))
-            .join(".agent-vesper")
+            .join(".jarvis")
             .join("checkpoints"),
     }
 }
 
 fn mcp_root_path() -> std::path::PathBuf {
-    match std::env::var("AGENT_VESPER_MCP_ROOT") {
+    match std::env::var("JARVIS_MCP_ROOT") {
         Ok(value) => std::path::PathBuf::from(value),
         Err(_) => std::env::current_dir()
             .unwrap_or_else(|_| std::path::PathBuf::from("."))
-            .join(".agent-vesper")
+            .join(".jarvis")
             .join("mcp"),
     }
 }
@@ -15326,12 +15325,11 @@ fn mcp_root_path() -> std::path::PathBuf {
 /// environment values are resolved under the current workspace so the
 /// session repository always receives the absolute root it requires.
 fn session_root_path() -> std::path::PathBuf {
-    let root = match std::env::var("AGENT_VESPER_SESSION_ROOT") {
+    let root = match std::env::var("JARVIS_SESSION_ROOT") {
         Ok(value) => std::path::PathBuf::from(value),
-        Err(_) => std::env::current_dir()
-            .unwrap_or_else(|_| std::path::PathBuf::from("."))
-            .join(".agent-vesper")
-            .join("sessions"),
+        Err(_) => jarvis_config::JarvisPaths::from_environment()
+            .map(|p| p.data.join("sessions"))
+            .unwrap_or_default(),
     };
     if root.is_absolute() {
         root
@@ -15343,7 +15341,7 @@ fn session_root_path() -> std::path::PathBuf {
 }
 
 fn trajectory_recorder() -> jarvis_observability::TrajectoryRecorder {
-    let enabled = std::env::var("AGENT_VESPER_TELEMETRY")
+    let enabled = std::env::var("JARVIS_TELEMETRY")
         .map(|value| {
             matches!(
                 value.trim().to_ascii_lowercase().as_str(),
@@ -15351,12 +15349,12 @@ fn trajectory_recorder() -> jarvis_observability::TrajectoryRecorder {
             )
         })
         .unwrap_or(false);
-    let path = std::env::var("AGENT_VESPER_TRAJECTORY_PATH")
+    let path = std::env::var("JARVIS_TRAJECTORY_PATH")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| {
             std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                .join(".agent-vesper")
+                .join(".jarvis")
                 .join("trajectory.jsonl")
         });
     jarvis_observability::TrajectoryRecorder::new(Some(path), enabled)
@@ -15380,21 +15378,34 @@ struct CheckpointStores {
 }
 
 impl CheckpointStores {
-    /// Opens the bundle at `AGENT_VESPER_CHECKPOINT_ROOT` (falling back to
-    /// `.agent-vesper/checkpoints/`).
+    /// Opens the bundle at `JARVIS_CHECKPOINT_ROOT` (falling back to
+    /// `.jarvis/checkpoints/`).
     fn open_default() -> Self {
-        let root = checkpoint_root_path();
-        let _ = std::fs::create_dir_all(&root);
+        Self::open_at(checkpoint_root_path())
+    }
+
+    fn open_at(root: std::path::PathBuf) -> Self {
+        let owned = jarvis_security::prepare_owned_directory(&root).is_ok();
         let workspace_root = std::env::current_dir()
             .unwrap_or_else(|_| std::path::PathBuf::from("."))
             .canonicalize()
             .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
         let root_display = root.display().to_string();
-        let ledger = jarvis_checkpoints::CheckpointsLedger::open(&root).ok();
-        let sessions = jarvis_checkpoints::SessionLineage::open(&root).ok();
-        let cron = jarvis_checkpoints::CronRegistry::open(&root).ok();
-        let exporter = jarvis_checkpoints::SessionExporter::open(&root).ok();
-        let clipboard = jarvis_checkpoints::ClipboardPort::open(&root).ok();
+        let ledger = owned
+            .then(|| jarvis_checkpoints::CheckpointsLedger::open(&root).ok())
+            .flatten();
+        let sessions = owned
+            .then(|| jarvis_checkpoints::SessionLineage::open(&root).ok())
+            .flatten();
+        let cron = owned
+            .then(|| jarvis_checkpoints::CronRegistry::open(&root).ok())
+            .flatten();
+        let exporter = owned
+            .then(|| jarvis_checkpoints::SessionExporter::open(&root).ok())
+            .flatten();
+        let clipboard = owned
+            .then(|| jarvis_checkpoints::ClipboardPort::open(&root).ok())
+            .flatten();
         Self {
             ledger,
             sessions,
@@ -15409,13 +15420,13 @@ impl CheckpointStores {
 }
 
 /// Resolves the daemon's state root exactly as `--headless daemon` does:
-/// `AGENT_VESPER_CHECKPOINT_ROOT`'s parent (default `.agent-vesper/`).
+/// `JARVIS_CHECKPOINT_ROOT`'s parent (default `.jarvis/`).
 fn state_root_path() -> std::path::PathBuf {
-    let checkpoint_root = match std::env::var("AGENT_VESPER_CHECKPOINT_ROOT") {
+    let checkpoint_root = match std::env::var("JARVIS_CHECKPOINT_ROOT") {
         Ok(value) => std::path::PathBuf::from(value),
         Err(_) => std::env::current_dir()
             .unwrap_or_else(|_| std::path::PathBuf::from("."))
-            .join(".agent-vesper")
+            .join(".jarvis")
             .join("checkpoints"),
     };
     checkpoint_root
@@ -15426,7 +15437,7 @@ fn state_root_path() -> std::path::PathBuf {
 
 /// The ScopeId string for watcher registration/listing: the installed
 /// scope holder's id when the host booted with one (the normal path),
-/// else the `.vesper-scope-id` stamp beside the state root, else a
+/// else the `.jarvis-scope-id` stamp beside the state root, else a
 /// stable fallback derived from the canonical CWD so registrations never
 /// silently land in a foreign scope. Read-only: this never creates the
 /// stamp (creation is a boot-time act of `install_for_root`).
@@ -15442,6 +15453,7 @@ fn scope_id_string() -> String {
         .ok()
         .map(|root| root.join(jarvis_agent::vro::scope::STAMP_FILE_NAME));
     if let Some(stamp) = stamp
+        && jarvis_security::validate_private_path(&stamp).is_ok()
         && let Ok(text) = std::fs::read_to_string(&stamp)
         && !text.trim().is_empty()
     {
@@ -16062,16 +16074,27 @@ struct McpStores {
 }
 
 impl McpStores {
-    /// Opens the bundle at `AGENT_VESPER_MCP_ROOT` (falling back to
-    /// `.agent-vesper/mcp/`).
+    /// Opens the bundle at `JARVIS_MCP_ROOT` (falling back to
+    /// `.jarvis/mcp/`).
     fn open_default() -> Self {
-        let root = mcp_root_path();
-        let _ = std::fs::create_dir_all(&root);
+        Self::open_at(mcp_root_path())
+    }
+
+    fn open_at(root: std::path::PathBuf) -> Self {
+        let owned = jarvis_security::prepare_owned_directory(&root).is_ok();
         let root_display = root.display().to_string();
         // Load persisted trusted publishers (best-effort).
-        let trusted = load_trusted_publishers(&root);
-        let registry = jarvis_mcp::McpRegistry::open(&root).ok();
-        let plugin_loader = jarvis_mcp::PluginLoader::open(&root, trusted.clone()).ok();
+        let trusted = if owned {
+            load_trusted_publishers(&root)
+        } else {
+            jarvis_mcp::TrustedPublishers::new()
+        };
+        let registry = owned
+            .then(|| jarvis_mcp::McpRegistry::open(&root).ok())
+            .flatten();
+        let plugin_loader = owned
+            .then(|| jarvis_mcp::PluginLoader::open(&root, trusted.clone()).ok())
+            .flatten();
         Self {
             registry,
             plugin_loader,
@@ -16085,6 +16108,11 @@ impl McpStores {
 /// returns an empty registry when the file is absent).
 fn load_trusted_publishers(root: &std::path::Path) -> jarvis_mcp::TrustedPublishers {
     let path = root.join("publishers.jsonl");
+    if jarvis_security::validate_owned_directory(root).is_err()
+        || jarvis_security::validate_private_file(&path).is_err()
+    {
+        return jarvis_mcp::TrustedPublishers::new();
+    }
     let Ok(text) = std::fs::read_to_string(&path) else {
         return jarvis_mcp::TrustedPublishers::new();
     };
@@ -16352,20 +16380,23 @@ fn drain_mcp_op(op: jarvis_tui::commands::McpOp, stores: &mut McpStores, state: 
                 publisher: publisher.clone(),
                 public_key_hex: public_key_hex.clone(),
             };
+            let previous = stores
+                .trusted
+                .list()
+                .into_iter()
+                .find(|entry| entry.publisher == publisher);
             match stores.trusted.trust(entry.clone()) {
                 Ok(()) => {
-                    // Persist to publishers.jsonl (best-effort append).
-                    if let Ok(serialized) = serde_json::to_string(&entry) {
-                        let path =
-                            std::path::Path::new(&stores.root_display).join("publishers.jsonl");
-                        use std::io::Write;
-                        if let Ok(mut file) = std::fs::OpenOptions::new()
-                            .create(true)
-                            .append(true)
-                            .open(&path)
-                        {
-                            let _ = writeln!(file, "{serialized}");
+                    if let Err(error) = persist_trusted_publishers(
+                        std::path::Path::new(&stores.root_display),
+                        &stores.trusted,
+                    ) {
+                        let _ = stores.trusted.revoke(&publisher);
+                        if let Some(previous) = previous {
+                            let _ = stores.trusted.trust(previous);
                         }
+                        state.status = Some(format!("plugins trust could not be saved: {error:?}"));
+                        return;
                     }
                     state
                         .transcript
@@ -16561,9 +16592,7 @@ fn drain_cognition_op(
 
 fn cognition_user_scope() -> jarvis_cognition::Scope {
     jarvis_cognition::Scope {
-        user_id: Some(
-            std::env::var("AGENT_VESPER_COGNITION_USER_ID").unwrap_or_else(|_| "local".into()),
-        ),
+        user_id: Some(std::env::var("JARVIS_COGNITION_USER_ID").unwrap_or_else(|_| "local".into())),
         ..Default::default()
     }
 }
@@ -18333,8 +18362,8 @@ mod tests {
     fn saved_theme_follows_the_user_across_projects_and_migrates_once() {
         let temp = tempfile::tempdir().unwrap();
         let global = temp.path().join("home/ui");
-        let project_a = temp.path().join("project-a/.agent-vesper");
-        let project_b = temp.path().join("project-b/.agent-vesper");
+        let project_a = temp.path().join("project-a/.jarvis");
+        let project_b = temp.path().join("project-b/.jarvis");
         save_theme_preference(&project_a, "dracula").unwrap();
         assert_eq!(
             migrate_theme_preference(&global, &project_a)
@@ -18363,6 +18392,74 @@ mod tests {
                 .as_deref(),
             Some("nord")
         );
+    }
+
+    #[test]
+    fn private_store_bundles_never_open_unowned_roots() {
+        let tmp = tempfile::tempdir().unwrap();
+        for name in ["checkpoints", "mcp"] {
+            let root = tmp.path().join(name);
+            std::fs::create_dir(&root).unwrap();
+            std::fs::write(root.join("foreign-state"), b"preserve foreign state").unwrap();
+            if name == "checkpoints" {
+                let stores = CheckpointStores::open_at(root.clone());
+                assert!(
+                    stores.ledger.is_none()
+                        && stores.sessions.is_none()
+                        && stores.cron.is_none()
+                        && stores.exporter.is_none()
+                        && stores.clipboard.is_none()
+                );
+            } else {
+                let stores = McpStores::open_at(root.clone());
+                assert!(stores.registry.is_none() && stores.plugin_loader.is_none());
+                assert!(stores.trusted.list().is_empty());
+            }
+            assert_eq!(
+                std::fs::read(root.join("foreign-state")).unwrap(),
+                b"preserve foreign state"
+            );
+            assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+        }
+        let checkpoints = CheckpointStores::open_at(tmp.path().join("owned-checkpoints"));
+        assert!(
+            checkpoints.ledger.is_some()
+                && checkpoints.sessions.is_some()
+                && checkpoints.cron.is_some()
+                && checkpoints.exporter.is_some()
+                && checkpoints.clipboard.is_some()
+        );
+        let mcp = McpStores::open_at(tmp.path().join("owned-mcp"));
+        assert!(mcp.registry.is_some() && mcp.plugin_loader.is_some());
+    }
+
+    #[test]
+    fn private_publisher_records_refuse_unowned_storage_and_reload_owned_state() {
+        let foreign = tempfile::tempdir().unwrap();
+        let entry = jarvis_mcp::TrustedPublisher {
+            publisher: "synthetic-publisher".into(),
+            public_key_hex: "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+                .into(),
+        };
+        let bytes = format!("{}\n", serde_json::to_string(&entry).unwrap());
+        let path = foreign.path().join("publishers.jsonl");
+        std::fs::write(&path, &bytes).unwrap();
+        assert!(load_trusted_publishers(foreign.path()).list().is_empty());
+        let trusted = jarvis_mcp::TrustedPublishers::from_records([entry]);
+        assert!(persist_trusted_publishers(foreign.path(), &trusted).is_err());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), bytes);
+        let owned = tempfile::tempdir().unwrap();
+        persist_trusted_publishers(owned.path(), &trusted).unwrap();
+        assert_eq!(load_trusted_publishers(owned.path()).list().len(), 1);
+        jarvis_security::validate_private_file(&owned.path().join("publishers.jsonl")).unwrap();
+        #[cfg(unix)]
+        {
+            std::fs::remove_file(owned.path().join("publishers.jsonl")).unwrap();
+            std::os::unix::fs::symlink(&path, owned.path().join("publishers.jsonl")).unwrap();
+            assert!(load_trusted_publishers(owned.path()).list().is_empty());
+            assert!(persist_trusted_publishers(owned.path(), &trusted).is_err());
+            assert_eq!(std::fs::read_to_string(path).unwrap(), bytes);
+        }
     }
 
     #[test]
@@ -20044,7 +20141,7 @@ mod tests {
         assert_eq!(interp, "python3");
         assert!(!from_env);
 
-        // 2. GLM_VENV_PATH pointing at a dir that contains the native venv
+        // 2. JARVIS_VOICE_VENV_PATH pointing at a dir that contains the native venv
         //    interpreter (bin/python or Scripts/python.exe) wins over the
         //    default.
         let temp = tempfile::tempdir().expect("tempdir");
@@ -20056,7 +20153,7 @@ mod tests {
         assert_eq!(interp, python_file.to_string_lossy());
         assert!(from_env);
 
-        // 3. VESPER_PYTHON_PATH wins over GLM_VENV_PATH even if it does not
+        // 3. JARVIS_PYTHON_PATH wins over JARVIS_VOICE_VENV_PATH even if it does not
         //    point at a real file (so the surfaced error names the exact
         //    configured path instead of silently falling back).
         let (interp, from_env) = vesper_python_interpreter_from(
@@ -20066,13 +20163,13 @@ mod tests {
         assert_eq!(interp, "/opt/exotic-venv/bin/python");
         assert!(from_env);
 
-        // 4. Empty VESPER_PYTHON_PATH is ignored, GLM_VENV_PATH still wins.
+        // 4. Empty JARVIS_PYTHON_PATH is ignored, JARVIS_VOICE_VENV_PATH still wins.
         let (interp, from_env) =
             vesper_python_interpreter_from(vesp(""), Some(temp.path().as_os_str()));
         assert_eq!(interp, python_file.to_string_lossy());
         assert!(from_env);
 
-        // 5. GLM_VENV_PATH with no native interpreter falls through to python3.
+        // 5. JARVIS_VOICE_VENV_PATH with no native interpreter falls through to python3.
         let (interp, from_env) =
             vesper_python_interpreter_from(none, vesp("/nonexistent-venv-root"));
         assert_eq!(interp, "python3");

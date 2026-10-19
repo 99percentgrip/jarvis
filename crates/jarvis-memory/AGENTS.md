@@ -53,6 +53,10 @@ subsystem that backs the Tier C Phase 8 un-stubbed commands
 
 ## Local Contracts
 
+- Selected skill bodies/chunks bind inherited resource prefixes to the validated
+  selected store, preserving source bytes. Unclassified legacy-private paths
+  refuse loading. No resource binding opens a Vesper home or grants tool authority.
+
 - Depends only on `jarvis-domain` and `jarvis-security`. No provider,
   runtime, ACP, sessions, agent, testkit, SQLite, HTTP, or TUI dependency.
 - All filesystem writes are atomic (write-to-temp + `fsync` + rename),
@@ -77,7 +81,7 @@ subsystem that backs the Tier C Phase 8 un-stubbed commands
   (`open_with_global`): listings append global-only skills after local
   ones, local slugs shadow, reads fall back, and writes/bundles-merges
   follow the same precedence. The TUI roots it at
-  `AGENT_VESPER_GLOBAL_MEMORY_ROOT` (default `~/.agent-vesper/memory`);
+  `JARVIS_GLOBAL_MEMORY_ROOT` (default the native application data root plus `memory`);
   a missing root silently disables the layer.
 - `read_section` extracts one heading's section; the headline shown by
   `list_skills` prefers the frontmatter `description` (oracle context

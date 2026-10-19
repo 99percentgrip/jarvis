@@ -14,6 +14,13 @@ tags:  [Google, Gmail, Calendar, Drive, Sheets, Docs, Contacts, Email, OAuth]
 related_skills: [himalaya]
 ---
 
+**Runtime availability:** Bundled Google OAuth setup, token refresh, and API
+execution are blocked pending independent authorization and secure storage.
+Do not follow the historical setup steps below or reuse an existing Vesper
+Google token. No token import, refresh, revocation, or credential-file copying
+is authorized by selecting this skill.
+
+
 # Google Workspace
 
 Gmail, Calendar, Drive, Contacts, Sheets, and Docs — through agent-managed OAuth and a thin CLI wrapper. When `gws` is installed, the skill uses it as the execution backend for broader Google Workspace coverage; otherwise it falls back to the bundled Python client implementation.
@@ -123,7 +130,7 @@ $GSETUP --auth-url --services all --format json
 ```
 
 This returns JSON with an `auth_url` field and also saves the exact URL to
-`~/.agent-vesper/google_oauth_last_url.txt`.
+`[unavailable application-private OAuth store]`.
 
 Agent rules for this step:
 - Extract the `auth_url` field and send that exact URL to the user as a single line.
@@ -157,9 +164,9 @@ Should print `AUTHENTICATED`. Setup is complete — token refreshes automaticall
 
 ### Notes
 
-- Token is stored at `~/.agent-vesper/google_token.json` and auto-refreshes.
-- Pending OAuth session state/verifier are stored temporarily at `~/.agent-vesper/google_oauth_pending.json` until exchange completes.
-- If `gws` is installed, `google_api.py` points it at the same `~/.agent-vesper/google_token.json` credentials file. Users do not need to run a separate `gws auth login` flow.
+- Token is stored at `[unavailable application-private OAuth store]` and auto-refreshes.
+- Pending OAuth session state/verifier are stored temporarily at `[unavailable application-private OAuth store]` until exchange completes.
+- If `gws` is installed, `google_api.py` points it at the same `[unavailable application-private OAuth store]` credentials file. Users do not need to run a separate `gws auth login` flow.
 - To revoke: `$GSETUP --revoke`
 
 ## Usage

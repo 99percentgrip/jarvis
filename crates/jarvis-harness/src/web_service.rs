@@ -2,7 +2,7 @@
 //!
 //! [`WebService`] hosts exactly five tools — `web_fetch`, `web_scrape`,
 //! `web_map`, `web_crawl`, `web_interact` — behind the `[web]` config
-//! block (`.agent-vesper/config.toml`). The contract this module enforces:
+//! block (`.jarvis/config.toml`). The contract this module enforces:
 //!
 //! - **Strictly opt-in.** A `WebService` is constructed only when the
 //!   scope's `[web]` table parses with `enabled = true`. When absent or
@@ -256,10 +256,10 @@ pub mod holder {
 
     static SCOPE: OnceLock<Option<WebScope>> = OnceLock::new();
 
-    /// Resolve the `[web]` scope from `<root>/.agent-vesper/config.toml`
-    /// and install it process-globally. `AGENT_VESPER_WEB=off` forces the
+    /// Resolve the `[web]` scope from `<root>/.jarvis/config.toml`
+    /// and install it process-globally. `JARVIS_WEB=off` forces the
     /// disabled state regardless of config (an operator escape hatch
-    /// mirroring `AGENT_VESPER_SANDBOX=off`). Returns the effective scope.
+    /// mirroring `JARVIS_SANDBOX=off`). Returns the effective scope.
     ///
     /// A read error is NOT fatal: the web tools stay unregistered (the
     /// fail-safe direction — a malformed config must not enable network
@@ -272,7 +272,7 @@ pub mod holder {
     }
 
     fn compute(root: &std::path::Path) -> Result<Option<WebScope>, String> {
-        if std::env::var("AGENT_VESPER_WEB")
+        if std::env::var("JARVIS_WEB")
             .map(|value| value.eq_ignore_ascii_case("off"))
             .unwrap_or(false)
         {
@@ -1224,7 +1224,7 @@ mod tests {
 
     /// The directive's cross-host parity proof: the TUI's and ACP's boot
     /// paths both call `HarnessToolService::build_default_registry` after
-    /// reading the same `.agent-vesper/config.toml` `[web]` table, so the
+    /// reading the same `.jarvis/config.toml` `[web]` table, so the
     /// tool definitions AND the shared sandbox route must resolve
     /// byte-identically in both hosts. This test constructs the service
     /// twice the way the two hosts do (identical inputs) and asserts

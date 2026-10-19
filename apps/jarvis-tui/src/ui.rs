@@ -4557,7 +4557,7 @@ fn visual_reference_frame_has_agent_cli_information_hierarchy() {
     );
     assert!(frame_text.contains("Session"));
     assert!(frame_text.contains("TODO"));
-    if std::env::var_os("VESPER_DUMP_UI").is_some() {
+    if std::env::var_os("JARVIS_DUMP_UI").is_some() {
         eprintln!("COMPACT CHAT\n{frame_text}");
     }
 
@@ -4593,7 +4593,7 @@ fn visual_reference_frame_has_agent_cli_information_hierarchy() {
         buffer[(2, added_row)].bg,
         theme_palette("chatgpt-black").added_bg
     );
-    if std::env::var_os("VESPER_DUMP_UI").is_some() {
+    if std::env::var_os("JARVIS_DUMP_UI").is_some() {
         eprintln!("ACTIVITY VIEW\n{detail_text}");
     }
 }
@@ -4694,7 +4694,7 @@ fn responsive_reference_frames_keep_controls_and_hide_raw_reasoning() {
                 "Run state missing at {width}x{height}"
             );
         }
-        if std::env::var_os("VESPER_DUMP_UI").is_some() {
+        if std::env::var_os("JARVIS_DUMP_UI").is_some() {
             eprintln!("RESPONSIVE {width}x{height}\n{frame_text}");
         }
     }
@@ -4817,7 +4817,7 @@ mod output_upgrade_reference {
                     .unwrap();
                 let before = buffer.content[completed].clone();
                 let running_before = buffer.content[dot].clone();
-                if let Some(dir) = std::env::var_os("VESPER_OUTPUT_CAPTURE_DIR") {
+                if let Some(dir) = std::env::var_os("JARVIS_OUTPUT_CAPTURE_DIR") {
                     let cells: Vec<_> = buffer.content.iter().map(|c| serde_json::json!({"text": c.symbol(), "fg": format!("{:?}",c.fg), "bg":format!("{:?}",c.bg), "bold":c.modifier.contains(Modifier::BOLD)})).collect();
                     std::fs::write(
                         std::path::Path::new(&dir).join(format!("{theme}-{width}.json")),

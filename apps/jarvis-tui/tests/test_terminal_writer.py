@@ -9,10 +9,70 @@ import time
 import unittest
 from unittest.mock import patch
 from settings_pty import Host
+from message_journal_ux_pty import observe_collapsed_prompt
 
 
 @unittest.skipIf(os.name == 'nt', 'POSIX writer; ConPTY has its own writer')
 class TerminalWriterTests(unittest.TestCase):
+    def test_collapsed_prompt_missing_frame_keeps_existing_deadline(self):
+        host = Host.__new__(Host)
+        host.child = type('Child', (), {'poll': lambda _self: None})()
+        host.text = lambda: 'MARKER-TITLE'
+        host.raw = ''
+        host.pump = lambda _duration: None
+        with patch('settings_pty.time.monotonic', side_effect=[0, 0, 21]):
+            with self.assertRaisesRegex(AssertionError, "Missing 'Show more'"):
+                observe_collapsed_prompt(host)
+
+    def test_collapsed_prompt_still_rejects_expanded_or_stale_frame(self):
+        for visible in ['Show more MARKER-TITLE MARKER-TAIL-UNIQUE',
+                        'Show more MARKER-TITLE /paste', 'Show more']:
+            with self.subTest(visible=visible):
+                host = type('Frame', (), {
+                    'wait': lambda _self, label: self.assertIn(label, visible),
+                    'text': lambda _self: visible,
+                })()
+                with self.assertRaises(AssertionError):
+                    observe_collapsed_prompt(host)
+
+    def test_collapsed_prompt_observes_frame_not_provider_dispatch(self):
+        import codecs
+        import pty
+        master, slave = pty.openpty()
+        release_read, release_write = os.pipe()
+        child = subprocess.Popen([sys.executable, '-c',
+            'import os; os.write(1, b"MARKER-TITLE\\n"); '
+            'os.read(0, 1); os.write(1, b"Show more\\n")'],
+            stdin=release_read, stdout=slave, stderr=slave)
+        os.close(release_read)
+        os.close(slave)
+        host = Host.__new__(Host)
+        host.child, host.master = child, master
+        host.screen = [[' '] * 120 for _ in range(40)]
+        host.x = host.y = 0
+        host.pending = host.raw = ''
+        host.decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
+        try:
+            host.wait('MARKER-TITLE')
+            real_pump = host.pump
+            observations = []
+            def pump(duration):
+                observations.append(duration)
+                # Dispatch is already observed, but the next native frame is
+                # independently gated. One fixed pump cannot prove readiness.
+                if len(observations) == 2:
+                    os.write(release_write, b'x')
+                real_pump(duration)
+            host.pump = pump
+            observe_collapsed_prompt(host)
+            self.assertGreaterEqual(len(observations), 2)
+        finally:
+            os.close(release_write)
+            if child.poll() is None:
+                child.kill()
+            child.wait(timeout=2)
+            os.close(master)
+
     def test_normal_exit_drains_real_terminal_output(self):
         import pty
         import select

@@ -41,20 +41,14 @@ impl GlmCredentialSource for EnvironmentCredentialSource {
 /// path is configured. The path is descriptive until a caller stores a key.
 #[must_use]
 pub fn credentials_path() -> PathBuf {
-    if let Some(path) = std::env::var_os("AGENT_VESPER_CREDENTIALS_PATH") {
-        return PathBuf::from(path);
-    }
-    if let Some(base) = std::env::var_os("XDG_CONFIG_HOME") {
-        return PathBuf::from(base).join("agent-vesper/credentials.json");
-    }
-    #[cfg(windows)]
-    if let Some(base) = std::env::var_os("APPDATA") {
-        return PathBuf::from(base).join("agent-vesper/credentials.json");
-    }
-    std::env::var_os("HOME")
+    std::env::var_os("JARVIS_CREDENTIALS_PATH")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join(".config/agent-vesper/credentials.json")
+        .or_else(|| {
+            jarvis_config::JarvisPaths::from_environment()
+                .ok()
+                .map(|p| p.config.join("credentials.json"))
+        })
+        .unwrap_or_default()
 }
 
 /// Stores a Z.ai API key in the OS credential manager, with an owner-only
@@ -76,19 +70,11 @@ fn load_stored_api_key(name: &str) -> Option<SecretValue> {
     if let Ok(Some(secret)) = credential_store().load(ZAI_CREDENTIAL_ID) {
         return Some(secret);
     }
-    // Backward-compatible read for credentials written before the native
-    // credential manager was introduced. New writes use the generic vault.
-    let bytes = std::fs::read(credentials_path()).ok()?;
-    if bytes.len() > 32 * 1024 {
-        return None;
-    }
-    let value: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
-    let key = value.get("zai_api_key")?.as_str()?;
-    jarvis_auth::validate_secret(key).ok().map(SecretValue::new)
+    None
 }
 
 fn credential_store() -> SecureCredentialStore {
-    SecureCredentialStore::new("agent-vesper", credentials_path())
+    SecureCredentialStore::new("99percentgrip.jarvis", credentials_path())
 }
 
 pub(crate) fn credential_sources() -> (bool, bool) {

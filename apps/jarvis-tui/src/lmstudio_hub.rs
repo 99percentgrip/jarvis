@@ -10,7 +10,7 @@
 //!
 //! [`LmStudioSettings`] holds only **non-secret** fields (the URL + optional
 //! model) and is persisted as JSON under the Agent Vesper state dir
-//! (`$AGENT_VESPER_LMSTUDIO_ROOT` or `.agent-vesper/lmstudio/settings.json`).
+//! (`$JARVIS_LMSTUDIO_ROOT` or `.jarvis/lmstudio/settings.json`).
 //! The optional API key is **not** stored here (project secret discipline);
 //! it is read from the `LMSTUDIO_API_KEY` environment variable, which the
 //! screen surfaces as a hint. Moving the key into the OS credential store is
@@ -222,17 +222,9 @@ impl LmStudioHub {
 // Persistence
 // ---------------------------------------------------------------------------
 
-/// Resolves the LM Studio settings directory: `$AGENT_VESPER_LMSTUDIO_ROOT`
-/// or `$AGENT_VESPER_HOME/lmstudio`, falling back to `./.agent-vesper/lmstudio`.
-#[must_use]
-pub fn lmstudio_settings_dir() -> PathBuf {
-    if let Ok(root) = std::env::var("AGENT_VESPER_LMSTUDIO_ROOT") {
-        return PathBuf::from(root);
-    }
-    let home = std::env::var("AGENT_VESPER_HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from(".agent-vesper"));
-    home.join("lmstudio")
+/// Resolve the shared absolute, ownership-validated provider settings directory.
+pub fn lmstudio_settings_dir() -> std::io::Result<PathBuf> {
+    jarvis_config::JarvisPaths::lmstudio_settings_directory()
 }
 
 fn settings_path_in(dir: &std::path::Path) -> PathBuf {
@@ -241,7 +233,7 @@ fn settings_path_in(dir: &std::path::Path) -> PathBuf {
 
 /// Loads persisted settings from `dir`. Missing/corrupt file ⇒ empty defaults.
 pub fn load_lmstudio_settings_from(dir: &std::path::Path) -> LmStudioSettings {
-    match std::fs::read_to_string(settings_path_in(dir)) {
+    match jarvis_config::JarvisPaths::read_lmstudio_settings_at(dir) {
         Ok(text) => serde_json::from_str(&text).unwrap_or_default(),
         Err(_) => LmStudioSettings::default(),
     }
@@ -249,7 +241,9 @@ pub fn load_lmstudio_settings_from(dir: &std::path::Path) -> LmStudioSettings {
 
 /// Loads persisted settings from the resolved state dir.
 pub fn load_lmstudio_settings() -> LmStudioSettings {
-    load_lmstudio_settings_from(&lmstudio_settings_dir())
+    lmstudio_settings_dir()
+        .map(|root| load_lmstudio_settings_from(&root))
+        .unwrap_or_default()
 }
 
 /// Atomically writes settings into `dir`.
@@ -257,19 +251,16 @@ pub fn save_lmstudio_settings_to(
     dir: &std::path::Path,
     settings: &LmStudioSettings,
 ) -> Result<(), String> {
-    std::fs::create_dir_all(dir).map_err(|e| format!("create settings dir: {e}"))?;
-    let body =
-        serde_json::to_string_pretty(settings).map_err(|e| format!("encode settings: {e}"))?;
-    let final_path = settings_path_in(dir);
-    let tmp = final_path.with_extension("json.tmp");
-    std::fs::write(&tmp, body).map_err(|e| format!("write settings: {e}"))?;
-    std::fs::rename(&tmp, &final_path).map_err(|e| format!("commit settings: {e}"))?;
-    Ok(())
+    let body = serde_json::to_vec_pretty(settings).map_err(|e| format!("encode settings: {e}"))?;
+    jarvis_security::write_private_atomic(&settings_path_in(dir), &body)
+        .map_err(|e| format!("commit private settings: {e}"))
 }
 
 /// Atomically writes settings to the resolved state dir.
 pub fn save_lmstudio_settings(settings: &LmStudioSettings) -> Result<(), String> {
-    save_lmstudio_settings_to(&lmstudio_settings_dir(), settings)
+    let root = jarvis_config::JarvisPaths::prepare_lmstudio_settings_directory()
+        .map_err(|error| format!("private settings root: {error}"))?;
+    save_lmstudio_settings_to(&root, settings)
 }
 
 // ---------------------------------------------------------------------------
@@ -555,6 +546,42 @@ mod tests {
         let loaded = load_lmstudio_settings_from(tmp.path());
         assert_eq!(loaded, settings);
         assert!(!settings.api_base_url.is_empty());
+    }
+
+    #[test]
+    fn private_lmstudio_settings_initialize_and_refuse_foreign_state() {
+        let tmp = tempfile::tempdir().unwrap();
+        let settings = LmStudioSettings {
+            api_base_url: "http://127.0.0.1:1234/v1".into(),
+            model: Some("synthetic-model".into()),
+        };
+        let owned = tmp.path().join("project/.jarvis/lmstudio");
+        save_lmstudio_settings_to(&owned, &settings).unwrap();
+        jarvis_security::validate_owned_directory(owned.parent().unwrap()).unwrap();
+        jarvis_security::validate_owned_directory(&owned).unwrap();
+        jarvis_security::validate_private_file(&owned.join("settings.json")).unwrap();
+        assert_eq!(load_lmstudio_settings_from(&owned), settings);
+        let foreign = tmp.path().join("foreign");
+        std::fs::create_dir(&foreign).unwrap();
+        let bytes = serde_json::to_vec(&settings).unwrap();
+        std::fs::write(foreign.join("settings.json"), &bytes).unwrap();
+        assert!(load_lmstudio_settings_from(&foreign).is_empty());
+        assert!(save_lmstudio_settings_to(&foreign, &settings).is_err());
+        assert_eq!(std::fs::read(foreign.join("settings.json")).unwrap(), bytes);
+        assert_eq!(std::fs::read_dir(&foreign).unwrap().count(), 1);
+        #[cfg(unix)]
+        {
+            let link = tmp.path().join("redirected");
+            std::os::unix::fs::symlink(&foreign, &link).unwrap();
+            assert!(load_lmstudio_settings_from(&link).is_empty());
+            assert!(save_lmstudio_settings_to(&link, &settings).is_err());
+            std::fs::remove_file(owned.join("settings.json")).unwrap();
+            std::os::unix::fs::symlink(foreign.join("settings.json"), owned.join("settings.json"))
+                .unwrap();
+            assert!(load_lmstudio_settings_from(&owned).is_empty());
+            assert!(save_lmstudio_settings_to(&owned, &settings).is_err());
+            assert_eq!(std::fs::read(foreign.join("settings.json")).unwrap(), bytes);
+        }
     }
 
     #[test]

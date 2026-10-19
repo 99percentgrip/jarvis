@@ -10,7 +10,7 @@ use jarvis_memory::{ChunkRoutingCondition, SkillRoutingQuery, SkillSlug, SkillSt
 const SKILL_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../skills");
 
 fn exemplar_store() -> SkillStore {
-    SkillStore::open(std::path::Path::new(SKILL_DIR)).unwrap()
+    SkillStore::open(&std::path::Path::new(SKILL_DIR).canonicalize().unwrap()).unwrap()
 }
 
 fn slug() -> SkillSlug {

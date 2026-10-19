@@ -39,6 +39,12 @@ as the verified inference runtime.
 
 ## Local Contracts
 
+- Native pack discovery refuses unowned nonempty or redirected private storage.
+  Confirmed setup owns fresh roots/staging and reestablishes ownership after
+  moving an existing pack aside for rollback. Read/write/lease/asset boundaries
+  validate private paths; generic synthetic integrity fixtures remain explicit.
+  Diagnostic examples resolve native private roots, never a hard-coded user home.
+
 - Pack downloads select `curl.exe` on Windows and `/usr/bin/curl` on Unix. Preserve HTTPS-only redirects, transfer bounds, immutable size/hash verification and private resumable staging on both paths.
 
 - Alex requests native NPU STT and TTS with separate acceptance gates and CPU
@@ -63,7 +69,7 @@ as the verified inference runtime.
   Signal regression checks must assert amplitude, not merely frame/byte counts.
 
 - Dependencies: workspace `jarvis-domain`, `jarvis-security`,
-  `jarvis-voice` only; `ort` behind the default-off `ort` feature with
+  `jarvis-voice` and the shared `jarvis-config` platform resolver only; `ort` behind the default-off `ort` feature with
   `default-features = false`, features exactly `std, load-dynamic,
   ndarray`. No build-time native linking and no build-script downloads:
   the binary launches without the pack and offers setup.
@@ -76,8 +82,7 @@ as the verified inference runtime.
   pins for all five release targets. Windows uses `onnxruntime.dll`, macOS dylibs
   and Linux `.so`; extraction accepts only fixed archive members. Intel macOS
   uses the verified upstream 1.23.2 archive via compatible C API v17; other targets
-  use 1.28.0. macOS reuses an existing legacy pack, otherwise native Application
-  Support; Windows uses LOCALAPPDATA. Absolute XDG overrides remain isolated.
+  use 1.28.0. Stage 3 uses native independent application roots on every platform and never probes or reuses a Vesper pack.
 - The crate must compile bare (`cargo test -p jarvis-voice-kokoro`);
   all adapter/engine/setup code is feature-gated.
 - Upstream weights/runtime are reused third-party content: pinned

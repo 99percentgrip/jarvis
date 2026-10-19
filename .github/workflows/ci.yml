@@ -23,6 +23,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Prepare native credential build dependencies
+        timeout-minutes: 5
+        run: python3 .github/prepare-credential-runner.py
       - name: Prepare native Rust storage
         run: sh .github/prepare-rust-runner.sh
       - name: Install pinned Rust toolchain
@@ -33,6 +36,7 @@ jobs:
           python3 .github/test_verify_pr_matrix.py
           python3 .github/test_prepare_linux_apt.py
           python3 .github/test_workspace_tooling_identity.py
+          python3 .github/test_credential_backend.py
       - name: Verify inherited naming policy before full build
         run: cargo xtask naming-guard
       - name: Verify workspace
@@ -54,7 +58,8 @@ jobs:
         timeout-minutes: 5
         run: |
           cargo build -p jarvis-acp -p jarvis-tui --all-features --locked
-          python3 apps/jarvis-tui/tests/release_hosts_pty.py target/debug/jarvis-tui target/debug/jarvis-acp
+          cargo build --locked -p jarvis-tui --all-features --example offline_release_host
+          python3 apps/jarvis-tui/tests/release_hosts_pty.py target/debug/examples/offline_release_host target/debug/jarvis-acp-test-driver target/debug/jarvis-tui target/debug/jarvis-acp
       - name: Verify documentation structure
         run: |
           sh -n scripts/install.sh scripts/uninstall.sh
@@ -100,6 +105,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
+      - name: Verify Windows private credential fixture ownership
+        shell: bash
+        timeout-minutes: 15
+        run: cargo test --locked --release --package jarvis-tui --test runtime_credentials --features docker,swarm,bridge,voice-kokoro,voice-flm --target x86_64-pc-windows-msvc -- --nocapture
       - name: Verify real Windows release first launch and provider Settings
         shell: bash
         timeout-minutes: 5

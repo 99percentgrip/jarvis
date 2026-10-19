@@ -176,11 +176,11 @@ async fn no_adapter_composition_still_refuses_truthfully() {
     );
 }
 
-/// LIVE: requires VESPER_BRIDGE_RESOLVE_IPC + a running worker.
+/// LIVE: requires JARVIS_BRIDGE_RESOLVE_IPC + a running worker.
 #[tokio::test]
-#[ignore = "live: set VESPER_BRIDGE_RESOLVE_IPC with the worker pasted in Resolve"]
+#[ignore = "live: set JARVIS_BRIDGE_RESOLVE_IPC with the worker pasted in Resolve"]
 async fn live_resolve_worker_status_roundtrip() {
-    let dir = std::env::var("VESPER_BRIDGE_RESOLVE_IPC").unwrap();
+    let dir = std::env::var("JARVIS_BRIDGE_RESOLVE_IPC").unwrap();
     let adapter = Arc::new(crate::bridge_adapters::FileIpcAdapter::new(dir));
     let service = BridgeToolService::no_adapter().with_adapter(adapter);
     let connect = call(&service, BRIDGE_TOOL_CONNECT, json!({})).await;

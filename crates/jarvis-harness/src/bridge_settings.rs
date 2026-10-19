@@ -1,7 +1,7 @@
 //! VB-PRD-001 Phase 2: Bridge settings persistence and shared resolution.
 //!
 //! Mirrors the web-tools pattern: an explicit, user-owned JSON settings
-//! file under `.agent-vesper/`, read through a small vesper-config port,
+//! file under `.jarvis/`, read through a small vesper-config port,
 //! with a holder both hosts consult through one code path. Default is
 //! **off**: a missing file, an unreadable/malformed file, or an explicit
 //! `false` all leave Bridge disabled (BR-30, NF-01, AT-01).
@@ -23,13 +23,18 @@ pub struct BridgeSettings {
 impl BridgeSettings {
     /// The settings file path for a workspace root.
     fn path(root: &Path) -> PathBuf {
-        root.join(".agent-vesper").join("bridge-settings.json")
+        root.join(".jarvis").join("bridge-settings.json")
     }
 
     /// Load settings. Any read/parse problem yields the disabled default —
     /// a broken settings file must not enable a control surface
     /// (fail-closed).
     pub fn load(root: &Path) -> Self {
+        if jarvis_security::validate_new_or_owned_directory(&root.join(".jarvis")).is_err()
+            || jarvis_security::validate_private_path(&Self::path(root)).is_err()
+        {
+            return Self::default();
+        }
         let Ok(text) = std::fs::read_to_string(Self::path(root)) else {
             return Self::default();
         };
@@ -39,14 +44,14 @@ impl BridgeSettings {
     /// Save after an explicit user action, atomically, refusing symlinked
     /// state directories (same discipline as the web settings).
     pub fn save(&self, root: &Path) -> Result<(), String> {
-        let dir = root.join(".agent-vesper");
+        let dir = root.join(".jarvis");
         if dir
             .symlink_metadata()
             .is_ok_and(|metadata| metadata.file_type().is_symlink())
         {
             return Err("Refusing settings directory symlink.".into());
         }
-        std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+        jarvis_security::prepare_owned_directory(&dir).map_err(|error| error.to_string())?;
         let mut file = tempfile::NamedTempFile::new_in(&dir).map_err(|error| error.to_string())?;
         serde_json::to_writer_pretty(&mut file, self).map_err(|error| error.to_string())?;
         file.as_file()
@@ -176,7 +181,7 @@ mod tests {
     #[test]
     fn malformed_settings_fail_closed_to_disabled() {
         let root = tempfile::tempdir().unwrap();
-        std::fs::create_dir_all(root.path().join(".agent-vesper")).unwrap();
+        jarvis_security::prepare_owned_directory(&root.path().join(".jarvis")).unwrap();
         std::fs::write(BridgeSettings::path(root.path()), "{ not json").unwrap();
         assert!(!BridgeSettings::load(root.path()).enabled);
     }
@@ -184,7 +189,7 @@ mod tests {
     #[test]
     fn unknown_fields_are_refused_so_typos_cannot_silently_enable() {
         let root = tempfile::tempdir().unwrap();
-        std::fs::create_dir_all(root.path().join(".agent-vesper")).unwrap();
+        jarvis_security::prepare_owned_directory(&root.path().join(".jarvis")).unwrap();
         std::fs::write(BridgeSettings::path(root.path()), r#"{"enbled": true}"#).unwrap();
         assert!(
             !BridgeSettings::load(root.path()).enabled,
@@ -204,8 +209,8 @@ mod tests {
     #[test]
     fn save_does_not_touch_other_host_settings() {
         let root = tempfile::tempdir().unwrap();
-        let web = root.path().join(".agent-vesper").join("web-settings.json");
-        std::fs::create_dir_all(web.parent().unwrap()).unwrap();
+        let web = root.path().join(".jarvis").join("web-settings.json");
+        jarvis_security::prepare_owned_directory(web.parent().unwrap()).unwrap();
         std::fs::write(&web, r#"{"enabled":true}"#).unwrap();
         BridgeSettings { enabled: true }.save(root.path()).unwrap();
         assert!(
@@ -229,7 +234,7 @@ mod tests {
 
         // drafting ON does not touch disk
         controls.command(root.path(), "enabled on").unwrap();
-        assert!(!root.path().join(".agent-vesper").exists());
+        assert!(!root.path().join(".jarvis").exists());
         assert!(status.contains("/settings bridge"));
 
         // cancel writes nothing

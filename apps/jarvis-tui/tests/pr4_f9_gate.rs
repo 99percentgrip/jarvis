@@ -84,8 +84,8 @@ impl ScopedWorkspace {
             std::process::id(),
             fixture_id()
         ));
-        std::fs::create_dir_all(root.join(".agent-vesper")).unwrap();
-        std::fs::write(root.join(".agent-vesper/config.toml"), toml).unwrap();
+        jarvis_security::prepare_owned_directory(&root.join(".jarvis")).unwrap();
+        std::fs::write(root.join(".jarvis/config.toml"), toml).unwrap();
         Self { root }
     }
 
@@ -208,8 +208,8 @@ fn failed_save_surfaces_error_and_keeps_disabled() {
     let path = FixturePath::with(FAKE_TOOLS);
     let root = _workspace.root().to_path_buf();
     // Break persistence: make config.toml a directory.
-    std::fs::remove_file(root.join(".agent-vesper/config.toml")).unwrap();
-    std::fs::create_dir(root.join(".agent-vesper/config.toml")).unwrap();
+    std::fs::remove_file(root.join(".jarvis/config.toml")).unwrap();
+    std::fs::create_dir(root.join(".jarvis/config.toml")).unwrap();
     let scope = jarvis_voice::VoiceScope {
         enabled: true,
         ..jarvis_voice::VoiceScope::default()

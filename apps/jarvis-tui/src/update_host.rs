@@ -2,6 +2,10 @@
 use super::*;
 use std::path::Path;
 
+const fn independent_updates_enabled() -> bool {
+    false
+}
+
 pub(super) fn valid_version(tag: &str) -> bool {
     let parts: Vec<_> = tag.strip_prefix('v').unwrap_or(tag).split('.').collect();
     parts.len() == 3
@@ -38,6 +42,9 @@ pub(super) async fn install(
     tag: &str,
     theme: &str,
 ) -> Result<bool, String> {
+    if !independent_updates_enabled() {
+        return Err("Independent installation and updates are not enabled.".into());
+    }
     if !valid_version(tag) {
         return Err("Invalid update version".into());
     }
@@ -80,7 +87,8 @@ async fn install_confirmed(
     theme: &str,
     bundle: &Path,
 ) -> Result<bool, String> {
-    let temp = tempfile::tempdir().map_err(|_| "Cannot stage updater")?;
+    let temp = jarvis_security::private_temporary_workspace("jarvis-update-")
+        .map_err(|_| "Cannot stage updater")?;
     let script = temp.path().join("install.sh");
     std::fs::write(&script, include_str!("../../../scripts/install.sh"))
         .map_err(|_| "Cannot stage installer")?;
@@ -175,7 +183,8 @@ async fn install_confirmed(
     use std::os::windows::process::CommandExt;
     // Windows locks running executables. A separate installer console waits for
     // this host to exit before replacing payloads, and displays the actual result.
-    let temp = tempfile::tempdir().map_err(|_| "Cannot stage updater")?;
+    let temp = jarvis_security::private_temporary_workspace("jarvis-update-")
+        .map_err(|_| "Cannot stage updater")?;
     let script = temp.path().join("install.ps1");
     std::fs::write(&script, include_str!("../../../scripts/install.ps1"))
         .map_err(|_| "Cannot stage installer")?;

@@ -6,6 +6,10 @@ use std::{
     io::{Read, Write},
     net::TcpListener,
     path::Path,
+    sync::{
+        Arc,
+        atomic::{AtomicU8, Ordering},
+    },
     thread,
     time::Duration,
 };
@@ -49,15 +53,12 @@ fn spawn(listener: &TcpListener) -> ProcessHarness {
     ProcessHarness::spawn_with_environment(
         address,
         [
-            ("AGENT_VESPER_PROVIDER", "xai".into()),
-            ("AGENT_VESPER_XAI_TEST_MODE", "grok-session".into()),
-            (
-                "AGENT_VESPER_XAI_TEST_URL",
-                format!("http://{address}/responses"),
-            ),
-            ("AGENT_VESPER_FULL_HARNESS", "1".into()),
-            ("AGENT_VESPER_VRO_ENABLED", "0".into()),
-            ("AGENT_VESPER_XAI_TEST_STALE_HOSTED", "1".into()),
+            ("JARVIS_PROVIDER", "xai".into()),
+            ("JARVIS_XAI_TEST_MODE", "grok-session".into()),
+            ("JARVIS_XAI_TEST_URL", format!("http://{address}/responses")),
+            ("JARVIS_FULL_HARNESS", "1".into()),
+            ("JARVIS_VRO_ENABLED", "0".into()),
+            ("JARVIS_XAI_TEST_STALE_HOSTED", "1".into()),
         ],
     )
 }
@@ -245,14 +246,18 @@ fn tool_round_trip(tool: &'static str) {
         json!({"command":append_marker_command(&marker)}).to_string()
     };
     let expected = (tool == "read_file").then_some("xai-read-canary");
+    let phase = Arc::new(AtomicU8::new(0));
+    let server_phase = Arc::clone(&phase);
     let server = thread::spawn(move || {
         serve_models(&listener);
+        server_phase.store(1, Ordering::SeqCst);
         let (mut first, _) = listener.accept().unwrap();
         first
             .set_read_timeout(Some(Duration::from_secs(20)))
             .unwrap();
         let wire = read_http_request(&mut first);
         let body: Value = serde_json::from_str(wire.split_once("\r\n\r\n").unwrap().1).unwrap();
+        server_phase.store(2, Ordering::SeqCst);
         let cache_key = body["prompt_cache_key"]
             .as_str()
             .expect("production AgentLoop must route a stable prompt-cache key")
@@ -276,11 +281,14 @@ fn tool_round_trip(tool: &'static str) {
             ]),
         );
         drop(first);
+        server_phase.store(3, Ordering::SeqCst);
         let (mut second, _) = listener.accept().unwrap();
+        server_phase.store(4, Ordering::SeqCst);
         second
             .set_read_timeout(Some(Duration::from_secs(20)))
             .unwrap();
         let wire = read_http_request(&mut second);
+        server_phase.store(5, Ordering::SeqCst);
         let body: Value = serde_json::from_str(wire.split_once("\r\n\r\n").unwrap().1).unwrap();
         assert_eq!(body["prompt_cache_key"], cache_key);
         let outputs = body["input"]
@@ -312,6 +320,7 @@ fn tool_round_trip(tool: &'static str) {
                 json!({"type":"response.completed","response":{}}),
             ]),
         );
+        server_phase.store(6, Ordering::SeqCst);
     });
     let session = initialize(&mut process);
     process.prompt(
@@ -320,7 +329,19 @@ fn tool_round_trip(tool: &'static str) {
         &format!("Use {tool} exactly once."),
         "xai-tool",
     );
-    let result = process.response(3);
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| process.response(3)))
+        .unwrap_or_else(|failure| {
+            eprintln!(
+                "fixture phase={}, marker_present={}, marker_bytes={:?}, protocol_shapes={:?}",
+                phase.load(Ordering::SeqCst),
+                marker.exists(),
+                std::fs::metadata(&marker)
+                    .ok()
+                    .map(|metadata| metadata.len()),
+                support::protocol_diagnostic(process.transcript())
+            );
+            std::panic::resume_unwind(failure)
+        });
     assert_eq!(result["result"]["stopReason"], "end_turn", "{result}");
     server.join().unwrap();
     if tool == "run_command" {

@@ -3,13 +3,14 @@
 ## Purpose
 
 Own native OpenAI authentication and Responses transport implementation.
-Both hosts register one provider with API-key and subscription authentication.
+Both hosts register one provider. API-key authentication remains available;
+subscription paths stay securely inactive during Stage 3 pending independent authorization.
 
 ## Ownership
 
 - `src/auth.rs` owns bounded device authorization and token refresh.
 - `src/auth_tests.rs` owns offline loopback authentication protocol evidence.
-- `src/credentials.rs` owns Vesper-only credential records, selected billing
+- `src/credentials.rs` owns application-private credential records, selected billing
   mode, local logout, bounded refresh, and cross-process RAII file locking.
   The explicitly opted-in ADR 0032 hosted fixture uses a UUID native service
   identity with production serialization/storage to prove large device tokens,
@@ -75,6 +76,13 @@ Both hosts register one provider with API-key and subscription authentication.
   bounded structured memory extraction used by both host cognition adapters.
 
 ## Local Contracts
+
+- Production credential operations validate application ownership before creating
+  an operation lock. Unowned vaults refuse without new files or changed bytes;
+  owned records retain private, reusable locks. Only explicit unit fixture stores
+  bypass that production preflight; Cargo features cannot activate the fixture.
+- Stage 3 subscription login/refresh remains inactive pending independent
+  authorization. Retained protocol evidence below does not activate that path.
 
 - Never install, bundle, launch, or read credentials from Codex.
 - API-key and subscription modes replace the selected mode without deleting another

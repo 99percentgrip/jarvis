@@ -7,6 +7,23 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- `prepare-credential-runner.py` provisions distro-owned libdbus development files
+  only on disposable hosted Linux; native lanes additionally require GNOME/D-Bus
+  fixture tools. Every active Linux workspace-compiling job runs it before Cargo.
+  `test_credential_backend.py` checks the actual all-feature graph, retained native
+  backend versions, workflow coverage and refusal outside hosted Linux.
+- Linux credential acceptance runs on a fresh private bus and home with a bounded
+  owned foreground GNOME daemon. `linux_secret_service_fixture.py` observes only
+  OpenSession negotiation and requires encrypted DH without plaintext negotiation.
+  Real native receipts, fresh-process reload, namespace isolation and locked/missing
+  refusal remain mandatory; fallback-file receipts cannot satisfy native acceptance.
+
+- Stage 3 fixtures use reviewed current private environment inputs and synthetic
+  owned runtime roots. Native credential acceptance keeps UUID-only OS namespaces;
+  contained browser/driver fixture paths remain explicit protocol compatibility.
+  Inherited publication descriptions below remain dormant: release workflows and
+  release tags stay disabled/frozen until separately authorized.
+
 - `test_workspace_tooling_identity.py` checks actual Cargo metadata against Windows
   governor package/library selectors and both Lens example launchers/fixture paths.
   Canonical verification executes it before the full build.
@@ -57,8 +74,9 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   landing and all-provider setup before publication. Synthetic packages and developer-equipped runners never substitute
   for a real clean Windows release install.
 - The five-target prerequisite builds shipping-feature TUI/ACP and runs actual
-  signed-out landing, all-provider Settings authentication and cross-host RRC
-  ledger controls on every native runner. Relative executable arguments and
+  signed-out landing and all-provider Settings authentication on every native
+  runner. Cross-host synthetic RRC ledger controls use explicitly built,
+  non-shipping integration hosts; ordinary executables remain release-disabled. Relative executable arguments and
   explicit CP1252 redirected Python output exercise the shared path/UTF-8 receipt
   contract on every lane. Windows uses pinned, hash-verified
   Python 3.13 ConPTY; Linux/macOS use stdlib PTYs. Version/help and seeded-key
@@ -66,6 +84,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   cases run on all targets; Windows additionally runs a real constrained Job Object
   fixture against the production policy, proving unavailable/unsafe capacity is
   withheld without substituting synthetic lifecycle telemetry.
+- macOS Intel and Windows have bounded 120-minute total budgets for their observed complete native workloads; the other targets retain 90 minutes. Windows retains its serial workspace tests and the complete frozen routing matrix. Individual test/step deadlines and all required checks remain unchanged.
 - Keep the five release-target families explicit in the matrix: linux-x86_64,
   linux-arm64, macos-intel, macos-apple-silicon, windows-x86_64.
 - Five-target foundation explicitly invokes ADR 0032 native credential
@@ -192,6 +211,10 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Verification
 
+- Windows installer verification executes `runtime_credentials` against the exact
+  release profile before the unchanged first-launch terminal checks. It isolates
+  synthetic vault ownership/ACL/read failures without granting native-user access.
+
 - Every native first-launch lane runs the six offline ConPTY cleanup guards before actual terminal fixtures; a nonzero kill result never substitutes for observed child exit.
 
 - `.github/verify_native_voice.py` requires a disposable native runner, installs
@@ -202,7 +225,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   fixture and offline CPU int8/VAD; readiness/imports alone cannot pass. All five prerequisite lanes require these named receipts before
   tagging. Its dependencies use fixed integrity pins; no microphone, speakers,
   provider or user credentials are exercised. OS prompt/device acceptance remains
-  separate. The 90-minute lane budget includes the 20-minute bounded speech step.
+  separate. Each platform's total budget includes the unchanged 20-minute bounded speech step.
 
 - Validate YAML syntax locally where tooling exists.
 - Run `cargo xtask verify` and the MSRV workflow; record exact-SHA terminal
@@ -220,6 +243,9 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 - `verify_native_credentials.py` and `test_verify_native_credentials.py` —
   explicitly hosted native credential acceptance and offline exact-receipt guards.
+- `prepare-credential-runner.py`, `linux_secret_service_fixture.py` and
+  `test_credential_backend.py` — guarded native build prerequisites, private Linux
+  Secret Service acceptance and actual dependency/workflow contracts.
 
 - `workflows/ci.yml` — pull-request canonical gate (`cargo xtask verify`),
   documentation-structure check, and the supply-chain job (`cargo audit` +

@@ -84,6 +84,15 @@ fn journal_account(account: &str) -> String {
     format!("{account}:record-journal-v1")
 }
 
+/// Absence is a read-only snapshot; do not allocate disk locks for an empty store.
+#[cfg(any(windows, test))]
+pub(super) fn has_stored_state(
+    backend: &impl Backend,
+    account: &str,
+) -> Result<bool, CredentialStoreError> {
+    Ok(backend.read(account)?.is_some() || backend.read(&journal_account(account))?.is_some())
+}
+
 fn read_journal(
     backend: &impl Backend,
     account: &str,
@@ -399,6 +408,20 @@ mod tests {
             self.entries.borrow_mut().remove(account);
             Ok(())
         }
+    }
+
+    #[test]
+    fn empty_native_store_probe_is_read_only_and_detects_pending_recovery() {
+        let backend = WindowsSizedBackend::default();
+        assert!(!has_stored_state(&backend, "fixture").unwrap());
+        assert!(backend.entries.borrow().is_empty());
+        backend
+            .entries
+            .borrow_mut()
+            .insert(journal_account("fixture"), "pending".into());
+        let before = backend.entries.borrow().clone();
+        assert!(has_stored_state(&backend, "fixture").unwrap());
+        assert_eq!(*backend.entries.borrow(), before);
     }
 
     #[test]

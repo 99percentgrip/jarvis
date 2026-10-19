@@ -323,14 +323,14 @@ pub struct AgentLoopConfig {
     /// VRO-13 PR-2: shared hard-denial firewall. `None` (the default via
     /// [`AgentLoopConfig::with_firewall`]) is the structurally identical
     /// pre-VRO-13 path: no scan ever runs. Hosts compile one instance at
-    /// boot (`AGENT_VESPER_FIREWALL=off` leaves it `None`) and both hosts
+    /// boot (`JARVIS_FIREWALL=off` leaves it `None`) and both hosts
     /// must inject the SAME shared Arc so enforcement is host-neutral.
     pub firewall: Option<std::sync::Arc<jarvis_policy::firewall::CommandFirewall>>,
     /// VRO-13 PR-4: scope-demanded sandbox route for shell-class tools.
     /// `None` (the default) is the structural off-path: `RunCommand` runs
     /// `run_bounded` exactly as before, byte-identical to PR-3 behavior.
     /// `Some` carries the isolation demand (resolved from
-    /// `.agent-vesper/config.toml` `[sandbox]` or a tool-level demand)
+    /// `.jarvis/config.toml` `[sandbox]` or a tool-level demand)
     /// plus the host-built backend port; the executor consults the
     /// fail-closed `satisfies` gate before provisioning anything.
     pub sandbox: Option<std::sync::Arc<crate::sandbox_route::SandboxRoute>>,

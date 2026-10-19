@@ -57,6 +57,7 @@ impl DiscoveryBounds {
 /// Read-only bounded filesystem session source.
 #[derive(Clone)]
 pub struct FilesystemSessionStore {
+    require_owner: bool,
     root: PathBuf,
     source: SessionSource,
     bounds: DiscoveryBounds,
@@ -74,11 +75,23 @@ impl FilesystemSessionStore {
         }
         let bounds = bounds.validate()?;
         Ok(Self {
+            require_owner: false,
             root,
             source,
             bounds,
             blocking_gate: Arc::new(Semaphore::new(bounds.max_blocking_operations)),
         })
+    }
+
+    /// Read only independently owned application storage; never initialize it.
+    pub fn new_owned(
+        root: PathBuf,
+        source: SessionSource,
+        bounds: DiscoveryBounds,
+    ) -> Result<Self, SessionStoreError> {
+        let mut store = Self::new(root, source, bounds)?;
+        store.require_owner = true;
+        Ok(store)
     }
 
     #[must_use]
@@ -90,6 +103,9 @@ impl FilesystemSessionStore {
         &self,
         filter: &SessionListFilter,
     ) -> Result<Vec<SessionMetadata>, SessionStoreError> {
+        if self.require_owner {
+            jarvis_security::validate_new_or_owned_directory(&self.root)?;
+        }
         let root_metadata = match fs::metadata(&self.root) {
             Ok(metadata) => metadata,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
@@ -100,7 +116,15 @@ impl FilesystemSessionStore {
         }
         let canonical_root = fs::canonicalize(&self.root)?;
         let mut candidates = BTreeMap::<String, ListingCandidates>::new();
-        for (index, entry) in fs::read_dir(&self.root)?.enumerate() {
+        for (index, entry) in fs::read_dir(&self.root)?
+            .filter(|entry| {
+                !self.require_owner
+                    || !entry
+                        .as_ref()
+                        .is_ok_and(|e| e.file_name() == ".jarvis-owner")
+            })
+            .enumerate()
+        {
             if index >= self.bounds.max_entries {
                 return Err(SessionStoreError::EntryLimitExceeded {
                     maximum: self.bounds.max_entries,
@@ -219,6 +243,9 @@ impl FilesystemSessionStore {
         &self,
         session_id: &SessionId,
     ) -> Result<Option<SessionRecord>, SessionStoreError> {
+        if self.require_owner {
+            jarvis_security::validate_new_or_owned_directory(&self.root)?;
+        }
         match fs::metadata(&self.root) {
             Ok(metadata) if metadata.is_dir() => {}
             Ok(_) => return Err(SessionStoreError::NotRegularFile),

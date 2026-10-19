@@ -12,6 +12,10 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-15-rust-identity-stage2-source.json",
     "docs/rust-identity-stage2-prd.md",
     "docs/architecture/rust-identity-stage2.md",
+    "docs/architecture/runtime-identity-stage3.md",
+    "docs/runtime-identity-stage3-prd.md",
+    "docs/foundation/2026-10-15-runtime-identity-stage3.md",
+    "docs/foundation/runtime-identity-stage3-inventory.json",
     "docs/workspace-map.md",
     "docs/dependencies.md",
     "docs/architecture.md",
@@ -45,6 +49,7 @@ pub fn owned_line(path: &str, line: &str) -> bool {
             "Library/Logs/Jarvis",
             "jarvis/logs",
             "jarvis/install",
+            "JARVIS_",      // prefix inspected by the identity registry coverage test
             "jarvis-xtask", // preserved Stage 1 proposal, not an active target
             "jarvis-identity/AGENTS.md",
             "crates/jarvis-identity/AGENTS.md",
@@ -60,6 +65,28 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     } else {
         Vec::new()
     };
+    let private_namespace_consumer = declarations
+        || matches!(
+            path,
+            "crates/jarvis-config/src/paths.rs"
+                | "crates/jarvis-sessions/src/layout.rs"
+                | "crates/jarvis-agent/src/vro/scope.rs"
+                | "crates/jarvis-harness/src/dependency_setup.rs"
+                | "crates/jarvis-harness/src/dependency_setup_tests.rs"
+                | "crates/jarvis-harness/src/release_recovery.rs"
+                | "crates/jarvis-security/src/private_state.rs"
+                | "apps/jarvis-tui/src/platform_voice.rs"
+                | "apps/jarvis-tui/src/voice_flm.rs"
+        );
+    identifiers.extend(
+        jarvis_identity::RUNTIME_PATH_IDENTIFIERS
+            .iter()
+            .copied()
+            .filter(|id| !matches!(*id, "jarvis" | "Jarvis") || private_namespace_consumer),
+    );
+    for env in jarvis_identity::RUNTIME_ENVIRONMENT {
+        identifiers.push(env.current);
+    }
     for p in jarvis_identity::PACKAGES {
         identifiers.push(p.planned);
         if let Some(import) = p.planned_import {
@@ -82,8 +109,15 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     // Identifiers containing the reserved stem must be explicit quoted/backtick
     // declarations. Bare upstream prose or unknown names still hit the embargo.
     let mut scrubbed = line.replace("use jarvis_identity::", "use owned_identity::");
+    for env in jarvis_identity::RUNTIME_ENVIRONMENT {
+        scrubbed = scrub_technical_token(&scrubbed, env.current);
+    }
     for id in identifiers {
-        if id.starts_with("jarvis-") || id.starts_with("jarvis_") {
+        if id.starts_with("jarvis-")
+            || id.starts_with("jarvis_")
+            || id.starts_with(".jarvis")
+            || id == "99percentgrip.jarvis"
+        {
             scrubbed = scrub_technical_token(&scrubbed, id);
         }
         for quote in ['"', '`'] {

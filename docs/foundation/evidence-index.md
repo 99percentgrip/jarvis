@@ -1,5 +1,7 @@
 # Foundation Evidence Index
 
+- [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — maintained native credential correction and diagnostic head passed all thirteen checks, including five native targets. Protected-merge audit then found three genuine remaining ownership defects; red-first LM Studio/bootstrap/store-bundle corrections are under fresh verification. Prior failures, ignored limitations and preservation metadata discrepancy remain explicit; no merge or Stage 3 completion is claimed. Current hosted evidence records Windows runner communication loss and a repeat-attempt Apple Silicon journal-frame observation defect; gated-PTY red/green proof and five real-TUI passes support a test-only synchronization correction with fresh exact-head CI still required. Subsequent exact-candidate probes exposed overlapping application/provider roots and deep private-ancestor initialization gaps; isolated red-first config/security regressions support the scoped ownership correction, with current-source local/native verification passed and new exact-head CI still required.
+
 - [Stage 2 Rust identity migration](2026-10-15-rust-identity-stage2.md) — complete reviewed workspace mapping, explicit legacy executable adapters, local verification and pending protected-merge evidence.
 
 - [Security and MessageJournal release mission](2026-10-13-security-messagejournal-release-mission.md) — verified PR #42 patch/merge, exact-source CI and pending native RRC publication.

@@ -10,13 +10,10 @@ use std::time::{Duration, Instant};
 
 fn main() {
     println!("worker device check: real pack + real aplay (audio will play)");
-    let root = match std::env::var_os("XDG_DATA_HOME") {
-        Some(data) => std::path::PathBuf::from(data)
-            .join("agent-vesper")
-            .join("voice-pack"),
-        None => std::path::PathBuf::from(std::env::var_os("HOME").expect("HOME"))
-            .join(".local/share/agent-vesper/voice-pack"),
-    };
+    let root = jarvis_tui::platform_voice::data_root()
+        .expect("independent application data root")
+        .join("voice-pack");
+    jarvis_security::validate_private_path(&root).expect("private voice pack ownership");
     let state = match jarvis_voice_kokoro::engine::EngineState::load(&root) {
         Ok(state) => state,
         Err(error) => {

@@ -1,10 +1,10 @@
-//! VRO-13 PR-4: `[sandbox]` scope demands from `.agent-vesper/config.toml`.
+//! VRO-13 PR-4: `[sandbox]` scope demands from `.jarvis/config.toml`.
 //!
 //! This is a **deliberately minimal, dependency-free TOML reader** for the
 //! single `[sandbox]` table. The full workspace has no `toml` crate
 //! dependency (adding one would violate the zero-new-mandatory-dependencies
 //! directive for a config surface this small), and the frozen Python oracle
-//! keeps `.agent-vesper/config.toml` out of scope entirely, so there is no
+//! keeps `.jarvis/config.toml` out of scope entirely, so there is no
 //! compatibility surface to mirror. Unknown keys and tables are ignored,
 //! not errors: forward compatibility beats strictness here because a newer
 //! config written by a future version must not break an older session.
@@ -94,7 +94,7 @@ impl SandboxScopeConfig {
     }
 }
 
-/// Reads `<root>/.agent-vesper/config.toml` and extracts the `[sandbox]`
+/// Reads `<root>/.jarvis/config.toml` and extracts the `[sandbox]`
 /// table. A missing file or a file without `[sandbox]` yields the inactive
 /// default — configuring nothing is a valid, common state.
 ///
@@ -104,7 +104,13 @@ impl SandboxScopeConfig {
 /// - [`SandboxConfigError::DuplicateTable`] on a second `[sandbox]`.
 /// - [`SandboxConfigError::MalformedValue`] on an unparseable value.
 pub fn read_sandbox_scope(root: &Path) -> Result<SandboxScopeConfig, SandboxConfigError> {
-    let path = root.join(".agent-vesper").join("config.toml");
+    jarvis_security::validate_new_or_owned_directory(&root.join(".jarvis"))
+        .and_then(|()| jarvis_security::validate_private_path(&root.join(".jarvis/config.toml")))
+        .map_err(|_| SandboxConfigError::Read {
+            path: "private application settings".into(),
+            reason: "ownership refused".into(),
+        })?;
+    let path = root.join(".jarvis").join("config.toml");
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
         // A missing file is the common case: no config means no demand.
@@ -301,7 +307,7 @@ mod tests {
 
     #[test]
     fn read_missing_file_yields_inactive_default_not_error() {
-        // A project without .agent-vesper/config.toml is the common case;
+        // A project without .jarvis/config.toml is the common case;
         // it must resolve to "no demand", never an error.
         let temp = tempfile::tempdir().unwrap();
         let config = read_sandbox_scope(temp.path()).unwrap();

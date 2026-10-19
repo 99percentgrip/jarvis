@@ -6,6 +6,13 @@ Own manually invoked, non-shipped evaluation entry points that compose real adap
 
 ## Ownership
 
+- `offline_release_host.rs` is a non-shipping integration-only TUI host for
+  synthetic release-ledger parity. It reuses the production terminal entrypoint,
+  requires explicit fixture authority, a workspace-local ledger and the fixed
+  synthetic repository remote. Ordinary binaries remain dormant even with all
+  features. No publishing or worker-start command belongs in this fixture.
+
+
 - `first_speech_receipt.rs` compares a fixed long phrase's whole-unit preparation
   with the production pipeline. `--measure` uses a no-device sink; `--play-one`
   requires explicit listening consent. Worker initialization retains its existing
@@ -38,6 +45,9 @@ Own manually invoked, non-shipped evaluation entry points that compose real adap
 
 ## Local Contracts
 
+- The inherited `voice_live_timing.py` execution path is inactive pending an
+  independent isolated launcher; even `--execute-live` cannot read/copy Vesper
+  state. No live evaluation is authorized by Stage 3.
 - Live execution requires separate user authorization. Foundation verification may
   compile this example but must never pass `--execute-live`.
 - Receipt launchers that build executable POSIX shell/player fixtures run only on
