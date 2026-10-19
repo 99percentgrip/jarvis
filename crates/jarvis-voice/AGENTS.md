@@ -35,9 +35,9 @@ types, and deterministic in-memory fakes.
   egress recheck; attempt bound), `PartialGate` (buffered-repass
   partials; whole-capture budget; final priority; stale rejection; no
   turn-submission surface exists), `run_blocking` (cancellable bridge;
-  honest computation-continues limit documented in-module). Completion registers
-  its waker before checking the result, so delivery cannot strand an awaiter
-  between those operations; the forced-registration regression pins this order.
+  honest computation-continues limit documented in-module). Completion and
+  cancellation both register their wakers while awaiting blocking work, so either
+  event settles the caller; forced-registration regressions pin both paths.
 - `hygiene` (PR-2): the stateful bounded sentence gate — hygiene runs
   on gated segments; protected spans (reasoning/code/PEM) tracked
   across chunk and sentence boundaries; credential/blob redaction with
@@ -77,6 +77,9 @@ types, and deterministic in-memory fakes.
   (no bundling; licenses recorded in the PR-2 execution report). Spawning a
   newly published executable retries only the transient `ExecutableFileBusy`
   classification twice with a 50 ms delay; other failures remain immediate.
+  The configured request deadline and `VoiceCancel` terminate and reap the owned
+  child/process group, close its stdout reader and release the blocking executor
+  lane; returning from the await alone is insufficient cleanup.
   Executable paths with spaces remain one typed command argument; shell
   metacharacters are rejected. Hosts resolve native installation paths.
 - The crate must never depend on runtime, agent, harness, or provider

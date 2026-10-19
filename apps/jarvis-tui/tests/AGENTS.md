@@ -262,6 +262,9 @@ Verify terminal interaction through the production TUI binary with isolated stat
   synthesis behind a controlled gate and requires two caller returns before
   release. It uses the existing test TTS port without device or installed-engine
   discovery. Scheduling deadlines bound settlement, not enqueue performance.
+  `stop_cancels_pending_synthesis_and_settles_exactly_once` holds a real production
+  worker on a cancellation-aware pending stream, then requires Stop to clear busy
+  state and emit exactly one stale terminal outcome without an audio device.
 
 ## Local Contracts
 

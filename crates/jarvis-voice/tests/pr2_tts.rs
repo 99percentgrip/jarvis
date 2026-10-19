@@ -296,14 +296,55 @@ fn mid_stream_cancellation_suppresses_remaining_audio() {
 #[test]
 #[cfg(unix)]
 fn slow_engine_is_deadline_bounded() {
-    let tts = tts_with(FixtureKind::Slow);
+    let dir = tempfile::tempdir().unwrap();
+    let executor = Arc::new(ThreadPoolExecutor::new(1));
+    let tts = SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable: fixture_engine(dir.path(), FixtureKind::Slow),
+            voice: "en".into(),
+            deadline: Duration::from_millis(250),
+            max_output_bytes: 2 * 1024 * 1024,
+            max_text_bytes: 8192,
+        },
+        executor.clone(),
+    )
+    .unwrap();
     let cancel = VoiceCancel::new();
     let start = std::time::Instant::now();
     let voice = profile(&tts);
-    let _ = block_on(tts.synthesize("x", &voice, &cancel));
+    let outcome = block_on(tts.synthesize("x", &voice, &cancel));
     assert!(
-        start.elapsed() < Duration::from_secs(30),
-        "slow engine must be bounded by deadline, not hang"
+        start.elapsed() < Duration::from_secs(1),
+        "the configured 250 ms deadline must terminate the owned engine"
+    );
+    assert!(
+        outcome.is_err(),
+        "deadline expiry cannot yield synthetic audio"
+    );
+
+    // A deadline must terminate and reap the owned process, not merely stop
+    // awaiting it. Prove the same one-worker executor can immediately service
+    // a fresh request after the timed-out engine.
+    let followup = SubprocessTts::new(
+        SubprocessTtsConfig {
+            executable: fixture_engine(dir.path(), FixtureKind::Ok),
+            voice: "en".into(),
+            deadline: Duration::from_secs(1),
+            max_output_bytes: 2 * 1024 * 1024,
+            max_text_bytes: 8192,
+        },
+        executor,
+    )
+    .unwrap();
+    let followup_start = std::time::Instant::now();
+    let followup_voice = profile(&followup);
+    assert!(
+        block_on(followup.synthesize("fresh", &followup_voice, &VoiceCancel::new())).is_ok(),
+        "fresh synthesis must use the released executor lane"
+    );
+    assert!(
+        followup_start.elapsed() < Duration::from_secs(1),
+        "timed-out backend work kept the one-worker executor occupied"
     );
 }
 

@@ -32,7 +32,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use jarvis_domain::{BoundedString, ProviderId};
 
@@ -104,7 +104,8 @@ impl SubprocessTtsConfig {
 struct EngineChild {
     child: Child,
     stdin: Option<ChildStdin>,
-    stdout: ChildStdout,
+    stdout: Option<ChildStdout>,
+    reaped: bool,
 }
 
 impl EngineChild {
@@ -166,7 +167,8 @@ impl EngineChild {
                 provider: provider.clone(),
                 reason: BoundedString::new("engine stdin unavailable").unwrap(),
             })?),
-            stdout,
+            stdout: Some(stdout),
+            reaped: false,
         };
         // Write the text on stdin and close it: the engine synthesizes
         // till EOF. Bounded by config; no shell involved.
@@ -184,23 +186,41 @@ impl EngineChild {
         drop(handle.stdin.take());
         Ok(handle)
     }
-}
 
-impl Drop for EngineChild {
-    fn drop(&mut self) {
-        // Close stdin (already closed after write) and reap exactly this
-        // child in its own process group; unrelated speech services and
-        // accessibility tools are never signaled.
+    fn take_stdout(&mut self, provider: &ProviderId) -> Result<ChildStdout, VoiceError> {
+        self.stdout
+            .take()
+            .ok_or_else(|| unavailability(provider, "stdout"))
+    }
+
+    fn terminate_owned(&mut self) {
+        if self.reaped {
+            return;
+        }
+        drop(self.stdin.take());
+        // Unix children are started in their own process group. Signal that
+        // exact negative pgid so a helper inherited by the configured engine
+        // cannot keep stdout open after cancellation. The direct kill below
+        // remains the bounded fallback and the child is always reaped.
         #[cfg(unix)]
         {
             let _ = Command::new("kill")
-                .args(["-TERM", &format!("{}", self.child.id())])
+                .args(["-TERM", &format!("-{}", self.child.id())])
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .status();
         }
         let _ = self.child.kill();
         let _ = self.child.wait();
+        self.reaped = true;
+    }
+}
+
+impl Drop for EngineChild {
+    fn drop(&mut self) {
+        // Reap exactly this owned child/group; unrelated speech services and
+        // accessibility tools are never signaled.
+        self.terminate_owned();
     }
 }
 
@@ -252,30 +272,68 @@ fn parse_wav_header(bytes: &[u8]) -> Result<WavFacts, VoiceError> {
 fn synthesize_blocking(
     config: &SubprocessTtsConfig,
     text: &str,
+    cancel: &VoiceCancel,
 ) -> Result<Vec<PcmFrame>, VoiceError> {
     let provider = ProviderId::new("tts-subprocess").expect("static id fits");
+    if cancel.is_cancelled() {
+        return Err(VoiceError::Cancelled);
+    }
+    let started = Instant::now();
     let mut handle = EngineChild::spawn(config, text)?;
-    let mut raw: Vec<u8> = Vec::new();
-    let mut chunk = [0u8; 8192];
+    let stdout = handle.take_stdout(&provider)?;
+    let max_output_bytes = config.max_output_bytes;
+    let reader = std::thread::spawn(move || read_bounded_stdout(stdout, max_output_bytes));
     loop {
-        let read = handle
-            .stdout
-            .read(&mut chunk)
-            .map_err(|_| unavailability(&provider, "read"))?;
-        if read == 0 {
+        if reader.is_finished() {
             break;
         }
-        raw.extend_from_slice(&chunk[..read]);
-        if raw.len() > config.max_output_bytes {
-            return Err(VoiceError::ResourceExhausted(
-                "engine output exceeded its bound".into(),
-            ));
+        if cancel.is_cancelled() {
+            handle.terminate_owned();
+            let _ = reader.join();
+            return Err(VoiceError::Cancelled);
         }
+        if started.elapsed() >= config.deadline {
+            handle.terminate_owned();
+            let _ = reader.join();
+            return Err(VoiceError::Unavailable {
+                provider,
+                reason: BoundedString::new("speech engine deadline exceeded").unwrap(),
+            });
+        }
+        std::thread::sleep(Duration::from_millis(5));
     }
-    let status = handle
-        .child
-        .wait()
-        .map_err(|_| unavailability(&provider, "wait"))?;
+    let raw = match reader.join() {
+        Ok(Ok(raw)) => raw,
+        Ok(Err(error)) => {
+            handle.terminate_owned();
+            return Err(error);
+        }
+        Err(_) => {
+            handle.terminate_owned();
+            return Err(unavailability(&provider, "reader thread"));
+        }
+    };
+    let status = loop {
+        if cancel.is_cancelled() {
+            handle.terminate_owned();
+            return Err(VoiceError::Cancelled);
+        }
+        if started.elapsed() >= config.deadline {
+            handle.terminate_owned();
+            return Err(VoiceError::Unavailable {
+                provider,
+                reason: BoundedString::new("speech engine deadline exceeded").unwrap(),
+            });
+        }
+        match handle.child.try_wait() {
+            Ok(Some(status)) => {
+                handle.reaped = true;
+                break status;
+            }
+            Ok(None) => std::thread::sleep(Duration::from_millis(5)),
+            Err(_) => return Err(unavailability(&provider, "wait")),
+        }
+    };
     if !status.success() {
         return Err(VoiceError::Inference(
             "engine exited nonzero before audio completed".into(),
@@ -308,6 +366,29 @@ fn synthesize_blocking(
     let frame = PcmFrame::from_aligned(canonical.iter().flat_map(|s| s.to_le_bytes()).collect())
         .map_err(|_| VoiceError::InvalidInput("conversion produced misaligned audio".into()))?;
     Ok(vec![frame])
+}
+
+fn read_bounded_stdout(
+    mut stdout: ChildStdout,
+    max_output_bytes: usize,
+) -> Result<Vec<u8>, VoiceError> {
+    let provider = ProviderId::new("tts-subprocess").expect("static id fits");
+    let mut raw = Vec::new();
+    let mut chunk = [0u8; 8192];
+    loop {
+        let read = stdout
+            .read(&mut chunk)
+            .map_err(|_| unavailability(&provider, "read"))?;
+        if read == 0 {
+            return Ok(raw);
+        }
+        raw.extend_from_slice(&chunk[..read]);
+        if raw.len() > max_output_bytes {
+            return Err(VoiceError::ResourceExhausted(
+                "engine output exceeded its bound".into(),
+            ));
+        }
+    }
 }
 
 /// Bounded linear resampler for integer-ratio-friendly conversions
@@ -399,6 +480,7 @@ impl VoiceTts for SubprocessTts {
             }
             let config = self.config.clone();
             let text = text.to_owned();
+            let work_cancel = cancel.clone();
             // Serialization happens inside the blocking closure (a
             // std::sync guard is fine there and the async future stays
             // Send): one child at a time per adapter instance.
@@ -411,7 +493,7 @@ impl VoiceTts for SubprocessTts {
                     let _guard = lock
                         .lock()
                         .map_err(|_| unavailability(&provider, "state (poisoned lock)"))?;
-                    synthesize_blocking(&config, &text)
+                    synthesize_blocking(&config, &text, &work_cancel)
                 }),
             )
             .await?;

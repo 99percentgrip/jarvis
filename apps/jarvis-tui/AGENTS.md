@@ -877,8 +877,9 @@ and composes the existing bounded atomic session writer.
   may allow loaded-runner synthesis scheduling only inside its controlled player's
   active lifetime; it must not accept post-drain synthesis as overlap. Prepared canonical
   PCM is capped at 16 MiB per piece (adapter allocations are separate). Stop and selection
-  replacement invalidate queued/prepared audio and serialize with stream admission,
-  never blocking pipe writes or drain waits. Stale work cannot reopen the player;
+  replacement invalidate queued/prepared audio, cancel the registered active synthesis
+  token and serialize with stream admission, never blocking pipe writes or drain waits.
+  A pending TTS stream must settle once as stale after cancellation; stale work cannot reopen the player;
   fresh generations recover normally. Independent synthesis/player stage clocks
   and the upstream speakable-text wait status distinguish local work from agent
   waiting without claiming acoustic onset or assigning all waiting to the provider.

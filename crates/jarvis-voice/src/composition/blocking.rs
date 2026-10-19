@@ -235,7 +235,17 @@ pub async fn run_blocking<T: Send + 'static>(
             });
         forward_slot.deliver(outcome);
     });
-    let outcome = future::poll_fn(|context| slot.poll(context)).await;
+    let outcome = future::poll_fn(|context| {
+        // Register with both completion sources on every poll. Cancellation
+        // must wake a caller that is waiting on an in-flight blocking job;
+        // checking only before submission and after completion leaves that
+        // caller pending until backend work happens to return.
+        if cancel.poll_cancelled(context).is_ready() {
+            return std::task::Poll::Ready(Err(crate::VoiceError::Cancelled));
+        }
+        slot.poll(context)
+    })
+    .await;
     if cancel.is_cancelled() {
         return Err(crate::VoiceError::Cancelled);
     }
@@ -385,7 +395,14 @@ mod tests {
             }),
         );
         tokio::pin!(future);
-        tokio::task::yield_now().await;
+        // Poll through submission and into the pending completion slot before
+        // cancelling. Merely constructing this lazy future and yielding does
+        // not start it, so the former test covered only entry cancellation.
+        std::future::poll_fn(|context| match future.as_mut().poll(context) {
+            std::task::Poll::Pending => std::task::Poll::Ready(()),
+            std::task::Poll::Ready(_) => panic!("controlled work completed before release"),
+        })
+        .await;
         cancel.cancel();
         let outcome = tokio::time::timeout(std::time::Duration::from_millis(250), &mut future)
             .await
