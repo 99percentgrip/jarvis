@@ -154,7 +154,7 @@ pub const MAPPINGS: &[Mapping] = &[
         legacy: "agent-vesper-acp",
         planned: Some("jarvis-acp"),
         classification: CompatibilitySensitive,
-        source: "crates/jarvis-acp-protocol/src/adapter.rs",
+        source: "crates/jarvis-acp-protocol/src/lib.rs",
     },
     Mapping {
         surface: Browser,

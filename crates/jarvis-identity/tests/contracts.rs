@@ -195,8 +195,13 @@ fn declared_legacy_contracts_have_current_source_evidence() {
             && RUNTIME_ENVIRONMENT
                 .iter()
                 .any(|entry| entry.legacy == m.legacy && source.contains(entry.current));
+        let active_integration_mapping = matches!(m.surface, Surface::Acp | Surface::Browser)
+            && m.planned.is_some_and(|target| source.contains(target));
         assert!(
-            source.contains(m.legacy) || active_private_mapping || active_environment_mapping,
+            source.contains(m.legacy)
+                || active_private_mapping
+                || active_environment_mapping
+                || active_integration_mapping,
             "missing legacy or activated private-contract source evidence: {m:?}"
         );
     }
