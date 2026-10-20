@@ -227,12 +227,7 @@ function Write-Launchers([string]$Generation) {
         $body = @"
 rem jarvis-launcher
 @echo off
-setlocal EnableExtensions
-set "ROOT=%~dp0"
-set "GEN="
-for /f "usebackq delims=" %%G in ("%ROOT%current") do if not defined GEN set "GEN=%%G"
-"%ROOT%generations\%GEN%\$($pair[1])" %*
-exit /b %ERRORLEVEL%
+"%~dp0generations\$Generation\$($pair[1])" %*
 "@
         $utf8 = New-Object System.Text.UTF8Encoding $false
         [IO.File]::WriteAllText($path, $body, $utf8)
@@ -300,11 +295,12 @@ if ($action -eq "rollback") {
         }
         $ownership = Read-JsonFile (Join-Path $installRoot ".jarvis-installer-owned.json")
         if (-not $ownership.previous_generation) { Fail "no verified previous Jarvis package is available to restore" }
+        $restored = [string]$ownership.previous_generation
+        Write-Launchers $restored
         $utf8 = New-Object System.Text.UTF8Encoding $false
-        [IO.File]::WriteAllText((Join-Path $installRoot "current"), ($ownership.previous_generation + "`n"), $utf8)
-        $swap = $ownership.current_generation
-        $ownership.current_generation = $ownership.previous_generation
-        $ownership.previous_generation = $swap
+        [IO.File]::WriteAllText((Join-Path $installRoot "current"), ($restored + "`n"), $utf8)
+        $ownership.previous_generation = $ownership.current_generation
+        $ownership.current_generation = $restored
         Write-JsonFile (Join-Path $installRoot ".jarvis-installer-owned.json") $ownership
         Write-Host "Restored local Jarvis package $($ownership.current_generation)"
     } finally { Release-Lock }
