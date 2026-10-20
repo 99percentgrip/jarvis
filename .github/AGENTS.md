@@ -288,3 +288,5 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   the repo `skills/` seed library seeded by the installers into
   `~/.agent-vesper/memory/`; the registry continues
   to launch only the ACP binary from the shared bundle.
+
+- Required verification workflows cancel only an older run of the same workflow and pull request. Push runs use a per-run concurrency id and are not cancelled by a later `main` commit. The exact-head gate still rejects cancelled, stale, and wrong-SHA evidence.

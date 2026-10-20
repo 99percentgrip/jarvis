@@ -6,6 +6,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-20-stage7a-ci-optimization.md` owns the CI baseline, pull-request cancellation proof, and the measured Windows test floor.
 - `2026-10-20-stage6-distribution.md` owns Stage 6 package, installer, voice-investigation, and nonpublication evidence.
 - `2026-10-15-runtime-identity-stage3.md` and `runtime-identity-stage3-inventory.json` own runtime isolation evidence, capability limitations and exact-candidate verification.
 

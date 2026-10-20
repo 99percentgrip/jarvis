@@ -24,6 +24,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/architecture/stage6-distribution.md",
     "docs/foundation/2026-10-20-stage6-distribution.md",
     "docs/foundation/evidence-index.md",
+    "docs/foundation/2026-10-20-stage7a-ci-optimization.md",
     "docs/workspace-map.md",
     "docs/dependencies.md",
     "docs/architecture.md",

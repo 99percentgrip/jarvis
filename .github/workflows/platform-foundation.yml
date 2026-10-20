@@ -6,6 +6,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
@@ -108,6 +112,9 @@ jobs:
         run: |
           if [ "$RUNNER_OS" = Windows ]; then
             # Preserve fixed timing assertions without concurrent PowerShell fixtures.
+            # Measured on the Stage 6 final head: this step was 1h27m, of which
+            # routing_quality_eval's frozen matrix alone was 3781s. That single
+            # test remains required and is the critical-path floor.
             cargo test --workspace --all-features -- --test-threads=1
           else
             cargo test --workspace --all-features
