@@ -1,3 +1,5 @@
+- [Stage 7A CI optimization](2026-10-20-stage7a-ci-optimization.md) — pull-request cancellation, measured Windows test floor, and unchanged exact-head gate. Post-merge receipts stay in the delivery notes.
+
 - [Stage 6 offline distribution](2026-10-20-stage6-distribution.md) — local package, installer ownership, and nonpublication evidence. Post-merge receipts are recorded after the protected merge, not invented in the candidate.
 
 - [Stage 5 integration identity](2026-10-20-stage5-integration-identity.md) — ACP, MCP, Lens, and web client identities on baseline `f7f360ab648913428db79e6d48b3ad3ae61b1673`. Registry publication and historical import remain deferred.

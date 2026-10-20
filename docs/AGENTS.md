@@ -6,6 +6,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `foundation/2026-10-20-stage7a-ci-optimization.md` owns the CI optimization evidence.
 - `architecture/stage6-distribution.md` owns the offline package and installer contract. `foundation/2026-10-20-stage6-distribution.md` owns its evidence.
 - `runtime-identity-stage3-prd.md` owns runtime isolation acceptance and the Stage 4 boundary.
 
