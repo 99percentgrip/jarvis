@@ -59,6 +59,8 @@ bounded Markdown (`docs/web-oracle-extraction-prd.md`, Feature 1).
 
 ## Local Contracts
 
+- The default fetch user agent is `jarvis-web`. Caller-configured user agents and robots fixtures are unchanged.
+
 - Strictly zero I/O: no network, no filesystem, no clock. All input
   arrives as in-memory HTML strings; callers own fetching through the
   sandbox boundary (PRD Feature 4).

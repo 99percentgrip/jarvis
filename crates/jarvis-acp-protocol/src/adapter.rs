@@ -152,7 +152,7 @@ impl AcpAdapter {
 
         Agent
             .builder()
-            .name("agent-vesper-acp")
+            .name(crate::ACP_AGENT_NAME)
             .on_receive_request(
                 async move |request: ClientRequest,
                             responder: Responder<Value>,

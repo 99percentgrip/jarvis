@@ -89,7 +89,7 @@ impl Default for WebScopeConfig {
             fetch_enabled: true,
             render_enabled: false,
             driver_image: None,
-            user_agent: "agent-vesper".into(),
+            user_agent: "jarvis-web".into(),
             respect_robots: true,
             output_budget_bytes: DEFAULT_OUTPUT_BUDGET_BYTES,
             allowlist: Vec::new(),

@@ -410,7 +410,7 @@ pub(crate) fn multi_provider_control_surface_with_openai(
                 format!("{name} — authenticated; switching takes effect on the next turn")
             } else {
                 format!(
-                    "{name} — NOT authenticated; run `agent-vesper-acp --setup` (or set the \
+                    "{name} — NOT authenticated; run `jarvis-acp --setup` (or set the \
                      provider's env var) before switching"
                 )
             };

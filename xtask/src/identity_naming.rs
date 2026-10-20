@@ -16,6 +16,9 @@ const OWNED_PATHS: &[&str] = &[
     "docs/runtime-identity-stage3-prd.md",
     "docs/foundation/2026-10-15-runtime-identity-stage3.md",
     "docs/foundation/runtime-identity-stage3-inventory.json",
+    "docs/architecture/stage5-integration-identity.md",
+    "docs/foundation/2026-10-20-stage5-integration-identity.md",
+    "docs/foundation/stage5-integration-inventory.json",
     "docs/workspace-map.md",
     "docs/dependencies.md",
     "docs/architecture.md",
@@ -111,6 +114,28 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     let mut scrubbed = line.replace("use jarvis_identity::", "use owned_identity::");
     for env in jarvis_identity::RUNTIME_ENVIRONMENT {
         scrubbed = scrub_technical_token(&scrubbed, env.current);
+    }
+    const STAGE5_INTEGRATION_TOKENS: &[&str] = &[
+        "x-jarvis-lens-token",
+        "X-Jarvis-Lens-Token",
+        "jarvis-lens-sdk-style",
+        "jarvis-lens:",
+        "jarvis:annotation",
+        "jarvis:artifact-failure",
+        "jarvis:layout-diagnostics",
+        "jarvis:ready",
+        "jarvis:remove-highlight",
+        "jarvis:request-state",
+        "jarvis:restore",
+        "jarvis:review-state",
+        "jarvis:set-mode",
+        "data-jarvis-question",
+        "data-jarvis-required",
+    ];
+    if active {
+        for token in STAGE5_INTEGRATION_TOKENS {
+            scrubbed = scrub_technical_token(&scrubbed, token);
+        }
     }
     for id in identifiers {
         if id.starts_with("jarvis-")
@@ -224,6 +249,22 @@ mod tests {
         assert!(!owned_line(
             "docs/architecture/identity-architecture.md",
             "`jarvis-unreviewed`"
+        ));
+    }
+
+    #[test]
+    fn stage5_lens_wire_tokens_are_technical_but_unregistered_prose_is_not() {
+        assert!(owned_line(
+            "crates/jarvis-agent/src/planning/vesper_lens/server.rs",
+            "headers.get(\"x-jarvis-lens-token\")"
+        ));
+        assert!(owned_line(
+            "crates/jarvis-agent/src/planning/vesper_lens/injector.rs",
+            "post({type:'jarvis:remove-highlight',id:removed.id})"
+        ));
+        assert!(!owned_line(
+            "crates/jarvis-agent/src/planning/vesper_lens/server.rs",
+            "jarvis upstream prose"
         ));
     }
 }

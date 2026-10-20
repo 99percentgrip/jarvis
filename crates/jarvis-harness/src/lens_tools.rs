@@ -103,7 +103,7 @@ pub fn request_human_review_definition() -> jarvis_domain::ToolDefinition {
         harness_name: jarvis_domain::HarnessToolName::new("request_human_review")
             .expect("bounded harness name"),
         provider_name: None,
-        description: "Request human review of a workspace-confined HTML artifact via VesperLens. Opens trusted review chrome around a sandboxed page and BLOCKS until the human submits feedback (approve/reject/modify). Use only when the user requested visual review or visual/interaction choices materially need inspection; do not use for ordinary source code or fully specified HTML that deterministic checks can verify.".to_string(),
+        description: "Request human review of a workspace-confined HTML artifact via JarvisLens. Opens trusted review chrome around a sandboxed page and BLOCKS until the human submits feedback (approve/reject/modify). Use only when the user requested visual review or visual/interaction choices materially need inspection; do not use for ordinary source code or fully specified HTML that deterministic checks can verify.".to_string(),
         input_schema: serde_json::json!({
             "type": "object",
             "properties": {
@@ -133,7 +133,7 @@ pub fn request_human_input_definition(
             .expect("bounded harness name"),
         provider_name: None,
         description: format!(
-            "Open a VesperLens browser interview and BLOCK until the human answers planning questions. Use this before finalizing a plan when requirements, choices, preferences, scope, or tradeoffs are unresolved. {policy} Options are optional and produce free text when omitted."
+            "Open a JarvisLens browser interview and BLOCK until the human answers planning questions. Use this before finalizing a plan when requirements, choices, preferences, scope, or tradeoffs are unresolved. {policy} Options are optional and produce free text when omitted."
         ),
         input_schema: serde_json::json!({
             "type": "object",
@@ -225,7 +225,7 @@ impl LensToolService {
                 return Box::pin(async move {
                     Err(tool_failure(
                         "request_human_review",
-                        "no VesperLens review port configured",
+                        "no JarvisLens review port configured",
                     ))
                 });
             }
@@ -273,7 +273,7 @@ impl LensToolService {
                 return Box::pin(async move {
                     Err(tool_failure(
                         "request_human_input",
-                        "no VesperLens review port configured",
+                        "no JarvisLens review port configured",
                     ))
                 });
             }

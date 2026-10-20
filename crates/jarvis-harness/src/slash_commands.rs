@@ -188,7 +188,7 @@ pub fn execute_slash_command(
         "goal" | "subgoal" => goal_outcome(name, argument, context),
         "curator" => curator_outcome(context),
         "version" => {
-            SlashCommandOutcome::Text(format!("agent-vesper-acp {}", env!("CARGO_PKG_VERSION")))
+            SlashCommandOutcome::Text(format!("J.A.R.V.I.S. {}", env!("CARGO_PKG_VERSION")))
         }
         "usage" => SlashCommandOutcome::Host(argument.to_owned()),
         "compact" | "clear-plan" | "clear-history" | "undo" | "diff" | "export" => {

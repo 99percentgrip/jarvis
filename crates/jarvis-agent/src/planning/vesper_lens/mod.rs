@@ -5,7 +5,7 @@
 //! outer chrome around a sandboxed artifact, wait for authenticated structured
 //! feedback, and return a parsed [`LensFeedback`].
 //!
-//! The module is the first runtime TCP listener inside `vesper-agent`. It
+//! The module is the first runtime TCP listener inside `jarvis-agent`. It
 //! is strictly loopback-only (`127.0.0.1:0`) and accepts no configuration that
 //! could bind it to a non-loopback interface. File sessions are reusable while
 //! the owning process remains alive.
@@ -29,6 +29,9 @@ use std::{
 /// Default review window (30 minutes). After this the listener is dropped
 /// and [`VesperLens::review_artifact`] returns [`LensError::Timeout`].
 pub const DEFAULT_REVIEW_TIMEOUT: Duration = Duration::from_secs(30 * 60);
+
+#[cfg(test)]
+pub(crate) const LENS_FEEDBACK_HEADER: &str = "X-Jarvis-Lens-Token";
 
 /// VesperLens entrypoint (ADR 0017).
 ///
@@ -174,8 +177,9 @@ mod tests {
         let mut client = tokio::net::TcpStream::connect(address).await.unwrap();
         let body = serde_json::json!({"action":"approve","notes":notes}).to_string();
         let request = format!(
-            "POST /s/{token}/feedback HTTP/1.1\r\nHost: {address}\r\nOrigin: http://{address}\r\nContent-Type: application/json\r\nX-Vesper-Lens-Token: {token}\r\nContent-Length: {}\r\n\r\n{body}",
-            body.len()
+            "POST /s/{token}/feedback HTTP/1.1\r\nHost: {address}\r\nOrigin: http://{address}\r\nContent-Type: application/json\r\n{header}: {token}\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len(),
+            header = LENS_FEEDBACK_HEADER,
         );
         client.write_all(request.as_bytes()).await.unwrap();
         let mut response = String::new();
@@ -225,9 +229,10 @@ mod tests {
         let mut client = tokio::net::TcpStream::connect(addr).await.unwrap();
         let body = r#"{"action":"approve","notes":"lgtm"}"#;
         let req = format!(
-            "POST /s/{token}/feedback HTTP/1.1\r\nHost: {addr}\r\nOrigin: http://{addr}\r\nContent-Type: application/json\r\nX-Vesper-Lens-Token: {token}\r\nContent-Length: {}\r\n\r\n{}",
+            "POST /s/{token}/feedback HTTP/1.1\r\nHost: {addr}\r\nOrigin: http://{addr}\r\nContent-Type: application/json\r\n{header}: {token}\r\nContent-Length: {}\r\n\r\n{}",
             body.len(),
-            body
+            body,
+            header = LENS_FEEDBACK_HEADER,
         );
         client.write_all(req.as_bytes()).await.unwrap();
         let mut buf = vec![0u8; 256];
@@ -236,6 +241,36 @@ mod tests {
         let feedback = review.await.unwrap().unwrap();
         assert_eq!(feedback.action, Action::Approve);
         assert_eq!(feedback.notes, "lgtm");
+    }
+
+    #[tokio::test]
+    async fn legacy_vesper_lens_header_cannot_authorize_feedback() {
+        let lens = VesperLens::with_timeout(Duration::from_secs(5));
+        let (tx, rx) = tokio::sync::oneshot::channel::<String>();
+        let review = tokio::spawn(async move {
+            lens.review_artifact("<html><body>header boundary</body></html>", move |url| {
+                let _ = tx.send(url.to_string());
+            })
+            .await
+        });
+        let url = tokio::time::timeout(Duration::from_secs(2), rx)
+            .await
+            .expect("server did not bind")
+            .expect("url dropped");
+        let (addr, token) = url_parts(&url);
+        let mut client = tokio::net::TcpStream::connect(addr).await.unwrap();
+        let body = r#"{"action":"approve","notes":"legacy"}"#;
+        let rejected = format!(
+            "POST /s/{token}/feedback HTTP/1.1\r\nHost: {addr}\r\nOrigin: http://{addr}\r\nContent-Type: application/json\r\nX-Vesper-Lens-Token: {token}\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        );
+        client.write_all(rejected.as_bytes()).await.unwrap();
+        let mut response = String::new();
+        client.read_to_string(&mut response).await.unwrap();
+        assert!(response.starts_with("HTTP/1.1 403"), "{response}");
+        post_approval(&url, "accepted only with the current header").await;
+        let feedback = review.await.unwrap().unwrap();
+        assert_eq!(feedback.notes, "accepted only with the current header");
     }
 
     #[tokio::test]

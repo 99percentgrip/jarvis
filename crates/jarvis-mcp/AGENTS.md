@@ -26,6 +26,8 @@ unsigned plugin by any code path.
 
 ## Local Contracts
 
+- MCP `clientInfo.name` is `jarvis-mcp` for stdio and HTTP. Configured server names and external server identities are not rewritten.
+
 - Depends only on `jarvis-domain` and `jarvis-security`. No provider,
   runtime, ACP, sessions, agent, testkit, SQLite, or TUI dependency.
   `ed25519-dalek` is the only non-workspace external dep (BSD-3-Clause,

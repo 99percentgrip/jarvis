@@ -29,6 +29,11 @@ transport, stderr-only tracing, and orderly shutdown.
 
 ## Local Contracts
 
+- The ACP process advertises `jarvis-acp` in SDK session setup, initialize
+  `agentInfo`, `--version`/`--help`, and startup errors. Stdout remains JSON-RPC
+  only; meta output stays on stderr. `registry/agent.json` stays the historical
+  Vesper registration and is not a publishable Jarvis manifest.
+
 - LM Studio provider and cognition preferences use the shared ownership-validated config resolver/reader, including the same `JARVIS_HOME` precedence as the TUI. Read-only startup never initializes missing preferences or adopts unknown/redirected roots.
 
 - Admitted release prompts retain their ACP owner until native settlement and

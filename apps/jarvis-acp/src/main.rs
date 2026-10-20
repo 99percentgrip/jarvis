@@ -14,7 +14,7 @@ async fn main() -> ExitCode {
         };
     }
     // Meta flags (`--version`/`--help`) are handled BEFORE the ACP server
-    // boots so the installer's `agent-vesper-acp --version` check works and
+    // boots so the installer's `jarvis-acp --version` check works and
     // never tries to start the stdio protocol. Mirrors the original Python
     // `native-glm-acp --version` UX.
     if let Some(code) = handle_meta_flags() {
@@ -74,7 +74,7 @@ async fn main() -> ExitCode {
     if let Err(error) =
         jarvis_harness::scope_holder::holder::install_from_env_with_stamp_policy(scope_stamp_policy)
     {
-        eprintln!("vesper: workspace scope resolution failed ({error}); using unscoped defaults");
+        eprintln!("workspace scope resolution failed ({error}); using unscoped defaults");
     }
     let outcome = match provider_from_argv() {
         Some(provider) => jarvis_acp::boot(&provider).await,
@@ -83,7 +83,7 @@ async fn main() -> ExitCode {
     match outcome {
         Ok(()) => ExitCode::SUCCESS,
         Err(()) => {
-            eprintln!("agent-vesper-acp terminated with a safe startup or protocol error");
+            eprintln!("jarvis-acp terminated with a safe startup or protocol error");
             ExitCode::FAILURE
         }
     }
