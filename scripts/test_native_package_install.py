@@ -73,8 +73,16 @@ def main() -> None:
             "darwin-x86_64": "jarvis-darwin-x86_64.tar.gz",
             "darwin-aarch64": "jarvis-darwin-aarch64.tar.gz",
         }[target])
+        resources = home / "resources" / "web-driver"
+        resources.mkdir(parents=True)
+        image = resources / "image.tar.gz"
+        image.write_bytes(b"offline-driver-fixture")
+        import hashlib
+        digest_image = hashlib.sha256(image.read_bytes()).hexdigest()
+        (resources / "image.sha256").write_text(digest_image + "  image.tar.gz\n", encoding="utf-8")
+        (resources / "image-id").write_text("sha256:" + "a" * 64 + "\n", encoding="utf-8")
         pack = subprocess.run(
-            ["python3", str(ROOT / "scripts" / "jarvis_package.py"), "pack", "--bin-dir", str(bindir), "--target", target, "--output", str(output), "--version", version, "--commit", commit],
+            ["python3", str(ROOT / "scripts" / "jarvis_package.py"), "pack", "--bin-dir", str(bindir), "--target", target, "--output", str(output), "--version", version, "--commit", commit, "--resources", str(home / "resources")],
             check=True, text=True, capture_output=True,
         )
         digest = pack.stdout.strip().splitlines()[-1]
@@ -94,6 +102,10 @@ def main() -> None:
         subprocess.run(["sh", str(ROOT / "scripts" / "install.sh")], check=True, env=env)
         for name in ("jarvis-acp", "jarvis-tui"):
             subprocess.run([str(home / "bin" / name), "--version"], check=True, env=env)
+        current = (home / "install" / "current").read_text(encoding="utf-8").strip()
+        driver = home / "install" / "generations" / current / "web-driver" / "image.tar.gz"
+        if driver.read_bytes() != b"offline-driver-fixture":
+            raise SystemExit("bundled driver resource was not installed")
         subprocess.run(["sh", str(ROOT / "scripts" / "uninstall.sh")], check=True, env=env)
         if (home / "memory" / "keep.txt").read_text(encoding="utf-8") != "keep\n":
             raise SystemExit("uninstall removed memory")

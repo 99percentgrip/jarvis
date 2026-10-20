@@ -250,13 +250,19 @@ function Update-Seed([string]$Generation) {
 function Complete-Generation([string]$Generation, $Previous) {
     Write-Launchers $Generation
     $seeded = Update-Seed $Generation
+    $ownedPath = Join-Path $installRoot ".jarvis-installer-owned.json"
+    $keptPathOwnership = $false
+    if (Test-Path -LiteralPath $ownedPath) {
+        $prior = Read-JsonFile $ownedPath
+        if ($prior.path_entry_added -eq $true) { $keptPathOwnership = $true }
+    }
     $ownership = [ordered]@{
         schema = 1
         application = "jarvis"
         install_root = $installRoot
         current_generation = $Generation
         previous_generation = $Previous
-        path_entry_added = $false
+        path_entry_added = $keptPathOwnership
         memory_root_recorded_not_owned = $memoryRoot
     }
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -270,6 +276,16 @@ function Complete-Generation([string]$Generation, $Previous) {
         $updated = (@($entries) + $installRoot) -join ";"
         [Environment]::SetEnvironmentVariable("Path", $updated, "User")
         $ownership.path_entry_added = $true
+    }
+    $generations = Join-Path $installRoot "generations"
+    if (Test-Path -LiteralPath $generations) {
+        $keep = @($Generation)
+        if ($Previous) { $keep += [string]$Previous }
+        Get-ChildItem -LiteralPath $generations -Force | ForEach-Object {
+            if ($keep -notcontains $_.Name) {
+                Remove-Item -LiteralPath $_.FullName -Recurse -Force
+            }
+        }
     }
     if (($env:Path -split ";") -notcontains $installRoot) { $env:Path = "$installRoot;$env:Path" }
     Write-JsonFile (Join-Path $installRoot ".jarvis-installer-owned.json") $ownership
