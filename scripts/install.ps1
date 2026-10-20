@@ -95,7 +95,7 @@ Test-Foreign $installRoot
 Test-Foreign $memoryRoot
 Test-Reparse $installRoot
 
-$known = @(".jarvis-installer-owned.json", ".install.lock", "transaction.json", "current", "generations")
+$known = @(".jarvis-installer-owned.json", ".install.lock", "transaction.json", "current", "generations", "jarvis-acp.cmd", "jarvis-tui.cmd")
 function Assert-Adoptable {
     if (-not (Test-Path -LiteralPath $installRoot)) { return }
     Test-Reparse $installRoot
