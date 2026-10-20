@@ -850,16 +850,25 @@ impl Worker {
         rx: &mpsc::Receiver<Result<serde_json::Value, &'static str>>,
         stall: Duration,
     ) -> Result<(), String> {
-        let mut last_progress = Instant::now();
+        self.collect_with_now(rx, stall, Instant::now)
+    }
+
+    fn collect_with_now<F>(
+        &mut self,
+        rx: &mpsc::Receiver<Result<serde_json::Value, &'static str>>,
+        stall: Duration,
+        mut now: F,
+    ) -> Result<(), String>
+    where
+        F: FnMut() -> Instant,
+    {
+        let mut last_progress = now();
         loop {
             if self.cancelled() {
                 return Err("Transcription cancelled; completed chunks and audio retained.".into());
             }
-            if last_progress.elapsed() > stall {
-                return Err(
-                    "Speech model made no progress for five minutes; audio retained.".into(),
-                );
-            }
+            // Stall is measured only across idle waits. Progress already queued
+            // must be consumed even if the collector thread was preempted.
             match rx.recv_timeout(Duration::from_millis(50)) {
                 Ok(message) => {
                     let message = message?;
@@ -875,7 +884,7 @@ impl Worker {
                             .as_str()
                             .ok_or("Invalid transcript chunk.")?;
                         audio.chunks.push(text.into());
-                        last_progress = Instant::now();
+                        last_progress = now();
                         self.publish(
                             VoicePhase::Transcribing,
                             format!(
@@ -884,7 +893,7 @@ impl Worker {
                             ),
                         );
                     } else if message["ready"] == true {
-                        last_progress = Instant::now();
+                        last_progress = now();
                     } else if message["done"] == true {
                         let audio = self.audio.as_ref().ok_or("Audio unavailable.")?;
                         if message["chunks"].as_u64() != Some(audio.chunks.len() as u64) {
@@ -917,7 +926,14 @@ impl Worker {
                 Err(mpsc::RecvTimeoutError::Disconnected) => {
                     return Err("Speech helper exited before completion; audio retained.".into());
                 }
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Timeout) => {
+                    if now().saturating_duration_since(last_progress) > stall {
+                        return Err(
+                            "Speech model made no progress for five minutes; audio retained."
+                                .into(),
+                        );
+                    }
+                }
             }
         }
     }
@@ -998,6 +1014,7 @@ const SCRIPT: &str = include_str!("voice_transcribe.py");
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::AtomicU64;
     fn controller() -> (Controller, std::sync::mpsc::Receiver<Control>) {
         // Mirrors Controller::new but returns the control receiver so the
         // key-mapping contract is testable without spawning the worker.
@@ -1157,15 +1174,27 @@ mod tests {
         let (mut worker, result) = worker();
         worker.audio = Some(Audio::new().unwrap());
         let (tx, rx) = mpsc::channel();
+        let origin = Instant::now();
+        let offset = Arc::new(AtomicU64::new(0));
+        let clock = Arc::clone(&offset);
         let producer = thread::spawn(move || {
             for i in 0..20 {
                 tx.send(message(i, &i.to_string())).unwrap();
-                thread::sleep(Duration::from_millis(10));
+                // Forty milliseconds is inside the 100 ms stall. Twenty steps
+                // still outlast that stall, without sleeping on the runner.
+                clock.fetch_add(40, Ordering::Release);
+                if i == 2 {
+                    thread::sleep(Duration::from_millis(80));
+                }
             }
             tx.send(Ok(serde_json::json!({"done":true,"chunks":20})))
                 .unwrap();
         });
-        worker.collect(&rx, Duration::from_millis(100)).unwrap();
+        worker
+            .collect_with_now(&rx, Duration::from_millis(100), || {
+                origin + Duration::from_millis(offset.load(Ordering::Acquire))
+            })
+            .unwrap();
         producer.join().unwrap();
         assert_eq!(result.recv().unwrap().split_whitespace().count(), 20);
     }

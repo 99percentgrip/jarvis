@@ -176,6 +176,17 @@ jobs:
             fixture_acp="$fixture_acp.exe"
           fi
           python apps/jarvis-tui/tests/release_hosts_pty.py "$fixture_tui" "$fixture_acp" "$native_binary" "$acp_binary"
+      - name: Assemble and install an offline native package
+        shell: bash
+        timeout-minutes: 25
+        env:
+          JARVIS_CI_TARGET: ${{ matrix.target }}
+          RUSTC_WRAPPER: ${{ steps.sccache_check.outputs.sccache_ready == 'true' && 'sccache' || '' }}
+        run: |
+          cargo build --locked -p jarvis-web-fetch -p jarvis-sandbox --bins
+          if command -v python3 >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/test_native_package_install.py
+
       - name: Verify native speech dependency setup and real PCM signals
         shell: bash
         timeout-minutes: 20

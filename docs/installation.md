@@ -4,91 +4,50 @@
 
 ## Before you install
 
-Release packages support Linux x86_64 and ARM64, macOS Intel and Apple Silicon, and Windows x86_64. Linux packages target GNU/Linux; Alpine/musl and Windows ARM64 are not native release targets.
+Supported targets are Linux x86_64 and ARM64, macOS Intel and Apple Silicon, and Windows x86_64. There is no public package to download. Do not pipe a remote script and do not point the installer at another product's archive.
 
-For the prebuilt app you need:
+A local archive and its SHA-256 digest are required. Python 3 is required on Linux and macOS because the installer validates the archive before touching a destination. Windows uses PowerShell 5.1 or 7 and does not download the package.
 
-- A terminal and internet access to download the release.
-- On Linux/macOS: `curl`, `tar`, and either `sha256sum` or `shasum`.
-- On Windows x86_64: Windows PowerShell 5.1 (Desktop) or PowerShell 7+ with `Invoke-WebRequest`, `Expand-Archive`, and `Get-FileHash`. The installer does not require PowerShell 7.
-- Access to a supported provider: Z.ai, OpenAI, or a running LM Studio server.
-
-You do not need a Rust compiler for the prebuilt app. Your project still needs its own development tools. Verification that executes Cargo tests requires a Rust toolchain.
+Compiling from source is separate from installing a prebuilt archive. On Fedora, a source build can require the `dbus-devel` package so `dbus-1.pc` exists. A prebuilt binary needs the matching shared libraries at runtime, not the compiler headers. Optional desktop credential storage uses the Secret Service when it is present. Missing optional services are reported; they are not installed silently.
 
 ## Install
 
-### Linux and macOS
+Linux and macOS:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/install.sh | sh
+JARVIS_PACKAGE=./jarvis-linux-x86_64.tar.gz \
+JARVIS_PACKAGE_SHA256=<64-hex-or-checksum-file> \
+sh scripts/install.sh
 ```
 
-If you prefer to inspect the script before running it:
+Use the archive name that matches the machine: `jarvis-linux-x86_64.tar.gz`, `jarvis-linux-aarch64.tar.gz`, `jarvis-darwin-x86_64.tar.gz`, or `jarvis-darwin-aarch64.tar.gz`.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/install.sh -o vesper-install.sh
-# Read vesper-install.sh, then:
-sh vesper-install.sh
-```
-
-A minimal Debian/Ubuntu system can install the download tools with:
-
-```sh
-sudo apt-get update
-sudo apt-get install curl ca-certificates tar coreutils
-```
-
-Fedora:
-
-```sh
-sudo dnf install curl ca-certificates tar coreutils
-```
-
-### Windows PowerShell
-
-In Windows PowerShell 5.1 (Desktop) or PowerShell 7+, run:
+Windows PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/install.ps1 | iex
+$env:JARVIS_PACKAGE = '.\jarvis-windows-x86_64.zip'
+$env:JARVIS_PACKAGE_SHA256 = '<digest>'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-To inspect the installer before running it:
+Without `JARVIS_PACKAGE` and `JARVIS_PACKAGE_SHA256`, the installer stops. A checksum only proves the archive matches the digest you supplied. It does not prove that an unsigned local file is an official release. Signing and publication are later work.
 
-```powershell
-Invoke-WebRequest https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/install.ps1 -OutFile vesper-install.ps1
-# Read vesper-install.ps1, then:
-.\vesper-install.ps1
-```
-
-The piped one-liner does not normally require changing script execution policy.
-If policy blocks **the downloaded file**, follow your organization's policy.
-Where allowed, either enable signed-remote-script execution for your own account
-(`Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`) or run
-just this downloaded file in a temporary process:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\vesper-install.ps1
-```
-
-`-ExecutionPolicy Bypass` above applies only to that process; the installer does
-not change machine or user execution policy. Review the script before running it.
-Neither option overrides a Group Policy restriction. Windows ARM64 has no native
-release archive and is not supported by this installer.
+Package files go to the install root from the platform contract: `$XDG_DATA_HOME/jarvis/install` (or `~/.local/share/jarvis/install`), `~/Library/Application Support/Jarvis/Install`, or `%LOCALAPPDATA%/Programs/Jarvis`. Launchers on Linux and macOS are written only into the shared user bin directory. Memory stays at `JARVIS_MEMORY_ROOT` or `~/.jarvis/memory` and is not inside the package generation. The installer will not use a Vesper path, a symlink install root, or a directory it does not own.
 
 ### Verify and launch
 
 Open a new terminal if necessary, then run:
 
 ```sh
-agent-vesper-acp --version
-agent-vesper-tui --version
+jarvis-acp --version
+jarvis-tui --version
 cd path/to/your-project
-agent-vesper-tui
+jarvis-tui
 ```
 
-Both commands should report the installed release version. The first launch opens the welcome screen even before sign-in. Open **Settings → Providers** to choose and authenticate a provider; cancelling setup keeps Vesper open. Follow any restart prompt. [OpenAI authentication](openai-provider.md) has separate instructions for API keys and subscription sign-in.
+Both commands should report a version and exit successfully. The terminal's first launch opens the welcome screen before sign-in. Open **Settings → Providers** when you want to authenticate. Cancelling returns to the caller.
 
-The package includes the terminal app, ACP server, sandbox supervisor, web-fetch helper, browser-driver image, and seed skills. The installer verifies the archive checksum and attempts to import the driver. A missing container engine does not prevent ordinary coding use; set it up later from Settings.
+A package must contain the terminal app and the ACP server. The web-fetch helper, sandbox supervisor, seed skills, and browser-driver archive are included when the package lists them. The installer does not import a container image by itself and does not start Docker or Podman.
 
 ## Optional dependencies
 
@@ -180,64 +139,43 @@ speaker playback or Voice Settings surface; use the terminal app for voice.
 
 ## Update or choose a version
 
-From the welcome screen, choose **Check for updates**. If a newer release is available, choose **Install update** to run the checksum-verifying installer. Linux/macOS show progress in Vesper; Windows opens an installer console after Vesper closes so its executables can be replaced. Reopen Vesper and restart any editor agent process afterward. Declining the offer changes nothing.
+There is no public update channel. To upgrade, run the installer again with a newer local archive and its digest. The previous generation stays available for local rollback (`sh scripts/install.sh --rollback` or `JARVIS_INSTALL_ACTION=rollback` on Windows). Rollback restores package files only. It does not roll back memory, sessions, or credentials, and it does not contact an update service.
 
-You can also rerun the same installer to update to the latest release, then restart Vesper and any editor agent process. Upgrades replace application payloads while preserving co-located user state and existing seed-skill edits.
-
-To select a specific release, download the installer as shown above, then use an actual version from [Releases](https://github.com/99percentgrip/agent-vesper/releases):
-
-```sh
-AGENT_VESPER_VERSION=0.23.0 sh vesper-install.sh
-```
-
-```powershell
-.\vesper-install.ps1 -Version 0.23.0
-```
-
-The version above is an example, not an instruction to downgrade a newer installation.
+Upgrades keep the memory directory and existing skill edits. Seed skills that were deleted stay deleted.
 
 ## Install locations
 
 | Item | Default location |
 |---|---|
-| Linux/macOS launchers | `~/.local/bin/agent-vesper-tui` and `~/.local/bin/agent-vesper-acp` |
-| Linux/macOS bundle | `$XDG_DATA_HOME/agent-vesper`, normally `~/.local/share/agent-vesper` |
-| Windows launchers | `%LOCALAPPDATA%\Programs\AgentVesper` |
-| Windows bundle | `agent-vesper-acp.bundle` inside the launcher directory |
-| Seeded skill library | `~/.agent-vesper/memory` |
-| Project memory | `.agent-vesper/cognition` inside the project |
+| Linux/macOS launchers | `~/.local/bin/jarvis-tui` and `~/.local/bin/jarvis-acp` |
+| Linux install root | `$XDG_DATA_HOME/jarvis/install`, normally `~/.local/share/jarvis/install` |
+| macOS install root | `~/Library/Application Support/Jarvis/Install` |
+| Windows install root and launchers | `%LOCALAPPDATA%/Programs/Jarvis` |
+| Memory | `~/.jarvis/memory`, or `JARVIS_MEMORY_ROOT` |
 
-Linux/macOS installer overrides: `AGENT_VESPER_INSTALL_DIR`, `AGENT_VESPER_BUNDLE_DIR`, and `AGENT_VESPER_SHELL_PROFILE`. Windows accepts `-InstallDir` or `AGENT_VESPER_INSTALL_DIR`. Use the same custom paths when uninstalling.
+Overrides: `JARVIS_INSTALL_ROOT`, `JARVIS_LAUNCHER_DIR`, `JARVIS_MEMORY_ROOT`, `JARVIS_HOME`, and `JARVIS_SHELL_PROFILE`. A custom path cannot point at a Vesper location or a directory the installer does not own. Use the same overrides when uninstalling.
 
 ## Troubleshooting
 
 | Symptom | What to check |
 |---|---|
 | Command not found | Reopen the terminal. Check the launcher directory above is on PATH. A desktop editor may need an absolute executable path. |
-| Wrong version starts | Run `command -v agent-vesper-tui` on Linux/macOS or `Get-Command agent-vesper-tui` in PowerShell. Check for an older installation earlier on PATH. |
-| Checksum verification fails | Stop and download again from the official release. Do not bypass the checksum. |
-| Windows reports an execution-policy error for `vesper-install.ps1` | See the [Windows options](#windows-powershell); the piped one-liner normally needs no policy change. Follow organizational policy; do not set `Unrestricted`. |
+| Wrong version starts | Run `command -v jarvis-tui` on Linux/macOS or `Get-Command jarvis-tui` in PowerShell. Check for an older installation earlier on PATH. |
+| Checksum verification fails | The archive does not match the supplied digest. Do not bypass the checksum. |
+| Windows reports an execution-policy error | Run the installer with `-ExecutionPolicy Bypass` for that process only, or follow organizational policy. Do not set `Unrestricted`. |
 | Windows reports unsupported or unknown architecture | Check `[Environment]::Is64BitOperatingSystem`, `$env:PROCESSOR_ARCHITECTURE` and `$env:PROCESSOR_ARCHITEW6432`. Only Windows x86_64 (AMD64) has a published archive; ARM64 is not a release target. |
-| Windows PowerShell 5.1 cannot fetch the installer script | Confirm HTTPS access to raw.githubusercontent.com. On older TLS defaults, run `[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12` in that PowerShell session, then retry the one-liner. This does not change machine policy. |
-| Windows release download fails before checksum verification | Confirm HTTPS access to GitHub releases; check your proxy/firewall and retry. Do not run an unverified archive. |
 | Web driver unavailable | Start Docker/Podman, confirm `info` succeeds, then use Settings → Web tools → Set up / repair driver. |
 | Provider rejects a request | Check authentication, model entitlement, account limits, and the provider selected in Settings. |
 | LM Studio cannot connect | Confirm its server is running and the address in Vesper matches it. |
 
 ## Uninstall
 
-**Back up first.** The uninstaller removes the launchers and the entire application bundle. On Linux/macOS, that bundle shares the default data directory with global cognition and voice state; those files are removed too. Copy any data you want to retain outside the bundle before uninstalling. Custom storage paths can change what is inside it.
-
-Linux/macOS:
-
 ```sh
-curl -fsSL https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/uninstall.sh | sh
+sh scripts/uninstall.sh
 ```
-
-Windows PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/uninstall.ps1 | iex
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 ```
 
-Provider credentials are preserved. Project directories and the seeded `~/.agent-vesper/memory` library outside the bundle are not removed. The scripts do not remove imported container images or externally installed dependencies. Remove the custom agent entry from your editor separately. Inspect [the uninstall scripts](../scripts/) if you use custom paths.
+Uninstall removes installer-owned generations and launchers recorded by the ownership file. It does not delete `~/.jarvis/memory`, sessions, credentials, checkpoints, or another product's files. It does not remove a shared bin directory or a PATH entry it did not add. There is no purge-user-data switch.

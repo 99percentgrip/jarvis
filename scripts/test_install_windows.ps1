@@ -1,22 +1,15 @@
-# Offline, real-process installer regression. Run with powershell.exe (Desktop)
-# and pwsh.exe on a disposable Windows CI runner; no release/network calls.
+# Offline Jarvis installer regression for Windows PowerShell 5.1 and 7+.
 $ErrorActionPreference = 'Stop'
 $installer = Join-Path $PSScriptRoot 'install.ps1'
-$root = Join-Path ([IO.Path]::GetTempPath()) ('vesper-install-test-' + [guid]::NewGuid().ToString('N'))
+$uninstaller = Join-Path $PSScriptRoot 'uninstall.ps1'
+$root = Join-Path ([IO.Path]::GetTempPath()) ('jarvis-install-test-' + [guid]::NewGuid().ToString('N'))
 $oldUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 $oldArch = $env:PROCESSOR_ARCHITECTURE
 $oldWow = $env:PROCESSOR_ARCHITEW6432
-$oldInstall = $env:AGENT_VESPER_INSTALL_DIR
-$oldMemory = $env:AGENT_VESPER_MEMORY_ROOT
 $oldPath = $env:Path
 $oldTls = [Net.ServicePointManager]::SecurityProtocol
 
-function Invoke-WebRequest {
-    param([string]$Uri, [string]$OutFile, [switch]$UseBasicParsing)
-    if (-not $UseBasicParsing) { throw 'missing UseBasicParsing' }
-    $file = $Uri.Substring($Uri.LastIndexOf('/') + 1)
-    Copy-Item -LiteralPath (Join-Path $root $file) -Destination $OutFile
-}
+function Invoke-WebRequest { throw 'installer attempted a network download' }
 function Expect-Failure {
     param([scriptblock]$Run, [string]$Message)
     try { & $Run | Out-Null } catch {
@@ -25,32 +18,57 @@ function Expect-Failure {
     }
     throw "expected failure: $Message"
 }
+function New-FixturePackage {
+    param([string]$Directory, [string]$Executable)
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $package = Join-Path $Directory 'stage'
+    New-Item -ItemType Directory -Path $package -Force | Out-Null
+    Copy-Item -LiteralPath $Executable -Destination (Join-Path $package 'jarvis-acp.exe') -Force
+    Copy-Item -LiteralPath $Executable -Destination (Join-Path $package 'jarvis-tui.exe') -Force
+    $payloads = @()
+    foreach ($name in @('jarvis-acp.exe', 'jarvis-tui.exe')) {
+        $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $package $name)).Hash.ToLowerInvariant()
+        $payloads += [ordered]@{ path = $name; type = 'file'; role = 'user-facing'; required = $true; sha256 = $hash }
+    }
+    $manifest = [ordered]@{
+        schema = 1; layout = 1; application = 'jarvis'; target = 'windows-x86_64'
+        archive = 'jarvis-windows-x86_64.zip'; version = '0.24.14'; source_commit = 'test'
+        payloads = $payloads
+    }
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    [IO.File]::WriteAllText((Join-Path $package 'manifest.json'), ($manifest | ConvertTo-Json -Depth 6), $utf8)
+    $archive = Join-Path $Directory 'package.zip'
+    if (Test-Path $archive) { Remove-Item $archive -Force }
+    $zip = [System.IO.Compression.ZipFile]::Open($archive, 'Create')
+    try {
+        foreach ($file in Get-ChildItem -LiteralPath $package -File) {
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, ('jarvis/' + $file.Name)) | Out-Null
+        }
+    } finally { $zip.Dispose() }
+    return $archive
+}
 
 try {
-    New-Item -ItemType Directory -Path $root, (Join-Path $root 'package/agent-vesper-acp') -Force | Out-Null
-    $package = Join-Path $root 'package/agent-vesper-acp'
-    # The release's two executable names, launcher behavior and --version are
-    # exercised, without making network calls or installing a user release.
-    $exe = Join-Path $root 'fixture.exe'
+    New-Item -ItemType Directory -Path $root -Force | Out-Null
     $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
     if (-not (Test-Path -LiteralPath $compiler -PathType Leaf)) { throw 'Windows .NET Framework C# compiler unavailable on test runner' }
     $source = Join-Path $root 'fixture.cs'
+    $exe = Join-Path $root 'fixture.exe'
     Set-Content -LiteralPath $source -Value 'public class Fixture { public static int Main(string[] args) { if (args.Length == 1 && args[0] == "--version") { System.Console.WriteLine("fixture 0.0.0"); return 0; } return 1; } }'
     & $compiler /nologo "/out:$exe" $source
     if ($LASTEXITCODE -ne 0) { throw 'fixture compilation failed' }
-    Copy-Item -LiteralPath $exe -Destination (Join-Path $package 'agent-vesper-acp.exe')
-    Copy-Item -LiteralPath $exe -Destination (Join-Path $package 'agent-vesper-tui.exe')
-    $asset = 'agent-vesper-acp-windows-x86_64.zip'
-    $archive = Join-Path $root $asset
-    Compress-Archive -Path $package -DestinationPath $archive
+    $archive = New-FixturePackage -Directory $root -Executable $exe
     $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash
-    Set-Content -LiteralPath "$archive.sha256" -Value "$sha  $asset"
-    $env:AGENT_VESPER_INSTALL_DIR = Join-Path $root 'installed'
-    $env:AGENT_VESPER_MEMORY_ROOT = Join-Path $root 'memory'
+    $env:JARVIS_PACKAGE = $archive
+    $env:JARVIS_PACKAGE_SHA256 = $sha
+    $env:JARVIS_INSTALL_ROOT = Join-Path $root 'installed'
+    $env:JARVIS_MEMORY_ROOT = Join-Path $root 'memory'
+    $env:JARVIS_HOME = $root
     $env:PROCESSOR_ARCHITECTURE = 'AMD64'
     Remove-Item Env:PROCESSOR_ARCHITEW6432 -ErrorAction SilentlyContinue
+    Remove-Item Env:JARVIS_INSTALL_FAIL_AFTER -ErrorAction SilentlyContinue
+    Remove-Item Env:JARVIS_INSTALL_ACTION -ErrorAction SilentlyContinue
 
-    # Explicit unsupported/unknown platform before a download or disk install.
     $env:PROCESSOR_ARCHITECTURE = 'ARM64'
     Expect-Failure { & $installer } 'unsupported Windows architecture: ARM64'
     $env:PROCESSOR_ARCHITECTURE = 'x86'
@@ -59,59 +77,72 @@ try {
     Expect-Failure { & $installer } 'unable to determine Windows architecture'
     $env:PROCESSOR_ARCHITECTURE = 'AMD64'
 
-    # Tampered and malformed checksum must fail before any installation.
-    Set-Content -LiteralPath "$archive.sha256" -Value "$('0' * 64)  $asset"
+    $env:JARVIS_PACKAGE_SHA256 = ('0' * 64)
     Expect-Failure { & $installer } 'SHA-256 verification failed'
-    if (Test-Path $env:AGENT_VESPER_INSTALL_DIR) { throw 'checksum failure installed payload' }
-    Set-Content -LiteralPath "$archive.sha256" -Value 'garbage'
+    if (Test-Path $env:JARVIS_INSTALL_ROOT) { throw 'checksum failure installed payload' }
+    $env:JARVIS_PACKAGE_SHA256 = 'garbage'
     Expect-Failure { & $installer } 'invalid SHA-256 checksum file'
-    Set-Content -LiteralPath "$archive.sha256" -Value "$sha  $asset"
+    $env:JARVIS_PACKAGE_SHA256 = $sha
 
-    # Direct execution and the equivalent local text | iex path (remote main
-    # cannot exercise an unmerged change). Both must install usable launchers.
     & $installer | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'direct installer did not verify executables' }
-    $acp = Join-Path $env:AGENT_VESPER_INSTALL_DIR 'agent-vesper-acp.cmd'
-    $tui = Join-Path $env:AGENT_VESPER_INSTALL_DIR 'agent-vesper-tui.cmd'
-    if ((& $acp --version) -ne 'fixture 0.0.0' -or (& $tui --version) -ne 'fixture 0.0.0') { throw 'launchers failed' }
+    $acp = Join-Path $env:JARVIS_INSTALL_ROOT 'jarvis-acp.cmd'
+    $tui = Join-Path $env:JARVIS_INSTALL_ROOT 'jarvis-tui.cmd'
+    $acpOut = @(& $acp --version 2>&1 | ForEach-Object { "$_" }) -join '|'
+    $tuiOut = @(& $tui --version 2>&1 | ForEach-Object { "$_" }) -join '|'
+    $cmd = Get-Content -LiteralPath $tui -Raw
+    if ($acpOut -ne 'fixture 0.0.0' -or $tuiOut -ne 'fixture 0.0.0') { throw "launchers failed acp=[$acpOut] tui=[$tuiOut] cmd=[$cmd]" }
+    New-Item -ItemType Directory -Path $env:JARVIS_MEMORY_ROOT -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $env:JARVIS_MEMORY_ROOT 'keep.txt') -Value 'keep'
+    $vesper = Join-Path $root 'AgentVesper\secret.txt'
+    New-Item -ItemType Directory -Path (Split-Path $vesper) -Force | Out-Null
+    Set-Content -LiteralPath $vesper -Value 'vesper'
 
-    # A missing-DLL loader exit must be diagnosed before replacing installed
-    # payloads or touching user memory. A fixture returns the actual NTSTATUS.
-    $installedExe = Join-Path $env:AGENT_VESPER_INSTALL_DIR 'agent-vesper-acp.bundle/agent-vesper-acp.exe'
-    $installedHash = (Get-FileHash -Algorithm SHA256 $installedExe).Hash
+    $installedExe = Join-Path $env:JARVIS_INSTALL_ROOT 'generations'
+    $current = (Get-Content -LiteralPath (Join-Path $env:JARVIS_INSTALL_ROOT 'current') -Raw).Trim()
+    $installedHash = (Get-FileHash -Algorithm SHA256 (Join-Path $env:JARVIS_INSTALL_ROOT "generations\$current\jarvis-acp.exe")).Hash
     $brokenSource = Join-Path $root 'broken.cs'
     $brokenExe = Join-Path $root 'broken.exe'
     Set-Content -LiteralPath $brokenSource -Value 'public class Broken { public static int Main() { return unchecked((int)0xC0000135); } }'
     & $compiler /nologo "/out:$brokenExe" $brokenSource
     if ($LASTEXITCODE -ne 0) { throw 'broken fixture compilation failed' }
-    Copy-Item -LiteralPath $brokenExe -Destination (Join-Path $package 'agent-vesper-acp.exe') -Force
-    Compress-Archive -Path $package -DestinationPath $archive -Force
-    $brokenSha = (Get-FileHash -Algorithm SHA256 $archive).Hash
-    Set-Content -LiteralPath "$archive.sha256" -Value "$brokenSha  $asset"
+    $brokenArchive = New-FixturePackage -Directory (Join-Path $root 'broken') -Executable $brokenExe
+    $env:JARVIS_PACKAGE = $brokenArchive
+    $env:JARVIS_PACKAGE_SHA256 = (Get-FileHash -Algorithm SHA256 $brokenArchive).Hash
     Expect-Failure { & $installer } '0xC0000135: required DLL missing'
-    if ((Get-FileHash -Algorithm SHA256 $installedExe).Hash -ne $installedHash) { throw 'failed preflight replaced working executable' }
-    if (Test-Path $env:AGENT_VESPER_MEMORY_ROOT) { throw 'failed preflight wrote user memory' }
-    Copy-Item -LiteralPath $exe -Destination (Join-Path $package 'agent-vesper-acp.exe') -Force
-    Compress-Archive -Path $package -DestinationPath $archive -Force
-    $sha = (Get-FileHash -Algorithm SHA256 $archive).Hash
-    Set-Content -LiteralPath "$archive.sha256" -Value "$sha  $asset"
+    $after = (Get-Content -LiteralPath (Join-Path $env:JARVIS_INSTALL_ROOT 'current') -Raw).Trim()
+    if ($after -ne $current) { throw 'failed preflight replaced working generation' }
+    if ((Get-FileHash -Algorithm SHA256 (Join-Path $env:JARVIS_INSTALL_ROOT "generations\$current\jarvis-acp.exe")).Hash -ne $installedHash) {
+        throw 'failed preflight replaced working executable'
+    }
 
+    $env:JARVIS_PACKAGE = $archive
+    $env:JARVIS_PACKAGE_SHA256 = $sha
     Get-Content -LiteralPath $installer -Raw | Invoke-Expression | Out-Null
-    if ((& $acp --version) -ne 'fixture 0.0.0' -or (& $tui --version) -ne 'fixture 0.0.0') { throw 'piped install failed' }
+    if ((& $acp --version) -ne 'fixture 0.0.0') { throw 'piped install failed' }
 
-    # WOW64 emulation: native architecture takes precedence over x86 process.
     $env:PROCESSOR_ARCHITECTURE = 'x86'
     $env:PROCESSOR_ARCHITEW6432 = 'AMD64'
     & $installer | Out-Null
     if ((& $tui --version) -ne 'fixture 0.0.0') { throw 'WOW64 install failed' }
-    Write-Host 'PASS: PowerShell installer offline direct/piped/WOW64, launchers and checksum guards'
+
+    $foreign = Join-Path $root 'foreign'
+    New-Item -ItemType Directory -Path $foreign | Out-Null
+    Set-Content -LiteralPath (Join-Path $foreign 'notes.txt') -Value 'mine'
+    $env:JARVIS_INSTALL_ROOT = $foreign
+    Expect-Failure { & $installer } 'foreign-owned'
+    if ((Get-Content (Join-Path $foreign 'notes.txt')) -ne 'mine') { throw 'foreign root was modified' }
+    $env:JARVIS_INSTALL_ROOT = Join-Path $root 'installed'
+
+    & $uninstaller
+    if (Test-Path $acp) { throw 'uninstall left a launcher' }
+    if ((Get-Content (Join-Path $env:JARVIS_MEMORY_ROOT 'keep.txt')) -ne 'keep') { throw 'uninstall removed memory' }
+    if ((Get-Content $vesper) -ne 'vesper') { throw 'uninstall changed simulated Vesper state' }
+    Write-Host 'PASS: Jarvis PowerShell installer offline direct/piped/WOW64, launchers, checksum, ownership and uninstall guards'
 } finally {
     [Environment]::SetEnvironmentVariable('Path', $oldUserPath, 'User')
     $env:Path = $oldPath
     $env:PROCESSOR_ARCHITECTURE = $oldArch
-    $env:PROCESSOR_ARCHITEW6432 = $oldWow
-    $env:AGENT_VESPER_INSTALL_DIR = $oldInstall
-    $env:AGENT_VESPER_MEMORY_ROOT = $oldMemory
+    if ($null -eq $oldWow) { Remove-Item Env:PROCESSOR_ARCHITEW6432 -ErrorAction SilentlyContinue } else { $env:PROCESSOR_ARCHITEW6432 = $oldWow }
     [Net.ServicePointManager]::SecurityProtocol = $oldTls
     Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
 }

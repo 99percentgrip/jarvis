@@ -92,6 +92,11 @@ async fn install_confirmed(
     let script = temp.path().join("install.sh");
     std::fs::write(&script, include_str!("../../../scripts/install.sh"))
         .map_err(|_| "Cannot stage installer")?;
+    std::fs::write(
+        temp.path().join("jarvis_package.py"),
+        include_str!("../../../scripts/jarvis_package.py"),
+    )
+    .map_err(|_| "Cannot stage installer")?;
     let log_path = temp.path().join("install.log");
     let log = std::fs::File::create(&log_path).map_err(|_| "Cannot open updater log")?;
     let mut command = installer_command(&script, tag, bundle)?;
@@ -288,82 +293,76 @@ mod tests {
     #[tokio::test]
     async fn updater_installs_verified_fixture_and_refuses_bad_checksum_without_touching_user_state()
      {
-        use sha2::{Digest, Sha256};
-        use std::os::unix::fs::symlink;
+        use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
-        let fixtures = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests");
-        let bin = root.path().join("fixture-bin");
-        let stage = root.path().join("stage/agent-vesper-acp");
-        let bundle = root.path().join("installed");
-        for path in [
-            &bin,
-            &stage,
-            &bundle,
-            &root.path().join("tmp"),
-            &root.path().join("home"),
-        ] {
+        let payload = root.path().join("payload");
+        let scripts = root.path().join("scripts");
+        let memory = root.path().join("memory");
+        let home = root.path().join("home");
+        for path in [&payload, &scripts, &memory, &home, &root.path().join("tmp")] {
             std::fs::create_dir_all(path).unwrap();
         }
-        symlink(fixtures.join("update_curl_fixture.sh"), bin.join("curl")).unwrap();
-        for name in ["agent-vesper-acp", "agent-vesper-tui"] {
-            std::fs::copy(fixtures.join("update_payload_fixture.sh"), stage.join(name)).unwrap();
-            std::fs::write(bundle.join(name), "old payload").unwrap();
+        for name in ["jarvis-acp", "jarvis-tui"] {
+            let path = payload.join(name);
+            std::fs::write(&path, "#!/bin/sh\nprintf 'fixture 9.8.7\\n'\n").unwrap();
+            let mut permissions = std::fs::metadata(&path).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&path, permissions).unwrap();
         }
-        std::fs::write(bundle.join("user-state"), "keep this memory").unwrap();
-        let platform = if cfg!(target_os = "macos") {
-            "darwin"
-        } else {
-            "linux"
-        };
-        let asset = format!(
-            "agent-vesper-acp-{platform}-{}.tar.gz",
-            std::env::consts::ARCH
-        );
-        let archive = root.path().join(&asset);
-        assert!(
-            std::process::Command::new("tar")
-                .arg("-czf")
-                .arg(&archive)
-                .arg("-C")
-                .arg(stage.parent().unwrap())
-                .arg("agent-vesper-acp")
-                .status()
-                .unwrap()
-                .success()
-        );
-        let digest: String = Sha256::digest(std::fs::read(&archive).unwrap())
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect();
-        let script = root.path().join("install.sh");
-        std::fs::write(&script, include_str!("../../../scripts/install.sh")).unwrap();
-        let mut paths = vec![bin];
-        paths.extend(std::env::split_paths(
-            &std::env::var_os("PATH").unwrap_or_default(),
-        ));
-        let path = std::env::join_paths(paths).unwrap();
-        for valid in [false, true] {
-            std::fs::write(
-                root.path().join(format!("{asset}.sha256")),
-                format!(
-                    "{}  {asset}\n",
-                    if valid {
-                        digest.clone()
-                    } else {
-                        "0".repeat(64)
-                    }
-                ),
-            )
+        let archive = root.path().join("package.tar.gz");
+        let tool = scripts.join("jarvis_package.py");
+        std::fs::write(&tool, include_str!("../../../scripts/jarvis_package.py")).unwrap();
+        let packed = std::process::Command::new("python3")
+            .arg(&tool)
+            .args([
+                "pack",
+                "--bin-dir",
+                payload.to_str().unwrap(),
+                "--target",
+                "linux-x86_64",
+                "--output",
+                archive.to_str().unwrap(),
+                "--version",
+                "0.24.14",
+            ])
+            .output()
             .unwrap();
-            let mut command = installer_command(&script, "v9.8.7", &bundle).unwrap();
+        assert!(
+            packed.status.success(),
+            "{}",
+            String::from_utf8_lossy(&packed.stderr)
+        );
+        let digest = std::fs::read_to_string(root.path().join("package.tar.gz.sha256"))
+            .unwrap()
+            .split_whitespace()
+            .next()
+            .unwrap()
+            .to_owned();
+        std::fs::write(memory.join("keep.txt"), "keep this memory").unwrap();
+        let script = scripts.join("install.sh");
+        std::fs::write(&script, include_str!("../../../scripts/install.sh")).unwrap();
+        for valid in [false, true] {
+            let checksum = if valid {
+                digest.clone()
+            } else {
+                "0".repeat(64)
+            };
+            let mut command =
+                installer_command(&script, "v9.8.7", &root.path().join("unused")).unwrap();
             command
-                .env("PATH", &path)
-                .env("HOME", root.path().join("home"))
+                .env("HOME", &home)
                 .env("TMPDIR", root.path().join("tmp"))
-                .env("VESPER_UPDATE_FIXTURES", root.path())
+                .env("JARVIS_HOME", &home)
+                .env("JARVIS_TARGET", "linux-x86_64")
+                .env("JARVIS_PACKAGE", &archive)
+                .env("JARVIS_PACKAGE_SHA256", &checksum)
+                .env("JARVIS_INSTALL_ROOT", root.path().join("install"))
+                .env("JARVIS_LAUNCHER_DIR", root.path().join("launchers"))
+                .env("JARVIS_MEMORY_ROOT", &memory)
+                .env("JARVIS_SHELL_PROFILE", root.path().join("profile"))
                 .env("AGENT_VESPER_INSTALL_DIR", root.path().join("launchers"))
-                .env("AGENT_VESPER_MEMORY_ROOT", root.path().join("memory"))
                 .env("AGENT_VESPER_SHELL_PROFILE", root.path().join("profile"))
+                .env("VESPER_UPDATE_FIXTURES", root.path())
                 .kill_on_drop(true);
             let output = tokio::time::timeout(std::time::Duration::from_secs(20), command.output())
                 .await
@@ -376,21 +375,17 @@ mod tests {
                 String::from_utf8_lossy(&output.stderr)
             );
             assert_eq!(
-                std::fs::read_to_string(bundle.join("user-state")).unwrap(),
+                std::fs::read_to_string(memory.join("keep.txt")).unwrap(),
                 "keep this memory"
             );
+            let launcher = root.path().join("launchers").join("jarvis-tui");
             if valid {
-                assert_eq!(
-                    std::fs::read(bundle.join("agent-vesper-tui")).unwrap(),
-                    std::fs::read(fixtures.join("update_payload_fixture.sh")).unwrap()
-                );
-                assert!(root.path().join("launchers/agent-vesper-tui").is_file());
+                assert!(launcher.is_file());
+                let version = std::process::Command::new(&launcher).output().unwrap();
+                assert!(version.status.success());
+                assert!(String::from_utf8_lossy(&version.stdout).contains("fixture 9.8.7"));
             } else {
-                assert_eq!(
-                    std::fs::read_to_string(bundle.join("agent-vesper-tui")).unwrap(),
-                    "old payload"
-                );
-                assert!(!root.path().join("launchers").exists());
+                assert!(!launcher.exists());
             }
         }
     }

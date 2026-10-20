@@ -1,47 +1,48 @@
 param([Parameter(Mandatory = $true)][string]$BinaryDir)
-
-# Run real, exact-candidate release executables through both installer forms in
-# private state. No provider, microphone, credentials or user's installation.
 $ErrorActionPreference = 'Stop'
-$root = Join-Path ([IO.Path]::GetTempPath()) ('vesper-real-package-' + [guid]::NewGuid().ToString('N'))
+$root = Join-Path ([IO.Path]::GetTempPath()) ('jarvis-real-package-' + [guid]::NewGuid().ToString('N'))
 $oldUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 $oldPath = $env:Path
-$oldInstall = $env:AGENT_VESPER_INSTALL_DIR
-$oldMemory = $env:AGENT_VESPER_MEMORY_ROOT
-$oldTls = [Net.ServicePointManager]::SecurityProtocol
-
-function Invoke-WebRequest {
-    param([string]$Uri, [string]$OutFile, [switch]$UseBasicParsing)
-    if (-not $UseBasicParsing) { throw 'missing UseBasicParsing' }
-    Copy-Item -LiteralPath (Join-Path $root $Uri.Substring($Uri.LastIndexOf('/') + 1)) -Destination $OutFile
-}
-
 try {
-    $package = Join-Path $root 'package/agent-vesper-acp'
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $package = Join-Path $root 'stage'
     New-Item -ItemType Directory -Path $package -Force | Out-Null
-    $buildTargets = @{
-        'agent-vesper-acp.exe' = 'jarvis-acp.exe'
-        'agent-vesper-tui.exe' = 'jarvis-tui.exe'
-        'vesper-web-fetch.exe' = 'jarvis-web-fetch.exe'
-        'sandbox_init.exe' = 'jarvis-sandbox-init.exe'
+    $payloads = @()
+    foreach ($name in @('jarvis-acp.exe', 'jarvis-tui.exe', 'jarvis-web-fetch.exe', 'jarvis-sandbox-init.exe')) {
+        $source = Join-Path $BinaryDir $name
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "missing built executable: $source" }
+        Copy-Item -LiteralPath $source -Destination (Join-Path $package $name)
+        $role = if ($name -like 'jarvis-acp.exe' -or $name -like 'jarvis-tui.exe') { 'user-facing' } else { 'helper' }
+        $required = $role -eq 'user-facing'
+        $hash = (Get-FileHash -Algorithm SHA256 (Join-Path $package $name)).Hash.ToLowerInvariant()
+        $payloads += [ordered]@{ path = $name; type = 'file'; role = $role; required = $required; sha256 = $hash }
     }
-    foreach ($executable in $buildTargets.Keys) {
-        Copy-Item -LiteralPath (Join-Path $BinaryDir $buildTargets[$executable]) -Destination (Join-Path $package $executable)
+    $manifest = [ordered]@{
+        schema = 1; layout = 1; application = 'jarvis'; target = 'windows-x86_64'
+        archive = 'jarvis-windows-x86_64.zip'; version = '0.24.14'; source_commit = 'candidate'
+        payloads = $payloads
     }
-    $archive = Join-Path $root 'agent-vesper-acp-windows-x86_64.zip'
-    Compress-Archive -Path $package -DestinationPath $archive
-    $hash = (Get-FileHash -Algorithm SHA256 $archive).Hash
-    Set-Content -LiteralPath "$archive.sha256" -Value "$hash  agent-vesper-acp-windows-x86_64.zip"
-    $env:AGENT_VESPER_INSTALL_DIR = Join-Path $root 'installed'
-    $env:AGENT_VESPER_MEMORY_ROOT = Join-Path $root 'memory'
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    [IO.File]::WriteAllText((Join-Path $package 'manifest.json'), ($manifest | ConvertTo-Json -Depth 6), $utf8)
+    $archive = Join-Path $root 'jarvis-windows-x86_64.zip'
+    $zip = [System.IO.Compression.ZipFile]::Open($archive, 'Create')
+    try {
+        foreach ($file in Get-ChildItem -LiteralPath $package -File) {
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, ('jarvis/' + $file.Name)) | Out-Null
+        }
+    } finally { $zip.Dispose() }
+    $env:JARVIS_PACKAGE = $archive
+    $env:JARVIS_PACKAGE_SHA256 = (Get-FileHash -Algorithm SHA256 $archive).Hash
+    $env:JARVIS_INSTALL_ROOT = Join-Path $root 'installed'
+    $env:JARVIS_MEMORY_ROOT = Join-Path $root 'memory'
+    $env:JARVIS_HOME = $root
+    New-Item -ItemType Directory -Path $env:JARVIS_MEMORY_ROOT -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $env:JARVIS_MEMORY_ROOT 'keep.txt') -Value 'keep'
     $installer = Join-Path $PSScriptRoot 'install.ps1'
     & $installer | Out-Null
     Get-Content -LiteralPath $installer -Raw | Invoke-Expression | Out-Null
-    foreach ($hostName in @('agent-vesper-acp', 'agent-vesper-tui')) {
-        $launcher = Join-Path $env:AGENT_VESPER_INSTALL_DIR "$hostName.cmd"
-        # ACP reserves stdout for protocol traffic and prints CLI metadata on
-        # stderr. Desktop 5.1 wraps redirected stderr as NativeCommandError;
-        # startup success is determined by the real exit code plus output.
+    foreach ($hostName in @('jarvis-acp', 'jarvis-tui')) {
+        $launcher = Join-Path $env:JARVIS_INSTALL_ROOT "$hostName.cmd"
         $checkPreference = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
@@ -49,18 +50,14 @@ try {
             $versionExit = $LASTEXITCODE
             & $launcher --help 2>&1 | Out-Null
             $helpExit = $LASTEXITCODE
-        } finally {
-            $ErrorActionPreference = $checkPreference
-        }
+        } finally { $ErrorActionPreference = $checkPreference }
         if ($versionExit -ne 0 -or -not $observedVersion) { throw "$hostName --version failed (exit $versionExit)" }
         if ($helpExit -ne 0) { throw "$hostName --help failed (exit $helpExit)" }
-        Write-Host "PASS real exact-candidate Windows release: $observedVersion"
+        Write-Host "PASS real exact-candidate Windows package: $observedVersion"
     }
+    if ((Get-Content (Join-Path $env:JARVIS_MEMORY_ROOT 'keep.txt')) -ne 'keep') { throw 'real install changed memory sentinel' }
 } finally {
     [Environment]::SetEnvironmentVariable('Path', $oldUserPath, 'User')
     $env:Path = $oldPath
-    $env:AGENT_VESPER_INSTALL_DIR = $oldInstall
-    $env:AGENT_VESPER_MEMORY_ROOT = $oldMemory
-    [Net.ServicePointManager]::SecurityProtocol = $oldTls
     Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
 }

@@ -6,6 +6,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-20-stage6-distribution.md` owns Stage 6 package, installer, voice-investigation, and nonpublication evidence.
 - `2026-10-15-runtime-identity-stage3.md` and `runtime-identity-stage3-inventory.json` own runtime isolation evidence, capability limitations and exact-candidate verification.
 
 - `2026-10-15-rust-identity-stage2.md` and its source-inventory JSON own exact Stage 2 source, verification, compatibility boundaries and protected-merge receipts.

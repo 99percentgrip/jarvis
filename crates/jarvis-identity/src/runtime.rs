@@ -486,6 +486,51 @@ pub const RUNTIME_ENVIRONMENT: &[RuntimeEnvironmentIdentity] = &[
         current: "JARVIS_WEB_TEST_IMAGE",
         source: "crates/jarvis-web-fetch/src/browser.rs",
     },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_PACKAGE",
+        current: "JARVIS_PACKAGE",
+        source: "scripts/jarvis_package.py",
+    },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_PACKAGE_SHA256",
+        current: "JARVIS_PACKAGE_SHA256",
+        source: "scripts/jarvis_package.py",
+    },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_TARGET",
+        current: "JARVIS_TARGET",
+        source: "scripts/jarvis_package.py",
+    },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_INSTALL_ROOT",
+        current: "JARVIS_INSTALL_ROOT",
+        source: "scripts/jarvis_package.py",
+    },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_LAUNCHER_DIR",
+        current: "JARVIS_LAUNCHER_DIR",
+        source: "scripts/jarvis_package.py",
+    },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_SHELL_PROFILE",
+        current: "JARVIS_SHELL_PROFILE",
+        source: "scripts/jarvis_package.py",
+    },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_INSTALL_FAIL_AFTER",
+        current: "JARVIS_INSTALL_FAIL_AFTER",
+        source: "scripts/jarvis_package.py",
+    },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_INSTALL_ACTION",
+        current: "JARVIS_INSTALL_ACTION",
+        source: "scripts/install.ps1",
+    },
+    RuntimeEnvironmentIdentity {
+        legacy: "JARVIS_CI_TARGET",
+        current: "JARVIS_CI_TARGET",
+        source: "scripts/test_native_package_install.py",
+    },
 ];
 
 pub const RUNTIME_PATH_IDENTIFIERS: &[&str] = &[

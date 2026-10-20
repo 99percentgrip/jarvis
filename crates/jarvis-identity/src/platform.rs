@@ -115,7 +115,7 @@ pub const DISTRIBUTIONS: &[Distribution] = &[
         launcher_suffix: ".exe",
     },
 ];
-/// Proposed independent packaging contracts; no updater or installer is activated.
+/// Offline package contracts. Installers accept these archive names only from an explicit local artifact.
 pub const CHECKSUM_SUFFIX: &str = ".sha256";
 pub const INSTALLER_POSIX: &str = "install.sh";
 pub const INSTALLER_WINDOWS: &str = "install.ps1";

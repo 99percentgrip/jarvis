@@ -45,8 +45,9 @@ class PackageAuditTests(unittest.TestCase):
         self.assertLess(release.index("python scripts/windows_package_audit.py $staging"),
                         release.index("Compress-Archive -Path $staging"))
         installer = (root / "scripts/install.ps1").read_text()
-        self.assertLess(installer.index("0xC0000135: required DLL missing"),
-                        installer.index("New-Item -ItemType Directory -Path $InstallDir"))
+        self.assertIn("0xC0000135: required DLL missing", installer)
+        install_action = installer.split("if (-not $env:JARVIS_PACKAGE", 1)[1]
+        self.assertLess(install_action.index("Invoke-Smoke"), install_action.index("Acquire-Lock"))
         real_check = (root / "scripts/test_install_windows_release.ps1").read_text()
         self.assertIn("& $launcher --version 2>&1", real_check)
         self.assertIn("& $launcher --help 2>&1", real_check)

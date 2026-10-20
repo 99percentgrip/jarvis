@@ -66,29 +66,21 @@ the default, and your skill files remain intact. [Learn more](docs/skills.md).
 
 ## Install
 
-Prebuilt packages include **both the terminal app and the ACP editor server**. You do not need Rust or Python for ordinary coding tasks.
-
 **Supported:** Linux x86_64 / ARM64, macOS Intel / Apple Silicon, and Windows x86_64.
 
-### macOS and Linux
-
-Run in your terminal:
+No public download is available yet. Do not use a remote `latest` package or another product's release archive. A local install takes an explicit archive plus its SHA-256 digest:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/install.sh | sh
+JARVIS_PACKAGE=./jarvis-linux-x86_64.tar.gz JARVIS_PACKAGE_SHA256=<digest> sh scripts/install.sh
 ```
-
-### Windows
-
-Run in Windows PowerShell 5.1 (Desktop) or PowerShell 7+:
 
 ```powershell
-irm https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/install.ps1 | iex
+$env:JARVIS_PACKAGE = '.\jarvis-windows-x86_64.zip'
+$env:JARVIS_PACKAGE_SHA256 = '<digest>'
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-The installer downloads the latest x86_64 release and verifies its SHA-256 checksum. Reopen your terminal if the commands are not yet on PATH. For a manually downloaded script or an execution-policy error, see [Windows installation and troubleshooting](docs/installation.md#windows-powershell).
-
-[Inspect the installers](scripts/) · [Manual download](https://github.com/99percentgrip/agent-vesper/releases/latest) · [Installation and troubleshooting](docs/installation.md)
+The installer refuses a missing archive, a bad checksum, the wrong target, and any destination that belongs to another product. It does not change that product's files, credentials, or memory. Details are in the [installation guide](docs/installation.md) and the [package contract](docs/architecture/stage6-distribution.md).
 
 ## First run
 
@@ -141,22 +133,19 @@ Install update** and confirm. Vesper shows installation progress and tells you
 when to close and reopen it. Restart any running editor agents too. On Windows,
 the installer runs in a separate console after Vesper closes.
 
-You can also rerun the installer above. Updates verify the package checksum and
-preserve co-located user state and existing skill edits.
+A later local package can be installed over an existing one. The installer verifies the checksum and preserves memory and edited skills.
 [Update details and version selection](docs/installation.md#update-or-choose-a-version).
 
-**Uninstall:** back up data stored inside the application bundle first, including global memory at its default Linux/macOS location. The uninstaller removes that directory; provider credentials are preserved. [Paths and backup details](docs/installation.md#uninstall).
+**Uninstall** removes installer-owned package files and launchers. It does not delete memory, sessions, credentials, or another product's installation. [Paths and backup details](docs/installation.md#uninstall).
 
-macOS / Linux:
+Uninstall is also local. It removes installer-owned launchers and package generations only:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/uninstall.sh | sh
+sh scripts/uninstall.sh
 ```
 
-Windows PowerShell:
-
 ```powershell
-irm https://raw.githubusercontent.com/99percentgrip/agent-vesper/main/scripts/uninstall.ps1 | iex
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 ```
 
 ## Documentation
