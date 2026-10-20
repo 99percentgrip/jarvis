@@ -22,6 +22,7 @@ migration, releases, installations and Vesper changes are excluded.
 ## Evidence and limitations
 
 See [execution report](foundation/2026-10-14-solo-maintainer-governance.md).
+Stage 7A CI cancellation and measurement evidence: [foundation/2026-10-20-stage7a-ci-optimization.md](foundation/2026-10-20-stage7a-ci-optimization.md).
 CI_PENDING. Strict required job names mean prose-only PRs whose native workflows
 are filtered cannot merge under this bootstrap; skips are never fabricated as
 success. A future separately reviewed scope-aware merge gate may address that
