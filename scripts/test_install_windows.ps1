@@ -87,7 +87,10 @@ try {
     & $installer | Out-Null
     $acp = Join-Path $env:JARVIS_INSTALL_ROOT 'jarvis-acp.cmd'
     $tui = Join-Path $env:JARVIS_INSTALL_ROOT 'jarvis-tui.cmd'
-    if ((& $acp --version) -ne 'fixture 0.0.0' -or (& $tui --version) -ne 'fixture 0.0.0') { throw 'launchers failed' }
+    $acpOut = @(& $acp --version 2>&1 | ForEach-Object { "$_" }) -join '|'
+    $tuiOut = @(& $tui --version 2>&1 | ForEach-Object { "$_" }) -join '|'
+    $cmd = Get-Content -LiteralPath $tui -Raw
+    if ($acpOut -ne 'fixture 0.0.0' -or $tuiOut -ne 'fixture 0.0.0') { throw "launchers failed acp=[$acpOut] tui=[$tuiOut] cmd=[$cmd]" }
     New-Item -ItemType Directory -Path $env:JARVIS_MEMORY_ROOT -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $env:JARVIS_MEMORY_ROOT 'keep.txt') -Value 'keep'
     $vesper = Join-Path $root 'AgentVesper\secret.txt'

@@ -224,11 +224,8 @@ function Write-Launchers([string]$Generation) {
                 Fail "refusing to replace unowned launcher: $path"
             }
         }
-        $body = @"
-rem jarvis-launcher
-@echo off
-"%~dp0generations\$Generation\$($pair[1])" %*
-"@
+        $exePath = Join-Path $installRoot "generations\$Generation\$($pair[1])"
+        $body = "rem jarvis-launcher`r`n@echo off`r`n`"$exePath`" %*`r`n"
         $utf8 = New-Object System.Text.UTF8Encoding $false
         [IO.File]::WriteAllText($path, $body, $utf8)
     }
