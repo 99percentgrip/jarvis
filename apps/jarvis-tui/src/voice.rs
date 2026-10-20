@@ -7,7 +7,7 @@ use std::{
     process::{Child, Command, Stdio},
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicBool, Ordering},
         mpsc,
     },
     thread,
@@ -1014,6 +1014,7 @@ const SCRIPT: &str = include_str!("voice_transcribe.py");
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::AtomicU64;
     fn controller() -> (Controller, std::sync::mpsc::Receiver<Control>) {
         // Mirrors Controller::new but returns the control receiver so the
         // key-mapping contract is testable without spawning the worker.
