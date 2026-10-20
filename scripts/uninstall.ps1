@@ -22,7 +22,8 @@ foreach ($name in @("jarvis-acp.cmd", "jarvis-tui.cmd")) {
         Remove-Item -LiteralPath $path -Force
         continue
     }
-    if ((Get-Content -LiteralPath $path -TotalCount 1) -ne "rem jarvis-launcher") {
+    $head = @(Get-Content -LiteralPath $path -TotalCount 2)
+    if ($head.Count -lt 2 -or $head[0] -ne "@echo off" -or $head[1] -ne "rem jarvis-launcher") {
         Fail "refusing to remove unowned launcher: $path"
     }
     Remove-Item -LiteralPath $path -Force

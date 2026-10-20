@@ -217,15 +217,13 @@ function Write-Launchers([string]$Generation) {
         }
         if (Test-Path -LiteralPath $path -PathType Leaf) {
             $first = @(Get-Content -LiteralPath $path -TotalCount 1)
-            if ($first -notcontains "rem jarvis-launcher" -and $first[0] -ne "rem jarvis-launcher") {
-                # The marker is the first line.
-            }
-            if ((Get-Content -LiteralPath $path -TotalCount 1) -ne "rem jarvis-launcher") {
+            $head = @(Get-Content -LiteralPath $path -TotalCount 2)
+            if ($head.Count -lt 2 -or $head[0] -ne "@echo off" -or $head[1] -ne "rem jarvis-launcher") {
                 Fail "refusing to replace unowned launcher: $path"
             }
         }
         $exePath = Join-Path $installRoot "generations\$Generation\$($pair[1])"
-        $body = "rem jarvis-launcher`r`n@echo off`r`n`"$exePath`" %*`r`n"
+        $body = "@echo off`r`nrem jarvis-launcher`r`n`"$exePath`" %*`r`n"
         $utf8 = New-Object System.Text.UTF8Encoding $false
         [IO.File]::WriteAllText($path, $body, $utf8)
     }
