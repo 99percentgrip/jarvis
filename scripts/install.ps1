@@ -190,8 +190,8 @@ function Test-Manifest([string]$Root) {
     }
     foreach ($name in $required) { if (-not $seen.ContainsKey($name)) { Fail "missing executable: $name" } }
 }
-function Invoke-Smoke([string]$Generation) {
-    $bundle = Join-Path $installRoot "generations\$Generation"
+function Invoke-Smoke([string]$Bundle) {
+    $bundle = $Bundle
     $preference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
@@ -312,6 +312,7 @@ New-Item -ItemType Directory -Path $temporary | Out-Null
 try {
     Expand-SafeZip $env:JARVIS_PACKAGE $temporary
     Test-Manifest $temporary
+    Invoke-Smoke $temporary
     Assert-Adoptable
     Acquire-Lock
     try {
@@ -324,7 +325,6 @@ try {
         Copy-Item -Path (Join-Path $temporary "*") -Destination $destination -Recurse -Force
         Write-JsonFile (Join-Path $installRoot "transaction.json") ([ordered]@{ state = "staged"; generation = $generation; previous = $previous })
         if ($env:JARVIS_INSTALL_FAIL_AFTER -eq "staged") { Fail "injected failure after staging; installation was not activated" }
-        Invoke-Smoke $generation
         $utf8 = New-Object System.Text.UTF8Encoding $false
         [IO.File]::WriteAllText($currentPath, ($generation + "`n"), $utf8)
         Write-JsonFile (Join-Path $installRoot "transaction.json") ([ordered]@{ state = "activated"; generation = $generation; previous = $previous })
