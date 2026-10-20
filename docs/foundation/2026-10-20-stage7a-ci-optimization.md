@@ -44,6 +44,10 @@ Windows tests stay on `--test-threads=1`. The 3781-second routing matrix is unch
 
 Release and RRC workflow files were not given this cancellation group and were not enabled.
 
+## Cancellation check
+
+The first pull-request runs for `d3f0ddc10c28b5e46198f28d85f93ffa2acc4443` were started before this note. The next commit on this pull request is expected to supersede those same-workflow runs. Their conclusions are recorded from GitHub after the fact; a cancelled run is not merge evidence.
+
 ## What this does not claim
 
 This does not make the final-head critical path 25 percent shorter. The Windows routing matrix still has to run on the head that merges. Cancellation reduces time spent on superseded heads. One later measurement of this pull request is not a warm-cache study.
