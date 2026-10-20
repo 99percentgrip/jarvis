@@ -2,11 +2,9 @@
 
 ## Purpose
 
-Own the cross-platform installers and uninstallers that download one verified
-release archive, install or remove both `agent-vesper-acp` and
-`agent-vesper-tui` on the user's PATH, and produce provider-neutral native first-run guidance. Also owns the ACP Registry PR
-submission payload used to sync the published `agent-vesper` registry entry
-with each release. The read-only release prerequisite helper also lives here.
+Own offline Jarvis installers and uninstallers, the package builder, and the
+read-only release-prerequisite helper. Public registry publication stays a
+deferred script in this directory and is not part of Stage 6 installation.
 
 ## Ownership
 
@@ -17,16 +15,9 @@ with each release. The read-only release prerequisite helper also lives here.
   It also checks unfiltered push/PR trigger coverage in all four workflows,
   thirteen required context producers and refusal to tag missing evidence.
 
-- `install.sh` — POSIX installer (Linux + macOS). Downloads the
-  `agent-vesper-acp-<platform>-<arch>.tar.gz` release, verifies SHA-256,
-  installs both launchers under `$XDG_BIN_HOME` (default `~/.local/bin`),
-  updates the shell profile PATH, and bundles the standalone `uv` binary
-  (from `astral-sh/uv` latest release) into the bundle dir so the
-  push-to-talk voice backend can auto-bootstrap a `faster-whisper` venv via
-  the bundled `uv` with no external venv toolchain. (The bootstrap's
-  `python3 -m venv` fallback still needs system `python3`+`python3-venv`, but
-  is only reached if the bundled `uv` is absent.) A failed `uv` download is
-  non-fatal.
+- `install.sh` — POSIX entrypoint. It runs `jarvis_package.py` and refuses to
+  start without `JARVIS_PACKAGE` and `JARVIS_PACKAGE_SHA256`. It does not
+  download a release or a `uv` binary.
 - `test_install_windows.ps1` is the offline Windows x86_64 regression: run under
   powershell.exe (Desktop 5.1) and pwsh.exe (7+); tests both invocation forms,
   SHA-256 mismatch/invalid failure, unsupported and simulated WOW64 metadata,
@@ -39,14 +30,10 @@ with each release. The read-only release prerequisite helper also lives here.
   PowerShell hosts; it does not use synthetic hosts or call providers.
   Capture both CLI output streams and native exit codes: ACP metadata uses stderr;
   PowerShell 5.1 NativeCommandError records alone never imply a failed process.
-- `install.ps1` — Windows installer. Downloads the
-  `agent-vesper-acp-windows-x86_64.zip` release, verifies SHA-256, installs a
-  `.cmd` launchers under `%LOCALAPPDATA%\Programs\AgentVesper`, and adds that
-  directory to the user PATH.
-- `uninstall.sh` — POSIX uninstaller. Removes only the launcher, bundle, and
-  exact shell-profile PATH marker owned by `install.sh`.
-- `uninstall.ps1` — Windows uninstaller. Removes only the launcher, bundle,
-  and exact user PATH entry owned by `install.ps1`.
+- `install.ps1` — Windows installer for `%LOCALAPPDATA%\Programs\Jarvis`.
+  It reads `JARVIS_PACKAGE` and does not call the network.
+- `uninstall.sh` and `uninstall.ps1` remove only files recorded in
+  `.jarvis-installer-owned.json`. Memory and foreign launchers stay.
 - `publish_to_acp_registry.sh` — VRO-11.2 publishing helper for the public
   ACP Registry (`agentclientprotocol/registry`). Clones the registry to a
   temporary directory, writes `registry/agent.json` from this repo into the
@@ -72,10 +59,8 @@ with each release. The read-only release prerequisite helper also lives here.
   locations, launchers, download routes and checksum requirements are unchanged.
 
 
-- The installers download from `github.com/99percentgrip/agent-vesper`
-  releases for the matching tag (`v<version>`, or `latest`).
-- SHA-256 verification is mandatory; a missing/mismatched checksum fails the
-  install.
+- Stage 6 installers do not download from a release URL. A missing archive
+  or digest fails closed. SHA-256 proves byte match only, not publisher identity.
 - Installed launchers invoke their bundled binary verbatim and add no behavior.
 - Until the public ACP Registry PR is merged, installer completion guidance
   directs Zed users to register the installed launcher with `type: custom`;
@@ -106,12 +91,9 @@ with each release. The read-only release prerequisite helper also lives here.
 - Upgrades replace only the named binaries, seed library, and driver payloads,
   never the bundle root. Co-located cognition databases, voice environments,
   and other user state retain their paths and inodes in both installers.
-- The installers seed the curated skill library (from the bundled
-  `skills/` archive directory) into `~/.agent-vesper/memory/`
-  non-destructively: existing files win, slugs listed in
-  `.seed-manifest` are never resurrected, and new seed skills from later
-  releases are added on upgrade. `AGENT_VESPER_MEMORY_ROOT` overrides the
-  destination. Uninstallers never touch `~/.agent-vesper/` (user data).
+- Skill seeds, when the package contains them, copy into `JARVIS_MEMORY_ROOT`
+  or `~/.jarvis/memory`. Existing files win, and slugs already listed in
+  `.seed-manifest` are not resurrected. Uninstall does not delete that tree.
   The library includes `work-unit-reporting` (95 skills), which implements
   the completion-reporting behavior both hosts also inject via the shared
   `COMPLETION_REPORTING_INSTRUCTION` system-prompt mandate.
@@ -123,8 +105,7 @@ with each release. The read-only release prerequisite helper also lives here.
 - Pre-tag Windows CI runs the actual release-package audit and real installer
   acceptance under PowerShell 5.1 and 7; publication repeats the staged audit.
 
-- `sh scripts/test_install_upgrade.sh` verifies payload replacement while
-  preserving cognition contents/inode, voice state, and unrelated user files.
+- `sh scripts/test_install_upgrade.sh` runs the offline installer suite in a disposable home.
 - Shellcheck-clean `install.sh` (POSIX `sh`, no bashisms).
 - Shellcheck-clean `uninstall.sh` (POSIX `sh`, no bashisms).
 - `install.ps1` runs under Windows PowerShell 5.1+ and PowerShell 7.

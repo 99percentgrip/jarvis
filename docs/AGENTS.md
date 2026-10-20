@@ -6,6 +6,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `architecture/stage6-distribution.md` owns the offline package and installer contract. `foundation/2026-10-20-stage6-distribution.md` owns its evidence.
 - `runtime-identity-stage3-prd.md` owns runtime isolation acceptance and the Stage 4 boundary.
 
 - `rust-identity-stage2-prd.md` owns the authorized Rust workspace/executable migration and protected-merge acceptance; architecture/foundation children own its mapping and evidence.

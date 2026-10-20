@@ -7,6 +7,7 @@ Vesper terminology, feeding future feature PRDs (e.g. VRO-16 hive governance).
 
 ## Ownership
 
+- `stage6-distribution.md` owns the offline archive contract, installer ownership split, and the publication boundary.
 - `runtime-identity-stage3.md` owns the source-derived private-resource architecture and dependency-ordered isolation plan.
 
 - `rust-identity-stage2.md` owns current Rust identities, complete directory/package mapping and explicit legacy adapters; it is a first-party implementation specification.

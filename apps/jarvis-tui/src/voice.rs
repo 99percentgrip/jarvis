@@ -855,11 +855,8 @@ impl Worker {
             if self.cancelled() {
                 return Err("Transcription cancelled; completed chunks and audio retained.".into());
             }
-            if last_progress.elapsed() > stall {
-                return Err(
-                    "Speech model made no progress for five minutes; audio retained.".into(),
-                );
-            }
+            // Stall is measured only across idle waits. Progress already queued
+            // must be consumed even if the collector thread was preempted.
             match rx.recv_timeout(Duration::from_millis(50)) {
                 Ok(message) => {
                     let message = message?;
@@ -917,7 +914,13 @@ impl Worker {
                 Err(mpsc::RecvTimeoutError::Disconnected) => {
                     return Err("Speech helper exited before completion; audio retained.".into());
                 }
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Timeout) => {
+                    if last_progress.elapsed() > stall {
+                        return Err(
+                            "Speech model made no progress for five minutes; audio retained.".into(),
+                        );
+                    }
+                }
             }
         }
     }

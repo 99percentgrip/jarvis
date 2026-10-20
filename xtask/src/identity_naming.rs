@@ -19,6 +19,11 @@ const OWNED_PATHS: &[&str] = &[
     "docs/architecture/stage5-integration-identity.md",
     "docs/foundation/2026-10-20-stage5-integration-identity.md",
     "docs/foundation/stage5-integration-inventory.json",
+    "README.md",
+    "docs/installation.md",
+    "docs/architecture/stage6-distribution.md",
+    "docs/foundation/2026-10-20-stage6-distribution.md",
+    "docs/foundation/evidence-index.md",
     "docs/workspace-map.md",
     "docs/dependencies.md",
     "docs/architecture.md",
@@ -47,6 +52,7 @@ pub fn owned_line(path: &str, line: &str) -> bool {
             "Jarvis/State",
             "Jarvis/Logs",
             "Programs/Jarvis",
+        "Programs\\Jarvis",
             "Library/Application Support/Jarvis",
             "Library/Caches/Jarvis",
             "Library/Logs/Jarvis",
@@ -115,6 +121,24 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     for env in jarvis_identity::RUNTIME_ENVIRONMENT {
         scrubbed = scrub_technical_token(&scrubbed, env.current);
     }
+    const STAGE6_INSTALLER_TOKENS: &[&str] = &[
+        "JARVIS_PACKAGE_SHA256",
+        "JARVIS_PACKAGE",
+        "JARVIS_INSTALL_ROOT",
+        "JARVIS_LAUNCHER_DIR",
+        "JARVIS_SHELL_PROFILE",
+        "JARVIS_INSTALL_ACTION",
+        "jarvis_package.py",
+        "test_jarvis_package.py",
+        ".jarvis-installer-owned.json",
+        "jarvis-stage6",
+        "Library/Application Support/Jarvis",
+        "Library/Caches/Jarvis",
+        "Library/Logs/Jarvis",
+        "Programs/Jarvis",
+        "jarvis/install",
+        "jarvis/logs",
+    ];
     const STAGE5_INTEGRATION_TOKENS: &[&str] = &[
         "x-jarvis-lens-token",
         "X-Jarvis-Lens-Token",
@@ -132,8 +156,13 @@ pub fn owned_line(path: &str, line: &str) -> bool {
         "data-jarvis-question",
         "data-jarvis-required",
     ];
-    if active {
+    if active || declarations {
         for token in STAGE5_INTEGRATION_TOKENS {
+            scrubbed = scrub_technical_token(&scrubbed, token);
+        }
+    }
+    if declarations {
+        for token in STAGE6_INSTALLER_TOKENS {
             scrubbed = scrub_technical_token(&scrubbed, token);
         }
     }
