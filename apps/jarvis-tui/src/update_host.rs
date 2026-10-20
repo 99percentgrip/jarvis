@@ -348,7 +348,7 @@ mod tests {
                 "0".repeat(64)
             };
             let mut command =
-                installer_command(&script, "v9.8.7", root.path().join("unused")).unwrap();
+                installer_command(&script, "v9.8.7", &root.path().join("unused")).unwrap();
             command
                 .env("HOME", &home)
                 .env("TMPDIR", root.path().join("tmp"))
