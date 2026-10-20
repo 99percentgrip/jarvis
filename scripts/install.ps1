@@ -26,7 +26,8 @@ if ($target -ne "windows-x86_64") { Fail "wrong target: $target" }
 
 function Test-Foreign([string]$Path) {
     $text = $Path.Replace("\", "/").ToLowerInvariant()
-    if ($text.Contains("agent-vesper") -or $text.Contains("agentvesper")) {
+    # Never select the retired Programs\AgentVesper location.
+    if ($text.Contains("agent-vesper") -or $text.Contains("agentvesper") -or $text.Contains("programs/agentvesper")) {
         Fail "refusing Vesper-owned or ambiguous path: $Path"
     }
 }
@@ -223,7 +224,16 @@ function Write-Launchers([string]$Generation) {
                 Fail "refusing to replace unowned launcher: $path"
             }
         }
-        $body = "rem jarvis-launcher`r`n@echo off`r`nset /p GEN=<`"%~dp0current`"`r`nset `"JARVIS_BUNDLE_DIR=%~dp0generations\%GEN%`"`r`n`"%JARVIS_BUNDLE_DIR%\$($pair[1])`" %*`r`n"
+        $body = @"
+rem jarvis-launcher
+@echo off
+setlocal EnableExtensions
+set "ROOT=%~dp0"
+set "GEN="
+for /f "usebackq delims=" %%G in ("%ROOT%current") do if not defined GEN set "GEN=%%G"
+"%ROOT%generations\%GEN%\$($pair[1])" %*
+exit /b %ERRORLEVEL%
+"@
         $utf8 = New-Object System.Text.UTF8Encoding $false
         [IO.File]::WriteAllText($path, $body, $utf8)
     }

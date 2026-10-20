@@ -917,7 +917,8 @@ impl Worker {
                 Err(mpsc::RecvTimeoutError::Timeout) => {
                     if last_progress.elapsed() > stall {
                         return Err(
-                            "Speech model made no progress for five minutes; audio retained.".into(),
+                            "Speech model made no progress for five minutes; audio retained."
+                                .into(),
                         );
                     }
                 }

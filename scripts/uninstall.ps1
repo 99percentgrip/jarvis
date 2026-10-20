@@ -1,6 +1,6 @@
 # Jarvis uninstaller. Removes installer-owned payloads and recorded launchers only.
 $ErrorActionPreference = "Stop"
-$installRoot = if ($env:JARVIS_INSTALL_ROOT) { $env:JARVIS_INSTALL_ROOT } elseif ($env:JARVIS_INSTALL_DIR) { $env:JARVIS_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA "Programs\Jarvis" }
+$installRoot = if ($env:JARVIS_INSTALL_ROOT) { $env:JARVIS_INSTALL_ROOT } else { Join-Path $env:LOCALAPPDATA "Programs\Jarvis" }
 function Fail([string]$Message) { throw "jarvis uninstaller: $Message" }
 $text = $installRoot.Replace("\", "/").ToLowerInvariant()
 if ($text.Contains("agent-vesper") -or $text.Contains("agentvesper")) { Fail "refusing Vesper-owned or ambiguous path: $installRoot" }

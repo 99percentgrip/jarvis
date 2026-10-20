@@ -52,7 +52,7 @@ pub fn owned_line(path: &str, line: &str) -> bool {
             "Jarvis/State",
             "Jarvis/Logs",
             "Programs/Jarvis",
-        "Programs\\Jarvis",
+            "Programs\\Jarvis",
             "Library/Application Support/Jarvis",
             "Library/Caches/Jarvis",
             "Library/Logs/Jarvis",
