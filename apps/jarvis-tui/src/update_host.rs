@@ -360,6 +360,9 @@ mod tests {
                 .env("JARVIS_LAUNCHER_DIR", root.path().join("launchers"))
                 .env("JARVIS_MEMORY_ROOT", &memory)
                 .env("JARVIS_SHELL_PROFILE", root.path().join("profile"))
+                .env("AGENT_VESPER_INSTALL_DIR", root.path().join("launchers"))
+                .env("AGENT_VESPER_SHELL_PROFILE", root.path().join("profile"))
+                .env("VESPER_UPDATE_FIXTURES", root.path())
                 .kill_on_drop(true);
             let output = tokio::time::timeout(std::time::Duration::from_secs(20), command.output())
                 .await
