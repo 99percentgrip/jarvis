@@ -161,10 +161,8 @@ pub fn owned_line(path: &str, line: &str) -> bool {
             scrubbed = scrub_technical_token(&scrubbed, token);
         }
     }
-    if declarations {
-        for token in STAGE6_INSTALLER_TOKENS {
-            scrubbed = scrub_technical_token(&scrubbed, token);
-        }
+    for token in STAGE6_INSTALLER_TOKENS {
+        scrubbed = scrub_technical_token(&scrubbed, token);
     }
     for id in identifiers {
         if id.starts_with("jarvis-")
