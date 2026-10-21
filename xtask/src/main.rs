@@ -2086,6 +2086,56 @@ fn acceptance_verify() -> Result<(), String> {
         (
             "jarvis-harness",
             &["--lib"],
+            "host_storage::tests::proactive_cleanup_removes_only_registered_disposable_resources",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_storage::tests::active_recovery_evidence_and_explicit_retention_are_preserved",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_storage::tests::restart_reconciles_interrupted_cleanup_without_duplicate_allocation",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_storage::tests::existing_unmarked_storage_and_stale_atomic_write_do_not_get_adopted_or_blocked",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_storage::tests::foreign_owned_record_cannot_be_registered_or_loaded_for_reclamation",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_storage::tests::cleanup_pending_resource_cannot_be_leased_or_reactivated",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_storage::tests::lease_drop_settles_active_resource_without_making_it_reclaimable",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_storage::tests::logical_reclamation_and_actual_capacity_are_distinct_receipts",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_resources::tests::high_watermark_reclaims_owned_inactive_storage_and_continues",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
+            "host_resources::tests::active_cache_crossing_high_watermark_is_preserved_when_headroom_is_safe",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"],
             "host_resources::native_backend::tests::native_observation_cancellation_interrupts_a_stalled_job_probe",
         ),
         (
@@ -2829,8 +2879,22 @@ fn acceptance_verify() -> Result<(), String> {
             "release_executor::tests::cancelled_checkpoint_rejects_late_worker_failure_settlement",
         ),
     ];
+    #[cfg(unix)]
+    cases.extend([
+        (
+            "jarvis-harness",
+            &["--lib"] as &[&str],
+            "host_storage::tests::registry_metadata_symlinks_and_unmarked_store_are_not_adopted",
+        ),
+        (
+            "jarvis-harness",
+            &["--lib"] as &[&str],
+            "host_storage::tests::symlink_cleanup_root_fails_closed_without_touching_target",
+        ),
+    ]);
     #[cfg(target_os = "linux")]
     cases.extend([
+        ("jarvis-harness", &["--lib"] as &[&str], "host_storage::tests::missing_start_identity_does_not_clear_a_live_owner_lease"),
         (
             "jarvis-harness",
             &["--lib"] as &[&str],
