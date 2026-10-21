@@ -152,6 +152,24 @@ fn held_pipe_command() -> String {
     "(while [ ! -f settlement.ready ]; do sleep 0.01; done; sleep 2; echo stale > descendant.marker; echo stale) & touch settlement.ready; echo leader-done".into()
 }
 
+#[cfg(windows)]
+#[test]
+fn slow_leader_fixtures_delay_inside_one_shell_before_descendant_start() {
+    for command in [writer_command(), held_pipe_command()] {
+        let encoded = command
+            .strip_prefix("powershell.exe -NoProfile -NonInteractive -EncodedCommand ")
+            .expect("only one leader interpreter");
+        let bytes = STANDARD.decode(encoded).expect("encoded fixture");
+        let units = bytes
+            .chunks_exact(2)
+            .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+            .collect::<Vec<_>>();
+        let script = String::from_utf16(&units).expect("fixture script");
+        assert!(script.starts_with("Start-Sleep -Seconds 6; "));
+        assert!(script.contains("Set-Content -LiteralPath settlement.ready"));
+    }
+}
+
 fn leader_fixture_call(command: &str) -> ToolCall {
     // The readiness helper admits 15 seconds of shell/descendant startup.
     // Leave room for that phase; post-readiness assertions remain unchanged.
@@ -166,7 +184,7 @@ fn writer_command() -> String {
 #[cfg(windows)]
 fn writer_command() -> String {
     powershell(&format!(
-        "{}; {}; Set-Content -LiteralPath settlement.ready -Value ready",
+        "Start-Sleep -Seconds 6; {}; {}; Set-Content -LiteralPath settlement.ready -Value ready",
         powershell_descendant("while ($true) { [Console]::Out.Write('z' * 4096) }"),
         powershell_descendant(
             "while (-not (Test-Path -LiteralPath settlement.ready)) { Start-Sleep -Milliseconds 10 }; Start-Sleep -Seconds 2; Set-Content -LiteralPath writer.marker -Value stale"
@@ -177,7 +195,7 @@ fn writer_command() -> String {
 #[cfg(windows)]
 fn held_pipe_command() -> String {
     powershell(&format!(
-        "{}; Set-Content -LiteralPath settlement.ready -Value ready; Write-Output leader-done",
+        "Start-Sleep -Seconds 6; {}; Set-Content -LiteralPath settlement.ready -Value ready; Write-Output leader-done",
         powershell_descendant(
             "while (-not (Test-Path -LiteralPath settlement.ready)) { Start-Sleep -Milliseconds 10 }; Start-Sleep -Seconds 2; Set-Content -LiteralPath descendant.marker -Value stale; [Console]::Out.Write('stale')"
         )
@@ -268,8 +286,11 @@ async fn assert_slow_leader_fixture(command: String, marker: &str) {
     let ctx = context(root.path(), Arc::new(Cancel::default()));
     #[cfg(unix)]
     let delayed = format!("sleep 6; {command}");
+    // Windows fixtures put the six-second delay in the same PowerShell process
+    // as the leader; launching an extra interpreter spent the startup budget
+    // before the leader could even create its readiness marker.
     #[cfg(windows)]
-    let delayed = format!("{} & {command}", powershell("Start-Sleep -Seconds 6"));
+    let delayed = command;
     let invocation = leader_fixture_call(&delayed);
     let mut task = tokio::spawn(async move { RunCommand.execute(&invocation, &ctx).await });
     wait_for_marker(&root.path().join("settlement.ready"), &mut task).await;

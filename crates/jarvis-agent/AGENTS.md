@@ -34,7 +34,9 @@ the multi-turn, tool-executing layer above it.
   no-signalable-member result; verified settlement still requires a reaped leader
   and EOF on both inherited pipes. Other signal failures remain fail-closed.
   The historical output-shape stress fixture allows 20 seconds per native shell
-  command under cold runner load; short-timeout/partial-output tests still
+  command under cold runner load. Slow Windows leader fixtures delay inside their
+  one owning PowerShell process, not a second startup interpreter; readiness
+  and post-readiness settlement deadlines remain unchanged. Short-timeout/partial-output tests still
   enforce the true timeout and cleanup contract.
 - `src/registry.rs` — `ToolRegistry`: name → executor routing plus mode- and
   provider-filtered production advertisement through `definitions_for_provider`.
