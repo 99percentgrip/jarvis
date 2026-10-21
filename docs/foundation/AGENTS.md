@@ -6,7 +6,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
-- `2026-10-21-stage7b-final-acceptance-continuation.md` owns the ongoing final-acceptance local/security and protected-integration receipt inventory; it is not a completion claim. `2026-10-21-stage7b-post-push-local-receipt.md` owns unpublished post-push observations until the next authorized code change.
+- `2026-10-21-stage7b-final-acceptance-continuation.md` owns the ongoing final-acceptance local/security and protected-integration receipt inventory; it is not a completion claim. `2026-10-21-stage7b-post-push-local-receipt.md` owns subsequent failed-head diagnostics, protected integration and post-merge receipts until the next authorized code change.
 - `2026-10-20-stage7b-local-closeout.md` owns the final local receipt inventory
   and explicitly blocked full acceptance/hosted candidate boundary.
 - `2026-10-20-stage7b-storage-ownership-hardening.md` owns the bounded

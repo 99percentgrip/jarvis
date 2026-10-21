@@ -33,6 +33,9 @@ the multi-turn, tool-executing layer above it.
   final signal. Darwin `killpg` `EPERM` is accepted only as its documented
   no-signalable-member result; verified settlement still requires a reaped leader
   and EOF on both inherited pipes. Other signal failures remain fail-closed.
+  The historical output-shape stress fixture allows 20 seconds per native shell
+  command under cold runner load; short-timeout/partial-output tests still
+  enforce the true timeout and cleanup contract.
 - `src/registry.rs` — `ToolRegistry`: name → executor routing plus mode- and
   provider-filtered production advertisement through `definitions_for_provider`.
   `definitions_for` remains provider-free for schema inspection and legacy tests.

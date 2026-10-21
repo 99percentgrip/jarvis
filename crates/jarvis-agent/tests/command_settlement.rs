@@ -336,8 +336,10 @@ async fn historical_instruction_file_and_larger_stress_settle_repeatedly() {
         "git diff --no-index NUL instructions.md & if errorlevel 2 exit /b 2 & exit /b 0",
     ];
     for command in commands {
+        // This checks output/cleanup, not a five-second performance promise.
+        // Native Windows startup and a cold git diff can exceed five seconds.
         let result = RunCommand
-            .execute(&call(command, 5), &ctx)
+            .execute(&call(command, 20), &ctx)
             .await
             .expect("historical output shape must settle");
         assert!(result.text.as_str().contains("output truncated"));
