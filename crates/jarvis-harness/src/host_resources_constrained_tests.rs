@@ -102,7 +102,7 @@ fn constrained_disk_acceptance_preserves_target_cache_and_withholds_gate() {
         .expect_err("insufficient reserve plus estimated growth must refuse the gate");
     let telemetry = error.telemetry().expect("disk refusal carries telemetry");
 
-    assert!(telemetry.action.contains("filesystem headroom"));
+    assert!(telemetry.action.contains("storage maintenance exhausted"));
     assert_eq!(telemetry.target_size_bytes, 41 * GIB);
     assert!(
         telemetry.disk_available_bytes

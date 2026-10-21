@@ -197,11 +197,18 @@ fn declared_legacy_contracts_have_current_source_evidence() {
                 .any(|entry| entry.legacy == m.legacy && source.contains(entry.current));
         let active_integration_mapping = matches!(m.surface, Surface::Acp | Surface::Browser)
             && m.planned.is_some_and(|target| source.contains(target));
+        // Stage 7B activates the independent controller name; its former name
+        // is provenance in the registry, not a required production alias.
+        let active_release_controller = m.surface == Surface::Release
+            && m.legacy == "vesper-release-controller"
+            && m.planned == Some("jarvis-release-controller")
+            && source.contains(".name(\"jarvis-release-controller\".into())");
         assert!(
             source.contains(m.legacy)
                 || active_private_mapping
                 || active_environment_mapping
-                || active_integration_mapping,
+                || active_integration_mapping
+                || active_release_controller,
             "missing legacy or activated private-contract source evidence: {m:?}"
         );
     }

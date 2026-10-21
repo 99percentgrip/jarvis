@@ -6,6 +6,15 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-21-stage7b-final-acceptance-continuation.md` owns the ongoing final-acceptance local/security and protected-integration receipt inventory; it is not a completion claim.
+- `2026-10-20-stage7b-local-closeout.md` owns the final local receipt inventory
+  and explicitly blocked full acceptance/hosted candidate boundary.
+- `2026-10-20-stage7b-storage-ownership-hardening.md` owns the bounded
+  red-first registry ownership and metadata-redirection correction and its
+  local verification limits; no release readiness is implied.
+- `2026-10-20-stage7b-independent-candidate-continuation.md` owns the
+  nonpublishing Stage 7B checkpoint, blocked ACP process proof and explicit
+  remaining exact-head acceptance boundary.
 - `2026-10-20-stage7a-ci-optimization.md` owns the CI baseline, pull-request cancellation proof, and the measured Windows test floor.
 - `2026-10-20-stage6-distribution.md` owns Stage 6 package, installer, voice-investigation, and nonpublication evidence.
 - `2026-10-15-runtime-identity-stage3.md` and `runtime-identity-stage3-inventory.json` own runtime isolation evidence, capability limitations and exact-candidate verification.

@@ -24,6 +24,7 @@ architecture, MSRV, and source-oracle checks.
   moves resolve to original frozen-hit paths; new upstream prose, unknown
   identifiers and historical-scope additions stay embargoed;
   the frozen naming baseline and all thirteen upstream patterns remain intact.
+  Stage 7B adds only exact controller/storage technical identifiers and scoped receipt paths; no general prose exemption or baseline regeneration is permitted.
 
 
 - Resolve repository and fixture roots from the invoking directory at runtime,

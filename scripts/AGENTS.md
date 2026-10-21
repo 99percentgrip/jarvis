@@ -14,6 +14,9 @@ deferred script in this directory and is not part of Stage 6 installation.
   `test_release_gate.py` supplies offline structured GitHub fixtures.
   It also checks unfiltered push/PR trigger coverage in all four workflows,
   thirteen required context producers and refusal to tag missing evidence.
+  Stage 7B reuses this read-only gate for the manually dispatched candidate;
+  `test_release_gate.py` additionally guards nonpublishing workflow identity
+  and the dormant independent registration descriptor.
 
 - `install.sh` — POSIX entrypoint. It runs `jarvis_package.py` and refuses to
   start without `JARVIS_PACKAGE` and `JARVIS_PACKAGE_SHA256`. It does not

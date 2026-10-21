@@ -22,7 +22,7 @@ Installed helpers, not given their own PATH launcher: `jarvis-web-fetch`, `jarvi
 
 Optional resources: `skills/` and `web-driver/image.tar.gz`, `image-id`, and `image.sha256`. Development-only binaries, including `jarvis-acp-test-driver` and `xtask`, are not packed.
 
-The inherited container tag `vesper-web-driver:validated` is still the harness and web-driver workflow identifier. Stage 6 does not retag it. The disabled release workflow still expects the old package names and asset names; Stage 7 has to replace that workflow before any publication. It publishes to this repository, not to the Agent Vesper repository, and current source cannot build those retired package names.
+Stage 7B gives the active browser image the independent internal tag `jarvis-web-driver:validated` across the harness and web-driver workflow. Historical Stage 6 receipts retain their original names. Stage 7B has replaced the disabled publishing workflow with a manually dispatched nonpublishing candidate builder using the Stage 6 archive names. No tag, GitHub Release or upstream registration is wired. Independent publication remains deferred and must not reuse Agent Vesper's release or registry identities.
 
 ## Install roots
 
@@ -42,4 +42,6 @@ Rollback points `current` at the previous generation. It does not download an ol
 
 ## What Stage 7 still owns
 
-Signing, notarization, tag creation, GitHub Release assets, the release workflow, RRC, and public registry publication remain deferred. The macOS voice stall investigation is recorded in the Stage 6 execution report; it is not a packaging exemption.
+The current nonpublishing Stage 7B architecture and pending acceptance are tracked in [Stage 7B release/storage](stage7b-release-and-storage.md) and its [in-progress execution report](../foundation/2026-10-21-stage7b-final-acceptance-continuation.md). Local verification is not protected-merge or hosted packaging evidence.
+
+Signing, notarization, tag creation, GitHub Release assets, RRC, and public registry publication remain deferred. Stage 7B is preparing a manually dispatched, nonpublishing candidate workflow; its in-progress [continuation report](../foundation/2026-10-20-stage7b-independent-candidate-continuation.md) and [storage-ownership follow-up](../foundation/2026-10-20-stage7b-storage-ownership-hardening.md) and [local closeout](../foundation/2026-10-20-stage7b-local-closeout.md) record earlier verification gaps; the later [native acceptance reverification](../foundation/2026-10-21-stage7b-native-acceptance-reverification.md) passed all 165 local cases but did not run hosted candidate packaging. None authorize release. The macOS voice stall investigation is recorded in the Stage 6 execution report; it is not a packaging exemption.

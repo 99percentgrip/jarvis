@@ -24,7 +24,7 @@ J.A.R.V.I.S.; remain separate from active runtime composition.
 - Package/import/manifest/executable registry entries reflect actual Stage 2 metadata.
   Explicit legacy names/manifests preserve migration provenance; deferred protocol
   and persistence identities remain planned and unwired. `xtask` remains unchanged.
-- Every legacy mapping cites inspected source; unknown targets remain `None`. Citations follow the active owning reader when environment resolution is centralized; the identity and compatibility classifications remain unchanged.
+- Every legacy mapping cites inspected source; unknown targets remain `None`. Citations follow the active owning reader when environment resolution is centralized. The independently named Stage 7B controller requires exact current source evidence instead of retaining an active legacy-name alias.
 - Credential and serialization contracts are migration-sensitive; provenance,
   provider identities and third-party names are never mechanical replacements.
 - Future import is opt-in, excludes RRC ledgers and cannot replay interrupted work.

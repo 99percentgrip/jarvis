@@ -43,20 +43,20 @@ jobs:
       - name: Install pinned Rust
         run: rustup toolchain install 1.95.0 --profile minimal
       - name: Build immutable browser and helper image
-        run: docker build -f crates/jarvis-web-fetch/Dockerfile -t vesper-web-driver:validated .
+        run: docker build -f crates/jarvis-web-fetch/Dockerfile -t jarvis-web-driver:validated .
       - name: Real pipe-browser acceptance
         run: |
-          export JARVIS_WEB_TEST_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_WEB_TEST_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
           cargo test -p jarvis-web-fetch --all-features real_pipe_browser -- --ignored --nocapture
       - name: Native dependency readiness and cleanup
         run: |
           export JARVIS_DEPENDENCY_TEST_ENGINE="$(command -v docker)"
-          export JARVIS_DEPENDENCY_TEST_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_DEPENDENCY_TEST_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
           cargo test -p jarvis-harness --all-features --lib real_dependency_browser_readiness -- --ignored --nocapture
       - name: Real scoped Hive lifecycle acceptance
         timeout-minutes: 15
         run: |
-          export JARVIS_DOCKER_IMAGE="$(docker image inspect vesper-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_DOCKER_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
           cargo test -p jarvis-harness --all-features --test swarm_native_hive native_container_hive -- --ignored --nocapture
           cargo test -p jarvis-harness --all-features --test swarm_native_hive native_shared_service -- --ignored --nocapture
           cargo test -p jarvis-acp --all-features --test swarm_native_process -- --ignored --nocapture
@@ -77,10 +77,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p driver-assets
-          docker image inspect vesper-web-driver:validated --format '{{.Id}}' > driver-assets/vesper-web-driver-${{ matrix.arch }}.image-id
-          docker save vesper-web-driver:validated | gzip -1 > driver-assets/vesper-web-driver-${{ matrix.arch }}.tar.gz
+          docker image inspect jarvis-web-driver:validated --format '{{.Id}}' > driver-assets/jarvis-web-driver-${{ matrix.arch }}.image-id
+          docker save jarvis-web-driver:validated | gzip -1 > driver-assets/jarvis-web-driver-${{ matrix.arch }}.tar.gz
           cd driver-assets
-          sha256sum vesper-web-driver-${{ matrix.arch }}.tar.gz > vesper-web-driver-${{ matrix.arch }}.tar.gz.sha256
+          sha256sum jarvis-web-driver-${{ matrix.arch }}.tar.gz > jarvis-web-driver-${{ matrix.arch }}.tar.gz.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: web-driver-${{ matrix.arch }}

@@ -252,7 +252,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   `cargo deny check`).
 - `workflows/msrv.yml` — dedicated Rust 1.88.0 foundational verification with
   per-stage fixture coverage.
-- `workflows/web-driver.yml` — native x86_64/arm64 image builds and gated
+- `workflows/web-driver.yml` — independent `jarvis-web-driver:validated` image and `jarvis-web-driver-<arch>` archives consumed by the read-only candidate workflow, native x86_64/arm64 image builds and gated
   real pipe-browser tests, native dependency browser/cleanup readiness, and real scoped Hive lifecycle acceptance (three
   independent workers, permissioned command continuations, scale/replacement
   and verified cleanup) using the same immutable built image. The explicit Hive
@@ -283,10 +283,11 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 - `workflows/release-recovery-lifecycle-acceptance.yml` — manually dispatched,
   read-only exact-SHA native five-target cancellation/restart matrix for the
   controlled public acceptance repository.
-- `workflows/release.yml` — tag-triggered ACP+TUI archive packaging and GitHub
-  Release publication for the registry and installers; archives also bundle
-  the repo `skills/` seed library seeded by the installers into
-  `~/.agent-vesper/memory/`; the registry continues
-  to launch only the ACP binary from the shared bundle.
+- `workflows/release.yml` — Stage 7B manually dispatched, read-only,
+  nonpublishing five-target candidate packaging after successful exact-commit
+  main CI. It downloads the tested browser image and uses the Stage 6 package
+  builder. No tag, Release, registry write or installation is authorized.
+  Earlier tag-triggered publication rules above describe deferred legacy
+  behavior, not the current Jarvis workflow.
 
 - Required verification workflows cancel only an older run of the same workflow and pull request. Push runs use a per-run concurrency id and are not cancelled by a later `main` commit. The exact-head gate still rejects cancelled, stale, and wrong-SHA evidence.

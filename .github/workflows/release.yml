@@ -1,248 +1,187 @@
-name: release
+name: release-candidate
 
+# Stage 7B is intentionally nonpublishing. This manually dispatched workflow
+# validates one already-green exact commit and emits short-lived CI artifacts.
+# It has no tag trigger, write permission, release creation, registry mutation,
+# or production deployment path.
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Tag to publish (must already exist)"
+      commit:
+        description: "Exact 40-character main commit to package"
         required: true
         type: string
 
 permissions:
   actions: read
-  contents: write
+  contents: read
 
-# Cancel any stuck prior release run (e.g. a runner-image Service Unavailable
-# failure that left the workflow in a phantom queued state) when a new release
-# tag is pushed. Without this, GitHub Actions will block new release runs
-# behind the stuck one indefinitely.
 concurrency:
-  group: release-pipeline
-  cancel-in-progress: true
+  group: release-candidate-${{ github.event.inputs.commit }}
+  cancel-in-progress: false
 
 jobs:
-  release-gate:
+  candidate-gate:
     name: Verify exact-commit CI
     runs-on: ubuntu-24.04
     outputs:
       driver-run: ${{ steps.validation.outputs.driver-run }}
+      commit: ${{ steps.identity.outputs.commit }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.tag || github.ref_name }}
-      - name: Require successful main validation for release commit
+          persist-credentials: false
+          ref: ${{ github.event.inputs.commit }}
+      - name: Validate immutable candidate identity
+        id: identity
+        shell: bash
+        env:
+          REQUESTED_COMMIT: ${{ github.event.inputs.commit }}
+        run: |
+          if ! printf '%s\n' "$REQUESTED_COMMIT" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::commit must be exactly 40 lowercase hexadecimal characters"
+            exit 1
+          fi
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$REQUESTED_COMMIT"
+          git merge-base --is-ancestor "$actual" origin/main
+          echo "commit=$actual" >> "$GITHUB_OUTPUT"
+      - name: Require complete successful main validation
         id: validation
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          RELEASE_COMMIT: ${{ steps.identity.outputs.commit }}
         run: |
-          release_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
-          echo "Release commit: ${release_commit}"
-
           python3 scripts/release_gate.py \
-            --repository "$GITHUB_REPOSITORY" --commit "$release_commit" >> "$GITHUB_OUTPUT"
+            --repository "$GITHUB_REPOSITORY" \
+            --commit "$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
 
-  build:
-    name: Build ${{ matrix.label }}
-    needs: release-gate
+  package:
+    name: Package candidate ${{ matrix.label }}
+    needs: candidate-gate
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         include:
           - label: linux-x86_64
             runner: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
-            asset: agent-vesper-acp-linux-x86_64.tar.gz
+            rust_target: x86_64-unknown-linux-gnu
+            package_target: linux-x86_64
+            archive: jarvis-linux-x86_64.tar.gz
             driver: linux-x86_64
-            platform: unix
+            executable_suffix: ""
           - label: linux-aarch64
             runner: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-            asset: agent-vesper-acp-linux-aarch64.tar.gz
+            rust_target: aarch64-unknown-linux-gnu
+            package_target: linux-aarch64
+            archive: jarvis-linux-aarch64.tar.gz
             driver: linux-aarch64
-            platform: unix
+            executable_suffix: ""
           - label: darwin-x86_64
             runner: macos-15-intel
-            target: x86_64-apple-darwin
-            asset: agent-vesper-acp-darwin-x86_64.tar.gz
+            rust_target: x86_64-apple-darwin
+            package_target: darwin-x86_64
+            archive: jarvis-darwin-x86_64.tar.gz
             driver: linux-x86_64
-            platform: unix
+            executable_suffix: ""
           - label: darwin-aarch64
             runner: macos-15
-            target: aarch64-apple-darwin
-            asset: agent-vesper-acp-darwin-aarch64.tar.gz
+            rust_target: aarch64-apple-darwin
+            package_target: darwin-aarch64
+            archive: jarvis-darwin-aarch64.tar.gz
             driver: linux-aarch64
-            platform: unix
+            executable_suffix: ""
           - label: windows-x86_64
             runner: windows-2025
-            target: x86_64-pc-windows-msvc
-            asset: agent-vesper-acp-windows-x86_64.zip
+            rust_target: x86_64-pc-windows-msvc
+            package_target: windows-x86_64
+            archive: jarvis-windows-x86_64.zip
             driver: linux-x86_64
-            platform: windows
+            executable_suffix: ".exe"
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.tag || github.ref_name }}
+          persist-credentials: false
+          ref: ${{ needs.candidate-gate.outputs.commit }}
       - name: Download exact-commit tested bundled driver
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ needs.release-gate.outputs.driver-run }}
+          run-id: ${{ needs.candidate-gate.outputs.driver-run }}
           name: web-driver-${{ matrix.driver }}
           path: ${{ runner.temp }}/web-driver-assets
-      - name: Verify and stage bundled driver
-        shell: bash
-        run: |
-          source="$RUNNER_TEMP/web-driver-assets"
-          driver="$RUNNER_TEMP/agent-vesper-acp/web-driver"
-          archive="vesper-web-driver-${{ matrix.driver }}.tar.gz"
-          cd "$source"
-          if command -v sha256sum >/dev/null 2>&1; then
-            sha256sum --check "$archive.sha256"
-          else
-            shasum -a 256 --check "$archive.sha256"
-          fi
-          mkdir -p "$driver"
-          cp "$archive" "$driver/image.tar.gz"
-          cp "$archive.sha256" "$driver/image.sha256"
-          cp "vesper-web-driver-${{ matrix.driver }}.image-id" "$driver/image-id"
       - name: Install pinned Rust toolchain
         shell: bash
-        run: rustup toolchain install 1.95.0 --profile minimal --target "${{ matrix.target }}"
-      - name: Validate release metadata
+        run: rustup toolchain install 1.95.0 --profile minimal --target "${{ matrix.rust_target }}"
+      - name: Build exact candidate binaries
         shell: bash
         env:
-          # workflow_dispatch provides the tag via inputs.tag;
-          # tag-push gets it from GITHUB_REF_NAME.
-          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          CARGO_INCREMENTAL: "0"
+          CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
         run: |
-          workspace_version="$(awk -F '\"' '/^version = \"/ { print $2; exit }' Cargo.toml)"
-          registry_version="$(awk -F '\"' '/^[[:space:]]*\"version\":/ { print $4; exit }' registry/agent.json)"
-          echo "Release tag: $RELEASE_TAG"
-          test "$RELEASE_TAG" = "v$workspace_version"
-          test "$registry_version" = "$workspace_version"
-      - name: Build ACP and TUI binaries
-        shell: bash
-        run: cargo build --locked --release --package agent-vesper-acp --package agent-vesper-tui --package vesper-web-fetch --package vesper-sandbox --features agent-vesper-acp/docker,agent-vesper-tui/docker,agent-vesper-acp/swarm,agent-vesper-tui/swarm,agent-vesper-acp/bridge,agent-vesper-tui/bridge,agent-vesper-tui/voice-kokoro,agent-vesper-tui/voice-flm --target "${{ matrix.target }}"
-      - name: Package Unix archive
-        if: matrix.platform == 'unix'
+          cargo build --locked --release \
+            --package jarvis-acp \
+            --package jarvis-tui \
+            --package jarvis-web-fetch \
+            --package jarvis-sandbox \
+            --features jarvis-acp/docker,jarvis-tui/docker,jarvis-acp/swarm,jarvis-tui/swarm,jarvis-acp/bridge,jarvis-tui/bridge,jarvis-tui/voice-kokoro,jarvis-tui/voice-flm \
+            --target "${{ matrix.rust_target }}"
+      - name: Stage Stage 6 package inputs and verified driver
         shell: bash
         run: |
-          staging="$RUNNER_TEMP/agent-vesper-acp"
-          assets="$RUNNER_TEMP/release-assets"
-          mkdir -p "$staging" "$assets"
-          cp "target/${{ matrix.target }}/release/agent-vesper-acp" "$staging/agent-vesper-acp"
-          cp "target/${{ matrix.target }}/release/agent-vesper-tui" "$staging/agent-vesper-tui"
-          cp "target/${{ matrix.target }}/release/vesper-web-fetch" "$staging/vesper-web-fetch"
-          cp "target/${{ matrix.target }}/release/sandbox_init" "$staging/sandbox_init"
-          cp -r skills "$staging/skills"
-          tar -czf "$assets/${{ matrix.asset }}" -C "$RUNNER_TEMP" agent-vesper-acp
-          (cd "$assets" && sha256sum "${{ matrix.asset }}" > "${{ matrix.asset }}.sha256")
-      - name: Package Windows archive
-        if: matrix.platform == 'windows'
+          bin="$RUNNER_TEMP/jarvis-bin"
+          resources="$RUNNER_TEMP/jarvis-resources"
+          driver="$RUNNER_TEMP/web-driver-assets"
+          mkdir -p "$bin" "$resources/skills" "$resources/web-driver"
+          suffix='${{ matrix.executable_suffix }}'
+          cp "target/${{ matrix.rust_target }}/release/jarvis-acp${suffix}" "$bin/jarvis-acp${suffix}"
+          cp "target/${{ matrix.rust_target }}/release/jarvis-tui${suffix}" "$bin/jarvis-tui${suffix}"
+          cp "target/${{ matrix.rust_target }}/release/jarvis-web-fetch${suffix}" "$bin/jarvis-web-fetch${suffix}"
+          cp "target/${{ matrix.rust_target }}/release/jarvis-sandbox-init${suffix}" "$bin/jarvis-sandbox-init${suffix}"
+          cp -R skills/. "$resources/skills/"
+          archive="jarvis-web-driver-${{ matrix.driver }}.tar.gz"
+          (cd "$driver" && python3 - "$archive" <<'PY'
+          import hashlib, pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          expected = pathlib.Path(sys.argv[1] + ".sha256").read_text(encoding="utf-8").split()[0].lower()
+          actual = hashlib.sha256(path.read_bytes()).hexdigest()
+          if actual != expected:
+              raise SystemExit(f"driver digest mismatch: {actual} != {expected}")
+          PY
+          )
+          cp "$driver/$archive" "$resources/web-driver/image.tar.gz"
+          cp "$driver/$archive.sha256" "$resources/web-driver/image.sha256"
+          cp "$driver/jarvis-web-driver-${{ matrix.driver }}.image-id" "$resources/web-driver/image-id"
+      - name: Audit Windows package executables
+        if: matrix.package_target == 'windows-x86_64'
         shell: pwsh
         run: |
-          $staging = Join-Path $env:RUNNER_TEMP "agent-vesper-acp"
-          $assets = Join-Path $env:RUNNER_TEMP "release-assets"
-          New-Item -ItemType Directory -Path $staging, $assets -Force | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/agent-vesper-acp.exe" (Join-Path $staging "agent-vesper-acp.exe")
-          Copy-Item "target/${{ matrix.target }}/release/agent-vesper-tui.exe" (Join-Path $staging "agent-vesper-tui.exe")
-          Copy-Item "target/${{ matrix.target }}/release/vesper-web-fetch.exe" (Join-Path $staging "vesper-web-fetch.exe")
-          Copy-Item "target/${{ matrix.target }}/release/sandbox_init.exe" (Join-Path $staging "sandbox_init.exe")
-          Copy-Item -Recurse skills (Join-Path $staging "skills")
-          python scripts/windows_package_audit.py $staging
-          if ($LASTEXITCODE -ne 0) { throw "Windows release package imports an external VC runtime" }
-          $archive = Join-Path $assets "${{ matrix.asset }}"
-          Compress-Archive -Path $staging -DestinationPath $archive -Force
-          $hash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
-          "$hash  ${{ matrix.asset }}" | Set-Content -LiteralPath "$archive.sha256" -NoNewline
-      - name: Upload release assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ matrix.label }}
-          path: ${{ runner.temp }}/release-assets
-          if-no-files-found: error
-
-  publish:
-    name: Publish GitHub Release
-    needs: [release-gate, build]
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref_name }}
-      - name: Download release assets
-        uses: actions/download-artifact@v4
-        with:
-          pattern: release-*
-          path: dist
-          merge-multiple: true
-      - name: Validate release metadata
+          python scripts/windows_package_audit.py "$env:RUNNER_TEMP/jarvis-bin"
+          if ($LASTEXITCODE -ne 0) { throw "Windows candidate imports an external VC runtime" }
+      - name: Assemble with canonical Stage 6 package builder
         shell: bash
         env:
-          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          CANDIDATE_COMMIT: ${{ needs.candidate-gate.outputs.commit }}
         run: |
-          workspace_version="$(awk -F '\"' '/^version = \"/ { print $2; exit }' Cargo.toml)"
-          registry_version="$(awk -F '\"' '/^[[:space:]]*\"version\":/ { print $4; exit }' registry/agent.json)"
-          echo "Release tag: $RELEASE_TAG"
-          test "$RELEASE_TAG" = "v$workspace_version"
-          test "$registry_version" = "$workspace_version"
-          test "$(find dist -maxdepth 1 -type f -name '*.sha256' | wc -l)" -eq 5
-      - name: Download exact-commit tested browser images
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
-        run: |
-          release_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
-          verified="$(python3 scripts/release_gate.py --repository "$GITHUB_REPOSITORY" --commit "$release_commit")"
-          driver_run="${verified#driver-run=}"
-          test "$driver_run" = "${{ needs.release-gate.outputs.driver-run }}"
-          gh run download "$driver_run" --repo "$GITHUB_REPOSITORY" --name web-driver-linux-x86_64 --dir dist
-          gh run download "$driver_run" --repo "$GITHUB_REPOSITORY" --name web-driver-linux-aarch64 --dir dist
-          cd dist
-          sha256sum --check vesper-web-driver-linux-x86_64.tar.gz.sha256 vesper-web-driver-linux-aarch64.tar.gz.sha256
-      - name: Create or update GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
-        run: |
-          release_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
-          python3 scripts/release_gate.py --repository "$GITHUB_REPOSITORY" --commit "$release_commit" >/dev/null
-          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            cat >release-notes.md <<'NOTES'
-          See the generated commit notes below and the documentation for this version.
-
-          Release bundles include the native local speech stack. Optional model and
-          runtime setup uses native Settings. Third-party cloud STT/TTS remain planned
-          optional integrations. ACP has no microphone or audio capability; no NPU
-          TTS claim is made.
-          NOTES
-            gh release create "$RELEASE_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "Agent Vesper $RELEASE_TAG" \
-              --notes-file release-notes.md \
-              --generate-notes
-          fi
-          asset_names="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
-          existing_assets="$(mktemp -d)"
-          trap 'rm -rf "$existing_assets"' EXIT
-          for asset in dist/*; do
-            name="$(basename "$asset")"
-            if printf '%s\n' "$asset_names" | grep -Fxq "$name"; then
-              gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
-                --pattern "$name" --dir "$existing_assets"
-              if ! cmp -- "$asset" "$existing_assets/$name"; then
-                echo "::error::Published asset $name differs; immutable assets cannot be replaced"
-                exit 1
-              fi
-            else
-              gh release upload "$RELEASE_TAG" "$asset" --repo "$GITHUB_REPOSITORY"
-            fi
-          done
+          version="$(awk -F '"' '/^version = "/ { print $2; exit }' Cargo.toml)"
+          mkdir -p "$RUNNER_TEMP/release-candidate"
+          python3 scripts/jarvis_package.py pack \
+            --bin-dir "$RUNNER_TEMP/jarvis-bin" \
+            --resources "$RUNNER_TEMP/jarvis-resources" \
+            --target "${{ matrix.package_target }}" \
+            --output "$RUNNER_TEMP/release-candidate/${{ matrix.archive }}" \
+            --version "$version" \
+            --commit "$CANDIDATE_COMMIT"
+      - name: Upload nonpublishing candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate-${{ matrix.label }}-${{ needs.candidate-gate.outputs.commit }}
+          path: |
+            ${{ runner.temp }}/release-candidate/${{ matrix.archive }}
+            ${{ runner.temp }}/release-candidate/${{ matrix.archive }}.sha256
+          if-no-files-found: error
+          retention-days: 7

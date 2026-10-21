@@ -42,6 +42,7 @@ pub mod dependency_setup;
 pub mod host_resources;
 #[cfg(test)]
 mod host_resources_constrained_tests;
+pub mod host_storage;
 pub mod lens_tools;
 pub mod release_closeout;
 pub mod release_executor;

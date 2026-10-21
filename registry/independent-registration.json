@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "status": "dormant",
+  "publication_authorized": false,
+  "id": "jarvis",
+  "name": "Jarvis",
+  "executable": "jarvis-acp",
+  "repository": "https://github.com/99percentgrip/jarvis",
+  "package_contract": {
+    "linux-x86_64": "jarvis-linux-x86_64.tar.gz",
+    "linux-aarch64": "jarvis-linux-aarch64.tar.gz",
+    "darwin-x86_64": "jarvis-darwin-x86_64.tar.gz",
+    "darwin-aarch64": "jarvis-darwin-aarch64.tar.gz",
+    "windows-x86_64": "jarvis-windows-x86_64.zip"
+  },
+  "inherited_vesper_registry_pr": null
+}

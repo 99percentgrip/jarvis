@@ -38,6 +38,20 @@ Z.ai and Playwright MCP server descriptors.
   Last-green comparisons require the matching platform/job; missing/skipped
   historical lanes preserve unknown context. Host Git metadata queries use
   bounded native process execution.
+- Native web Settings and the tested browser workflow share the Stage 7B `jarvis-web-driver:validated` internal image identity; bundle import still requires its verified image ID and digest.
+- `host_storage` owns Stage 7B durable controller storage inventory and guarded
+  reclamation: explicit owner marker, canonical allowed roots, lifecycle records,
+  leases and retention; unknown, active or recovery-bearing paths are never
+  cleanup candidates. An unmarked nonempty state root, redirected metadata or
+  mismatched root or per-resource owner is never adopted; interrupted atomic writes cannot block
+  later saves. Cleanup-pending resources cannot acquire a new lease.
+  Ambiguous live process identity retains its lease on restart;
+  only proved death or PID reuse permits recovery classification. Controller
+  Cargo uses the repository's single `target/` and
+  refuses a symlinked target before allocating managed storage;
+  the host resource governor owns admission and actual free-space observation.
+  Current Stage 7B source remains nonpublishing and requires native process and
+  exact-head verification before a readiness claim.
 - `release_executor` owns continuous bounded polling, local verification,
   version/commit/exact-SHA push/tag/publication, official-status admission and
   bounded isolated AgentLoop repair. Host mode, permission port and command

@@ -450,7 +450,24 @@ fn governed_release_process(request: &str, ask: bool) {
     );
 
     let receipt_text = fs::read_to_string(&receipts).expect("governed Cargo receipts");
-    let expected_target_root = release_root.join("host-resources/targets");
+    // The controller verifies in its isolated release checkout, not in the
+    // caller's original project. All Cargo paths must share that checkout's
+    // single target; a separate per-controller cache is forbidden.
+    let expected_target_root = receipt_text
+        .lines()
+        .find(|line| line.starts_with("check|"))
+        .and_then(|line| line.split('|').nth(3))
+        .map(Path::new)
+        .expect("controlled version-check receipt contains a Cargo target");
+    assert_eq!(expected_target_root.file_name().unwrap(), "target");
+    assert!(
+        expected_target_root
+            .parent()
+            .unwrap()
+            .starts_with(release_root.join("worktrees")),
+        "Cargo must compile inside the isolated release checkout: {}",
+        expected_target_root.display()
+    );
     for cargo_path in ["check", "metadata", "gate"] {
         let line = receipt_text
             .lines()
@@ -466,14 +483,19 @@ fn governed_release_process(request: &str, ask: bool) {
             fields[2], "1",
             "test threads must be governor-bounded: {line}"
         );
-        assert!(
-            Path::new(fields[3]).starts_with(&expected_target_root),
-            "Cargo must use the controller-managed target cache: {line}"
+        assert_eq!(
+            Path::new(fields[3]),
+            expected_target_root,
+            "every Cargo path must use the one repository target cache: {line}"
         );
     }
     assert!(
+        !release_root.join("host-resources/targets").exists(),
+        "the old per-controller target cache must not be recreated"
+    );
+    assert!(
         !workspace.join("target").exists(),
-        "the source workspace must never become the RRC Cargo cache"
+        "the caller's source checkout is not the isolated release build"
     );
 
     // Cancel through the real host/controller before releasing the wrapper;

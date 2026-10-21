@@ -22,9 +22,15 @@ const OWNED_PATHS: &[&str] = &[
     "README.md",
     "docs/installation.md",
     "docs/architecture/stage6-distribution.md",
+    "docs/architecture/stage7b-release-and-storage.md",
     "docs/foundation/2026-10-20-stage6-distribution.md",
     "docs/foundation/evidence-index.md",
     "docs/foundation/2026-10-20-stage7a-ci-optimization.md",
+    "docs/foundation/2026-10-20-stage7b-independent-candidate-continuation.md",
+    "docs/foundation/2026-10-20-stage7b-local-closeout.md",
+    "docs/foundation/2026-10-20-stage7b-storage-ownership-hardening.md",
+    "docs/foundation/2026-10-21-stage7b-native-acceptance-reverification.md",
+    "docs/foundation/2026-10-21-stage7b-final-acceptance-continuation.md",
     "docs/workspace-map.md",
     "docs/dependencies.md",
     "docs/architecture.md",
@@ -161,6 +167,23 @@ pub fn owned_line(path: &str, line: &str) -> bool {
         for token in STAGE5_INTEGRATION_TOKENS {
             scrubbed = scrub_technical_token(&scrubbed, token);
         }
+    }
+    // Stage 7B controller-owned identifiers are technical names, not an
+    // exemption for new upstream-brand prose or unrelated release surfaces.
+    if active || declarations {
+        for token in [
+            "jarvis.release-recovery.storage.v1",
+            ".jarvis-storage-owner-v1",
+            "jarvis-release-controller",
+            "jarvis-web-driver:validated",
+            "jarvis-web-driver-<arch>",
+            "jarvis-web-driver",
+        ] {
+            scrubbed = scrub_technical_token(&scrubbed, token);
+        }
+    }
+    if path.starts_with("docs/foundation/2026-10-21-stage7b-") {
+        scrubbed = scrub_technical_token(&scrubbed, "/home/Alex/Projects/jarvis/target");
     }
     for token in STAGE6_INSTALLER_TOKENS {
         scrubbed = scrub_technical_token(&scrubbed, token);
