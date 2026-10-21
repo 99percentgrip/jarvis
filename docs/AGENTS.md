@@ -6,6 +6,14 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `architecture/stage7b-release-and-storage.md` owns the present Stage 7B nonpublishing candidate and guarded storage design; `foundation/2026-10-21-stage7b-final-acceptance-continuation.md` owns the current verification and integration status.
+- `architecture/stage6-distribution.md` retains the Stage 7 publication boundary;
+  `foundation/2026-10-20-stage7b-independent-candidate-continuation.md` records
+  the ongoing nonpublishing candidate and its unexecuted acceptance work;
+  `foundation/2026-10-20-stage7b-storage-ownership-hardening.md` owns the
+  subsequent bounded registry safety correction;
+  `foundation/2026-10-20-stage7b-local-closeout.md` records its final local
+  receipts and the incomplete cross-platform candidate boundary.
 - `foundation/2026-10-20-stage7a-ci-optimization.md` owns the CI optimization evidence.
 - `architecture/stage6-distribution.md` owns the offline package and installer contract. `foundation/2026-10-20-stage6-distribution.md` owns its evidence.
 - `runtime-identity-stage3-prd.md` owns runtime isolation acceptance and the Stage 4 boundary.

@@ -1,5 +1,6 @@
 """Offline regression evidence for the actual publishing workflow's gate."""
 import copy
+import json
 from pathlib import Path
 import re
 import unittest
@@ -81,6 +82,92 @@ class GateTests(unittest.TestCase):
         self.assertEqual(len(inventory(fetch,'jobs','jobs')),101)
         with self.assertRaises(GateError):
             inventory(lambda *_args, **_kw: dict(jobs=[], total_count=1),'jobs','jobs')
+
+
+class NonpublishingCandidateTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(__file__).resolve().parents[1]
+        self.workflow = (self.root / '.github/workflows/release.yml').read_text()
+
+    def test_candidate_workflow_is_technically_nonpublishing(self):
+        self.assertIn('  workflow_dispatch:', self.workflow)
+        self.assertNotRegex(self.workflow, r'(?m)^  push:')
+        self.assertIn('  contents: read', self.workflow)
+        self.assertNotIn('contents: write', self.workflow)
+        self.assertNotIn('gh release', self.workflow)
+        self.assertNotIn('registry push', self.workflow.lower())
+        self.assertNotIn('git push', self.workflow)
+        self.assertNotRegex(self.workflow, r'(?m)^\s*tags:')
+        self.assertIn('persist-credentials: false', self.workflow)
+
+    def test_candidate_reuses_stage6_package_and_driver_contracts(self):
+        self.assertIn('python3 scripts/jarvis_release_candidate.py', self.workflow)
+        self.assertIn('--source-commit "$CANDIDATE_COMMIT"', self.workflow)
+        self.assertIn('--driver-run "${{ needs.candidate-gate.outputs.driver-run }}"', self.workflow)
+        self.assertIn('${{ matrix.archive }}.candidate.json', self.workflow)
+        self.assertIn('scripts/windows_package_audit.py', self.workflow)
+        self.assertIn('scripts/release_gate.py', self.workflow)
+        self.assertIn('actions/download-artifact@v4', self.workflow)
+        for archive in [
+            'jarvis-linux-x86_64.tar.gz',
+            'jarvis-linux-aarch64.tar.gz',
+            'jarvis-darwin-x86_64.tar.gz',
+            'jarvis-darwin-aarch64.tar.gz',
+            'jarvis-windows-x86_64.zip',
+        ]:
+            self.assertIn(archive, self.workflow)
+
+    def test_candidate_wrapper_reuses_stage6_packer_and_has_no_publication_path(self):
+        wrapper = (self.root / 'scripts/jarvis_release_candidate.py').read_text()
+        self.assertIn('from jarvis_package import HELPERS, TARGETS, USER_FACING, pack', wrapper)
+        self.assertIn("'status': 'nonpublishing-candidate'", wrapper)
+        self.assertNotIn('gh release', wrapper)
+        self.assertNotIn('git push', wrapper)
+
+    def test_independent_registration_identity_is_dormant(self):
+        registration = json.loads(
+            (self.root / 'registry/independent-registration.json').read_text()
+        )
+        self.assertEqual(registration['status'], 'dormant')
+        self.assertFalse(registration['publication_authorized'])
+        self.assertEqual(registration['id'], 'jarvis')
+        self.assertEqual(registration['executable'], 'jarvis-acp')
+        self.assertIsNone(registration['inherited_vesper_registry_pr'])
+        self.assertEqual(
+            set(registration['package_contract'].values()),
+            {
+                'jarvis-linux-x86_64.tar.gz',
+                'jarvis-linux-aarch64.tar.gz',
+                'jarvis-darwin-x86_64.tar.gz',
+                'jarvis-darwin-aarch64.tar.gz',
+                'jarvis-windows-x86_64.zip',
+            },
+        )
+
+    def test_normal_build_keeps_release_mutation_root_unavailable(self):
+        recovery = (self.root / 'crates/jarvis-harness/src/release_recovery.rs').read_text()
+        executor = (self.root / 'crates/jarvis-harness/src/release_executor.rs').read_text()
+        self.assertIn(
+            'if !cfg!(test) && !crate::release_executor::controlled_process_fixture_enabled()',
+            recovery,
+        )
+        self.assertIn('.name("jarvis-release-controller".into())', executor)
+        self.assertIn('#[cfg(feature = "test-support")]', executor)
+
+
+class DriverIdentityTests(unittest.TestCase):
+    def test_candidate_and_tested_driver_use_one_independent_identity(self):
+        root = Path(__file__).resolve().parents[1]
+        producer = (root / '.github/workflows/web-driver.yml').read_text()
+        candidate = (root / '.github/workflows/release.yml').read_text()
+        runtime = (root / 'crates/jarvis-harness/src/web_settings.rs').read_text()
+        self.assertIn('docker build -f crates/jarvis-web-fetch/Dockerfile -t jarvis-web-driver:validated', producer)
+        self.assertIn('jarvis-web-driver-${{ matrix.arch }}.tar.gz', producer)
+        self.assertIn('jarvis-web-driver-${{ matrix.driver }}.tar.gz', candidate)
+        self.assertIn('"jarvis-web-driver:validated".into()', runtime)
+        for source in (producer, candidate, runtime):
+            self.assertNotIn('vesper-web-driver:', source)
+            self.assertNotIn('vesper-web-driver-${{', source)
 
 
 class WorkflowTriggerTests(unittest.TestCase):

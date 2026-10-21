@@ -9,6 +9,9 @@ distribution.
 
 ## Ownership
 
+- `independent-registration.json` — dormant Stage 7B Jarvis identity and
+  five-package contract. It is not an upstream registry submission or permission
+  to reuse Agent Vesper's open registry PR.
 - `agent.json` — the canonical ACP registry manifest (`id`, `name`, `version`,
   per-platform binary archives under `distribution.binary`). Mirrors the
   Python oracle's `registry/agent.json` schema.

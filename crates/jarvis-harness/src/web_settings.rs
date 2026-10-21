@@ -47,7 +47,7 @@ pub async fn detect_driver() -> Result<String, String> {
     let reference = if dir.join("image-id").exists() {
         read_image_id(&dir)?
     } else {
-        "vesper-web-driver:validated".into()
+        "jarvis-web-driver:validated".into()
     };
     inspect_engine(&crate::dependency_setup::discover().await?, &reference).await
 }
@@ -459,7 +459,7 @@ mod tests {
         ] {
             let root = tempfile::tempdir().unwrap();
             let cli = fixture_cli(root.path(), &output, false);
-            let result = inspect_driver(&cli, "vesper-web-driver:validated").await;
+            let result = inspect_driver(&cli, "jarvis-web-driver:validated").await;
             assert_eq!(
                 result.is_ok(),
                 output != "image:latest",

@@ -1,3 +1,7 @@
+- [Stage 7B native acceptance reverification](2026-10-21-stage7b-native-acceptance-reverification.md) — 165/165 exact local cases and the feature-enabled ACP governor process case passed; hosted five-target candidate remains unexecuted.
+- [Stage 7B local continuation closeout](2026-10-20-stage7b-local-closeout.md) — earlier ownership/lease receipts and the then-blocked D-Bus attempt; superseded for native acceptance by the reverification above.
+- [Stage 7B storage ownership hardening](2026-10-20-stage7b-storage-ownership-hardening.md) — red-first unmarked-root and metadata-redirection refusals, restart-safe atomic writes, scoped library verification; candidate remains nonpublishing and incomplete.
+- [Stage 7B independent candidate continuation](2026-10-20-stage7b-independent-candidate-continuation.md) — bounded single-target ACP regression update, local receipts and explicit blocked native verification; nonpublishing and incomplete.
 - [Stage 7A CI optimization](2026-10-20-stage7a-ci-optimization.md) — pull-request cancellation, measured Windows test floor, and unchanged exact-head gate. Post-merge receipts stay in the delivery notes.
 
 - [Stage 6 offline distribution](2026-10-20-stage6-distribution.md) — local package, installer ownership, and nonpublication evidence. Post-merge receipts are recorded after the protected merge, not invented in the candidate.
@@ -659,9 +663,13 @@
   not misreported as a pass; Agent Vesper `main`, tags, releases, registry and
   installations were unchanged.
 
+## Stage 7B acceptance continuation (2026-10-21)
+
+- Current in-progress [execution report](2026-10-21-stage7b-final-acceptance-continuation.md) records full local verify/acceptance, narrow security repairs, candidate workflow disabled state and missing protected-integration evidence. The [post-push local receipt](2026-10-21-stage7b-post-push-local-receipt.md) records branch `abcc598e` and the still-stale PR head without claiming exact-head success; publish the receipt with the next authorized code change. The [architecture boundary](../architecture/stage7b-release-and-storage.md) owns the nonpublishing/storage contract.
+
 ## Separate agent process status check (2026-10-02)
 
-- Read-only receipt: [`2026-10-02-agent-process-status-check.md`](2026-10-02-agent-process-status-check.md)
+- The referenced `2026-10-02-agent-process-status-check.md` receipt is absent from this checkout and Git history; the account below is retained as an unverified historical summary, not a linked receipt.
 - Verdict: **TERMINATED ON EXPLICIT USER REQUEST; VERIFICATION INCOMPLETE.**
   The old TUI-session PID `7726` had begun a new `cargo xtask verify && cargo
   xtask msrv` sequence in isolated worktree `v0245-rrc-autonomy`; its observed

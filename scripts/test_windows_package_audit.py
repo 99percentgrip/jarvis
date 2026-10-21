@@ -42,8 +42,11 @@ class PackageAuditTests(unittest.TestCase):
         self.assertIn("scripts/windows_package_audit.py target/x86_64-pc-windows-msvc/release", ci)
         self.assertEqual(ci.count("scripts\\test_install_windows_release.ps1"), 2)
         release = (root / ".github/workflows/release.yml").read_text()
-        self.assertLess(release.index("python scripts/windows_package_audit.py $staging"),
-                        release.index("Compress-Archive -Path $staging"))
+        self.assertIn("if: matrix.package_target == 'windows-x86_64'", release)
+        self.assertLess(release.index('python scripts/windows_package_audit.py "$env:RUNNER_TEMP/jarvis-bin"'),
+                        release.index('python3 scripts/jarvis_release_candidate.py'))
+        self.assertLess(release.index('python3 scripts/jarvis_release_candidate.py'),
+                        release.index('actions/upload-artifact@v4'))
         installer = (root / "scripts/install.ps1").read_text()
         self.assertIn("0xC0000135: required DLL missing", installer)
         install_action = installer.split("if (-not $env:JARVIS_PACKAGE", 1)[1]

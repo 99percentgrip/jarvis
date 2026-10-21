@@ -14,6 +14,10 @@ deferred script in this directory and is not part of Stage 6 installation.
   `test_release_gate.py` supplies offline structured GitHub fixtures.
   It also checks unfiltered push/PR trigger coverage in all four workflows,
   thirteen required context producers and refusal to tag missing evidence.
+  Stage 7B reuses this read-only gate for the manually dispatched candidate;
+  `test_release_gate.py` additionally guards nonpublishing workflow identity
+  and the dormant independent registration descriptor.
+- `jarvis_release_candidate.py` wraps the Stage 6 packer for exact checked-out SHA and workspace version, native triple, lockfile/compiler, four shipping binaries and matching tested driver run/digest/ID; it emits an artifact-local nonpublishing provenance receipt. `test_jarvis_release_candidate.py` uses offline fixtures for all five targets and refusals, never a public release or separate build root.
 
 - `install.sh` — POSIX entrypoint. It runs `jarvis_package.py` and refuses to
   start without `JARVIS_PACKAGE` and `JARVIS_PACKAGE_SHA256`. It does not
@@ -24,7 +28,7 @@ deferred script in this directory and is not part of Stage 6 installation.
   and installed launcher version checks. A real release/laptop test remains required.
 - `windows_package_audit.py` reads normal/delay x86_64 PE imports for all four
   release executables and refuses external VC/CRT runtime dependencies;
-  `test_windows_package_audit.py` owns offline parser/refusal regressions.
+  `test_windows_package_audit.py` owns offline parser/refusal regressions and checks that the candidate's real Windows import audit precedes wrapper packaging and artifact upload.
 - `test_install_windows_release.ps1` exercises the exact-candidate shipping
   executables through direct and piped installers in private state under both
   PowerShell hosts; it does not use synthetic hosts or call providers.

@@ -24,6 +24,7 @@ architecture, MSRV, and source-oracle checks.
   moves resolve to original frozen-hit paths; new upstream prose, unknown
   identifiers and historical-scope additions stay embargoed;
   the frozen naming baseline and all thirteen upstream patterns remain intact.
+  Stage 7B adds only exact controller/storage technical identifiers and scoped receipt paths; no general prose exemption or baseline regeneration is permitted.
 
 
 - Resolve repository and fixture roots from the invoking directory at runtime,
@@ -37,6 +38,7 @@ architecture, MSRV, and source-oracle checks.
   inventory validation, Windows constraints and malformed-job accounting cases
   are also mandatory on every native platform.
 
+- Stage 7B acceptance enrolls named portable storage ownership, retention, lease, free-space and high-watermark cases, Unix symlink refusals and Linux live-process lease identity; missing or skipped cases cannot satisfy the exact-case runner.
 - ADR 0028 `acceptance` runs fixed named policy/runtime/native-host cases and rejects
   missing, ignored or zero-match selections. Automatic enrollment with real evidence
   and invalid enrollment without state writes are named gate cases. `verify` includes it.

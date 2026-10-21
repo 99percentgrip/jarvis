@@ -102,7 +102,8 @@ transport, stderr-only tracing, and orderly shutdown.
   `release_resource_governor` process regression drives real ACP `/release patch` and
   `/release status` against a controlled temporary Cargo command. It proves the
   controller snapshot and all version-check/gate Cargo paths carry the resource policy
-  without provider dispatch; its integration-only policy always uses a bounded
+  and the exact single repository `target/`, without provider dispatch. The old
+  controller-owned per-repository target directory must not be recreated. Its integration-only policy always uses a bounded
   deterministic synthetic snapshot so shared-runner procfs/cgroup/disk timing cannot
   control process-lifecycle acceptance. Dedicated governor tests retain live Linux and
   constrained-host coverage. Its short receipt deadline requires every controlled Cargo

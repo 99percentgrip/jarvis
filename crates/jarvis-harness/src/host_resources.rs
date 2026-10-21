@@ -23,6 +23,10 @@ mod native_backend;
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
 
+use crate::host_storage::{
+    ManagedResourceLease, ManagedResourceState, ReclamationReport, StorageResourceRegistry,
+};
+
 const GIB: u64 = 1024 * 1024 * 1024;
 const MIB: u64 = 1024 * 1024;
 #[cfg(target_os = "linux")]
@@ -84,6 +88,11 @@ pub struct ResourcePolicy {
     pub disk_reserve_fraction_numerator: u64,
     pub disk_reserve_fraction_denominator: u64,
     pub expected_gate_growth_bytes: u64,
+    /// Storage signals trigger maintenance, never an unconditional stop.
+    pub cache_early_growth_bytes: u64,
+    pub cache_reclaim_high_bytes: u64,
+    pub cache_reclaim_low_bytes: u64,
+    pub low_free_space_percent: u8,
     /// Integration-test policies may retain real telemetry while disabling
     /// host-pressure admission thresholds. Production defaults always enforce them.
     pub admission_pressure_enabled: bool,
@@ -118,6 +127,10 @@ impl Default for ResourcePolicy {
             disk_reserve_fraction_numerator: 1,
             disk_reserve_fraction_denominator: 10,
             expected_gate_growth_bytes: 30 * GIB,
+            cache_early_growth_bytes: 40 * GIB,
+            cache_reclaim_high_bytes: 80 * GIB,
+            cache_reclaim_low_bytes: 60 * GIB,
+            low_free_space_percent: 15,
             admission_pressure_enabled: true,
         }
     }
@@ -325,7 +338,41 @@ pub struct ResourceTelemetry {
     pub disk_total_bytes: u64,
     pub disk_reserve_bytes: u64,
     pub expected_gate_growth_bytes: u64,
+    /// Forecast from actual filesystem capacity, never from logical cache size.
+    #[serde(default)]
+    pub forecast_available_after_gate_bytes: u64,
+    /// Logical directory size; it is never presented as actual reclaimable capacity.
     pub target_size_bytes: u64,
+    #[serde(default)]
+    pub target_exclusive_bytes: Option<u64>,
+    #[serde(default)]
+    pub filesystem_kind: String,
+    #[serde(default)]
+    pub managed_temporary_bytes: u64,
+    #[serde(default)]
+    pub active_resource_count: usize,
+    #[serde(default)]
+    pub retained_resource_count: usize,
+    #[serde(default)]
+    pub reclaimable_resource_count: usize,
+    #[serde(default)]
+    pub protected_recovery_resource_count: usize,
+    #[serde(default)]
+    pub reclaimable_logical_bytes: u64,
+    #[serde(default)]
+    pub recent_storage_growth_bytes: u64,
+    #[serde(default)]
+    pub historical_peak_managed_bytes: u64,
+    #[serde(default)]
+    pub cleanup_attempted: usize,
+    #[serde(default)]
+    pub cleanup_removed: usize,
+    #[serde(default)]
+    pub cleanup_failed: usize,
+    #[serde(default)]
+    pub cleanup_logical_bytes_removed: u64,
+    #[serde(default)]
+    pub cleanup_actual_available_bytes_gained: u64,
     pub action: String,
 }
 
@@ -366,7 +413,23 @@ impl Default for ResourceTelemetry {
             disk_total_bytes: 0,
             disk_reserve_bytes: 0,
             expected_gate_growth_bytes: 0,
+            forecast_available_after_gate_bytes: 0,
             target_size_bytes: 0,
+            target_exclusive_bytes: None,
+            filesystem_kind: "unknown".into(),
+            managed_temporary_bytes: 0,
+            active_resource_count: 0,
+            retained_resource_count: 0,
+            reclaimable_resource_count: 0,
+            protected_recovery_resource_count: 0,
+            reclaimable_logical_bytes: 0,
+            recent_storage_growth_bytes: 0,
+            historical_peak_managed_bytes: 0,
+            cleanup_attempted: 0,
+            cleanup_removed: 0,
+            cleanup_failed: 0,
+            cleanup_logical_bytes_removed: 0,
+            cleanup_actual_available_bytes_gained: 0,
             action: "resource telemetry not sampled".into(),
         }
     }
@@ -408,7 +471,7 @@ impl ResourceTelemetry {
             },
         );
         format!(
-            "RESOURCES\nRAM avail   {} / {} GiB\nCgroup      {}{}\nRRC RSS     {} GiB\nSwap        {} / {} GiB logical ({}%)\nSwap trend  {}\nZram        {}\nMemory PSI  {}\nReserve     {} GiB\nGate need   {} GiB\nDisk free   {} / {} GiB\nTarget      {} GiB\nCargo jobs  {}\nrustc       {}\nPressure    {} — {}\nAction      {}",
+            "RESOURCES\nRAM avail   {} / {} GiB\nCgroup      {}{}\nRRC RSS     {} GiB\nSwap        {} / {} GiB logical ({}%)\nSwap trend  {}\nZram        {}\nMemory PSI  {}\nReserve     {} GiB\nGate need   {} GiB\nDisk free   {} / {} GiB\nForecast    {} GiB after next gate\nFilesystem  {}\nTarget      {} GiB logical / {} exclusive\nManaged tmp {} GiB\nResources   {} active / {} retained / {} reclaimable / {} recovery\nReclaimable {} GiB logical\nCleanup     {} removed / {} failed; {} GiB logical, {} GiB actual free gained\nCargo jobs  {}\nrustc       {}\nPressure    {} — {}\nAction      {}",
             gib(self.memory_available_bytes),
             gib(self.effective_memory_bytes),
             cgroup,
@@ -440,7 +503,23 @@ impl ResourceTelemetry {
             gib(self.required_gate_headroom_bytes),
             gib(self.disk_available_bytes),
             gib(self.disk_total_bytes),
+            gib(self.forecast_available_after_gate_bytes),
+            self.filesystem_kind,
             gib(self.target_size_bytes),
+            self.target_exclusive_bytes.map_or_else(
+                || "unavailable".into(),
+                |bytes| format!("{} GiB", gib(bytes))
+            ),
+            gib(self.managed_temporary_bytes),
+            self.active_resource_count,
+            self.retained_resource_count,
+            self.reclaimable_resource_count,
+            self.protected_recovery_resource_count,
+            gib(self.reclaimable_logical_bytes),
+            self.cleanup_removed,
+            self.cleanup_failed,
+            gib(self.cleanup_logical_bytes_removed),
+            gib(self.cleanup_actual_available_bytes_gained),
             self.cargo_jobs,
             self.rustc_count,
             self.pressure.as_label(),
@@ -552,6 +631,7 @@ pub struct ResourceAdmission {
     pub cargo: CargoResourcePolicy,
     pub telemetry: ResourceTelemetry,
     pub expensive_lease: Option<ExpensiveGateLease>,
+    _storage_lease: Option<ManagedResourceLease>,
 }
 
 /// Why a local gate was withheld or stopped.
@@ -609,10 +689,19 @@ impl std::error::Error for ResourceGovernorError {}
 /// and Windows use safe native observations, including Windows Job Object bounds.
 /// Other platforms fail closed rather than fabricate host capacity.
 #[derive(Debug, Clone)]
+struct StorageResourceBinding {
+    registry: StorageResourceRegistry,
+    resource_id: String,
+    operation_id: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct HostResourceGovernor {
     policy: ResourcePolicy,
     scheduler: ExpensiveGateScheduler,
     target_dir: PathBuf,
+    storage_registry: Option<StorageResourceRegistry>,
+    storage_resource: Option<StorageResourceBinding>,
     swap_history: Arc<Mutex<Option<SwapHistory>>>,
     cancelled: Option<Arc<AtomicBool>>,
     #[cfg(any(target_os = "macos", windows))]
@@ -631,6 +720,8 @@ impl HostResourceGovernor {
             policy,
             scheduler: ExpensiveGateScheduler::new(cache_root)?,
             target_dir,
+            storage_registry: None,
+            storage_resource: None,
             swap_history: Arc::new(Mutex::new(None)),
             cancelled: None,
             #[cfg(any(target_os = "macos", windows))]
@@ -645,25 +736,121 @@ impl HostResourceGovernor {
         self
     }
 
+    /// Attach the controller-owned persistent resource inventory used for
+    /// ownership-safe autonomous maintenance. Without it the governor observes
+    /// storage but never guesses that an unknown path is disposable.
+    #[must_use]
+    pub fn with_storage_registry(mut self, registry: StorageResourceRegistry) -> Self {
+        self.storage_registry = Some(registry);
+        self
+    }
+
+    /// Bind gate lifetime to one already-registered target observation. The
+    /// resource remains explicitly retained; this lease prevents maintenance
+    /// from ever mistaking an active Cargo root for an inactive candidate.
+    #[must_use]
+    pub fn with_storage_resource(
+        mut self,
+        registry: StorageResourceRegistry,
+        resource_id: impl Into<String>,
+        operation_id: impl Into<String>,
+    ) -> Self {
+        self.storage_registry = Some(registry.clone());
+        self.storage_resource = Some(StorageResourceBinding {
+            registry,
+            resource_id: resource_id.into(),
+            operation_id: operation_id.into(),
+        });
+        self
+    }
+
     #[must_use]
     pub const fn policy(&self) -> ResourcePolicy {
         self.policy
     }
 
     pub fn preflight(&self, cost: GateCost) -> Result<ResourceAdmission, ResourceGovernorError> {
-        let telemetry = self
+        let mut telemetry = self
             .snapshot(None)
             .map_err(|error| ResourceGovernorError::Discovery(error.to_string()))?;
-        self.preflight_telemetry(cost, telemetry)
+        let mut lease = None;
+        if cost == GateCost::Expensive && self.storage_reclamation_triggered(&telemetry) {
+            lease = self
+                .scheduler
+                .try_acquire()
+                .map_err(|error| ResourceGovernorError::Discovery(error.to_string()))?;
+            let Some(_held) = lease.as_ref() else {
+                telemetry.action =
+                    "storage maintenance is waiting for the active expensive-resource lease".into();
+                return Err(ResourceGovernorError::Busy(Box::new(telemetry)));
+            };
+            if let Some(registry) = self.storage_registry.as_ref() {
+                let required = telemetry
+                    .disk_reserve_bytes
+                    .saturating_add(telemetry.expected_gate_growth_bytes);
+                let report = registry
+                    .reclaim(
+                        &self.target_dir,
+                        required,
+                        self.policy.cache_reclaim_low_bytes,
+                    )
+                    .map_err(|error| ResourceGovernorError::Discovery(error.to_string()))?;
+                telemetry = self
+                    .snapshot(None)
+                    .map_err(|error| ResourceGovernorError::Discovery(error.to_string()))?;
+                apply_reclamation_report(&mut telemetry, &report);
+            } else {
+                telemetry.action = "storage maintenance evaluated pressure but no ownership registry is available; unknown artifacts were preserved".into();
+            }
+        }
+        self.preflight_telemetry_with_lease(cost, telemetry, lease)
+    }
+
+    fn target_storage_lease(&self) -> Result<Option<ManagedResourceLease>, ResourceGovernorError> {
+        self.storage_resource
+            .as_ref()
+            .map(|binding| {
+                binding
+                    .registry
+                    .lease(
+                        &binding.resource_id,
+                        &binding.operation_id,
+                        ManagedResourceState::Retained,
+                        false,
+                    )
+                    .map_err(|error| ResourceGovernorError::Discovery(error.to_string()))
+            })
+            .transpose()
+    }
+
+    fn storage_reclamation_triggered(&self, telemetry: &ResourceTelemetry) -> bool {
+        let free_percent = telemetry
+            .disk_available_bytes
+            .saturating_mul(100)
+            .checked_div(telemetry.disk_total_bytes)
+            .unwrap_or(0);
+        telemetry.target_size_bytes >= self.policy.cache_reclaim_high_bytes
+            || free_percent < u64::from(self.policy.low_free_space_percent)
+            || telemetry.forecast_available_after_gate_bytes < telemetry.disk_reserve_bytes
     }
 
     /// Applies the admission policy to one already-observed snapshot. Keeping
     /// this separate from procfs discovery gives regression tests a truthful
     /// constrained-host seam without mutable global environment or cgroups.
+    #[cfg(test)]
     fn preflight_telemetry(
         &self,
         cost: GateCost,
         telemetry: ResourceTelemetry,
+    ) -> Result<ResourceAdmission, ResourceGovernorError> {
+        self.preflight_telemetry_with_lease(cost, telemetry, None)
+    }
+
+    fn preflight_telemetry_with_lease(
+        &self,
+        cost: GateCost,
+        telemetry: ResourceTelemetry,
+        preacquired_lease: Option<ExpensiveGateLease>,
     ) -> Result<ResourceAdmission, ResourceGovernorError> {
         if telemetry.disk_available_bytes
             < telemetry
@@ -672,7 +859,7 @@ impl HostResourceGovernor {
         {
             let mut telemetry = telemetry;
             telemetry.action = format!(
-                "local verification paused: insufficient target filesystem headroom; waiting for {} GiB free",
+                "storage maintenance exhausted eligible inactive resources; local verification is protectively suspended until {} GiB is available",
                 gib(telemetry
                     .disk_reserve_bytes
                     .saturating_add(telemetry.expected_gate_growth_bytes),),
@@ -697,15 +884,20 @@ impl HostResourceGovernor {
                 Err(ResourceGovernorError::Pressure(Box::new(telemetry)))
             }
             (GateCost::Expensive, ResourcePressure::Normal) => {
-                let Some(lease) = self
-                    .scheduler
-                    .try_acquire()
-                    .map_err(|error| ResourceGovernorError::Discovery(error.to_string()))?
-                else {
-                    let mut telemetry = telemetry;
-                    telemetry.action =
-                        "another RRC epoch owns the exclusive expensive-resource slot".into();
-                    return Err(ResourceGovernorError::Busy(Box::new(telemetry)));
+                let lease = if let Some(lease) = preacquired_lease {
+                    lease
+                } else {
+                    let Some(lease) = self
+                        .scheduler
+                        .try_acquire()
+                        .map_err(|error| ResourceGovernorError::Discovery(error.to_string()))?
+                    else {
+                        let mut telemetry = telemetry;
+                        telemetry.action =
+                            "another RRC epoch owns the exclusive expensive-resource slot".into();
+                        return Err(ResourceGovernorError::Busy(Box::new(telemetry)));
+                    };
+                    lease
                 };
                 Ok(ResourceAdmission {
                     cargo: CargoResourcePolicy {
@@ -715,6 +907,7 @@ impl HostResourceGovernor {
                     },
                     telemetry,
                     expensive_lease: Some(lease),
+                    _storage_lease: self.target_storage_lease()?,
                 })
             }
             (GateCost::Cheap, _) => Ok(ResourceAdmission {
@@ -725,6 +918,7 @@ impl HostResourceGovernor {
                 },
                 telemetry,
                 expensive_lease: None,
+                _storage_lease: self.target_storage_lease()?,
             }),
         }
     }
@@ -784,7 +978,30 @@ impl HostResourceGovernor {
         #[cfg(not(any(target_os = "macos", windows)))]
         let process = root_pid.map_or(Ok(ProcessTreeUsage::default()), process_tree_usage)?;
         let disk = disk_capacity(&self.target_dir)?;
-        Ok(self.telemetry_from(capacity, process, disk))
+        let mut telemetry = self.telemetry_from(capacity, process, disk);
+        telemetry.filesystem_kind =
+            filesystem_kind(&self.target_dir).unwrap_or_else(|| "unknown".into());
+        if let Some(registry) = self.storage_registry.as_ref() {
+            let inventory = registry.observe_inventory()?;
+            telemetry.managed_temporary_bytes = inventory.managed_logical_bytes;
+            telemetry.active_resource_count = inventory.active_count;
+            telemetry.retained_resource_count = inventory.retained_count;
+            telemetry.reclaimable_resource_count = inventory.reclaimable_count;
+            telemetry.protected_recovery_resource_count = inventory.protected_recovery_count;
+            telemetry.reclaimable_logical_bytes = inventory.reclaimable_logical_bytes;
+            telemetry.recent_storage_growth_bytes = inventory.recent_growth_bytes;
+            telemetry.historical_peak_managed_bytes = inventory.historical_peak_managed_bytes;
+        }
+        if telemetry.target_size_bytes >= self.policy.cache_early_growth_bytes
+            && telemetry.target_size_bytes < self.policy.cache_reclaim_high_bytes
+            && telemetry.pressure == ResourcePressure::Normal
+        {
+            telemetry.action = format!(
+                "early cache-growth signal observed at {} GiB; stale resources and next-phase demand were evaluated without stopping work",
+                gib(telemetry.target_size_bytes),
+            );
+        }
+        Ok(telemetry)
     }
 
     /// Cross-platform lifecycle fixtures verify worker/process ownership, not
@@ -912,7 +1129,25 @@ impl HostResourceGovernor {
             disk_total_bytes: disk.total_bytes,
             disk_reserve_bytes: self.policy.disk_reserve_bytes(disk.total_bytes),
             expected_gate_growth_bytes: self.policy.expected_gate_growth_bytes,
+            forecast_available_after_gate_bytes: disk
+                .available_bytes
+                .saturating_sub(self.policy.expected_gate_growth_bytes),
             target_size_bytes: disk.target_size_bytes,
+            target_exclusive_bytes: None,
+            filesystem_kind: "unknown".into(),
+            managed_temporary_bytes: 0,
+            active_resource_count: 0,
+            retained_resource_count: 0,
+            reclaimable_resource_count: 0,
+            protected_recovery_resource_count: 0,
+            reclaimable_logical_bytes: 0,
+            recent_storage_growth_bytes: 0,
+            historical_peak_managed_bytes: 0,
+            cleanup_attempted: 0,
+            cleanup_removed: 0,
+            cleanup_failed: 0,
+            cleanup_logical_bytes_removed: 0,
+            cleanup_actual_available_bytes_gained: 0,
             action: match pressure {
                 ResourcePressure::Normal => format!(
                     "verification admitted: current headroom, PSI, swap trend, and zram backing are safe ({})",
@@ -1435,6 +1670,57 @@ fn cache_observation<T>(result: io::Result<T>) -> io::Result<Option<T>> {
         // enumeration and observation. Their absence is not a telemetry failure.
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
         Err(error) => Err(error),
+    }
+}
+
+fn apply_reclamation_report(telemetry: &mut ResourceTelemetry, report: &ReclamationReport) {
+    telemetry.cleanup_attempted = report.attempted;
+    telemetry.cleanup_removed = report.removed;
+    telemetry.cleanup_failed = report.failed;
+    telemetry.cleanup_logical_bytes_removed = report.logical_bytes_removed;
+    telemetry.cleanup_actual_available_bytes_gained = report.actual_available_bytes_gained;
+    telemetry.action = if report.removed > 0 {
+        format!(
+            "storage maintenance removed {} inactive resources ({} GiB logical), verified {} GiB actual free-space gain, and continued with {} GiB available",
+            report.removed,
+            gib(report.logical_bytes_removed),
+            gib(report.actual_available_bytes_gained),
+            gib(telemetry.disk_available_bytes),
+        )
+    } else {
+        "storage maintenance found no eligible inactive resources; protected and unknown data were preserved before admission was reevaluated".into()
+    };
+}
+
+fn filesystem_kind(path: &Path) -> Option<String> {
+    #[cfg(target_os = "linux")]
+    {
+        let target = fs::canonicalize(existing_ancestor(path).ok()?).ok()?;
+        let mountinfo = fs::read_to_string("/proc/self/mountinfo").ok()?;
+        let mut best: Option<(usize, String)> = None;
+        for line in mountinfo.lines() {
+            let (left, right) = line.split_once(" - ")?;
+            let mount_point = left.split_whitespace().nth(4)?;
+            let mount_point = mount_point
+                .replace("\\040", " ")
+                .replace("\\011", "\t")
+                .replace("\\012", "\n")
+                .replace("\\134", "\\");
+            let mount_point = PathBuf::from(mount_point);
+            if target.starts_with(&mount_point) {
+                let filesystem = right.split_whitespace().next()?.to_owned();
+                let depth = mount_point.components().count();
+                if best.as_ref().is_none_or(|(prior, _)| depth > *prior) {
+                    best = Some((depth, filesystem));
+                }
+            }
+        }
+        best.map(|(_, filesystem)| filesystem)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = path;
+        None
     }
 }
 
@@ -2128,6 +2414,135 @@ mod tests {
             telemetry.disk_available_bytes
                 < telemetry.disk_reserve_bytes + telemetry.expected_gate_growth_bytes
         );
+    }
+
+    #[test]
+    fn high_watermark_reclaims_owned_inactive_storage_and_continues() {
+        use crate::host_storage::{
+            ManagedResourceClass, ManagedResourceRecord, ManagedResourceState, ResourceRetention,
+            StorageResourceRegistry,
+        };
+
+        let temp = tempfile::tempdir().unwrap();
+        let target = temp.path().join("target");
+        let stale = target.join("stale-owned-cache");
+        fs::create_dir_all(&stale).unwrap();
+        fs::write(stale.join("artifact"), vec![0_u8; 4096]).unwrap();
+        let registry = StorageResourceRegistry::open(
+            temp.path().join("state"),
+            "jarvis.release-recovery.storage.v1",
+            std::slice::from_ref(&target),
+        )
+        .unwrap();
+        let mut record = ManagedResourceRecord::new(
+            "stale-owned-cache",
+            "epoch-storage",
+            stale.clone(),
+            ManagedResourceClass::CargoCacheSegment,
+            "jarvis.release-recovery.storage.v1",
+            ManagedResourceState::Completed,
+            ResourceRetention::UntilSettled,
+        );
+        record.cleanup_eligible = true;
+        record.logical_bytes = 90 * GIB;
+        registry.register(record).unwrap();
+        let policy = ResourcePolicy {
+            fixed_reserve_bytes: 0,
+            reserve_fraction_numerator: 0,
+            normal_headroom_min_bytes: 0,
+            normal_headroom_fraction_numerator: 0,
+            estimated_rustc_bytes: 1,
+            pressure_swap_growth_bytes_per_minute: u64::MAX,
+            critical_swap_growth_bytes_per_minute: u64::MAX,
+            pressure_psi_some_avg10_bps: u32::MAX,
+            pressure_psi_full_avg10_bps: u32::MAX,
+            critical_psi_full_avg10_bps: u32::MAX,
+            disk_reserve_min_bytes: 0,
+            disk_reserve_fraction_numerator: 0,
+            expected_gate_growth_bytes: 0,
+            cache_early_growth_bytes: 1,
+            cache_reclaim_high_bytes: 1,
+            cache_reclaim_low_bytes: 0,
+            low_free_space_percent: 0,
+            ..ResourcePolicy::default()
+        };
+        let governor = HostResourceGovernor::new(policy, temp.path().join("locks"), &target)
+            .unwrap()
+            .with_storage_registry(registry);
+
+        let admission = governor.preflight(GateCost::Expensive).unwrap();
+
+        assert!(!stale.exists());
+        assert_eq!(admission.telemetry.cleanup_removed, 1);
+        assert_eq!(admission.telemetry.cleanup_logical_bytes_removed, 90 * GIB);
+        assert!(admission.telemetry.action.contains("continued"));
+    }
+
+    #[test]
+    fn active_cache_crossing_high_watermark_is_preserved_when_headroom_is_safe() {
+        use crate::host_storage::{
+            ManagedResourceClass, ManagedResourceRecord, ManagedResourceState,
+            ResourceLeaseIdentity, ResourceRetention, StorageResourceRegistry,
+        };
+
+        let temp = tempfile::tempdir().unwrap();
+        let target = temp.path().join("target");
+        let active = target.join("active-build");
+        fs::create_dir_all(&active).unwrap();
+        fs::write(active.join("artifact"), vec![0_u8; 4096]).unwrap();
+        let registry = StorageResourceRegistry::open(
+            temp.path().join("state"),
+            "jarvis.release-recovery.storage.v1",
+            std::slice::from_ref(&target),
+        )
+        .unwrap();
+        let mut record = ManagedResourceRecord::new(
+            "active-build",
+            "epoch-active",
+            active.clone(),
+            ManagedResourceClass::CargoCacheSegment,
+            "jarvis.release-recovery.storage.v1",
+            ManagedResourceState::Active,
+            ResourceRetention::UntilSettled,
+        );
+        record.logical_bytes = 90 * GIB;
+        record.lease = Some(ResourceLeaseIdentity {
+            lease_id: "lease-active".into(),
+            owner_pid: std::process::id(),
+            process_start_identity: Some("fixture-start".into()),
+            operation_id: "epoch-active".into(),
+        });
+        registry.register(record).unwrap();
+        let policy = ResourcePolicy {
+            fixed_reserve_bytes: 0,
+            reserve_fraction_numerator: 0,
+            normal_headroom_min_bytes: 0,
+            normal_headroom_fraction_numerator: 0,
+            estimated_rustc_bytes: 1,
+            pressure_swap_growth_bytes_per_minute: u64::MAX,
+            critical_swap_growth_bytes_per_minute: u64::MAX,
+            pressure_psi_some_avg10_bps: u32::MAX,
+            pressure_psi_full_avg10_bps: u32::MAX,
+            critical_psi_full_avg10_bps: u32::MAX,
+            disk_reserve_min_bytes: 0,
+            disk_reserve_fraction_numerator: 0,
+            expected_gate_growth_bytes: 0,
+            cache_early_growth_bytes: 1,
+            cache_reclaim_high_bytes: 1,
+            cache_reclaim_low_bytes: 0,
+            low_free_space_percent: 0,
+            ..ResourcePolicy::default()
+        };
+        let governor = HostResourceGovernor::new(policy, temp.path().join("locks"), &target)
+            .unwrap()
+            .with_storage_registry(registry);
+
+        let admission = governor.preflight(GateCost::Expensive).unwrap();
+
+        assert!(active.exists());
+        assert_eq!(admission.telemetry.cleanup_removed, 0);
+        assert_eq!(admission.telemetry.active_resource_count, 1);
+        assert!(admission.telemetry.action.contains("protected and unknown"));
     }
 
     #[cfg(target_os = "linux")]

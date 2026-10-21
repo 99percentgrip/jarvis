@@ -31,6 +31,10 @@ use crate::host_resources::{
     CargoResourcePolicy, GateCost, HostResourceGovernor, ResourcePolicy, ResourcePressure,
     ResourceTelemetry,
 };
+use crate::host_storage::{
+    ManagedResourceClass, ManagedResourceRecord, ManagedResourceState, ResourceRetention,
+    StorageResourceRegistry,
+};
 
 use crate::release_recovery::{
     EXTERNAL_HEALTH_BUDGET, ExternalHealthEvidence, GhCliEvidenceAdapter, GitHubEvidencePort,
@@ -214,6 +218,10 @@ fn permissive_resource_policy() -> ResourcePolicy {
         disk_reserve_fraction_numerator: 0,
         disk_reserve_fraction_denominator: 1,
         expected_gate_growth_bytes: 0,
+        cache_early_growth_bytes: u64::MAX,
+        cache_reclaim_high_bytes: u64::MAX,
+        cache_reclaim_low_bytes: u64::MAX,
+        low_free_space_percent: 0,
         admission_pressure_enabled: false,
     }
 }
@@ -224,6 +232,189 @@ fn resource_policy_for_worker() -> ResourcePolicy {
         return permissive_resource_policy();
     }
     ResourcePolicy::default()
+}
+
+const STORAGE_OWNERSHIP_IDENTITY: &str = "jarvis.release-recovery.storage.v1";
+
+fn release_storage_registry(
+    release_root: &Path,
+    workspace: &Path,
+) -> Result<StorageResourceRegistry, RrcError> {
+    let workspace = workspace.canonicalize()?;
+    let target = workspace.join("target");
+    if target.is_symlink() {
+        return Err(RrcError::Invalid(
+            "refusing redirected repository Cargo target".into(),
+        ));
+    }
+    let repair_workspaces = release_root.join("host-resources/repair-workspaces");
+    let temporary = release_root.join("host-resources/temporary");
+    fs::create_dir_all(&target)?;
+    fs::create_dir_all(&repair_workspaces)?;
+    fs::create_dir_all(&temporary)?;
+    StorageResourceRegistry::open(
+        release_root.join("host-resources/storage"),
+        STORAGE_OWNERSHIP_IDENTITY,
+        &[target, repair_workspaces, temporary],
+    )
+    .map_err(|error| RrcError::Invalid(format!("storage resource registry: {error}")))
+}
+
+fn repair_workspace_path(
+    registry: &StorageResourceRegistry,
+    release_root: &Path,
+    repo_identity: &str,
+    epoch_id: &str,
+) -> Result<PathBuf, RrcError> {
+    let root = release_root.join("host-resources/repair-workspaces");
+    // Compare the registry's canonical parent (macOS /var aliases and Windows
+    // extended-length paths), but return ordinary paths for Git commands.
+    let canonical_root = root.canonicalize()?;
+    let repo_digest = digest(repo_identity.as_bytes());
+    let epoch_digest = digest(epoch_id.as_bytes());
+    // Git for Windows cannot remove deeply nested worktrees beyond its path limit.
+    // Use 96-bit identity segments, while honoring already registered old paths.
+    let compact = root
+        .join(&repo_digest[..24])
+        .join(format!("{}-repair", &epoch_digest[..24]));
+    let legacy = root.join(&repo_digest).join(repair_worktree_leaf(epoch_id));
+    let resource_id = format!("repair-workspace-{}", digest(epoch_id.as_bytes()));
+    let existing = registry
+        .resources()
+        .map_err(|error| RrcError::Invalid(format!("read storage registry: {error}")))?
+        .into_iter()
+        .find(|record| record.resource_id == resource_id);
+    if let Some(record) = existing {
+        let canonical_compact = canonical_root
+            .join(&repo_digest[..24])
+            .join(format!("{}-repair", &epoch_digest[..24]));
+        let canonical_legacy = canonical_root
+            .join(repo_digest)
+            .join(repair_worktree_leaf(epoch_id));
+        if record.canonical_path == canonical_legacy {
+            return Ok(legacy);
+        }
+        if record.canonical_path == canonical_compact {
+            return Ok(compact);
+        }
+        return Err(RrcError::Invalid(
+            "registered repair workspace identity does not match the deterministic path".into(),
+        ));
+    }
+    Ok(compact)
+}
+
+fn register_repair_workspace(
+    registry: &StorageResourceRegistry,
+    repair_root: &Path,
+    epoch_id: &str,
+) -> Result<String, RrcError> {
+    let resource_id = format!("repair-workspace-{}", digest(epoch_id.as_bytes()));
+    let existing = registry
+        .resources()
+        .map_err(|error| RrcError::Invalid(format!("read storage registry: {error}")))?
+        .into_iter()
+        .find(|record| record.resource_id == resource_id);
+    if let Some(record) = existing {
+        let parent = repair_root
+            .parent()
+            .ok_or_else(|| RrcError::Invalid("repair workspace has no parent boundary".into()))?;
+        let leaf = repair_root
+            .file_name()
+            .ok_or_else(|| RrcError::Invalid("repair workspace has no leaf".into()))?;
+        let canonical_path = parent.canonicalize()?.join(leaf);
+        if record.canonical_path != canonical_path
+            || record.resource_class != ManagedResourceClass::RepairWorkspace
+            || record.ownership_identity != STORAGE_OWNERSHIP_IDENTITY
+        {
+            return Err(RrcError::Invalid(
+                "registered repair workspace identity does not match the deterministic path".into(),
+            ));
+        }
+        registry
+            .update(&resource_id, |record| {
+                if record.lease.is_some() {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::WouldBlock,
+                        "repair workspace still has an active lease",
+                    ));
+                }
+                record.operation_id = epoch_id.to_owned();
+                record.lifecycle_state = ManagedResourceState::RecoveryRequired;
+                record.retention = ResourceRetention::PreserveForRecovery;
+                record.cleanup_eligible = false;
+                Ok(())
+            })
+            .map_err(|error| RrcError::Invalid(format!("update repair workspace: {error}")))?;
+        return Ok(resource_id);
+    }
+    let record = ManagedResourceRecord::new(
+        resource_id.clone(),
+        epoch_id,
+        repair_root.to_path_buf(),
+        ManagedResourceClass::RepairWorkspace,
+        STORAGE_OWNERSHIP_IDENTITY,
+        ManagedResourceState::RecoveryRequired,
+        ResourceRetention::PreserveForRecovery,
+    );
+    registry
+        .register(record)
+        .map_err(|error| RrcError::Invalid(format!("register repair workspace: {error}")))?;
+    Ok(resource_id)
+}
+
+fn register_target_observation(
+    registry: &StorageResourceRegistry,
+    workspace: &Path,
+    repo_identity: &str,
+    epoch_id: &str,
+) -> Result<String, RrcError> {
+    let resource_id = format!("cargo-target-{}", digest(repo_identity.as_bytes()));
+    let target = workspace.join("target");
+    let existing = registry
+        .resources()
+        .map_err(|error| RrcError::Invalid(format!("read storage registry: {error}")))?
+        .into_iter()
+        .find(|record| record.resource_id == resource_id);
+    if let Some(record) = existing {
+        if record.canonical_path != target
+            || record.resource_class != ManagedResourceClass::CargoTargetObservation
+            || record.ownership_identity != STORAGE_OWNERSHIP_IDENTITY
+        {
+            return Err(RrcError::Invalid(
+                "registered Cargo target identity does not match the managed checkout".into(),
+            ));
+        }
+        registry
+            .update(&resource_id, |record| {
+                if record.lease.is_some() {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::WouldBlock,
+                        "managed Cargo target still has an active lease",
+                    ));
+                }
+                record.operation_id = epoch_id.to_owned();
+                record.lifecycle_state = ManagedResourceState::Retained;
+                record.retention = ResourceRetention::Explicit;
+                record.cleanup_eligible = false;
+                Ok(())
+            })
+            .map_err(|error| RrcError::Invalid(format!("update Cargo target record: {error}")))?;
+        return Ok(resource_id);
+    }
+    let record = ManagedResourceRecord::new(
+        resource_id.clone(),
+        epoch_id,
+        target,
+        ManagedResourceClass::CargoTargetObservation,
+        STORAGE_OWNERSHIP_IDENTITY,
+        ManagedResourceState::Retained,
+        ResourceRetention::Explicit,
+    );
+    registry
+        .register(record)
+        .map_err(|error| RrcError::Invalid(format!("register Cargo target: {error}")))?;
+    Ok(resource_id)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1836,8 +2027,8 @@ fn repairable_failures(
     failures
 }
 
-fn repair_worktree_leaf(epoch_id: &str, repair_count: usize, timestamp_micros: i64) -> String {
-    format!("{epoch_id}-repair-{repair_count}-{timestamp_micros}")
+fn repair_worktree_leaf(epoch_id: &str) -> String {
+    format!("{epoch_id}-repair")
 }
 
 const REPAIR_HEARTBEAT_TIMEOUT: Duration = Duration::from_secs(10 * 60);
@@ -1999,14 +2190,22 @@ fn run_bounded_repair_agent(
     let root = default_release_root()
         .ok_or_else(|| RrcError::Invalid("no user-owned release state root is available".into()))?;
     let resources = root.join("host-resources");
+    let storage_registry = release_storage_registry(&root, workspace)?;
+    storage_registry.reconcile_interrupted_cleanup()?;
+    storage_registry.reconcile_stale_leases()?;
+    let target_resource = register_target_observation(
+        &storage_registry,
+        workspace,
+        &record.repo_identity,
+        &record.epoch_id,
+    )?;
     let governor = HostResourceGovernor::new(
         resource_policy_for_worker(),
         resources.join("scheduler"),
-        resources
-            .join("targets")
-            .join(digest(record.repo_identity.as_bytes())),
+        workspace.join("target"),
     )
-    .map_err(|error| RrcError::Invalid(format!("repair resource governor: {error}")))?;
+    .map_err(|error| RrcError::Invalid(format!("repair resource governor: {error}")))?
+    .with_storage_resource(storage_registry, target_resource, record.epoch_id.clone());
     run_bounded_repair_agent_with_verification(
         workspace,
         record,
@@ -2963,19 +3162,32 @@ fn spawn_release_worker_at_root_with_policy(
     })?;
     record.refresh_progress();
     let epoch_id = record.epoch_id.clone();
-    // RRC uses a controller-owned user-state cache, never the source
-    // worktree's `target/`. The single scheduler root serializes expensive
-    // compiler/linker gates across RRC epochs; the repository digest keeps
-    // compiled artifacts isolated between workspaces.
+    // Every controller Cargo process uses the source repository's one managed
+    // target root. Scheduler and ownership records remain in private application
+    // state; no per-epoch or stage-specific compilation root is created.
     let resource_root = root.join("host-resources");
+    let storage_registry = release_storage_registry(&root, &workspace)?;
+    storage_registry
+        .reconcile_interrupted_cleanup()
+        .map_err(|error| {
+            RrcError::Invalid(format!("storage cleanup reconciliation failed: {error}"))
+        })?;
+    storage_registry.reconcile_stale_leases().map_err(|error| {
+        RrcError::Invalid(format!("storage lease reconciliation failed: {error}"))
+    })?;
+    let target_resource = register_target_observation(
+        &storage_registry,
+        &workspace,
+        &repo_identity,
+        &record.epoch_id,
+    )?;
     let resource_governor = HostResourceGovernor::new(
         resource_policy,
         resource_root.join("scheduler"),
-        resource_root
-            .join("targets")
-            .join(digest(repo_identity.as_bytes())),
+        workspace.join("target"),
     )
-    .map_err(|error| RrcError::Invalid(format!("Host Resource Governor setup failed: {error}")))?;
+    .map_err(|error| RrcError::Invalid(format!("Host Resource Governor setup failed: {error}")))?
+    .with_storage_resource(storage_registry, target_resource, record.epoch_id.clone());
     let cancelled = Arc::new(AtomicBool::new(false));
     let now = Instant::now();
     let activity = Arc::new(Mutex::new(ReleaseWorkerActivity {
@@ -3010,7 +3222,7 @@ fn spawn_release_worker_at_root_with_policy(
     let worker_cancelled = Arc::clone(&cancelled);
     let worker_activity = Arc::clone(&activity);
     let handle = std::thread::Builder::new()
-        .name("vesper-release-controller".into())
+        .name("jarvis-release-controller".into())
         .spawn(move || {
             if start_rx.recv().is_err() {
                 return;
@@ -4823,14 +5035,79 @@ pub(crate) mod tests {
         assert!(evidence.chars().count() <= MAX_COMMAND_OUTPUT);
     }
 
+    #[cfg(unix)]
     #[test]
-    fn repair_worktree_is_a_restart_safe_sibling_of_the_epoch_workspace() {
-        let first = repair_worktree_leaf("epoch", 0, 100);
-        let restarted = repair_worktree_leaf("epoch", 0, 101);
+    fn storage_setup_rejects_redirected_repository_target_without_writing_foreign_state() {
+        use std::os::unix::fs::symlink;
+        let temp = tempfile::tempdir().unwrap();
+        let workspace = temp.path().join("source");
+        let foreign = temp.path().join("foreign");
+        fs::create_dir(&workspace).unwrap();
+        fs::create_dir(&foreign).unwrap();
+        fs::write(foreign.join("keep"), b"foreign").unwrap();
+        symlink(&foreign, workspace.join("target")).unwrap();
+        let result = release_storage_registry(&temp.path().join("release"), &workspace);
+        assert!(result.is_err(), "redirected Cargo output must fail closed");
+        assert_eq!(fs::read(foreign.join("keep")).unwrap(), b"foreign");
+        assert_eq!(fs::read_dir(&foreign).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn repair_worktree_is_deterministic_and_reused_across_retries() {
+        let first = repair_worktree_leaf("epoch");
+        let restarted = repair_worktree_leaf("epoch");
 
         assert_ne!(first, "epoch");
-        assert_ne!(first, restarted);
-        assert_eq!(first, "epoch-repair-0-100");
+        assert_eq!(first, restarted);
+        assert_eq!(first, "epoch-repair");
+    }
+
+    #[test]
+    fn repair_workspace_path_is_compact_and_retains_legacy_registry_ownership() {
+        let temp = tempfile::tempdir().unwrap();
+        let workspace = temp.path().join("source");
+        fs::create_dir(&workspace).unwrap();
+        let root = temp.path().join("state");
+        let registry = release_storage_registry(&root, &workspace).unwrap();
+        let repo = "https://example.invalid/owner/repo";
+        let epoch = "20261021T150702.212731100Z-34c015895e14";
+        let compact = repair_workspace_path(&registry, &root, repo, epoch).unwrap();
+        assert!(compact.to_string_lossy().len() < root.to_string_lossy().len() + 100);
+        assert_eq!(
+            compact,
+            repair_workspace_path(&registry, &root, repo, epoch).unwrap()
+        );
+        let legacy = root
+            .join("host-resources/repair-workspaces")
+            .join(digest(repo.as_bytes()))
+            .join(repair_worktree_leaf(epoch));
+        fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+        register_repair_workspace(&registry, &legacy, epoch).unwrap();
+        let stored_legacy = registry
+            .resources()
+            .unwrap()
+            .into_iter()
+            .find(|record| {
+                record.resource_id == format!("repair-workspace-{}", digest(epoch.as_bytes()))
+            })
+            .unwrap()
+            .canonical_path;
+        let resumed = repair_workspace_path(&registry, &root, repo, epoch).unwrap();
+        assert_eq!(resumed, legacy);
+        assert_eq!(
+            resumed
+                .parent()
+                .unwrap()
+                .canonicalize()
+                .unwrap()
+                .join(resumed.file_name().unwrap()),
+            stored_legacy
+        );
+        let other_epoch = "20261021T150828.369160800Z-db134ddf1278";
+        let mismatched = root.join("host-resources/repair-workspaces/unknown");
+        fs::create_dir_all(&mismatched).unwrap();
+        register_repair_workspace(&registry, &mismatched, other_epoch).unwrap();
+        assert!(repair_workspace_path(&registry, &root, repo, other_epoch).is_err());
     }
 
     #[test]
@@ -11344,21 +11621,29 @@ fn run_bounded_repair_agent_with_verification(
         .active_commit()
         .map(str::to_owned)
         .ok_or_else(|| RrcError::Invalid("repair candidate commit is missing".into()))?;
-    let repair_root = verification
-        .root
-        .join("worktrees")
-        .join(digest(record.repo_identity.as_bytes()))
-        .join(repair_worktree_leaf(
-            &record.epoch_id,
-            record.repair_attempts.len(),
-            Utc::now().timestamp_micros(),
-        ));
-    if repair_root.exists() {
-        return Err(RrcError::Invalid(format!(
-            "release repair worktree already exists: {}",
-            repair_root.display()
-        )));
+    let storage_registry = release_storage_registry(verification.root, workspace)?;
+    storage_registry.reconcile_interrupted_cleanup()?;
+    storage_registry.reconcile_stale_leases()?;
+    let repair_root = repair_workspace_path(
+        &storage_registry,
+        verification.root,
+        &record.repo_identity,
+        &record.epoch_id,
+    )?;
+    if let Some(parent) = repair_root.parent() {
+        fs::create_dir_all(parent)?;
     }
+    let repair_resource =
+        register_repair_workspace(&storage_registry, &repair_root, &record.epoch_id)?;
+    let repair_storage_lease = storage_registry
+        .lease(
+            &repair_resource,
+            &record.epoch_id,
+            ManagedResourceState::RecoveryRequired,
+            false,
+        )
+        .map_err(|error| RrcError::Invalid(format!("lease repair workspace: {error}")))?;
+    let reuse_repair_workspace = repair_root.exists();
     let controller = NativeReleaseExecutor::new(workspace, Arc::clone(&cancelled))?
         .with_firewall(factory.config.firewall.clone());
     let original_status = controller.git_status()?;
@@ -11386,26 +11671,39 @@ fn run_bounded_repair_agent_with_verification(
             "remote repair needs a clean controller workspace".into(),
         ));
     }
-    if let Some(parent) = repair_root.parent() {
-        fs::create_dir_all(parent)?;
-    }
     let repair_path = repair_root
         .to_str()
         .ok_or_else(|| RrcError::Invalid("repair path is not UTF-8".into()))?;
-    let added = controller.command("git", &["worktree", "add", "--detach", repair_path, &base])?;
-    if !added.status.success() {
-        return Err(RrcError::Invalid(format!(
-            "release repair worktree creation failed: {}",
-            bounded_output(&added.stderr)
-        )));
+    if !reuse_repair_workspace {
+        let added =
+            controller.command("git", &["worktree", "add", "--detach", repair_path, &base])?;
+        if !added.status.success() {
+            return Err(RrcError::Invalid(format!(
+                "release repair worktree creation failed: {}",
+                bounded_output(&added.stderr)
+            )));
+        }
     }
 
     let mut repair_executor = NativeReleaseExecutor::new(&repair_root, Arc::clone(&cancelled))?
         .with_firewall(factory.config.firewall.clone());
+    let repair_head = repair_executor.checked("git", &["rev-parse", "HEAD"])?;
+    if repair_head.trim() != base {
+        return Err(RrcError::MutationBlocked(format!(
+            "deterministic repair workspace HEAD {} does not match epoch base {base}",
+            repair_head.trim()
+        )));
+    }
+    if reuse_repair_workspace {
+        // Preserve interrupted working-tree edits, but restore the index to the
+        // exact epoch base so prior staged bytes remain part of the next frozen
+        // repair delta rather than silently becoming its baseline.
+        repair_executor.checked("git", &["reset", "--mixed", &base])?;
+    }
     if let Some(governor) = verification.governor.clone() {
         repair_executor = repair_executor.with_resource_governor(governor);
     }
-    if local && !original_patch.stdout.is_empty() {
+    if local && !reuse_repair_workspace && !original_patch.stdout.is_empty() {
         apply_binary_patch(&repair_executor, &original_patch.stdout)?;
     }
     let baseline_tree = repair_executor.checked("git", &["write-tree"])?;
@@ -11747,6 +12045,12 @@ fn run_bounded_repair_agent_with_verification(
             None,
         )?;
         ledger.save(record)?;
+        remove_and_settle_repair_workspace(
+            &controller,
+            repair_path,
+            &repair_root,
+            repair_storage_lease,
+        )?;
         return Ok(());
     }
     let fingerprint_short = failure.fingerprint.0.chars().take(12).collect::<String>();
@@ -11784,8 +12088,31 @@ fn run_bounded_repair_agent_with_verification(
     apply_controller_event(record, ReleaseControllerEvent::VerifiedRepairBatch(repairs))?;
     record.mutation.final_candidate_commit = record.active_commit().map(str::to_owned);
     ledger.save(record)?;
-    let _ = controller.command("git", &["worktree", "remove", "--force", repair_path]);
+    remove_and_settle_repair_workspace(
+        &controller,
+        repair_path,
+        &repair_root,
+        repair_storage_lease,
+    )?;
     Ok(())
+}
+
+fn remove_and_settle_repair_workspace(
+    controller: &NativeReleaseExecutor,
+    repair_path: &str,
+    repair_root: &Path,
+    lease: crate::host_storage::ManagedResourceLease,
+) -> Result<(), RrcError> {
+    let removed = controller.command("git", &["worktree", "remove", "--force", repair_path])?;
+    if !removed.status.success() || repair_root.exists() {
+        return Err(RrcError::Invalid(format!(
+            "settled repair workspace could not be removed safely: {}",
+            bounded_output(&removed.stderr)
+        )));
+    }
+    lease
+        .settle(ManagedResourceState::Completed, true)
+        .map_err(|error| RrcError::Invalid(format!("settle repair storage resource: {error}")))
 }
 
 fn apply_binary_patch(executor: &NativeReleaseExecutor, bytes: &[u8]) -> Result<(), RrcError> {
