@@ -24,7 +24,7 @@ architecture, MSRV, and source-oracle checks.
   moves resolve to original frozen-hit paths; new upstream prose, unknown
   identifiers and historical-scope additions stay embargoed;
   the frozen naming baseline and all thirteen upstream patterns remain intact.
-  Stage 7B adds only exact controller/storage technical identifiers and scoped receipt paths; no general prose exemption or baseline regeneration is permitted.
+  Stage 7B adds only exact controller/storage technical identifiers and scoped receipt paths; no general prose exemption or baseline regeneration is permitted. The PR #11 PTY receipt admits its one recorded GitHub job-log endpoint only within that owned document; other job IDs and upstream-brand prose remain rejected.
 
 
 - Resolve repository and fixture roots from the invoking directory at runtime,

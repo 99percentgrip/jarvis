@@ -32,6 +32,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-21-stage7b-native-acceptance-reverification.md",
     "docs/foundation/2026-10-21-stage7b-final-acceptance-continuation.md",
     "docs/foundation/2026-10-21-stage7b-post-push-local-receipt.md",
+    "docs/foundation/2026-10-21-stage7b-pr11-macos-pty-timing-repair.md",
     "docs/workspace-map.md",
     "docs/dependencies.md",
     "docs/architecture.md",
@@ -185,6 +186,14 @@ pub fn owned_line(path: &str, line: &str) -> bool {
             scrubbed = scrub_technical_token(&scrubbed, token);
         }
     }
+    if path == "docs/foundation/2026-10-21-stage7b-pr11-macos-pty-timing-repair.md" {
+        // One recorded CI job URL is an exact technical receipt, not an
+        // exemption for arbitrary repository URLs or new brand prose.
+        scrubbed = scrub_technical_token(
+            &scrubbed,
+            "repos/99percentgrip/jarvis/actions/jobs/119437025291/logs",
+        );
+    }
     if path.starts_with("docs/foundation/2026-10-21-stage7b-") {
         scrubbed = scrub_technical_token(&scrubbed, "/home/Alex/Projects/jarvis/target");
         scrubbed = scrub_technical_token(&scrubbed, "Jarvis verification");
@@ -305,6 +314,28 @@ mod tests {
         assert!(!owned_line(
             "docs/architecture/identity-architecture.md",
             "`jarvis-unreviewed`"
+        ));
+    }
+
+    #[test]
+    fn stage7b_pty_receipt_keeps_exact_job_command_without_loosening_embargo() {
+        let path = "docs/foundation/2026-10-21-stage7b-pr11-macos-pty-timing-repair.md";
+        assert!(owned_line(
+            path,
+            "`gh api --allow-escape-sequences repos/99percentgrip/jarvis/actions/jobs/119437025291/logs` and `apps/jarvis-tui/tests/openai_startup_responsiveness.rs`"
+        ));
+        assert!(owned_line(
+            path,
+            "`cargo test --locked -p jarvis-tui --features integration-test-harness --test openai_startup_responsiveness --quiet`"
+        ));
+        assert!(!owned_line(path, "unregistered jarvis upstream prose"));
+        assert!(!owned_line(
+            path,
+            "repos/99percentgrip/jarvis/actions/jobs/999/logs"
+        ));
+        assert!(!owned_line(
+            "docs/historical.md",
+            "repos/99percentgrip/jarvis/actions/jobs/119437025291/logs"
         ));
     }
 
