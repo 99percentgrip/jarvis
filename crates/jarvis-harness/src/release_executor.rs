@@ -267,6 +267,9 @@ fn repair_workspace_path(
     epoch_id: &str,
 ) -> Result<PathBuf, RrcError> {
     let root = release_root.join("host-resources/repair-workspaces");
+    // Compare the registry's canonical parent (macOS /var aliases and Windows
+    // extended-length paths), but return ordinary paths for Git commands.
+    let canonical_root = root.canonicalize()?;
     let repo_digest = digest(repo_identity.as_bytes());
     let epoch_digest = digest(epoch_id.as_bytes());
     // Git for Windows cannot remove deeply nested worktrees beyond its path limit.
@@ -274,7 +277,7 @@ fn repair_workspace_path(
     let compact = root
         .join(&repo_digest[..24])
         .join(format!("{}-repair", &epoch_digest[..24]));
-    let legacy = root.join(repo_digest).join(repair_worktree_leaf(epoch_id));
+    let legacy = root.join(&repo_digest).join(repair_worktree_leaf(epoch_id));
     let resource_id = format!("repair-workspace-{}", digest(epoch_id.as_bytes()));
     let existing = registry
         .resources()
@@ -282,12 +285,21 @@ fn repair_workspace_path(
         .into_iter()
         .find(|record| record.resource_id == resource_id);
     if let Some(record) = existing {
-        if record.canonical_path != legacy && record.canonical_path != compact {
-            return Err(RrcError::Invalid(
-                "registered repair workspace identity does not match the deterministic path".into(),
-            ));
+        let canonical_compact = canonical_root
+            .join(&repo_digest[..24])
+            .join(format!("{}-repair", &epoch_digest[..24]));
+        let canonical_legacy = canonical_root
+            .join(repo_digest)
+            .join(repair_worktree_leaf(epoch_id));
+        if record.canonical_path == canonical_legacy {
+            return Ok(legacy);
         }
-        return Ok(record.canonical_path);
+        if record.canonical_path == canonical_compact {
+            return Ok(compact);
+        }
+        return Err(RrcError::Invalid(
+            "registered repair workspace identity does not match the deterministic path".into(),
+        ));
     }
     Ok(compact)
 }
@@ -304,7 +316,14 @@ fn register_repair_workspace(
         .into_iter()
         .find(|record| record.resource_id == resource_id);
     if let Some(record) = existing {
-        if record.canonical_path != repair_root
+        let parent = repair_root
+            .parent()
+            .ok_or_else(|| RrcError::Invalid("repair workspace has no parent boundary".into()))?;
+        let leaf = repair_root
+            .file_name()
+            .ok_or_else(|| RrcError::Invalid("repair workspace has no leaf".into()))?;
+        let canonical_path = parent.canonicalize()?.join(leaf);
+        if record.canonical_path != canonical_path
             || record.resource_class != ManagedResourceClass::RepairWorkspace
             || record.ownership_identity != STORAGE_OWNERSHIP_IDENTITY
         {
@@ -5064,9 +5083,25 @@ pub(crate) mod tests {
             .join(repair_worktree_leaf(epoch));
         fs::create_dir_all(legacy.parent().unwrap()).unwrap();
         register_repair_workspace(&registry, &legacy, epoch).unwrap();
+        let stored_legacy = registry
+            .resources()
+            .unwrap()
+            .into_iter()
+            .find(|record| {
+                record.resource_id == format!("repair-workspace-{}", digest(epoch.as_bytes()))
+            })
+            .unwrap()
+            .canonical_path;
+        let resumed = repair_workspace_path(&registry, &root, repo, epoch).unwrap();
+        assert_eq!(resumed, legacy);
         assert_eq!(
-            repair_workspace_path(&registry, &root, repo, epoch).unwrap(),
-            legacy
+            resumed
+                .parent()
+                .unwrap()
+                .canonicalize()
+                .unwrap()
+                .join(resumed.file_name().unwrap()),
+            stored_legacy
         );
         let other_epoch = "20261021T150828.369160800Z-db134ddf1278";
         let mismatched = root.join("host-resources/repair-workspaces/unknown");

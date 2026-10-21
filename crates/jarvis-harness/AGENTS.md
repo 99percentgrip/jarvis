@@ -70,7 +70,9 @@ Z.ai and Playwright MCP server descriptors.
   Missing legacy metadata, mutation-blocked errors and controller panics remain
   uncertain; repeated blocked requests cannot manufacture settlement authority.
   New deterministic repair-worktree paths use compact identity segments to fit
-  native Windows Git path limits; registered legacy paths retain their original
+  native Windows Git path limits; registry comparison resolves the existing parent
+  (including macOS `/var` aliases and Windows extended-length paths) while Git
+  retains ordinary Windows path spelling. Registered legacy paths retain their original
   location and mismatched stored paths refuse rather than adopting unknown state.
   Preserve failed sibling worktrees, causal
   evidence and reserved repair admissions; uncertain writes, infrastructure
