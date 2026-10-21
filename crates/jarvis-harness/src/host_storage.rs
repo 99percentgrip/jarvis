@@ -762,7 +762,12 @@ impl StorageResourceRegistry {
         file.as_file().sync_all()?;
         file.persist(self.state_root.join(REGISTRY_FILE))
             .map_err(|error| error.error)?;
-        File::open(&self.state_root)?.sync_all()
+        // Windows does not permit std::fs::File::open on directories. The
+        // temporary file is already synced before atomic replacement; only
+        // Unix exposes a portable directory-sync operation here.
+        #[cfg(unix)]
+        File::open(&self.state_root)?.sync_all()?;
+        Ok(())
     }
 }
 

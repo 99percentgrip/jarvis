@@ -169,13 +169,18 @@ jobs:
         run: |
           version="$(awk -F '"' '/^version = "/ { print $2; exit }' Cargo.toml)"
           mkdir -p "$RUNNER_TEMP/release-candidate"
-          python3 scripts/jarvis_package.py pack \
+          python3 scripts/jarvis_release_candidate.py \
+            --source "$GITHUB_WORKSPACE" \
+            --source-commit "$CANDIDATE_COMMIT" \
+            --target "${{ matrix.package_target }}" \
+            --rust-target "${{ matrix.rust_target }}" \
+            --driver-run "${{ needs.candidate-gate.outputs.driver-run }}" \
+            --driver-arch "${{ matrix.driver }}" \
+            --driver-dir "$RUNNER_TEMP/web-driver-assets" \
             --bin-dir "$RUNNER_TEMP/jarvis-bin" \
             --resources "$RUNNER_TEMP/jarvis-resources" \
-            --target "${{ matrix.package_target }}" \
             --output "$RUNNER_TEMP/release-candidate/${{ matrix.archive }}" \
-            --version "$version" \
-            --commit "$CANDIDATE_COMMIT"
+            --version "$version"
       - name: Upload nonpublishing candidate artifact
         uses: actions/upload-artifact@v4
         with:
@@ -183,5 +188,6 @@ jobs:
           path: |
             ${{ runner.temp }}/release-candidate/${{ matrix.archive }}
             ${{ runner.temp }}/release-candidate/${{ matrix.archive }}.sha256
+            ${{ runner.temp }}/release-candidate/${{ matrix.archive }}.candidate.json
           if-no-files-found: error
           retention-days: 7

@@ -101,7 +101,10 @@ class NonpublishingCandidateTests(unittest.TestCase):
         self.assertIn('persist-credentials: false', self.workflow)
 
     def test_candidate_reuses_stage6_package_and_driver_contracts(self):
-        self.assertIn('python3 scripts/jarvis_package.py pack', self.workflow)
+        self.assertIn('python3 scripts/jarvis_release_candidate.py', self.workflow)
+        self.assertIn('--source-commit "$CANDIDATE_COMMIT"', self.workflow)
+        self.assertIn('--driver-run "${{ needs.candidate-gate.outputs.driver-run }}"', self.workflow)
+        self.assertIn('${{ matrix.archive }}.candidate.json', self.workflow)
         self.assertIn('scripts/windows_package_audit.py', self.workflow)
         self.assertIn('scripts/release_gate.py', self.workflow)
         self.assertIn('actions/download-artifact@v4', self.workflow)
@@ -113,6 +116,13 @@ class NonpublishingCandidateTests(unittest.TestCase):
             'jarvis-windows-x86_64.zip',
         ]:
             self.assertIn(archive, self.workflow)
+
+    def test_candidate_wrapper_reuses_stage6_packer_and_has_no_publication_path(self):
+        wrapper = (self.root / 'scripts/jarvis_release_candidate.py').read_text()
+        self.assertIn('from jarvis_package import HELPERS, TARGETS, USER_FACING, pack', wrapper)
+        self.assertIn("'status': 'nonpublishing-candidate'", wrapper)
+        self.assertNotIn('gh release', wrapper)
+        self.assertNotIn('git push', wrapper)
 
     def test_independent_registration_identity_is_dormant(self):
         registration = json.loads(

@@ -136,6 +136,8 @@ pub fn owned_line(path: &str, line: &str) -> bool {
         "JARVIS_SHELL_PROFILE",
         "JARVIS_INSTALL_ACTION",
         "jarvis_package.py",
+        "jarvis_release_candidate.py",
+        "jarvis_release_candidate",
         "test_jarvis_package.py",
         ".jarvis-installer-owned.json",
         "jarvis-stage6",
@@ -184,6 +186,7 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     }
     if path.starts_with("docs/foundation/2026-10-21-stage7b-") {
         scrubbed = scrub_technical_token(&scrubbed, "/home/Alex/Projects/jarvis/target");
+        scrubbed = scrub_technical_token(&scrubbed, "Jarvis verification");
     }
     for token in STAGE6_INSTALLER_TOKENS {
         scrubbed = scrub_technical_token(&scrubbed, token);

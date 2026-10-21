@@ -44,7 +44,7 @@ Z.ai and Playwright MCP server descriptors.
   leases and retention; unknown, active or recovery-bearing paths are never
   cleanup candidates. An unmarked nonempty state root, redirected metadata or
   mismatched root or per-resource owner is never adopted; interrupted atomic writes cannot block
-  later saves. Cleanup-pending resources cannot acquire a new lease.
+  later saves. Registry files sync before atomic replacement; only Unix syncs the directory (opening directories as files fails on Windows). Cleanup-pending resources cannot acquire a new lease.
   Ambiguous live process identity retains its lease on restart;
   only proved death or PID reuse permits recovery classification. Controller
   Cargo uses the repository's single `target/` and
