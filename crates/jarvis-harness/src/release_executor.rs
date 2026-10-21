@@ -260,6 +260,38 @@ fn release_storage_registry(
     .map_err(|error| RrcError::Invalid(format!("storage resource registry: {error}")))
 }
 
+fn repair_workspace_path(
+    registry: &StorageResourceRegistry,
+    release_root: &Path,
+    repo_identity: &str,
+    epoch_id: &str,
+) -> Result<PathBuf, RrcError> {
+    let root = release_root.join("host-resources/repair-workspaces");
+    let repo_digest = digest(repo_identity.as_bytes());
+    let epoch_digest = digest(epoch_id.as_bytes());
+    // Git for Windows cannot remove deeply nested worktrees beyond its path limit.
+    // Use 96-bit identity segments, while honoring already registered old paths.
+    let compact = root
+        .join(&repo_digest[..24])
+        .join(format!("{}-repair", &epoch_digest[..24]));
+    let legacy = root.join(repo_digest).join(repair_worktree_leaf(epoch_id));
+    let resource_id = format!("repair-workspace-{}", digest(epoch_id.as_bytes()));
+    let existing = registry
+        .resources()
+        .map_err(|error| RrcError::Invalid(format!("read storage registry: {error}")))?
+        .into_iter()
+        .find(|record| record.resource_id == resource_id);
+    if let Some(record) = existing {
+        if record.canonical_path != legacy && record.canonical_path != compact {
+            return Err(RrcError::Invalid(
+                "registered repair workspace identity does not match the deterministic path".into(),
+            ));
+        }
+        return Ok(record.canonical_path);
+    }
+    Ok(compact)
+}
+
 fn register_repair_workspace(
     registry: &StorageResourceRegistry,
     repair_root: &Path,
@@ -5009,6 +5041,38 @@ pub(crate) mod tests {
         assert_ne!(first, "epoch");
         assert_eq!(first, restarted);
         assert_eq!(first, "epoch-repair");
+    }
+
+    #[test]
+    fn repair_workspace_path_is_compact_and_retains_legacy_registry_ownership() {
+        let temp = tempfile::tempdir().unwrap();
+        let workspace = temp.path().join("source");
+        fs::create_dir(&workspace).unwrap();
+        let root = temp.path().join("state");
+        let registry = release_storage_registry(&root, &workspace).unwrap();
+        let repo = "https://example.invalid/owner/repo";
+        let epoch = "20261021T150702.212731100Z-34c015895e14";
+        let compact = repair_workspace_path(&registry, &root, repo, epoch).unwrap();
+        assert!(compact.to_string_lossy().len() < root.to_string_lossy().len() + 100);
+        assert_eq!(
+            compact,
+            repair_workspace_path(&registry, &root, repo, epoch).unwrap()
+        );
+        let legacy = root
+            .join("host-resources/repair-workspaces")
+            .join(digest(repo.as_bytes()))
+            .join(repair_worktree_leaf(epoch));
+        fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+        register_repair_workspace(&registry, &legacy, epoch).unwrap();
+        assert_eq!(
+            repair_workspace_path(&registry, &root, repo, epoch).unwrap(),
+            legacy
+        );
+        let other_epoch = "20261021T150828.369160800Z-db134ddf1278";
+        let mismatched = root.join("host-resources/repair-workspaces/unknown");
+        fs::create_dir_all(&mismatched).unwrap();
+        register_repair_workspace(&registry, &mismatched, other_epoch).unwrap();
+        assert!(repair_workspace_path(&registry, &root, repo, other_epoch).is_err());
     }
 
     #[test]
@@ -11522,15 +11586,15 @@ fn run_bounded_repair_agent_with_verification(
         .active_commit()
         .map(str::to_owned)
         .ok_or_else(|| RrcError::Invalid("repair candidate commit is missing".into()))?;
-    let repair_root = verification
-        .root
-        .join("host-resources")
-        .join("repair-workspaces")
-        .join(digest(record.repo_identity.as_bytes()))
-        .join(repair_worktree_leaf(&record.epoch_id));
     let storage_registry = release_storage_registry(verification.root, workspace)?;
     storage_registry.reconcile_interrupted_cleanup()?;
     storage_registry.reconcile_stale_leases()?;
+    let repair_root = repair_workspace_path(
+        &storage_registry,
+        verification.root,
+        &record.repo_identity,
+        &record.epoch_id,
+    )?;
     if let Some(parent) = repair_root.parent() {
         fs::create_dir_all(parent)?;
     }

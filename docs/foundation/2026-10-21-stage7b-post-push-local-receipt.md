@@ -1,0 +1,23 @@
+# Stage 7B post-push local receipt (not published)
+
+## Objective and status
+
+Track exact-head protected integration after the scoped Windows/candidate repair without representing superseded checks as acceptance. Stage 7B remains in progress; this local post-publication receipt is intentionally not pushed separately from the next authorized code change.
+
+## Methods, commands and files
+
+Committed the reviewed repairs in `abcc598ea45738a43da191dfbfc6330e62bb945e` (`fix(stage7b): audit candidate provenance and repair Windows storage verification`) and ran `git push origin feat/stage7b-independent-release-rrc`. `git ls-remote origin refs/heads/feat/stage7b-independent-release-rrc` returned `abcc598ea45738a43da191dfbfc6330e62bb945e`. The commit changes `.github/workflows/release.yml`, scoped source, tests, scripts and owning DOX/report files listed in the main continuation report. `git status --short` afterward contained only `?? .agent/` (unrelated local metadata).
+
+## Exact evidence and deviations
+
+`gh api repos/99percentgrip/jarvis/pulls/10` still reported head `4a8a5a2e64db2acae0ab772e7c5053fe9cf20ce8` while the branch ref and `git ls-remote` reported `abcc598ea45738a43da191dfbfc6330e62bb945e`. `gh run list --branch feat/stage7b-independent-release-rrc --limit 5` still showed only old-head workflows; the old-head PR context snapshot was 10 successes and three failures. Old-head native Windows job `119256602707` and Windows installer job `119256488190` are not acceptance evidence for the new commit. No final-head checks or candidate workflow results are available at this observation. No branch-protection bypass, merge, tag, release, registry publication or installer execution occurred.
+
+## Exact-head rerun and further repair
+
+`gh pr ready 10` synchronized PR #10 to `abcc598ea45738a43da191dfbfc6330e62bb945e` and started the exact-head mandatory matrix. The new native Windows job `119296851037` failed in foundational tests: `423 passed; 2 failed; 6 ignored`. Both isolated repair fixture failures at `release_executor.rs:9875` reported `settled repair workspace could not be removed safely: ... Filename too long` for a worktree under the Windows runner's temporary `state/host-resources/repair-workspaces/<64-character repository digest>/<timestamped epoch>-repair` path. Its downstream native package/host checks were skipped, not passed. This supersedes the earlier head's Windows storage failure; the same SHA's `windows-installer` job succeeded. The remaining checks were still settling at observation, so no complete exact-head matrix is claimed.
+
+A new red-first `repair_workspace_path_is_compact_and_retains_legacy_registry_ownership` test initially failed to compile (`cannot find function repair_workspace_path`), then passed after a compact deterministic 96-bit-per-segment path selector was added. Existing registered long paths retain their exact location on restart; a different registered path refuses, rather than adopting unrelated worktrees. The focused test printed `1 passed; 0 failed`; final Linux `cargo xtask verify` printed `Acceptance regression gate: 178 exact cases passed in 228228 ms` after `cargo xtask naming-guard` printed `clean (36 hits, all frozen in baseline)`. These are Linux-local checks, not a native Windows rerun of the new repair. The source and this receipt remain local pending a reviewed corrective candidate commit and fresh protected exact-head checks.
+
+## Unresolved items and readiness effect
+
+The PR head synchronized after marking ready; wait for a fresh corrective commit and all 13 successful exact-head required contexts, plus review-thread resolution, before protected merge and four exact-merge workflows. The nonpublishing release-candidate workflow remains `disabled_manually` and no dispatch is claimed. Existing local verification in the main report supports the candidate only; Stage 7B is not accepted. This receipt is linked locally from the evidence index and the closest existing Stage 6 distribution specification (there is no separate Stage 7B PRD in this checkout). Publish those updates with the next authorized code change, rather than pushing a documentation-only commit.

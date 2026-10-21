@@ -69,6 +69,9 @@ Z.ai and Playwright MCP server descriptors.
   typed settled-error liveness metadata and the same proof under the owner lock.
   Missing legacy metadata, mutation-blocked errors and controller panics remain
   uncertain; repeated blocked requests cannot manufacture settlement authority.
+  New deterministic repair-worktree paths use compact identity segments to fit
+  native Windows Git path limits; registered legacy paths retain their original
+  location and mismatched stored paths refuse rather than adopting unknown state.
   Preserve failed sibling worktrees, causal
   evidence and reserved repair admissions; uncertain writes, infrastructure
   reruns, cancellation and changed candidates remain fenced.

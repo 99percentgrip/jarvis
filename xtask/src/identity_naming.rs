@@ -31,6 +31,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-20-stage7b-storage-ownership-hardening.md",
     "docs/foundation/2026-10-21-stage7b-native-acceptance-reverification.md",
     "docs/foundation/2026-10-21-stage7b-final-acceptance-continuation.md",
+    "docs/foundation/2026-10-21-stage7b-post-push-local-receipt.md",
     "docs/workspace-map.md",
     "docs/dependencies.md",
     "docs/architecture.md",
@@ -187,6 +188,7 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     if path.starts_with("docs/foundation/2026-10-21-stage7b-") {
         scrubbed = scrub_technical_token(&scrubbed, "/home/Alex/Projects/jarvis/target");
         scrubbed = scrub_technical_token(&scrubbed, "Jarvis verification");
+        scrubbed = scrub_technical_token(&scrubbed, "repos/99percentgrip/jarvis/pulls/10");
     }
     for token in STAGE6_INSTALLER_TOKENS {
         scrubbed = scrub_technical_token(&scrubbed, token);
