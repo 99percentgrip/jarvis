@@ -95,7 +95,10 @@ and composes the existing bounded atomic session writer.
   Cognition startup runs on a blocking thread before terminal entry because its
   client construction and local-store migration are synchronous.
   Provider/model labels come from the active registry surface and version from
-  the package. This welcome/menu presentation is terminal-specific; ACP editors
+  the package. The stalled OpenAI startup PTY fixture timestamps the reader's
+  first typed/pasted frame rather than the polling thread's wake-up; the 1,200 ms
+  input-responsiveness budget remains enforced. This welcome/menu presentation
+  is terminal-specific; ACP editors
   own their launch UI, so no shared capability or slash-command change is needed.
 
 - Intentional turn cancellation is promoted to the benign `Cancelled`

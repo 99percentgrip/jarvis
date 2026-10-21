@@ -665,6 +665,7 @@
 
 ## Stage 7B acceptance continuation (2026-10-21)
 
+- The [PR #11 macOS PTY timing repair report](2026-10-21-stage7b-pr11-macos-pty-timing-repair.md) records the failed Intel job, bounded observation correction and pending exact-head proof.
 - Current [continuation report](2026-10-21-stage7b-final-acceptance-continuation.md) records full local verify/acceptance, narrow security repairs, candidate workflow disabled state and historical integration failures. The [post-push local receipt](2026-10-21-stage7b-post-push-local-receipt.md) owns the final exact-PR-head thirteen successes, protected merge and the failed native Windows exact-merge run with its corrective PR; it is not a publication claim. The [architecture boundary](../architecture/stage7b-release-and-storage.md) owns the nonpublishing/storage contract.
 
 ## Separate agent process status check (2026-10-02)
