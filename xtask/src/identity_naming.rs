@@ -33,6 +33,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-21-stage7b-final-acceptance-continuation.md",
     "docs/foundation/2026-10-21-stage7b-post-push-local-receipt.md",
     "docs/foundation/2026-10-21-stage7b-pr11-macos-pty-timing-repair.md",
+    "docs/foundation/2026-10-22-stage7b-candidate-acceptance-preflight.md",
     "docs/workspace-map.md",
     "docs/dependencies.md",
     "docs/architecture.md",
@@ -182,6 +183,15 @@ pub fn owned_line(path: &str, line: &str) -> bool {
             "jarvis-web-driver:validated",
             "jarvis-web-driver-<arch>",
             "jarvis-web-driver",
+        ] {
+            scrubbed = scrub_technical_token(&scrubbed, token);
+        }
+    }
+    if path == "docs/foundation/2026-10-22-stage7b-candidate-acceptance-preflight.md" {
+        for token in [
+            "jarvis_candidate_acceptance.py",
+            "test_jarvis_candidate_install.ps1",
+            "test_jarvis_candidate_acceptance.py",
         ] {
             scrubbed = scrub_technical_token(&scrubbed, token);
         }
@@ -336,6 +346,27 @@ mod tests {
         assert!(!owned_line(
             "docs/historical.md",
             "repos/99percentgrip/jarvis/actions/jobs/119437025291/logs"
+        ));
+    }
+
+    #[test]
+    fn stage7b_candidate_receipt_admits_only_registered_script_names() {
+        let path = "docs/foundation/2026-10-22-stage7b-candidate-acceptance-preflight.md";
+        for id in [
+            "jarvis_candidate_acceptance.py",
+            "test_jarvis_candidate_install.ps1",
+            "test_jarvis_candidate_acceptance.py",
+        ] {
+            assert!(owned_line(path, &format!("`scripts/{id}`")));
+            assert!(!owned_line(
+                path,
+                &format!("`scripts/{id}` and jarvis upstream prose")
+            ));
+        }
+        assert!(!owned_line(path, "`scripts/jarvis_unsupported.py`"));
+        assert!(!owned_line(
+            "docs/historical.md",
+            "`scripts/jarvis_candidate_acceptance.py`"
         ));
     }
 

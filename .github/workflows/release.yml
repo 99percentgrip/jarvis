@@ -181,6 +181,22 @@ jobs:
             --resources "$RUNNER_TEMP/jarvis-resources" \
             --output "$RUNNER_TEMP/release-candidate/${{ matrix.archive }}" \
             --version "$version"
+      - name: Verify and install exact candidate archive
+        shell: bash
+        env:
+          CANDIDATE_COMMIT: ${{ needs.candidate-gate.outputs.commit }}
+        run: |
+          archive="$RUNNER_TEMP/release-candidate/${{ matrix.archive }}"
+          python3 scripts/jarvis_candidate_acceptance.py \
+            --source "$GITHUB_WORKSPACE" \
+            --source-commit "$CANDIDATE_COMMIT" \
+            --target "${{ matrix.package_target }}" \
+            --driver-run "${{ needs.candidate-gate.outputs.driver-run }}" \
+            --driver-arch "${{ matrix.driver }}" \
+            --driver-dir "$RUNNER_TEMP/web-driver-assets" \
+            --archive "$archive" \
+            --checksum "$archive.sha256" \
+            --provenance "$archive.candidate.json"
       - name: Upload nonpublishing candidate artifact
         uses: actions/upload-artifact@v4
         with:
@@ -189,5 +205,6 @@ jobs:
             ${{ runner.temp }}/release-candidate/${{ matrix.archive }}
             ${{ runner.temp }}/release-candidate/${{ matrix.archive }}.sha256
             ${{ runner.temp }}/release-candidate/${{ matrix.archive }}.candidate.json
+            ${{ runner.temp }}/release-candidate/${{ matrix.archive }}.accepted.json
           if-no-files-found: error
           retention-days: 7
