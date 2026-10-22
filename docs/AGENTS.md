@@ -6,7 +6,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
-- `architecture/stage7b-release-and-storage.md` owns the present Stage 7B nonpublishing candidate and guarded storage design; `foundation/2026-10-21-stage7b-final-acceptance-continuation.md` retains local and failed-head evidence; `foundation/2026-10-21-stage7b-post-push-local-receipt.md` owns exact-head merge and post-merge verification status.
+- `architecture/stage7b-release-and-storage.md` owns the present Stage 7B nonpublishing candidate and guarded storage design; `foundation/2026-10-22-stage7b-candidate-acceptance-preflight.md` owns exact-archive acceptance engineering and workflow authorization preflight. Earlier foundation continuation and post-push reports retain historical local and integration evidence.
 - `architecture/stage6-distribution.md` retains the Stage 7 publication boundary;
   `foundation/2026-10-20-stage7b-independent-candidate-continuation.md` records
   the ongoing nonpublishing candidate and its unexecuted acceptance work;

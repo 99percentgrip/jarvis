@@ -35,6 +35,11 @@ mod support;
 
 use support::restore_isolated_environment;
 
+// Cold Windows CI startup can exceed five seconds before the first ACP byte;
+// keep the transport bounded without misclassifying runner startup as a failure.
+#[cfg(windows)]
+const TIMEOUT: Duration = Duration::from_secs(20);
+#[cfg(not(windows))]
 const TIMEOUT: Duration = Duration::from_secs(5);
 
 struct OwnedChild(Child);

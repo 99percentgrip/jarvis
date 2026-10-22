@@ -6,7 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
-- `2026-10-21-stage7b-pr11-macos-pty-timing-repair.md` owns the PR #11 macOS Intel failed-head diagnosis and local PTY timing correction; hosted acceptance remains pending.
+- `2026-10-22-stage7b-candidate-acceptance-preflight.md` owns exact-archive validation, native installer preflight and the disabled workflow authorization boundary; source/CI proof is separate from a real candidate run.
+- `2026-10-21-stage7b-pr11-macos-pty-timing-repair.md` owns the completed PR #11 repair, exact-head merge and four exact-merge workflow receipts.
 - `2026-10-21-stage7b-final-acceptance-continuation.md` owns the ongoing final-acceptance local/security and protected-integration receipt inventory; it is not a completion claim. `2026-10-21-stage7b-post-push-local-receipt.md` owns subsequent failed-head diagnostics, protected integration and post-merge receipts until the next authorized code change.
 - `2026-10-20-stage7b-local-closeout.md` owns the final local receipt inventory
   and explicitly blocked full acceptance/hosted candidate boundary.
