@@ -39,6 +39,16 @@ class CredentialGraphTests(unittest.TestCase):
             if packages[key]["name"] == "libdbus-sys":
                 self.assertNotIn("vendored", node["features"])
 
+    def test_candidate_linux_preparation_is_guarded_and_precedes_release_build(self):
+        source = (ROOT / ".github/workflows/release.yml").read_text()
+        package = source.split("\n  package:\n", 1)[1]
+        preparation = package.index("- name: Prepare Linux native credential dependencies")
+        before_build = package[preparation:package.index("- name: Build exact candidate binaries")]
+        self.assertIn("if: runner.os == 'Linux'", before_build)
+        self.assertIn("timeout-minutes: 5", before_build)
+        self.assertIn("run: python3 .github/prepare-credential-runner.py --native", before_build)
+        self.assertLess(preparation, package.index("- name: Install pinned Rust toolchain"))
+
     def test_every_linux_compiling_workflow_prepares_the_native_build_dependency(self):
         for name, jobs in [("ci.yml", ["quality"]), ("msrv.yml", ["rust-1-88"]),
                             ("platform-foundation.yml", ["foundation"]),

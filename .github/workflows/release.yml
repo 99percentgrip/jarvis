@@ -114,6 +114,10 @@ jobs:
           run-id: ${{ needs.candidate-gate.outputs.driver-run }}
           name: web-driver-${{ matrix.driver }}
           path: ${{ runner.temp }}/web-driver-assets
+      - name: Prepare Linux native credential dependencies
+        if: runner.os == 'Linux'
+        timeout-minutes: 5
+        run: python3 .github/prepare-credential-runner.py --native
       - name: Install pinned Rust toolchain
         shell: bash
         run: rustup toolchain install 1.95.0 --profile minimal --target "${{ matrix.rust_target }}"
@@ -160,8 +164,10 @@ jobs:
         if: matrix.package_target == 'windows-x86_64'
         shell: pwsh
         run: |
-          python scripts/windows_package_audit.py "$env:RUNNER_TEMP/jarvis-bin"
-          if ($LASTEXITCODE -ne 0) { throw "Windows candidate imports an external VC runtime" }
+          python scripts/windows_package_audit.py "$env:RUNNER_TEMP/jarvis-bin" --build-targets
+          if ($LASTEXITCODE -ne 0) {
+              throw "Windows PE package audit failed (exit code $LASTEXITCODE)"
+          }
       - name: Assemble with canonical Stage 6 package builder
         shell: bash
         env:

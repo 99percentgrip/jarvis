@@ -27,6 +27,7 @@ deferred script in this directory and is not part of Stage 6 installation.
   powershell.exe (Desktop 5.1) and pwsh.exe (7+); tests both invocation forms,
   SHA-256 mismatch/invalid failure, unsupported and simulated WOW64 metadata,
   and installed launcher version checks. A real release/laptop test remains required.
+- `test_windows_package_audit.py` also guards the Stage 7B candidate workflow's explicit `--build-targets` selection and honest Windows PowerShell audit-failure propagation; the underlying PE parser and forbidden runtime list remain unchanged.
 - `windows_package_audit.py` reads normal/delay x86_64 PE imports for all four
   release executables and refuses external VC/CRT runtime dependencies;
   `test_windows_package_audit.py` owns offline parser/refusal regressions and checks that the candidate's real Windows import audit precedes wrapper packaging and artifact upload.
