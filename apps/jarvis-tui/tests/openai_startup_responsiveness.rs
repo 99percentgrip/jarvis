@@ -68,7 +68,11 @@ fn open_pty() -> io::Result<(File, File)> {
     }))
 }
 
-fn spawn_reader(mut master: File, output: Arc<Mutex<Vec<u8>>>) {
+fn spawn_reader(
+    mut master: File,
+    output: Arc<Mutex<Vec<u8>>>,
+    input_visible_at: Arc<Mutex<Option<Instant>>>,
+) {
     thread::spawn(move || {
         let mut buffer = [0_u8; 8192];
         let mut query_tail = Vec::new();
@@ -78,6 +82,15 @@ fn spawn_reader(mut master: File, output: Arc<Mutex<Vec<u8>>>) {
                 Ok(count) => {
                     let mut bytes = output.lock().expect("pty buffer");
                     bytes.extend_from_slice(&buffer[..count]);
+                    if bytes
+                        .windows(TYPED_AND_PASTED.len())
+                        .any(|w| w == TYPED_AND_PASTED)
+                    {
+                        input_visible_at
+                            .lock()
+                            .expect("visibility clock")
+                            .get_or_insert_with(Instant::now);
+                    }
                     drop(bytes);
                     // Answer each query once, including queries split across reads.
                     // Searching the full transcript replays old replies on every redraw.
@@ -191,6 +204,7 @@ struct TuiProcess {
     child: Child,
     input: File,
     output: Arc<Mutex<Vec<u8>>>,
+    input_visible_at: Arc<Mutex<Option<Instant>>>,
 }
 
 fn launch(
@@ -252,11 +266,13 @@ fn launch(
     }
     let child = command.spawn()?;
     let output = Arc::new(Mutex::new(Vec::new()));
-    spawn_reader(master, Arc::clone(&output));
+    let input_visible_at = Arc::new(Mutex::new(None));
+    spawn_reader(master, Arc::clone(&output), Arc::clone(&input_visible_at));
     Ok(TuiProcess {
         child,
         input,
         output,
+        input_visible_at,
     })
 }
 
@@ -284,7 +300,11 @@ fn wait_for_any(output: &Mutex<Vec<u8>>, needles: &[&[u8]], timeout: Duration) -
     false
 }
 
-fn input_while_discovery_is_pending(output: &Mutex<Vec<u8>>, input: &mut File) {
+fn input_while_discovery_is_pending(
+    output: &Mutex<Vec<u8>>,
+    input: &mut File,
+    input_visible_at: &Mutex<Option<Instant>>,
+) {
     assert!(
         wait_for_any(output, &[LOADING, LEGACY_LOADING], Duration::from_secs(20)),
         "OpenAI startup did not reach a model-loading frame:\n{}",
@@ -295,15 +315,19 @@ fn input_while_discovery_is_pending(output: &Mutex<Vec<u8>>, input: &mut File) {
         "startup did not show the truthful OpenAI loading status:\n{}",
         screen(output)
     );
+    let started = Instant::now();
     input
         .write_all(b"ZQ\x1b[200~PASTETOKEN\x1b[201~")
         .expect("send startup input");
-    let started = Instant::now();
-    let visible = wait_for(output, TYPED_AND_PASTED, Duration::from_millis(1200));
+    // The poller may wake late under CI load. Keep the 1.2s contract, but
+    // judge the reader's first observed frame rather than poll wake-up time.
+    let _ = wait_for(output, TYPED_AND_PASTED, Duration::from_millis(1200));
+    let observed = *input_visible_at.lock().expect("visibility clock");
     assert!(
-        visible,
-        "typed/pasted input was not visible within {:?} while discovery was still pending (elapsed {:?}):\n{}",
+        visible_within(started, observed, Duration::from_millis(1200)),
+        "typed/pasted input was not visible within {:?} while discovery was still pending (observed {:?}, poll elapsed {:?}):\n{}",
         Duration::from_millis(1200),
+        observed.map(|at| at.duration_since(started)),
         started.elapsed(),
         screen(output)
     );
@@ -312,6 +336,27 @@ fn input_while_discovery_is_pending(output: &Mutex<Vec<u8>>, input: &mut File) {
         "discovery settled before the stalled fixture was released:\n{}",
         screen(output)
     );
+}
+
+fn visible_within(started: Instant, observed: Option<Instant>, budget: Duration) -> bool {
+    observed.is_some_and(|at| at >= started && at.duration_since(started) <= budget)
+}
+
+#[test]
+fn visibility_deadline_uses_reader_observation_not_delayed_poll() {
+    let started = Instant::now();
+    let budget = Duration::from_millis(1200);
+    assert!(visible_within(
+        started,
+        Some(started + Duration::from_millis(1199)),
+        budget
+    ));
+    assert!(!visible_within(
+        started,
+        Some(started + Duration::from_millis(1201)),
+        budget
+    ));
+    assert!(!visible_within(started, None, budget));
 }
 
 fn release_discovery(release: &Arc<(Mutex<Release>, Condvar)>, succeed: bool) {
@@ -354,9 +399,10 @@ fn run_case(succeed: bool) {
         mut child,
         mut input,
         output,
+        input_visible_at,
     } = launch(&endpoint, home.path(), None).expect("launch");
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        input_while_discovery_is_pending(&output, &mut input);
+        input_while_discovery_is_pending(&output, &mut input, &input_visible_at);
         release_discovery(&release, succeed);
         if succeed {
             assert!(
@@ -443,6 +489,7 @@ fn openai_startup_does_not_wait_for_unselected_xai_discovery() {
         mut child,
         mut input,
         output,
+        input_visible_at: _,
     } = launch(&openai_endpoint, home.path(), Some(&endpoint)).expect("launch");
     // Use the same cold-start budget as the other startup cases. The fixture
     // stays stalled throughout; this is not a relaxed post-render input budget.
@@ -488,6 +535,7 @@ fn native_release_admission_does_not_wait_for_account_model_discovery() {
         mut child,
         mut input,
         output,
+        input_visible_at: _,
     } = launch(&endpoint, home.path(), None).expect("launch");
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         assert!(
