@@ -129,6 +129,12 @@ def native_target(target: str) -> bool:
             or (system == 'Windows' and target == 'windows-x86_64' and machine in ('amd64', 'x86_64')))
 
 
+def verify_signed_out_launch(binary: Path, source: Path, env: dict[str, str]) -> None:
+    """Exercise private first-launch/provider Settings on the installed TUI."""
+    subprocess.run(['python', str(source / 'apps/jarvis-tui/tests/first_launch_pty.py'),
+                    str(binary)], check=True, env=env, timeout=180)
+
+
 def run_native_install(archive: Path, checksum: Path, target: str, source: Path) -> None:
     if os.environ.get('GITHUB_ACTIONS') != 'true' or not os.environ.get('RUNNER_TEMP') or not native_target(target):
         raise ValueError('native candidate installation requires matching disposable CI runner')
@@ -161,11 +167,18 @@ def run_native_install(archive: Path, checksum: Path, target: str, source: Path)
                 subprocess.run([str(bundle / name), '--version'], check=True, env=env, timeout=60)
             for name in USER_FACING[target]:
                 subprocess.run([str(root / 'bin' / name), '--version'], check=True, env=env, timeout=60)
+            verify_signed_out_launch(bundle / 'jarvis-tui', source, env)
             subprocess.run(['sh', str(source / 'scripts/uninstall.sh')], check=True, env=env)
             if (root / 'installed').exists() or any((root / 'bin').iterdir()):
                 raise ValueError('uninstall left owned files')
         if sentinel.read_text(encoding='utf-8') != 'preserve\n':
             raise ValueError('uninstall altered foreign sentinel')
+
+
+def require_unchanged_sidecars(archive: Path, checksum: Path, provenance: Path,
+                               before: dict[Path, str]) -> None:
+    if any(sha256_file(path) != observed for path, observed in before.items()) or expected_digest(str(checksum), archive) != before[archive]:
+        raise ValueError('candidate or sidecar bytes changed after native installation')
 
 
 def main() -> None:
@@ -182,22 +195,21 @@ def main() -> None:
     observed = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
     if observed != args.source_commit:
         raise ValueError('candidate checkout does not match approved source commit')
-    before = sha256_file(archive)
+    before = {path: sha256_file(path) for path in (archive, checksum, provenance)}
     validate_candidate_archive(archive, checksum, provenance,
         target=args.target, commit=args.source_commit, driver_run=args.driver_run,
         driver_arch=args.driver_arch, driver_dir=args.driver_dir, source=source,
         compiler=subprocess.check_output(['rustc', '--version'], text=True).strip())
     run_native_install(archive, checksum, args.target, source)
-    if sha256_file(archive) != before or expected_digest(str(checksum), archive) != before:
-        raise ValueError('candidate bytes changed after native installation')
+    require_unchanged_sidecars(archive, checksum, provenance, before)
     accepted = archive.with_name(archive.name + '.accepted.json')
     if accepted.exists() or accepted.is_symlink():
         raise ValueError('candidate acceptance receipt already exists')
     accepted.write_text(json.dumps({'schema': 1, 'status': 'native-accepted',
         'source_commit': args.source_commit, 'target': args.target,
-        'archive': archive.name, 'sha256': before,
-        'provenance_sha256': sha256_file(provenance)}, sort_keys=True) + '\n', encoding='utf-8')
-    print(f'PASS native exact candidate acceptance: {archive.name} {before}')
+        'archive': archive.name, 'sha256': before[archive],
+        'provenance_sha256': before[provenance]},  sort_keys=True) + '\n', encoding='utf-8')
+    print(f'PASS native exact candidate acceptance: {archive.name} {before[archive]}')
 
 
 if __name__ == '__main__':

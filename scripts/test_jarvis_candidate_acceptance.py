@@ -37,6 +37,22 @@ class CandidateArchiveTests(CandidateTests):
                 driver_arch='linux-x86_64', driver_dir=self.driver, source=self.source,
                 check_native_binary=False)
 
+    def test_acceptance_rejects_rewritten_checksum_and_provenance_bytes(self):
+        from jarvis_candidate_acceptance import require_unchanged_sidecars
+        from jarvis_package import sha256_file
+        self.pack()
+        archive = self.root / TARGETS['linux-x86_64']
+        checksum = archive.with_name(archive.name + '.sha256')
+        provenance = archive.with_name(archive.name + '.candidate.json')
+        before = {path: sha256_file(path) for path in (archive, checksum, provenance)}
+        require_unchanged_sidecars(archive, checksum, provenance, before)
+        for sidecar in (checksum, provenance):
+            original = sidecar.read_bytes()
+            sidecar.write_bytes(original + b' ')
+            with self.assertRaisesRegex(ValueError, 'sidecar bytes changed'):
+                require_unchanged_sidecars(archive, checksum, provenance, before)
+            sidecar.write_bytes(original)
+
     def test_native_binary_headers_and_local_install_refusal(self):
         import os
         from unittest.mock import patch
@@ -57,6 +73,7 @@ class CandidateArchiveTests(CandidateTests):
                       "[Environment]::SetEnvironmentVariable('Path', $originalUserPath, 'User')",
                       "'unrelated-user-data.txt'"):
             self.assertIn(token, script)
+        self.assertIn('first_launch_pty.py', script)
         self.assertNotIn('ZipFile', script)
 
     def test_workflow_installs_exact_archive_before_upload_and_refuses_failed_acceptance(self):
@@ -66,6 +83,10 @@ class CandidateArchiveTests(CandidateTests):
         self.assertLess(workflow.index('Verify and install exact candidate archive'),
                         workflow.index('Upload nonpublishing candidate artifact'))
         self.assertIn('scripts/jarvis_candidate_acceptance.py', workflow)
+        self.assertIn('windows-terminal-requirements.txt', workflow)
+        from jarvis_candidate_acceptance import run_native_install
+        import inspect
+        self.assertIn('verify_signed_out_launch(bundle', inspect.getsource(run_native_install))
         self.assertIn('${{ matrix.archive }}.accepted.json', workflow)
         self.assertNotIn('continue-on-error: true', workflow)
 

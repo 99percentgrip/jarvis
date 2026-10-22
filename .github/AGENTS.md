@@ -286,7 +286,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 - `workflows/release.yml` — Stage 7B manually dispatched, read-only,
   nonpublishing five-target candidate packaging after successful exact-commit
   main CI. It downloads the tested browser image and uses the Stage 6 package
-  builder through the fail-closed Stage 7B wrapper. Each native candidate job validates the exact archive, checksum, manifest, binaries, tested image and provenance, then uses that same archive in an isolated runner-local install/uninstall before writing an acceptance receipt and uploading the unchanged archive and sidecars. No workstation installation, tag, Release or registry write is authorized.
+  builder through the fail-closed Stage 7B wrapper. Each native candidate job validates the exact archive, checksum, manifest, binaries, tested image and provenance, then uses that same archive in an isolated runner-local install/uninstall with private signed-out TUI first launch and provider Settings before remeasuring all sidecars and writing an acceptance receipt and uploading the unchanged archive and sidecars. No workstation installation, tag, Release or registry write is authorized.
   Earlier tag-triggered publication rules above describe deferred legacy
   behavior, not the current Jarvis workflow.
 

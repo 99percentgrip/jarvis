@@ -17,6 +17,8 @@ try {
         & (Join-Path $bundle $name) --version | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "installed $name version failed: $LASTEXITCODE" }
     }
+    & python (Join-Path $PSScriptRoot '../apps/jarvis-tui/tests/first_launch_pty.py') (Join-Path $bundle 'jarvis-tui.exe')
+    if ($LASTEXITCODE -ne 0) { throw "installed signed-out first launch failed: $LASTEXITCODE" }
     foreach ($name in @('jarvis-acp.cmd', 'jarvis-tui.cmd')) {
         & (Join-Path $env:JARVIS_INSTALL_ROOT $name) --version | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "installed $name launcher failed: $LASTEXITCODE" }
