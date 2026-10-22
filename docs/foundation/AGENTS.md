@@ -6,6 +6,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-22-stage7b-native-candidate-repair.md` owns the scoped Linux/Windows workflow preparation correction, regression and protected-integration receipts; candidate rerun remains separately gated.
 - `2026-10-22-stage7b-candidate-acceptance-preflight.md` owns exact-archive validation, native installer preflight and the disabled workflow authorization boundary; source/CI proof is separate from a real candidate run.
 - `2026-10-21-stage7b-pr11-macos-pty-timing-repair.md` owns the completed PR #11 repair, exact-head merge and four exact-merge workflow receipts.
 - `2026-10-21-stage7b-final-acceptance-continuation.md` owns the ongoing final-acceptance local/security and protected-integration receipt inventory; it is not a completion claim. `2026-10-21-stage7b-post-push-local-receipt.md` owns subsequent failed-head diagnostics, protected integration and post-merge receipts until the next authorized code change.

@@ -59,6 +59,19 @@ class PackageAuditTests(unittest.TestCase):
         self.assertIn("$ErrorActionPreference = $checkPreference", real_check)
         self.assertIn("$versionExit -ne 0 -or -not $observedVersion", real_check)
 
+    def test_candidate_windows_step_audits_staged_build_names_and_propagates_failures(self):
+        root = Path(__file__).resolve().parents[1]
+        release = (root / ".github/workflows/release.yml").read_text()
+        step = release.split("      - name: Audit Windows package executables\n", 1)[1].split("      - name:", 1)[0]
+        self.assertIn("if: matrix.package_target == 'windows-x86_64'", step)
+        self.assertIn('shell: pwsh', step)
+        self.assertIn('python scripts/windows_package_audit.py "$env:RUNNER_TEMP/jarvis-bin" --build-targets', step)
+        self.assertIn('if ($LASTEXITCODE -ne 0) {', step)
+        self.assertIn('throw "Windows PE package audit failed (exit code $LASTEXITCODE)"', step)
+        self.assertNotIn('imports an external VC runtime', step)
+        self.assertEqual(BUILD_EXECUTABLES, ('jarvis-acp.exe', 'jarvis-tui.exe',
+                                             'jarvis-web-fetch.exe', 'jarvis-sandbox-init.exe'))
+
     def test_renamed_build_targets_preserve_complete_pe_audit(self):
         with tempfile.TemporaryDirectory() as root:
             bundle = Path(root)

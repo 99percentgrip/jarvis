@@ -9,6 +9,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 - `ci.yml` quality runs `verify_workflows.sh` immediately after checkout. It installs hash-pinned actionlint 1.7.12 and validates every `.yml`/`.yaml` under `.github/workflows/`, including disabled workflows, before expensive compilation. Download, digest, executable or lint failures fail the existing required quality context; no suppression or trigger bypass is permitted.
 
+- Stage 7B candidate Linux package jobs run the existing hosted-only native credential preparation before Rust compilation; its Windows package job audits the four staged Jarvis build-target PE files with `--build-targets` and propagates the auditor's actual failure. Focused regressions in `.github/test_credential_backend.py` and `scripts/test_windows_package_audit.py` guard those workflow integrations; they do not replace native candidate acceptance.
 - `prepare-credential-runner.py` provisions distro-owned libdbus development files
   only on disposable hosted Linux; native lanes additionally require GNOME/D-Bus
   fixture tools. Every active Linux workspace-compiling job runs it before Cargo.

@@ -1,5 +1,7 @@
 # Agent Vesper — Release Recovery Controller PRD
 
+The [scoped native candidate workflow correction](foundation/2026-10-22-stage7b-native-candidate-repair.md) records the Linux hosted D-Bus setup and Windows build-target PE audit correction. Protected verification and a new five-native candidate are distinct gates.
+
 Measured matrix connection recovery and its current verification boundary: [execution report](foundation/2026-10-12-rrc-matrix-transport-read-recovery.md).
 
 The [advisory-fetch read recovery](foundation/2026-10-12-rrc-advisory-fetch-read-recovery.md)
