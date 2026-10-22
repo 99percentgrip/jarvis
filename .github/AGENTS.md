@@ -7,6 +7,8 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- `ci.yml` quality runs `verify_workflows.sh` immediately after checkout. It installs hash-pinned actionlint 1.7.12 and validates every `.yml`/`.yaml` under `.github/workflows/`, including disabled workflows, before expensive compilation. Download, digest, executable or lint failures fail the existing required quality context; no suppression or trigger bypass is permitted.
+
 - `prepare-credential-runner.py` provisions distro-owned libdbus development files
   only on disposable hosted Linux; native lanes additionally require GNOME/D-Bus
   fixture tools. Every active Linux workspace-compiling job runs it before Cargo.
@@ -234,6 +236,8 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   cannot replace complete production prerequisite or publishing gates.
 
 ## Child DOX Index
+
+- `verify_workflows.sh` — pinned actionlint installation and complete workflow-directory syntax/structure gate in the existing quality job.
 
 - `workflows/pr-verification.yml`, `verify_pr_matrix.py` and `test_verify_pr_matrix.py` — complete exact-head PR matrix validation and offline refusal regressions.
 

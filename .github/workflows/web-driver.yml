@@ -46,17 +46,20 @@ jobs:
         run: docker build -f crates/jarvis-web-fetch/Dockerfile -t jarvis-web-driver:validated .
       - name: Real pipe-browser acceptance
         run: |
-          export JARVIS_WEB_TEST_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
+          JARVIS_WEB_TEST_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_WEB_TEST_IMAGE
           cargo test -p jarvis-web-fetch --all-features real_pipe_browser -- --ignored --nocapture
       - name: Native dependency readiness and cleanup
         run: |
-          export JARVIS_DEPENDENCY_TEST_ENGINE="$(command -v docker)"
-          export JARVIS_DEPENDENCY_TEST_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
+          JARVIS_DEPENDENCY_TEST_ENGINE="$(command -v docker)"
+          JARVIS_DEPENDENCY_TEST_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_DEPENDENCY_TEST_ENGINE JARVIS_DEPENDENCY_TEST_IMAGE
           cargo test -p jarvis-harness --all-features --lib real_dependency_browser_readiness -- --ignored --nocapture
       - name: Real scoped Hive lifecycle acceptance
         timeout-minutes: 15
         run: |
-          export JARVIS_DOCKER_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
+          JARVIS_DOCKER_IMAGE="$(docker image inspect jarvis-web-driver:validated --format '{{.Id}}')"
+          export JARVIS_DOCKER_IMAGE
           cargo test -p jarvis-harness --all-features --test swarm_native_hive native_container_hive -- --ignored --nocapture
           cargo test -p jarvis-harness --all-features --test swarm_native_hive native_shared_service -- --ignored --nocapture
           cargo test -p jarvis-acp --all-features --test swarm_native_process -- --ignored --nocapture
@@ -71,7 +74,8 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/vesper-browser-test" --no-audit --no-fund playwright@1.51.1
           timeout 240 "$RUNNER_TEMP/vesper-browser-test/node_modules/.bin/playwright" install --with-deps chromium
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/vesper-browser-test/node_modules/playwright"
-          export CHROME_PATH="$(node -e 'console.log(require(process.env.PLAYWRIGHT_MODULE).chromium.executablePath())')"
+          CHROME_PATH="$(node -e 'console.log(require(process.env.PLAYWRIGHT_MODULE).chromium.executablePath())')"
+          export CHROME_PATH
           cargo test -p jarvis-harness --features swarm --test swarm_adapter_tests real_browser_feedback -- --ignored --nocapture
       - name: Preserve exact tested image for release
         shell: bash

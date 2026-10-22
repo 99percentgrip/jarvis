@@ -27,6 +27,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Validate all GitHub Actions workflows
+        run: bash .github/verify_workflows.sh
       - name: Verify documentation structure
         run: |
           sh -n scripts/install.sh scripts/uninstall.sh
