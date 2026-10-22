@@ -19,7 +19,7 @@ Focused commands and results:
 - `python3 -m unittest discover -s scripts -p test_windows_package_audit.py`: `Ran 9 tests ... OK` (including missing-file and forbidden-runtime cases).
 - `python3 -m unittest discover -s .github -p test_credential_backend.py`: `Ran 5 tests ... OK` (including fail-closed hosted-only refusal and D-Bus command bounds).
 - `python3 -m unittest discover -s scripts -p test_release_gate.py`: `Ran 17 tests ... OK`.
-- `python3 -m unittest discover -s scripts -p test_jarvis_candidate_acceptance.py`: `Ran 11 tests ... OK`.
+- Candidate archive acceptance suite (`python3 -m unittest discover -s scripts -p '*candidate_acceptance.py'`): `Ran 11 tests ... OK`.
 - `bash .github/verify_workflows.sh`: `actionlint 1.7.12: validated 9 workflows` (including disabled candidate workflow).
 - `cargo xtask naming-guard` against the dirty working tree failed on *previously uncommitted* historical candidate report and PRD text; the new report initially also had two unregistered prose mentions, which were removed. The historical local evidence must not be rewritten to manufacture a green dirty-tree receipt. Check naming again against the exact staged commit/PR head, and record its result separately.
 
