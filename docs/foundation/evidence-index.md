@@ -665,7 +665,7 @@
 
 ## Stage 7B acceptance continuation (2026-10-21)
 
-- [Native candidate preparation repair](2026-10-22-stage7b-native-candidate-repair.md) records red-first Linux/Windows candidate workflow regressions, scoped source correction, focused checks and protected integration; historical candidate receipts do not apply to the corrected source. No release-candidate rerun is authorized by this repair.
+- [Native candidate preparation repair](2026-10-22-stage7b-native-candidate-repair.md) records red-first Linux/Windows candidate workflow regressions, scoped source correction and focused checks; protected merge and exact-merge CI are pending; historical candidate receipts do not apply to the corrected source. No release-candidate rerun is authorized by this repair.
 - The [Stage 7B exact-archive preflight](2026-10-22-stage7b-candidate-acceptance-preflight.md) records the source-level candidate validation, local/native evidence boundary, and controlled authorization procedure. The [PR #11 repair report](2026-10-21-stage7b-pr11-macos-pty-timing-repair.md) records the completed protected integration and four exact-merge workflow receipts.
 - Current [continuation report](2026-10-21-stage7b-final-acceptance-continuation.md) records full local verify/acceptance, narrow security repairs, candidate workflow disabled state and historical integration failures. The [post-push local receipt](2026-10-21-stage7b-post-push-local-receipt.md) owns the final exact-PR-head thirteen successes, protected merge and the failed native Windows exact-merge run with its corrective PR; it is not a publication claim. The [architecture boundary](../architecture/stage7b-release-and-storage.md) owns the nonpublishing/storage contract.
 

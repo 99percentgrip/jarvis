@@ -23,7 +23,9 @@ Focused commands and results:
 - `bash .github/verify_workflows.sh`: `actionlint 1.7.12: validated 9 workflows` (including disabled candidate workflow).
 - `cargo xtask naming-guard` against the dirty working tree failed on *previously uncommitted* historical candidate report and PRD text; the new report initially also had two unregistered prose mentions, which were removed. The historical local evidence must not be rewritten to manufacture a green dirty-tree receipt. Check naming again against the exact staged commit/PR head, and record its result separately.
 
-Pending: exact-commit formatting/naming/whitespace, thirteen final PR-head checks and four exact-merge workflows. Record exact identities below before making a protected-integration claim.
+PR #14 earlier head `1e24ebff8f1c4e09913c4c6836c60f81a1c5f3b0`: thirteen checks passed after one justified retry of the PR matrix gate. Exact-head producer runs: canonical `39821057815` (quality, windows-installer, supply-chain success), MSRV `39821058094` (rust-1-88 success), five-target foundation `39821057953` (all five success), web-driver `39821058000` (both contained browsers and namespace Hive success). The PR verifier run `39821057779` attempt 1 failed after ~90 minutes waiting for the platform matrix when an Actions API `HTTP Error 422: Unprocessable Entity` interrupted its read; its attempt 2 succeeded in 16 seconds once all four producer runs were complete. Earlier PR head `86ac5afd760b6e8f1000e5c0b06481f8e02432ed` failed quality naming policy on the report's executable filename and consequently failed the PR matrix gate; the documentation spelling was corrected on the final head. These failures remain historical evidence, not successful initial attempts.
+
+**Protected merge and four exact-merge workflows are pending.** No PR check alone closes this integration gate.
 
 ## Deviations, unresolved items and readiness
 

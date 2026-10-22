@@ -6,7 +6,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
-- `foundation/2026-10-22-stage7b-native-candidate-repair.md` owns the targeted native candidate setup correction and protected CI evidence; five-target candidate acceptance requires separate authorization.
+- `foundation/2026-10-22-stage7b-native-candidate-repair.md` owns the targeted native candidate setup correction and PR-head evidence; merge evidence is pending; five-target candidate acceptance requires separate authorization.
 - `architecture/stage7b-release-and-storage.md` owns the present Stage 7B nonpublishing candidate and guarded storage design; `foundation/2026-10-22-stage7b-candidate-acceptance-preflight.md` owns exact-archive acceptance engineering and workflow authorization preflight. Earlier foundation continuation and post-push reports retain historical local and integration evidence.
 - `architecture/stage6-distribution.md` retains the Stage 7 publication boundary;
   `foundation/2026-10-20-stage7b-independent-candidate-continuation.md` records
