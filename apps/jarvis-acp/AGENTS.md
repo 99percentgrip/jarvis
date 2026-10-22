@@ -276,7 +276,7 @@ transport, stderr-only tracing, and orderly shutdown.
   `tests/provider_selection.rs` is `integration-test-harness`-gated: the
   synthetic boot token it uses exists only under that feature. The fixture
   uses explicit signed-out OpenAI/xAI records and an isolated cwd, and reaps its
-  owned child on failure; its five-second protocol and EOF assertions remain.
+  owned child on failure; its protocol and EOF assertions remain bounded at five seconds on POSIX and twenty seconds for cold Windows CI startup.
   The engine executes the 28-command oracle slash catalog in-process
   (ADR 0010 Tier C) with full TUI harness parity: catalog commands answer
   from the harness executor with no provider dispatch, `/max-iterations` and
