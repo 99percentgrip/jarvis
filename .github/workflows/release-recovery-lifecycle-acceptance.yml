@@ -89,6 +89,7 @@ jobs:
         timeout-minutes: 5
         run: |
           for attempt in 1 2 3; do
+            echo "Windows cancellation repetition $attempt"
             cargo test --locked -p vesper-agent --test command_settlement cancellation_preserves_partial_output_and_next_command_runs -- --exact --nocapture
           done
       - name: Verify voice pack fixture isolation
