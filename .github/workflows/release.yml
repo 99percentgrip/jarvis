@@ -187,10 +187,17 @@ jobs:
             --resources "$RUNNER_TEMP/jarvis-resources" \
             --output "$RUNNER_TEMP/release-candidate/${{ matrix.archive }}" \
             --version "$version"
+      - name: Select Windows candidate acceptance Python
+        if: matrix.package_target == 'windows-x86_64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          architecture: 'x64'
       - name: Prepare Windows native terminal acceptance
         if: matrix.package_target == 'windows-x86_64'
         shell: bash
         run: |
+          python -c "import struct,sys; ok = sys.platform == 'win32' and sys.implementation.name == 'cpython' and sys.version_info[:2] == (3,13) and struct.calcsize('P') == 8; sys.exit(0 if ok else 'Expected 64-bit CPython 3.13 for Windows candidate acceptance')"
           python -m pip install --only-binary=:all: --require-hashes -r apps/jarvis-tui/tests/windows-terminal-requirements.txt
       - name: Verify and install exact candidate archive
         shell: bash

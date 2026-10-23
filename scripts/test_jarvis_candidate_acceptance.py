@@ -76,6 +76,34 @@ class CandidateArchiveTests(CandidateTests):
         self.assertIn('first_launch_pty.py', script)
         self.assertNotIn('ZipFile', script)
 
+    def test_windows_candidate_selects_pinned_python_before_hash_verified_install(self):
+        workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/release.yml').read_text()
+        setup = '      - name: Select Windows candidate acceptance Python\n'
+        prepare = '      - name: Prepare Windows native terminal acceptance\n'
+        accept = '      - name: Verify and install exact candidate archive\n'
+        upload = '      - name: Upload nonpublishing candidate artifact\n'
+        self.assertEqual(workflow.count(setup), 1)
+        self.assertLess(workflow.index(setup), workflow.index(prepare))
+        self.assertLess(workflow.index(prepare), workflow.index(accept))
+        self.assertLess(workflow.index(accept), workflow.index(upload))
+        setup_step = workflow.split(setup, 1)[1].split('      - name:', 1)[0]
+        prepare_step = workflow.split(prepare, 1)[1].split('      - name:', 1)[0]
+        self.assertIn("if: matrix.package_target == 'windows-x86_64'", setup_step)
+        self.assertIn('uses: actions/setup-python@v6', setup_step)
+        self.assertIn("python-version: '3.13'", setup_step)
+        self.assertIn("architecture: 'x64'", setup_step)
+        self.assertNotIn('cache:', setup_step)
+        self.assertIn("if: matrix.package_target == 'windows-x86_64'", prepare_step)
+        assertion = 'python -c "import struct,sys; ok = sys.platform == \'win32\' and sys.implementation.name == \'cpython\' and sys.version_info[:2] == (3,13) and struct.calcsize(\'P\') == 8; sys.exit(0 if ok else \'Expected 64-bit CPython 3.13 for Windows candidate acceptance\')"'
+        pip = 'python -m pip install --only-binary=:all: --require-hashes -r apps/jarvis-tui/tests/windows-terminal-requirements.txt'
+        self.assertLess(prepare_step.index(assertion), prepare_step.index(pip))
+        requirements = (Path(__file__).resolve().parents[1] / 'apps/jarvis-tui/tests/windows-terminal-requirements.txt').read_text()
+        self.assertIn('pywinpty==3.0.5 --hash=sha256:48db1b0ad9d0a1b81dcaaa7163a99a7808deaceb0c1b2344716dc1fc090c3c4c', requirements)
+        self.assertIn('${{ matrix.archive }}.accepted.json', workflow.split(upload, 1)[1])
+        self.assertIn('permissions:\n  actions: read\n  contents: read', workflow)
+        self.assertNotIn('continue-on-error: true', workflow)
+        self.assertEqual(workflow.count('package_target:'), 5)
+
     def test_workflow_installs_exact_archive_before_upload_and_refuses_failed_acceptance(self):
         workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/release.yml').read_text()
         self.assertLess(workflow.index('Assemble with canonical Stage 6 package builder'),
