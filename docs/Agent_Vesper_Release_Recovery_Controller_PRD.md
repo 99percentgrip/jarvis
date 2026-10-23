@@ -1,5 +1,7 @@
 # Agent Vesper — Release Recovery Controller PRD
 
+The [Stage 7B clipboard supply-chain correction](foundation/2026-10-23-stage7b-clipboard-supply-chain-repair.md) owns the targeted yanked transitive lockfile repair and its protected/exact-merge verification. It does not complete or authorize a new five-target candidate or production release.
+
 The [Windows candidate Python-selection correction](foundation/2026-10-23-stage7b-windows-python-selection-repair.md) records the protected repair of the nonpublishing Stage 7B workflow; it does not authorize another candidate run or complete five-target acceptance.
 
 The [scoped native candidate workflow correction](foundation/2026-10-22-stage7b-native-candidate-repair.md) records the Linux hosted D-Bus setup and Windows build-target PE audit correction. Protected verification and a new five-native candidate are distinct gates.
