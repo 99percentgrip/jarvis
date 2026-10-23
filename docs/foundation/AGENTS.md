@@ -6,6 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-23-stage7b-windows-python-selection-repair.md` owns Windows candidate CPython selection, regression-first proof, protected integration and the still-open five-target candidate gate.
+
 - `2026-10-22-stage7b-native-candidate-repair.md` owns the scoped Linux/Windows workflow preparation correction and PR-head receipts; protected merge remains pending; candidate rerun remains separately gated.
 - `2026-10-22-stage7b-candidate-acceptance-preflight.md` owns exact-archive validation, native installer preflight and the disabled workflow authorization boundary; source/CI proof is separate from a real candidate run.
 - `2026-10-21-stage7b-pr11-macos-pty-timing-repair.md` owns the completed PR #11 repair, exact-head merge and four exact-merge workflow receipts.

@@ -1,5 +1,7 @@
 # Agent Vesper — Release Recovery Controller PRD
 
+The [Windows candidate Python-selection correction](foundation/2026-10-23-stage7b-windows-python-selection-repair.md) records the protected repair of the nonpublishing Stage 7B workflow; it does not authorize another candidate run or complete five-target acceptance.
+
 The [scoped native candidate workflow correction](foundation/2026-10-22-stage7b-native-candidate-repair.md) records the Linux hosted D-Bus setup and Windows build-target PE audit correction. Protected verification and a new five-native candidate are distinct gates.
 
 Measured matrix connection recovery and its current verification boundary: [execution report](foundation/2026-10-12-rrc-matrix-transport-read-recovery.md).
