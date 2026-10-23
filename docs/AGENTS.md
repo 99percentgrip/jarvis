@@ -6,6 +6,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `foundation/2026-10-23-stage7b-clipboard-supply-chain-repair.md` owns the Stage 7B dependency-selection correction and exact-merge supply-chain evidence; candidate acceptance remains separate.
 - `foundation/2026-10-23-stage7b-windows-python-selection-repair.md` owns the Windows candidate interpreter-selection repair and protected-integration evidence; corrected-commit native acceptance remains separately gated.
 
 - `foundation/2026-10-22-stage7b-native-candidate-repair.md` owns the targeted native candidate setup correction and PR-head evidence; merge evidence is pending; five-target candidate acceptance requires separate authorization.
