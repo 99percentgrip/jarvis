@@ -6,6 +6,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `foundation/2026-10-23-stage7b-windows-sentinel-acceptance-repair.md` owns the narrowly authorized Windows candidate-test correction and CI/integration receipts; it does not authorize a new candidate or alter historical failed-run evidence.
 - `foundation/2026-10-23-stage7b-clipboard-supply-chain-repair.md` owns the Stage 7B dependency-selection correction and exact-merge supply-chain evidence; candidate acceptance remains separate.
 - `foundation/2026-10-23-stage7b-windows-python-selection-repair.md` owns the Windows candidate interpreter-selection repair and protected-integration evidence; corrected-commit native acceptance remains separately gated.
 
