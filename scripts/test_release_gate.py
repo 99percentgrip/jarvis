@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import re
 import unittest
-from release_gate import GateError, WORKFLOWS, inventory, verify
+from release_gate import EXPECTED_JOBS, GateError, WORKFLOWS, inventory, verify
 
 SHA = "1" * 40
 
@@ -15,6 +15,12 @@ class GateTests(unittest.TestCase):
                                 head_branch="main", event="push", status="completed", conclusion="success",
                                 path=f".github/workflows/{name}")]
                      for index, name in enumerate(WORKFLOWS)}
+        self.jobs = {
+            name: [dict(id=1000 + index * 10 + offset, name=job_name,
+                        run_id=index + 10, status="completed", conclusion="success")
+                   for offset, job_name in enumerate(sorted(EXPECTED_JOBS[name]))]
+            for index, name in enumerate(WORKFLOWS)
+        }
         self.job_change = lambda job: job
         self.refresh_change = lambda run: run
 
@@ -26,12 +32,109 @@ class GateTests(unittest.TestCase):
         run = next(row for rows in self.runs.values() for row in rows if row['id'] == identity)
         if endpoint.endswith('/jobs'):
             self.assertIn(f"/attempts/{run['run_attempt']}/", endpoint)
-            job = self.job_change(dict(run_id=identity, status="completed", conclusion="success"))
-            return dict(jobs=[job] if job else [], total_count=1 if job else 0)
+            workflow = next(name for name, rows in self.runs.items() if run in rows)
+            jobs = [self.job_change(copy.deepcopy(job)) for job in self.jobs[workflow]]
+            jobs = [job for job in jobs if job is not None]
+            return dict(jobs=jobs, total_count=len(jobs))
         return self.refresh_change(copy.deepcopy(run))
 
     def test_green_exact_attempt_selects_driver_run(self):
         self.assertEqual(verify(self.fetch, SHA)['web-driver.yml'], 13)
+
+    def test_missing_required_job_refuses_even_when_remaining_jobs_succeed(self):
+        self.jobs['ci.yml'].pop(1)
+        with self.assertRaises(GateError):
+            verify(self.fetch, SHA)
+
+    def test_expected_names_are_independently_pinned_to_workflow_contract(self):
+        self.assertEqual(EXPECTED_JOBS, {
+            'ci.yml': {'quality', 'windows-installer', 'supply-chain'},
+            'msrv.yml': {'rust-1-88'},
+            'platform-foundation.yml': {'linux-x86_64', 'linux-arm64',
+                                        'macos-intel', 'macos-apple-silicon',
+                                        'windows-x86_64'},
+            'web-driver.yml': {'Contained browser linux-x86_64',
+                               'Contained browser linux-aarch64',
+                               'Native namespace Hive'},
+        })
+
+    def test_complete_job_sets_and_each_required_job_are_verified(self):
+        self.assertEqual([len(self.jobs[name]) for name in WORKFLOWS], [3, 1, 5, 3])
+        self.assertEqual(sum(map(len, self.jobs.values())), 12)
+        self.assertEqual(verify(self.fetch, SHA)['web-driver.yml'], 13)
+        for workflow in WORKFLOWS:
+            for index in range(len(self.jobs[workflow])):
+                with self.subTest(workflow=workflow, index=index):
+                    job = self.jobs[workflow].pop(index)
+                    try:
+                        with self.assertRaises(GateError): verify(self.fetch, SHA)
+                    finally:
+                        self.jobs[workflow].insert(index, job)
+
+    def test_single_success_cannot_substitute_for_full_set(self):
+        self.jobs['platform-foundation.yml'] = self.jobs['platform-foundation.yml'][:1]
+        with self.assertRaises(GateError): verify(self.fetch, SHA)
+
+    def test_duplicate_names_ids_and_unexpected_jobs_refuse(self):
+        for change in ('duplicate_name', 'duplicate_id', 'unexpected'):
+            with self.subTest(change=change):
+                extra = copy.deepcopy(self.jobs['ci.yml'][0])
+                if change == 'duplicate_name':
+                    extra['id'] = 9999
+                elif change == 'duplicate_id':
+                    extra['name'] = 'unexpected'
+                else:
+                    extra['id'], extra['name'] = 9999, 'unexpected'
+                self.jobs['ci.yml'].append(extra)
+                try:
+                    with self.assertRaises(GateError): verify(self.fetch, SHA)
+                finally:
+                    self.jobs['ci.yml'].pop()
+
+    def test_invalid_job_identity_and_wrong_run_refuse(self):
+        for field, values in {'name': (None, '', 15),
+                              'id': (None, 0, -1, '1', True),
+                              'run_id': (None, 999, '10', True)}.items():
+            for value in values:
+                with self.subTest(field=field, value=value):
+                    job = self.jobs['ci.yml'][0]
+                    original = job[field]
+                    job[field] = value
+                    try:
+                        with self.assertRaises(GateError): verify(self.fetch, SHA)
+                    finally:
+                        job[field] = original
+            job = self.jobs['ci.yml'][0]
+            original = job.pop(field)
+            try:
+                with self.assertRaises(GateError): verify(self.fetch, SHA)
+            finally:
+                job[field] = original
+        self.jobs['ci.yml'].append(27)
+        with self.assertRaises(GateError): verify(self.fetch, SHA)
+
+    def test_every_non_successful_required_job_refuses(self):
+        for status, conclusion in [('completed', 'failure'), ('completed', 'skipped'),
+                                   ('completed', 'cancelled'), ('queued', None),
+                                   ('in_progress', None)]:
+            for workflow in WORKFLOWS:
+                for job in self.jobs[workflow]:
+                    with self.subTest(workflow=workflow, job=job['name'], status=status):
+                        original = job['status'], job['conclusion']
+                        job['status'], job['conclusion'] = status, conclusion
+                        try:
+                            with self.assertRaises(GateError): verify(self.fetch, SHA)
+                        finally:
+                            job['status'], job['conclusion'] = original
+
+    def test_incomplete_job_pagination_refuses(self):
+        original = self.fetch
+        def fetch(endpoint, **params):
+            response = original(endpoint, **params)
+            if endpoint.endswith('/jobs'):
+                response['total_count'] += 1
+            return response
+        with self.assertRaises(GateError): verify(fetch, SHA)
 
     def test_filtered_documentation_commit_cannot_authorize_a_release(self):
         self.runs['ci.yml'] = []

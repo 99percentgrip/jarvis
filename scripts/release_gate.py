@@ -7,6 +7,18 @@ import sys
 import time
 
 WORKFLOWS = ("ci.yml", "msrv.yml", "platform-foundation.yml", "web-driver.yml")
+# Job names are the literal GitHub Actions names in the protected workflows;
+# never learn the expected inventory from a response being checked.
+EXPECTED_JOBS = {
+    "ci.yml": frozenset(("quality", "windows-installer", "supply-chain")),
+    "msrv.yml": frozenset(("rust-1-88",)),
+    "platform-foundation.yml": frozenset((
+        "linux-x86_64", "linux-arm64", "macos-intel", "macos-apple-silicon",
+        "windows-x86_64")),
+    "web-driver.yml": frozenset((
+        "Contained browser linux-x86_64", "Contained browser linux-aarch64",
+        "Native namespace Hive")),
+}
 MAX_PAGES = 32
 
 
@@ -68,10 +80,20 @@ def verify(fetch, commit):
         if run.get("status") != "completed" or run.get("conclusion") != "success":
             raise GateError(f"{workflow}: latest exact-SHA main run is not successful and complete")
         jobs = inventory(fetch, f"actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs", "jobs")
-        if not jobs or any(job.get("run_id") != run["id"]
-                           or job.get("status") != "completed" or job.get("conclusion") != "success"
-                           for job in jobs):
-            raise GateError(f"{workflow}: latest attempt jobs are missing or not all successful")
+        names, ids = set(), set()
+        for job in jobs:
+            if not isinstance(job, dict):
+                raise GateError(f"{workflow}: invalid attempt job evidence")
+            name, job_id = job.get("name"), job.get("id")
+            if (not isinstance(name, str) or not name or name in names
+                    or type(job_id) is not int or job_id <= 0 or job_id in ids
+                    or type(job.get("run_id")) is not int or job["run_id"] != run["id"]
+                    or job.get("status") != "completed" or job.get("conclusion") != "success"):
+                raise GateError(f"{workflow}: invalid, duplicate, or unsuccessful attempt job")
+            names.add(name)
+            ids.add(job_id)
+        if names != EXPECTED_JOBS[workflow]:
+            raise GateError(f"{workflow}: attempt job set is incomplete or unexpected")
         # Detect a newer attempt/run while jobs were being collected.
         current = fetch(f"actions/runs/{run['id']}")
         if any(current.get(field) != run.get(field) for field in
