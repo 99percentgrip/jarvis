@@ -67,6 +67,65 @@ class CandidateArchiveTests(CandidateTests):
             with self.assertRaises(ValueError):
                 run_native_install(binary, binary, 'linux-x86_64', self.source)
 
+    def test_sentinel_bytes_are_canonical_and_preserved_by_actual_native_path(self):
+        import os
+        from unittest.mock import patch
+        from jarvis_candidate_acceptance import run_native_install
+        seen = []
+        def simulate_lifecycle(command, **kwargs):
+            sentinel = Path(kwargs['env']['JARVIS_HOME']) / 'unrelated-user-data.txt'
+            seen.append((command, sentinel.read_bytes()))
+            return None
+        with tempfile.TemporaryDirectory() as raw:
+            with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true', 'RUNNER_TEMP': raw}):
+                with patch('jarvis_candidate_acceptance.native_target', return_value=True), \
+                     patch('jarvis_candidate_acceptance.subprocess.run', side_effect=simulate_lifecycle):
+                    run_native_install(Path(raw) / 'archive', Path(raw) / 'checksum',
+                                       'windows-x86_64', Path(raw))
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0][1], b'preserve\n')
+        self.assertIn('test_jarvis_candidate_install.ps1', seen[0][0][-1])
+
+    def test_sentinel_refuses_invalid_fixture_and_post_lifecycle_mutations(self):
+        import os
+        from unittest.mock import patch
+        from jarvis_candidate_acceptance import run_native_install
+        def run_with_mutation(value):
+            def mutate(command, **kwargs):
+                path = Path(kwargs['env']['JARVIS_HOME']) / 'unrelated-user-data.txt'
+                if value is None:
+                    path.unlink()
+                else:
+                    path.write_bytes(value)
+            with tempfile.TemporaryDirectory() as raw:
+                with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true', 'RUNNER_TEMP': raw}):
+                    with patch('jarvis_candidate_acceptance.native_target', return_value=True), \
+                         patch('jarvis_candidate_acceptance.subprocess.run', side_effect=mutate):
+                        run_native_install(Path(raw) / 'archive', Path(raw) / 'checksum',
+                                           'windows-x86_64', Path(raw))
+        for bad in (b'preserve\r\n', b'changed\n', b'preserve', b'preserve\nX', None):
+            with self.subTest(bad=bad), self.assertRaises((ValueError, FileNotFoundError)):
+                run_with_mutation(bad)
+
+    def test_initial_fixture_and_redirected_path_fail_closed(self):
+        from jarvis_candidate_acceptance import require_sentinel_bytes
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            path = root / 'sentinel'
+            with self.assertRaisesRegex(ValueError, 'invalid initial sentinel fixture'):
+                require_sentinel_bytes(path, 'invalid initial sentinel fixture')
+            path.write_bytes(b'preserve\r\n')
+            with self.assertRaisesRegex(ValueError, 'invalid initial sentinel fixture'):
+                require_sentinel_bytes(path, 'invalid initial sentinel fixture')
+            path.write_bytes(b'preserve\n')
+            require_sentinel_bytes(path, 'invalid initial sentinel fixture')
+            path.unlink()
+            other = root / 'other'
+            other.write_bytes(b'preserve\n')
+            path.symlink_to(other)
+            with self.assertRaisesRegex(ValueError, 'invalid initial sentinel fixture'):
+                require_sentinel_bytes(path, 'invalid initial sentinel fixture')
+
     def test_windows_acceptance_reuses_native_installer_and_restores_user_path(self):
         script = (Path(__file__).resolve().parent / 'test_jarvis_candidate_install.ps1').read_text()
         for token in ("'install.ps1'", "'uninstall.ps1'", "$env:RUNNER_TEMP",
@@ -75,6 +134,13 @@ class CandidateArchiveTests(CandidateTests):
             self.assertIn(token, script)
         self.assertIn('first_launch_pty.py', script)
         self.assertNotIn('ZipFile', script)
+        guard = "Assert-JarvisCandidateSentinel -Path $sentinel"
+        self.assertEqual(script.count(guard), 2)
+        self.assertLess(script.index('invalid initial sentinel fixture'), script.index("'install.ps1'"))
+        self.assertGreater(script.index('uninstall altered foreign sentinel'), script.index("'uninstall.ps1'"))
+        self.assertIn(". (Join-Path $PSScriptRoot 'jarvis_candidate_sentinel.ps1')", script)
+        native_test = (Path(__file__).resolve().parent / 'test_jarvis_candidate_sentinel.ps1').read_text()
+        self.assertIn(". (Join-Path $PSScriptRoot 'jarvis_candidate_sentinel.ps1')", native_test)
 
     def test_windows_candidate_selects_pinned_python_before_hash_verified_install(self):
         workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/release.yml').read_text()

@@ -7,6 +7,9 @@ if ($env:GITHUB_ACTIONS -ne 'true' -or -not $env:RUNNER_TEMP -or -not $root -or
     -not ([IO.Path]::GetFullPath($root).StartsWith([IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase))) {
     throw 'candidate installer requires an isolated hosted Windows runner root'
 }
+. (Join-Path $PSScriptRoot 'jarvis_candidate_sentinel.ps1')
+$sentinel = Join-Path $root 'unrelated-user-data.txt'
+Assert-JarvisCandidateSentinel -Path $sentinel -Message 'invalid initial sentinel fixture'
 $originalUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 $originalProcessPath = $env:Path
 try {
@@ -27,9 +30,7 @@ try {
     if (Test-Path -LiteralPath $env:JARVIS_INSTALL_ROOT) {
         throw 'uninstall retained owned install root'
     }
-    if ((Get-Content -LiteralPath (Join-Path $root 'unrelated-user-data.txt') -Raw) -ne "preserve`n") {
-        throw 'uninstall altered foreign sentinel'
-    }
+    Assert-JarvisCandidateSentinel -Path $sentinel -Message 'uninstall altered foreign sentinel'
     if ([Environment]::GetEnvironmentVariable('Path', 'User') -ne $originalUserPath) {
         throw 'installer left a changed user PATH'
     }

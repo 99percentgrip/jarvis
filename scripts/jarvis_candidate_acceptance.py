@@ -135,6 +135,18 @@ def verify_signed_out_launch(binary: Path, source: Path, env: dict[str, str]) ->
                     str(binary)], check=True, env=env, timeout=180)
 
 
+SENTINEL_BYTES = b'preserve\n'
+
+
+def require_sentinel_bytes(path: Path, message: str) -> None:
+    import stat
+    try:
+        if not stat.S_ISREG(path.lstat().st_mode) or path.read_bytes() != SENTINEL_BYTES:
+            raise ValueError(message)
+    except OSError as exc:
+        raise ValueError(message) from exc
+
+
 def run_native_install(archive: Path, checksum: Path, target: str, source: Path) -> None:
     if os.environ.get('GITHUB_ACTIONS') != 'true' or not os.environ.get('RUNNER_TEMP') or not native_target(target):
         raise ValueError('native candidate installation requires matching disposable CI runner')
@@ -143,7 +155,8 @@ def run_native_install(archive: Path, checksum: Path, target: str, source: Path)
     with tempfile.TemporaryDirectory(prefix='candidate-install-', dir=os.environ['RUNNER_TEMP']) as raw:
         root = Path(raw)
         sentinel = root / 'unrelated-user-data.txt'
-        sentinel.write_text('preserve\n', encoding='utf-8')
+        sentinel.write_bytes(SENTINEL_BYTES)
+        require_sentinel_bytes(sentinel, 'invalid initial sentinel fixture')
         env = {**os.environ, 'JARVIS_PACKAGE': str(archive),
                'JARVIS_PACKAGE_SHA256': str(checksum), 'JARVIS_TARGET': target,
                'JARVIS_HOME': str(root), 'HOME': str(root), 'USERPROFILE': str(root),
@@ -171,8 +184,7 @@ def run_native_install(archive: Path, checksum: Path, target: str, source: Path)
             subprocess.run(['sh', str(source / 'scripts/uninstall.sh')], check=True, env=env)
             if (root / 'installed').exists() or any((root / 'bin').iterdir()):
                 raise ValueError('uninstall left owned files')
-        if sentinel.read_text(encoding='utf-8') != 'preserve\n':
-            raise ValueError('uninstall altered foreign sentinel')
+        require_sentinel_bytes(sentinel, 'uninstall altered foreign sentinel')
 
 
 def require_unchanged_sidecars(archive: Path, checksum: Path, provenance: Path,

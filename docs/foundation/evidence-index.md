@@ -10,6 +10,7 @@
 
 # Foundation Evidence Index
 
+- [Stage 7B Windows sentinel acceptance repair](2026-10-23-stage7b-windows-sentinel-acceptance-repair.md) — controlled CRLF/LF reproduction, canonical byte guard, Python/Windows CI regressions and protected integration receipts; the old candidate remains failed and new candidate acceptance is separately gated.
 - [Tokio I/O-safety security remediation](2026-10-24-tokio-security-remediation.md) — scoped patched dependency graph, local security evidence and separate protected integration gate; no candidate authorization.
 
 - [Stage 7B clipboard supply-chain repair](2026-10-23-stage7b-clipboard-supply-chain-repair.md) — targeted non-yanked Windows transitive lockfile selection; protected and exact-merge receipts reside in the report, with native candidate acceptance separately gated.
