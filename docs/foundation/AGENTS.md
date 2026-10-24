@@ -6,6 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-24-tokio-security-remediation.md` owns the patched Tokio dependency-graph receipts, first-party API inspection limits, Phase A security PR and exact-merge evidence; it does not authorize a candidate dispatch.
+
 - `2026-10-23-stage7b-clipboard-supply-chain-repair.md` owns the targeted yanked Windows clipboard lockfile correction, supply-chain verification, protected integration receipts and unchanged candidate-authorization boundary.
 - `2026-10-23-stage7b-windows-python-selection-repair.md` owns Windows candidate CPython selection, regression-first proof, protected integration and the still-open five-target candidate gate.
 

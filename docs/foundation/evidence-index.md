@@ -10,6 +10,8 @@
 
 # Foundation Evidence Index
 
+- [Tokio I/O-safety security remediation](2026-10-24-tokio-security-remediation.md) — scoped patched dependency graph, local security evidence and separate protected integration gate; no candidate authorization.
+
 - [Stage 7B clipboard supply-chain repair](2026-10-23-stage7b-clipboard-supply-chain-repair.md) — targeted non-yanked Windows transitive lockfile selection; protected and exact-merge receipts reside in the report, with native candidate acceptance separately gated.
 
 - [Stage 3 runtime identity isolation](2026-10-15-runtime-identity-stage3.md) — PR #5 passed all thirteen exact-head checks and merged normally. Exact-merge Intel macOS then reproduced the native speech settlement failure. Red-first proof identifies pending blocking cancellation, an unenforced subprocess deadline and an unregistered worker synthesis token; the scoped correction passes voice/TTS/worker suites and twenty exact pipeline repetitions with original bounds unchanged. Corrective exact-head CI, protected merge and four green exact-merge workflows remain required. Earlier security/ownership failures, ignored limitations and the Vesper metadata discrepancy remain explicit.
