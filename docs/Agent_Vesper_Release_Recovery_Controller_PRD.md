@@ -2,6 +2,8 @@
 
 The [Stage 7B Windows sentinel acceptance-test repair](foundation/2026-10-23-stage7b-windows-sentinel-acceptance-repair.md) owns the controlled byte-fixture correction and protected native regression/integration evidence following failed candidate run `39994107258`; neither the correction nor its CI proof completes five-platform candidate acceptance or authorizes another dispatch.
 
+The [Tokio I/O-safety advisory remediation](foundation/2026-10-24-tokio-security-remediation.md) owns the independent patched dependency graph and protected Phase A gate; the sentinel PR and a new candidate remain separately gated.
+
 The [Stage 7B clipboard supply-chain correction](foundation/2026-10-23-stage7b-clipboard-supply-chain-repair.md) owns the targeted yanked transitive lockfile repair and its protected/exact-merge verification. It does not complete or authorize a new five-target candidate or production release.
 
 The [Windows candidate Python-selection correction](foundation/2026-10-23-stage7b-windows-python-selection-repair.md) records the protected repair of the nonpublishing Stage 7B workflow; it does not authorize another candidate run or complete five-target acceptance.
