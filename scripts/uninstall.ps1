@@ -39,11 +39,44 @@ foreach ($generation in @($ownership.current_generation, $ownership.previous_gen
     }
 }
 if ($ownership.path_entry_added -eq $true) {
-    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    if ($userPath) {
-        $kept = @($userPath -split ";" | Where-Object { $_ -and ([string]::Compare($_.TrimEnd("\"), $installRoot.TrimEnd("\"), $true) -ne 0) })
-        [Environment]::SetEnvironmentVariable("Path", ($kept -join ";"), "User")
-    }
+    $pathKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+    try {
+        if ($pathKey.GetValueNames() -contains 'Path') {
+            $userPath = [string]$pathKey.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+            $kind = $pathKey.GetValueKind('Path')
+            if ($kind -ne [Microsoft.Win32.RegistryValueKind]::String -and $kind -ne [Microsoft.Win32.RegistryValueKind]::ExpandString) {
+                Fail 'unsupported User PATH registry value kind'
+            }
+            # A new ownership record identifies the exact inserted token's offset.
+            # Never filter every equivalent entry: another entry may be user-owned.
+            $offset = $ownership.path_prefix_length -as [int]
+            $separator = [string]$ownership.path_separator
+            $hasOffset = $null -ne $ownership.path_prefix_length -and $null -ne $offset -and
+                $offset -ge 0 -and $separator -in @('', ';')
+            if ($hasOffset) {
+                $owned = $separator + $installRoot
+                if ($offset + $owned.Length -le $userPath.Length -and
+                    $userPath.Substring($offset, $owned.Length) -ceq $owned -and
+                    ($offset + $owned.Length -eq $userPath.Length -or $userPath[$offset + $owned.Length] -eq ';')) {
+                    $kept = $userPath.Remove($offset, $owned.Length)
+                    if (-not $ownership.path_value_present -and $kept.Length -eq 0) {
+                        $pathKey.DeleteValue('Path', $false)
+                    } else {
+                        $pathKey.SetValue('Path', $kept, $kind)
+                    }
+                }
+            } else {
+                # Compatibility with prior ownership records: remove only an exact
+                # trailing installer token, never normalize other PATH entries.
+                $suffix = ';' + $installRoot
+                if ($userPath.EndsWith($suffix, [StringComparison]::Ordinal)) {
+                    $pathKey.SetValue('Path', $userPath.Substring(0, $userPath.Length - $suffix.Length), $kind)
+                } elseif ($userPath -ceq $installRoot) {
+                    $pathKey.DeleteValue('Path', $false)
+                }
+            }
+        }
+    } finally { $pathKey.Dispose() }
 }
 foreach ($name in @("current", "transaction.json", ".jarvis-installer-owned.json")) {
     $path = Join-Path $installRoot $name

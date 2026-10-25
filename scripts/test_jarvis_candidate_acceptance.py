@@ -129,7 +129,10 @@ class CandidateArchiveTests(CandidateTests):
     def test_windows_acceptance_reuses_native_installer_and_restores_user_path(self):
         script = (Path(__file__).resolve().parent / 'test_jarvis_candidate_install.ps1').read_text()
         for token in ("'install.ps1'", "'uninstall.ps1'", "$env:RUNNER_TEMP",
-                      "[Environment]::SetEnvironmentVariable('Path', $originalUserPath, 'User')",
+                      "[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames",
+                      "$pathKey.SetValue('Path', $originalUserPath, $originalPathKind)",
+                      "$pathKey.DeleteValue('Path', $false)",
+                      "$originalFailure = $_", "$env:Path = $originalProcessPath",
                       "'unrelated-user-data.txt'"):
             self.assertIn(token, script)
         self.assertIn('first_launch_pty.py', script)

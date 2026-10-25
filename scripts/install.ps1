@@ -263,20 +263,34 @@ function Complete-Generation([string]$Generation, $Previous) {
         current_generation = $Generation
         previous_generation = $Previous
         path_entry_added = $keptPathOwnership
+        path_value_present = $(if ($keptPathOwnership) { $prior.path_value_present } else { $null })
+        path_prefix_length = $(if ($keptPathOwnership) { $prior.path_prefix_length } else { $null })
+        path_separator = $(if ($keptPathOwnership) { $prior.path_separator } else { $null })
         memory_root_recorded_not_owned = $memoryRoot
     }
-    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    $entries = @()
-    if ($userPath) { $entries = @($userPath -split ";" | Where-Object { $_ }) }
-    $already = $false
-    foreach ($entry in $entries) {
-        if ([string]::Compare($entry.TrimEnd("\"), $installRoot.TrimEnd("\"), $true) -eq 0) { $already = $true }
-    }
-    if (-not $already) {
-        $updated = (@($entries) + $installRoot) -join ";"
-        [Environment]::SetEnvironmentVariable("Path", $updated, "User")
-        $ownership.path_entry_added = $true
-    }
+    # Read the unexpanded registry value. Splitting/rejoining PATH discards empty
+    # fields and trailing semicolons; .NET's User setter also loses its value kind.
+    $pathKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+    try {
+        $present = $pathKey.GetValueNames() -contains 'Path'
+        $userPath = if ($present) { [string]$pathKey.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) } else { '' }
+        $kind = if ($present) { $pathKey.GetValueKind('Path') } else { [Microsoft.Win32.RegistryValueKind]::String }
+        if ($kind -ne [Microsoft.Win32.RegistryValueKind]::String -and $kind -ne [Microsoft.Win32.RegistryValueKind]::ExpandString) {
+            Fail 'unsupported User PATH registry value kind'
+        }
+        $already = $false
+        foreach ($entry in ($userPath -split ';')) {
+            if ($entry -and [string]::Compare($entry.TrimEnd('\'), $installRoot.TrimEnd('\'), $true) -eq 0) { $already = $true }
+        }
+        if (-not $already) {
+            $separator = if ($userPath -and -not $userPath.EndsWith(';')) { ';' } else { '' }
+            $pathKey.SetValue('Path', ($userPath + $separator + $installRoot), $kind)
+            $ownership.path_entry_added = $true
+            $ownership.path_value_present = $present
+            $ownership.path_prefix_length = $userPath.Length
+            $ownership.path_separator = $separator
+        }
+    } finally { $pathKey.Dispose() }
     $generations = Join-Path $installRoot "generations"
     if (Test-Path -LiteralPath $generations) {
         $keep = @($Generation)

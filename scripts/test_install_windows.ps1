@@ -175,7 +175,8 @@ try {
         @{ name = 'leading-consecutive-trailing'; value = ';C:\Other;;D:\Tools;'; kind = $ordinary; equivalent = $false },
         @{ name = 'duplicates'; value = 'C:\Other;C:\Other;D:\Tools'; kind = $ordinary; equivalent = $false },
         @{ name = 'expandable'; value = '%USERPROFILE%\bin;;C:\Other;'; kind = $expand; equivalent = $false },
-        @{ name = 'pre-existing-equivalent'; value = ('C:\Other;' + $env:JARVIS_INSTALL_ROOT.ToUpperInvariant() + '\;D:\Tools;'); kind = $ordinary; equivalent = $true }
+        @{ name = 'pre-existing-equivalent'; value = ('C:\Other;' + $env:JARVIS_INSTALL_ROOT.ToUpperInvariant() + '\;D:\Tools;'); kind = $ordinary; equivalent = $true },
+        @{ name = 'duplicate-equivalent'; value = ($env:JARVIS_INSTALL_ROOT + ';C:\Other;' + $env:JARVIS_INSTALL_ROOT.ToUpperInvariant() + '\;'); kind = $ordinary; equivalent = $true }
     )
     foreach ($case in $cases) {
         Set-UserPathFixture $case.value $case.kind
@@ -192,6 +193,14 @@ try {
             $expected = @{ present = $true; value = $prefix + $separator + $env:JARVIS_INSTALL_ROOT; kind = $(if ($initial.present) { $initial.kind } else { $ordinary }) }
             Assert-UserPathRecord $expected ("install of " + $case.name)
             if ($ownership.path_entry_added -ne $true) { throw 'missing owned PATH entry metadata' }
+        }
+        if ($case.name -eq 'populated') {
+            # Upgrades retain original ownership, and a later user-added suffix
+            # stays byte-for-byte while only the owned token is removed.
+            & $installer | Out-Null
+            Assert-UserPathRecord $expected 'upgrade of populated PATH'
+            Set-UserPathFixture ($expected.value + ';E:\Added') $expected.kind
+            $initial.value += ';E:\Added'
         }
         & $uninstaller | Out-Null
         Assert-UserPathRecord $initial ("uninstall of " + $case.name)

@@ -10,8 +10,14 @@ if ($env:GITHUB_ACTIONS -ne 'true' -or -not $env:RUNNER_TEMP -or -not $root -or
 . (Join-Path $PSScriptRoot 'jarvis_candidate_sentinel.ps1')
 $sentinel = Join-Path $root 'unrelated-user-data.txt'
 Assert-JarvisCandidateSentinel -Path $sentinel -Message 'invalid initial sentinel fixture'
-$originalUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+$pathKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+try {
+    $originalPathPresent = $pathKey.GetValueNames() -contains 'Path'
+    $originalUserPath = if ($originalPathPresent) { [string]$pathKey.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) } else { $null }
+    $originalPathKind = if ($originalPathPresent) { $pathKey.GetValueKind('Path') } else { $null }
+} finally { $pathKey.Dispose() }
 $originalProcessPath = $env:Path
+$originalFailure = $null
 try {
     & (Join-Path $PSScriptRoot 'install.ps1')
     $generation = (Get-Content -LiteralPath (Join-Path $env:JARVIS_INSTALL_ROOT 'current') -Raw).Trim()
@@ -31,13 +37,30 @@ try {
         throw 'uninstall retained owned install root'
     }
     Assert-JarvisCandidateSentinel -Path $sentinel -Message 'uninstall altered foreign sentinel'
-    if ([Environment]::GetEnvironmentVariable('Path', 'User') -ne $originalUserPath) {
-        throw 'installer left a changed user PATH'
-    }
+    $pathKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+    try {
+        $present = $pathKey.GetValueNames() -contains 'Path'
+        if ($present -ne $originalPathPresent -or ($present -and
+            ([string]$pathKey.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) -cne $originalUserPath -or
+             $pathKey.GetValueKind('Path') -ne $originalPathKind))) {
+            throw 'installer left a changed user PATH'
+        }
+    } finally { $pathKey.Dispose() }
     Write-Host 'PASS native exact candidate Windows installer and owned cleanup'
+} catch {
+    $originalFailure = $_
+    throw
 } finally {
-    # Restore even when an installer or test step fails; never hide the original
-    # acceptance failure. Runner is disposable but HKCU PATH must not leak.
-    [Environment]::SetEnvironmentVariable('Path', $originalUserPath, 'User')
-    $env:Path = $originalProcessPath
+    # Restore the raw HKCU value and registry kind without masking the original
+    # acceptance failure if emergency restoration itself fails.
+    try {
+        $pathKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+        try {
+            if ($originalPathPresent) { $pathKey.SetValue('Path', $originalUserPath, $originalPathKind) }
+            else { $pathKey.DeleteValue('Path', $false) }
+        } finally { $pathKey.Dispose() }
+    } catch {
+        if ($null -eq $originalFailure) { throw }
+        Write-Warning 'emergency user PATH restoration failed after the original candidate failure'
+    } finally { $env:Path = $originalProcessPath }
 }
