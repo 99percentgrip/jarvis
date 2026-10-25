@@ -6,6 +6,7 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `foundation/2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md` owns Windows User PATH repair PR #20 and separate lossless merged-branch cleanup; native candidate acceptance remains separately gated.
 - `foundation/2026-10-23-stage7b-windows-sentinel-acceptance-repair.md` owns the narrowly authorized Windows candidate-test correction and CI/integration receipts; it does not authorize a new candidate or alter historical failed-run evidence.
 - `foundation/2026-10-24-tokio-security-remediation.md` owns the scoped Tokio I/O-safety advisory correction and its independent protected integration evidence. `dependencies.md` records the current workspace pin; the sentinel PR and candidate acceptance remain separately gated.
 

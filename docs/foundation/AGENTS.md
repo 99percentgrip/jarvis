@@ -6,6 +6,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md` owns red/green Windows PATH repair and safely retained worktree/branch evidence; no candidate rerun follows.
 - `2026-10-23-stage7b-windows-sentinel-acceptance-repair.md` owns the byte-guard corrective execution, Windows-native CI regression, protected integration and separate candidate-acceptance boundary. The failed historical Windows candidate and four other retained artifacts remain owned by the prior exact-SHA candidate record.
 - `2026-10-24-tokio-security-remediation.md` owns the patched Tokio dependency-graph receipts, first-party API inspection limits, Phase A security PR and exact-merge evidence; it does not authorize a candidate dispatch.
 
