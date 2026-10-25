@@ -166,7 +166,11 @@ try {
 
     # A real top-level window receives HWND_BROADCAST, unlike message-only windows.
     # Observe the Environment payload, not merely the presence of a source call.
-    Add-Type -ReferencedAssemblies System.Windows.Forms -TypeDefinition @'
+    # On PowerShell 7, Message is forwarded into the desktop Primitives assembly.
+    $formsReferences = if ($PSVersionTable.PSVersion.Major -ge 6) {
+        @('System.Windows.Forms', 'System.Windows.Forms.Primitives')
+    } else { @('System.Windows.Forms') }
+    Add-Type -ReferencedAssemblies $formsReferences -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
