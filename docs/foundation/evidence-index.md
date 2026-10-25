@@ -10,6 +10,10 @@
 
 # Foundation Evidence Index
 
+- [Stage 7B PR #20 environment notification correction](2026-10-25-stage7b-windows-environment-notification-correction.md) — real-window broadcast regression, Windows red-first failure and follow-up verification; native candidate acceptance remains separate.
+
+- [Stage 7B Windows PATH repair and branch cleanup](2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md) — Windows red regression, focused PR #20 PATH ownership correction and independently verified branch cleanup; native candidate acceptance remains separate.
+
 - [Stage 7B Windows sentinel acceptance repair](2026-10-23-stage7b-windows-sentinel-acceptance-repair.md) — controlled CRLF/LF reproduction, canonical byte guard, Python/Windows CI regressions and protected integration receipts; the old candidate remains failed and new candidate acceptance is separately gated.
 - [Tokio I/O-safety security remediation](2026-10-24-tokio-security-remediation.md) — scoped patched dependency graph, local security evidence and separate protected integration gate; no candidate authorization.
 

@@ -1,5 +1,9 @@
 # Agent Vesper — Release Recovery Controller PRD
 
+The [PR #20 Windows environment-notification correction](foundation/2026-10-25-stage7b-windows-environment-notification-correction.md) tracks the P1 review, owned User PATH shell broadcast and its exact-head Windows CI gate; protected integration and candidate acceptance remain separate.
+
+The [Stage 7B Windows PATH repair and branch cleanup](foundation/2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md) records the failed native candidate PATH check, red-first Windows regression and focused PR #20. Protected merge, new exact-SHA prerequisites and another authorized candidate remain outstanding.
+
 The [Stage 7B Windows sentinel acceptance-test repair](foundation/2026-10-23-stage7b-windows-sentinel-acceptance-repair.md) owns the controlled byte-fixture correction and protected native regression/integration evidence following failed candidate run `39994107258`; neither the correction nor its CI proof completes five-platform candidate acceptance or authorizes another dispatch.
 
 The [Tokio I/O-safety advisory remediation](foundation/2026-10-24-tokio-security-remediation.md) owns the independent patched dependency graph and protected Phase A gate; the sentinel PR and a new candidate remain separately gated.

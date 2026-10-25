@@ -3,7 +3,33 @@ $ErrorActionPreference = 'Stop'
 $installer = Join-Path $PSScriptRoot 'install.ps1'
 $uninstaller = Join-Path $PSScriptRoot 'uninstall.ps1'
 $root = Join-Path ([IO.Path]::GetTempPath()) ('jarvis-install-test-' + [guid]::NewGuid().ToString('N'))
-$oldUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+# Preserve the registry value and its kind, not just the expanded .NET view.
+function Get-UserPathRecord {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment')
+    try {
+        if ($null -eq $key -or $key.GetValueNames() -notcontains 'Path') {
+            return @{ present = $false; value = $null; kind = $null }
+        }
+        return @{ present = $true
+                  value = [string]$key.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+                  kind = $key.GetValueKind('Path') }
+    } finally { if ($null -ne $key) { $key.Dispose() } }
+}
+function Set-UserPathFixture($Value, $Kind) {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+    try {
+        if ($null -eq $Kind) { $key.DeleteValue('Path', $false) }
+        else { $key.SetValue('Path', [string]$Value, $Kind) }
+    } finally { $key.Dispose() }
+}
+function Assert-UserPathRecord($Expected, [string]$Description) {
+    $actual = Get-UserPathRecord
+    if ($actual.present -ne $Expected.present -or
+        ($actual.present -and ($actual.value -cne $Expected.value -or $actual.kind -ne $Expected.kind))) {
+        throw "user PATH content or registry type changed: $Description"
+    }
+}
+$oldUserPathRecord = Get-UserPathRecord
 $oldArch = $env:PROCESSOR_ARCHITECTURE
 $oldWow = $env:PROCESSOR_ARCHITEW6432
 $oldPath = $env:Path
@@ -137,9 +163,104 @@ try {
     if (Test-Path $acp) { throw 'uninstall left a launcher' }
     if ((Get-Content (Join-Path $env:JARVIS_MEMORY_ROOT 'keep.txt')) -ne 'keep') { throw 'uninstall removed memory' }
     if ((Get-Content $vesper) -ne 'vesper') { throw 'uninstall changed simulated Vesper state' }
-    Write-Host 'PASS: Jarvis PowerShell installer offline direct/piped/WOW64, launchers, checksum, ownership and uninstall guards'
+
+    # A real top-level window receives HWND_BROADCAST, unlike message-only windows.
+    # Observe the Environment payload, not merely the presence of a source call.
+    # On PowerShell 7, Message is forwarded into the desktop Primitives assembly.
+    $formsReferences = if ($PSVersionTable.PSVersion.Major -ge 6) {
+        @('System.Windows.Forms', 'System.Windows.Forms.Primitives')
+    } else { @('System.Windows.Forms') }
+    Add-Type -ReferencedAssemblies $formsReferences -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+public sealed class JarvisEnvironmentListener : NativeWindow {
+    public int Count { get; private set; }
+    public JarvisEnvironmentListener() {
+        var parameters = new CreateParams();
+        parameters.Style = unchecked((int)0x80000000); // top-level WS_POPUP
+        CreateHandle(parameters);
+    }
+    protected override void WndProc(ref Message message) {
+        if (message.Msg == 0x1a && message.LParam != IntPtr.Zero &&
+            Marshal.PtrToStringUni(message.LParam) == "Environment") Count++;
+        base.WndProc(ref message);
+    }
+    public void Close() { DestroyHandle(); }
+}
+'@
+    $listener = New-Object JarvisEnvironmentListener
+    try {
+    # Exercise the real installer and uninstaller against controlled HKCU values.
+    # Do not echo real or fixture PATH contents into CI logs.
+    $ordinary = [Microsoft.Win32.RegistryValueKind]::String
+    $expand = [Microsoft.Win32.RegistryValueKind]::ExpandString
+    $cases = @(
+        @{ name = 'absent'; value = $null; kind = $null; equivalent = $false },
+        @{ name = 'empty'; value = ''; kind = $ordinary; equivalent = $false },
+        @{ name = 'populated'; value = 'C:\Other;D:\Tools'; kind = $ordinary; equivalent = $false },
+        @{ name = 'leading-consecutive-trailing'; value = ';C:\Other;;D:\Tools;'; kind = $ordinary; equivalent = $false },
+        @{ name = 'duplicates'; value = 'C:\Other;C:\Other;D:\Tools'; kind = $ordinary; equivalent = $false },
+        @{ name = 'expandable'; value = '%USERPROFILE%\bin;;C:\Other;'; kind = $expand; equivalent = $false },
+        @{ name = 'pre-existing-equivalent'; value = ('C:\Other;' + $env:JARVIS_INSTALL_ROOT.ToUpperInvariant() + '\;D:\Tools;'); kind = $ordinary; equivalent = $true },
+        @{ name = 'duplicate-equivalent'; value = ($env:JARVIS_INSTALL_ROOT + ';C:\Other;' + $env:JARVIS_INSTALL_ROOT.ToUpperInvariant() + '\;'); kind = $ordinary; equivalent = $true }
+    )
+    foreach ($case in $cases) {
+        Set-UserPathFixture $case.value $case.kind
+        $initial = Get-UserPathRecord
+        $beforeNotice = $listener.Count
+        & $installer | Out-Null
+        $installed = Get-UserPathRecord
+        $expectedNotices = if ($case.equivalent) { 0 } else { 1 }
+        if ($listener.Count -ne $beforeNotice + $expectedNotices) {
+            throw ('installation Environment notification mismatch: ' + $case.name)
+        }
+        $ownership = Get-Content -LiteralPath (Join-Path $env:JARVIS_INSTALL_ROOT '.jarvis-installer-owned.json') -Raw | ConvertFrom-Json
+        if ($case.equivalent) {
+            Assert-UserPathRecord $initial ("install of " + $case.name)
+            if ($ownership.path_entry_added -ne $false) { throw 'claimed a pre-existing equivalent PATH entry' }
+        } else {
+            $prefix = if ($initial.present) { $initial.value } else { '' }
+            $separator = if ($prefix -and -not $prefix.EndsWith(';')) { ';' } else { '' }
+            $expected = @{ present = $true; value = $prefix + $separator + $env:JARVIS_INSTALL_ROOT; kind = $(if ($initial.present) { $initial.kind } else { $ordinary }) }
+            Assert-UserPathRecord $expected ("install of " + $case.name)
+            if ($ownership.path_entry_added -ne $true) { throw 'missing owned PATH entry metadata' }
+        }
+        if ($case.name -eq 'populated') {
+            # Upgrades retain original ownership, and a later user-added suffix
+            # stays byte-for-byte while only the owned token is removed.
+            $beforeUpgrade = $listener.Count
+            & $installer | Out-Null
+            if ($listener.Count -ne $beforeUpgrade) { throw 'unchanged upgrade broadcast Environment' }
+            Assert-UserPathRecord $expected 'upgrade of populated PATH'
+            Set-UserPathFixture ($expected.value + ';E:\Added') $expected.kind
+            $initial.value += ';E:\Added'
+        }
+        $beforeUninstall = $listener.Count
+        & $uninstaller | Out-Null
+        if ($listener.Count -ne $beforeUninstall + $expectedNotices) {
+            throw ('uninstallation Environment notification mismatch: ' + $case.name)
+        }
+        Assert-UserPathRecord $initial ("uninstall of " + $case.name)
+        if (Test-Path -LiteralPath $env:JARVIS_INSTALL_ROOT) { throw 'PATH case retained installer-owned root' }
+    }
+    # A failed staged transaction cannot change HKCU PATH or mask the failure.
+    Set-UserPathFixture ';C:\Other;;' $expand
+    $beforeFailure = Get-UserPathRecord
+    $env:JARVIS_INSTALL_FAIL_AFTER = 'staged'
+    $beforeFailureNotice = $listener.Count
+    try { Expect-Failure { & $installer } 'injected failure after staging' }
+    finally { Remove-Item Env:JARVIS_INSTALL_FAIL_AFTER -ErrorAction SilentlyContinue }
+    if ($listener.Count -ne $beforeFailureNotice) { throw 'failed staged install broadcast Environment' }
+    Assert-UserPathRecord $beforeFailure 'failed staged installation'
+    & $installer | Out-Null
+    & $uninstaller | Out-Null
+    if ($listener.Count -ne $beforeFailureNotice + 2) { throw 'recovered install/uninstall missed Environment notification' }
+    Assert-UserPathRecord $beforeFailure 'recovered failed installation'
+    Write-Host 'PASS: Jarvis PowerShell installer offline direct/piped/WOW64, launchers, checksum, ownership, PATH preservation, Environment broadcast and failure recovery'
+    } finally { $listener.Close() }
 } finally {
-    [Environment]::SetEnvironmentVariable('Path', $oldUserPath, 'User')
+    Set-UserPathFixture $oldUserPathRecord.value $oldUserPathRecord.kind
     $env:Path = $oldPath
     $env:PROCESSOR_ARCHITECTURE = $oldArch
     if ($null -eq $oldWow) { Remove-Item Env:PROCESSOR_ARCHITEW6432 -ErrorAction SilentlyContinue } else { $env:PROCESSOR_ARCHITEW6432 = $oldWow }

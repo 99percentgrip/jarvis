@@ -41,6 +41,9 @@ deferred script in this directory and is not part of Stage 6 installation.
   It reads `JARVIS_PACKAGE` and does not call the network.
 - `uninstall.sh` and `uninstall.ps1` remove only files recorded in
   `.jarvis-installer-owned.json`. Memory and foreign launchers stay.
+- Only owned Windows User PATH registry changes broadcast `WM_SETTINGCHANGE`
+  (`Environment`) to top-level windows; unchanged/equivalent values and staged
+  failures do not notify. Both PowerShell hosts exercise real window delivery.
 - `publish_to_acp_registry.sh` — VRO-11.2 publishing helper for the public
   ACP Registry (`agentclientprotocol/registry`). Clones the registry to a
   temporary directory, writes `registry/agent.json` from this repo into the
@@ -59,6 +62,8 @@ deferred script in this directory and is not part of Stage 6 installation.
   intentionally left untouched; `agent-vesper` is a separate agent entry).
 
 ## Local Contracts
+
+- Windows `install.ps1` appends only its own User PATH entry without normalizing unrelated raw HKCU content or changing registry kind. The owner record tracks insertion for `uninstall.ps1`, which removes only an identifiable owned token; `test_install_windows.ps1` covers raw-path, registry-kind, equivalent entries and failure recovery under Windows PowerShell 5.1 and 7 in the existing Windows installer CI job.
 
 - Stage 2 compiled-target PE audit uses an explicit new four-binary inventory.
   Legacy release-payload audit remains the default. Native installer regression

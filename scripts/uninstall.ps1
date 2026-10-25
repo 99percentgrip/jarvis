@@ -2,6 +2,26 @@
 $ErrorActionPreference = "Stop"
 $installRoot = if ($env:JARVIS_INSTALL_ROOT) { $env:JARVIS_INSTALL_ROOT } else { Join-Path $env:LOCALAPPDATA "Programs\Jarvis" }
 function Fail([string]$Message) { throw "jarvis uninstaller: $Message" }
+function Send-EnvironmentChange {
+    # Persistent registry writes bypass the .NET User setter's shell notification.
+    if (-not ('JarvisEnvironmentBroadcast' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class JarvisEnvironmentBroadcast {
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr SendMessageTimeout(IntPtr window, uint message,
+        IntPtr wParam, string lParam, uint flags, uint timeout, out IntPtr result);
+}
+'@
+    }
+    $result = [IntPtr]::Zero
+    $sent = [JarvisEnvironmentBroadcast]::SendMessageTimeout([IntPtr]0xffff, 0x1a,
+        [IntPtr]::Zero, 'Environment', 0x2, 5000, [ref]$result)
+    if ($sent -eq [IntPtr]::Zero -and [Runtime.InteropServices.Marshal]::GetLastWin32Error() -ne 0) {
+        Fail 'unable to notify Windows of the User PATH change'
+    }
+}
 $text = $installRoot.Replace("\", "/").ToLowerInvariant()
 if ($text.Contains("agent-vesper") -or $text.Contains("agentvesper")) { Fail "refusing Vesper-owned or ambiguous path: $installRoot" }
 if (-not (Test-Path -LiteralPath $installRoot)) {
@@ -39,11 +59,47 @@ foreach ($generation in @($ownership.current_generation, $ownership.previous_gen
     }
 }
 if ($ownership.path_entry_added -eq $true) {
-    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    if ($userPath) {
-        $kept = @($userPath -split ";" | Where-Object { $_ -and ([string]::Compare($_.TrimEnd("\"), $installRoot.TrimEnd("\"), $true) -ne 0) })
-        [Environment]::SetEnvironmentVariable("Path", ($kept -join ";"), "User")
-    }
+    $pathKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+    try {
+        if ($pathKey.GetValueNames() -contains 'Path') {
+            $userPath = [string]$pathKey.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+            $kind = $pathKey.GetValueKind('Path')
+            if ($kind -ne [Microsoft.Win32.RegistryValueKind]::String -and $kind -ne [Microsoft.Win32.RegistryValueKind]::ExpandString) {
+                Fail 'unsupported User PATH registry value kind'
+            }
+            # A new ownership record identifies the exact inserted token's offset.
+            # Never filter every equivalent entry: another entry may be user-owned.
+            $offset = $ownership.path_prefix_length -as [int]
+            $separator = [string]$ownership.path_separator
+            $hasOffset = $null -ne $ownership.path_prefix_length -and $null -ne $offset -and
+                $offset -ge 0 -and $separator -in @('', ';')
+            if ($hasOffset) {
+                $owned = $separator + $installRoot
+                if ($offset + $owned.Length -le $userPath.Length -and
+                    $userPath.Substring($offset, $owned.Length) -ceq $owned -and
+                    ($offset + $owned.Length -eq $userPath.Length -or $userPath[$offset + $owned.Length] -eq ';')) {
+                    $kept = $userPath.Remove($offset, $owned.Length)
+                    if (-not $ownership.path_value_present -and $kept.Length -eq 0) {
+                        $pathKey.DeleteValue('Path', $false)
+                    } else {
+                        $pathKey.SetValue('Path', $kept, $kind)
+                    }
+                    Send-EnvironmentChange
+                }
+            } else {
+                # Compatibility with prior ownership records: remove only an exact
+                # trailing installer token, never normalize other PATH entries.
+                $suffix = ';' + $installRoot
+                if ($userPath.EndsWith($suffix, [StringComparison]::Ordinal)) {
+                    $pathKey.SetValue('Path', $userPath.Substring(0, $userPath.Length - $suffix.Length), $kind)
+                    Send-EnvironmentChange
+                } elseif ($userPath -ceq $installRoot) {
+                    $pathKey.DeleteValue('Path', $false)
+                    Send-EnvironmentChange
+                }
+            }
+        }
+    } finally { $pathKey.Dispose() }
 }
 foreach ($name in @("current", "transaction.json", ".jarvis-installer-owned.json")) {
     $path = Join-Path $installRoot $name
