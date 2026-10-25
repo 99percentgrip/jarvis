@@ -2,6 +2,26 @@
 $ErrorActionPreference = "Stop"
 $installRoot = if ($env:JARVIS_INSTALL_ROOT) { $env:JARVIS_INSTALL_ROOT } else { Join-Path $env:LOCALAPPDATA "Programs\Jarvis" }
 function Fail([string]$Message) { throw "jarvis uninstaller: $Message" }
+function Send-EnvironmentChange {
+    # Persistent registry writes bypass the .NET User setter's shell notification.
+    if (-not ('JarvisEnvironmentBroadcast' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class JarvisEnvironmentBroadcast {
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr SendMessageTimeout(IntPtr window, uint message,
+        IntPtr wParam, string lParam, uint flags, uint timeout, out IntPtr result);
+}
+'@
+    }
+    $result = [IntPtr]::Zero
+    $sent = [JarvisEnvironmentBroadcast]::SendMessageTimeout([IntPtr]0xffff, 0x1a,
+        [IntPtr]::Zero, 'Environment', 0x2, 5000, [ref]$result)
+    if ($sent -eq [IntPtr]::Zero -and [Runtime.InteropServices.Marshal]::GetLastWin32Error() -ne 0) {
+        Fail 'unable to notify Windows of the User PATH change'
+    }
+}
 $text = $installRoot.Replace("\", "/").ToLowerInvariant()
 if ($text.Contains("agent-vesper") -or $text.Contains("agentvesper")) { Fail "refusing Vesper-owned or ambiguous path: $installRoot" }
 if (-not (Test-Path -LiteralPath $installRoot)) {
@@ -64,6 +84,7 @@ if ($ownership.path_entry_added -eq $true) {
                     } else {
                         $pathKey.SetValue('Path', $kept, $kind)
                     }
+                    Send-EnvironmentChange
                 }
             } else {
                 # Compatibility with prior ownership records: remove only an exact
@@ -71,8 +92,10 @@ if ($ownership.path_entry_added -eq $true) {
                 $suffix = ';' + $installRoot
                 if ($userPath.EndsWith($suffix, [StringComparison]::Ordinal)) {
                     $pathKey.SetValue('Path', $userPath.Substring(0, $userPath.Length - $suffix.Length), $kind)
+                    Send-EnvironmentChange
                 } elseif ($userPath -ceq $installRoot) {
                     $pathKey.DeleteValue('Path', $false)
+                    Send-EnvironmentChange
                 }
             }
         }

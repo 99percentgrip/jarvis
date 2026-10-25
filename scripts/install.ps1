@@ -247,6 +247,26 @@ function Update-Seed([string]$Generation) {
     }
     return $count
 }
+function Send-EnvironmentChange {
+    # Persistent registry writes bypass the .NET User setter's shell notification.
+    if (-not ('JarvisEnvironmentBroadcast' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class JarvisEnvironmentBroadcast {
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr SendMessageTimeout(IntPtr window, uint message,
+        IntPtr wParam, string lParam, uint flags, uint timeout, out IntPtr result);
+}
+'@
+    }
+    $result = [IntPtr]::Zero
+    $sent = [JarvisEnvironmentBroadcast]::SendMessageTimeout([IntPtr]0xffff, 0x1a,
+        [IntPtr]::Zero, 'Environment', 0x2, 5000, [ref]$result)
+    if ($sent -eq [IntPtr]::Zero -and [Runtime.InteropServices.Marshal]::GetLastWin32Error() -ne 0) {
+        Fail 'unable to notify Windows of the User PATH change'
+    }
+}
 function Complete-Generation([string]$Generation, $Previous) {
     Write-Launchers $Generation
     $seeded = Update-Seed $Generation
@@ -285,6 +305,7 @@ function Complete-Generation([string]$Generation, $Previous) {
         if (-not $already) {
             $separator = if ($userPath -and -not $userPath.EndsWith(';')) { ';' } else { '' }
             $pathKey.SetValue('Path', ($userPath + $separator + $installRoot), $kind)
+            Send-EnvironmentChange
             $ownership.path_entry_added = $true
             $ownership.path_value_present = $present
             $ownership.path_prefix_length = $userPath.Length

@@ -41,6 +41,9 @@ deferred script in this directory and is not part of Stage 6 installation.
   It reads `JARVIS_PACKAGE` and does not call the network.
 - `uninstall.sh` and `uninstall.ps1` remove only files recorded in
   `.jarvis-installer-owned.json`. Memory and foreign launchers stay.
+- Only owned Windows User PATH registry changes broadcast `WM_SETTINGCHANGE`
+  (`Environment`) to top-level windows; unchanged/equivalent values and staged
+  failures do not notify. Both PowerShell hosts exercise real window delivery.
 - `publish_to_acp_registry.sh` — VRO-11.2 publishing helper for the public
   ACP Registry (`agentclientprotocol/registry`). Clones the registry to a
   temporary directory, writes `registry/agent.json` from this repo into the
