@@ -62,6 +62,8 @@ The [architecture](architecture/runtime-identity-stage3.md),
 
 ## Required behavior and source-linked acceptance
 
+The subsequent [Phase 4 authentication/persistence execution](foundation/2026-10-27-phase4-auth-persistence-execution.md) and [scoped machine-readable matrix](foundation/phase4-auth-persistence-coverage.json) record a red-first ordinary-host credential preflight correction and its remaining native/review gaps. These do not close Stage 3 integration gates or overall migration acceptance.
+
 | Requirement | Implementation / regression evidence | Candidate status |
 | --- | --- | --- |
 | 1. Five native platform path strategies | Shared config `JarvisPaths`; identity contract compares real resolver to approved plans | Local injected-platform proof; native CI pending |

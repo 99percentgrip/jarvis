@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "base_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7",
+  "scope": "Reachable production authentication and private-state consumers; results apply only to the indicated platform and command. NULL evidence commit denotes phase-branch candidate until the pushed SHA is recorded in the execution report.",
+  "capabilities": [
+    {
+      "capability": "Explicit GLM/OpenAI/xAI/LM Studio credential override ownership preflight",
+      "classification": "IMPLEMENTED",
+      "entry_point": "apps/jarvis-acp/src/main.rs:main; apps/jarvis-tui/src/main.rs:run",
+      "runtime_consumer": "validate_production_credential_overrides -> SecureCredentialStore::validate_application_owner -> validate_private_file; provider adapters -> SecureCredentialStore::load/store/remove",
+      "storage_identity": "99percentgrip.jarvis; provider-specific CredentialId; JARVIS_*_CREDENTIALS_PATH",
+      "risk": "Foreign or unmarked vault accepted at startup before any provider operation; private roots could be initialized before refusal",
+      "positive_test": "Owned, tagged synthetic vault permits ordinary ACP startup without changing vault bytes",
+      "negative_test": "Four foreign tagged vault overrides refuse before application-root initialization and leave bytes unchanged",
+      "platform": "Linux",
+      "result": "PASS",
+      "evidence": "cargo test -p jarvis-acp --test phase4_credential_boundary (2 passed); red-first foreign override failed on baseline before correction",
+      "evidence_commit": null
+    },
+    {
+      "capability": "Explicit credential override ownership preflight on native macOS and Windows",
+      "classification": "IMPLEMENTED",
+      "entry_point": "apps/jarvis-acp/src/main.rs:main; apps/jarvis-tui/src/main.rs:run",
+      "runtime_consumer": "validate_production_credential_overrides -> native private-file permission verification",
+      "storage_identity": "99percentgrip.jarvis; independent explicit credential paths",
+      "risk": "Native ACL or redirect bypass",
+      "positive_test": "Native ordinary-process startup with tagged owned synthetic vault",
+      "negative_test": "Native ordinary-process startup with foreign vault preserves bytes and refuses",
+      "platform": "macOS and Windows",
+      "result": "UNTESTED",
+      "evidence": "phase4_credential_boundary is included in default Cargo integration tests; exact-head native CI pending",
+      "evidence_commit": null
+    },
+    {
+      "capability": "ACP session ownership, legacy knob isolation and missing-root read",
+      "classification": "IMPLEMENTED",
+      "entry_point": "apps/jarvis-acp/src/lib.rs:SessionReadOptions::build",
+      "runtime_consumer": "JarvisPaths::resolve -> FilesystemSessionStore::new_owned -> CompositeSessionRepository",
+      "storage_identity": "Jarvis platform data root; explicit owned JARVIS_SESSION_ROOT; legacy reads disabled in ordinary binary",
+      "risk": "Implicit session adoption or modification",
+      "positive_test": "Owned current sessions list without provider dispatch",
+      "negative_test": "Legacy environment cannot import synthetic Vesper session; unmarked/legacy roots refuse",
+      "platform": "Linux",
+      "result": "PASS",
+      "evidence": "cargo test -p jarvis-acp --test runtime_ownership (3 passed)",
+      "evidence_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7"
+    },
+    {
+      "capability": "OpenAI subscription and xAI Grok account independent login/refresh",
+      "classification": "PARTIALLY IMPLEMENTED",
+      "entry_point": "crates/jarvis-provider-openai/src/credentials.rs:Credentials; crates/jarvis-provider-xai/src/credentials.rs:Credentials",
+      "runtime_consumer": "Host registered provider -> native adapter -> secure store; Stage 3 production subscription login/refresh inactive",
+      "storage_identity": "openai/native-auth and xai/native-auth under 99percentgrip.jarvis",
+      "risk": "Unverified independent OAuth ownership or cross-billing fallback",
+      "positive_test": "No positive production subscription authorization claimed",
+      "negative_test": "Startup rejects foreign override; existing provider fixtures do not establish live authorization",
+      "platform": "Linux, macOS and Windows",
+      "result": "NOT IMPLEMENTED",
+      "evidence": "Production adapter AGENTS.md Stage 3 inactivity contracts; live authorization not executed",
+      "evidence_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7"
+    },
+    {
+      "capability": "Native credential manager restart, logout and locked service",
+      "classification": "IMPLEMENTED",
+      "entry_point": "crates/jarvis-auth/src/lib.rs:SecureCredentialStore",
+      "runtime_consumer": "provider credential port -> SecureCredentialStore -> keyring-core native backend",
+      "storage_identity": "99percentgrip.jarvis and provider-scoped keyring accounts",
+      "risk": "OS native service unavailability, stale credentials after logout",
+      "positive_test": "Hosted UUID synthetic native entries with fresh process reload",
+      "negative_test": "Locked/missing service must not create plaintext production vault",
+      "platform": "Linux, macOS and Windows",
+      "result": "UNTESTED",
+      "evidence": "cargo test -p jarvis-auth --all-features: hosted_native_credential_persistence ignored by default; no opted-in native acceptance run in this work",
+      "evidence_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7"
+    },
+    {
+      "capability": "Windows concurrent atomic private-state replacement root cause",
+      "classification": "PARTIALLY IMPLEMENTED",
+      "entry_point": "crates/jarvis-security/src/private_state.rs:write_private_atomic",
+      "runtime_consumer": "private-state consumer -> tempfile::NamedTempFile::persist -> Windows MoveFileExW replacement",
+      "storage_identity": "Jarvis-owned private files with marked parent",
+      "risk": "OS error 5 under concurrent writers; specific failing syscall still unknown",
+      "positive_test": "PR #24 native diagnostic file-sharing test executed on Windows",
+      "negative_test": "Historical error remains unexplained; no source repair asserted",
+      "platform": "Windows",
+      "result": "UNTESTED",
+      "evidence": "main run 40271802076 Windows job 121406020467 attempt 1 failed; attempt 2 green; PR #24 run 40332026404 job 121603620822 test windows_private_replacement executed; diagnostic cannot identify original syscall",
+      "evidence_commit": "3beddd429abbf4f8d5ccd15db9d2da1a12b28a5a"
+    }
+  ]
+}

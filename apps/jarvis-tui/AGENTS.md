@@ -13,6 +13,8 @@ and composes the existing bounded atomic session writer.
 
 ## Ownership
 
+- `src/main.rs` preflights explicit production credential vault ownership before native private-root initialization, sharing the auth crate's read-only validator with ACP. TUI compilation is not terminal-level acceptance.
+
 - `src/messages.rs` owns terminal message composition, cached paste ranges and
   the ID-based future-turn journal. `commands.rs`/`dispatch.rs` own typed command
   intents; `main.rs` composes durable admission, runtime events and inspection;

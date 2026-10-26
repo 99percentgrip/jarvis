@@ -11,6 +11,8 @@
 
 # Foundation Evidence Index
 
+- [Phase 4 authentication/persistence isolation](2026-10-27-phase4-auth-persistence-execution.md) — red-first ordinary ACP credential-override preflight repair and [machine-readable scoped coverage](phase4-auth-persistence-coverage.json); native consumer acceptance and independent review remain open.
+
 - [Stage 7B PR #20 environment notification correction](2026-10-25-stage7b-windows-environment-notification-correction.md) — real-window broadcast regression, Windows red-first failure and follow-up verification; native candidate acceptance remains separate.
 
 - [Stage 7B Windows PATH repair and branch cleanup](2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md) — Windows red regression, focused PR #20 PATH ownership correction and independently verified branch cleanup; native candidate acceptance remains separate.
