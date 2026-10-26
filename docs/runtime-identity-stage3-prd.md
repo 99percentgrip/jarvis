@@ -62,7 +62,7 @@ The [architecture](architecture/runtime-identity-stage3.md),
 
 ## Required behavior and source-linked acceptance
 
-The subsequent [Phase 4 authentication/persistence execution](foundation/2026-10-27-phase4-auth-persistence-execution.md) and [scoped machine-readable matrix](foundation/phase4-auth-persistence-coverage.json) record a red-first ordinary-host credential preflight correction and its remaining native/review gaps. These do not close Stage 3 integration gates or overall migration acceptance.
+The subsequent [Phase 4 authentication/persistence execution](foundation/2026-10-27-phase4-auth-persistence-execution.md), [scoped machine-readable matrix](foundation/phase4-auth-persistence-coverage.json), and [local release-host fixture follow-up](foundation/2026-10-27-phase4-host-fixture-followup.md) record a red-first ordinary-host credential preflight correction, local synthetic-process proof and remaining native/review gaps. These do not close Stage 3 integration gates or overall migration acceptance.
 
 | Requirement | Implementation / regression evidence | Candidate status |
 | --- | --- | --- |

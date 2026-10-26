@@ -11,7 +11,7 @@
 
 # Foundation Evidence Index
 
-- [Phase 4 authentication/persistence isolation](2026-10-27-phase4-auth-persistence-execution.md) — red-first ordinary ACP credential-override preflight repair and [machine-readable scoped coverage](phase4-auth-persistence-coverage.json); native consumer acceptance and independent review remain open.
+- [Phase 4 authentication/persistence isolation](2026-10-27-phase4-auth-persistence-execution.md) — red-first ordinary ACP credential-override preflight repair and [machine-readable scoped coverage](phase4-auth-persistence-coverage.json); [release-host fixture follow-up](2026-10-27-phase4-host-fixture-followup.md) records local Linux synthetic process proof. Native consumer acceptance and independent review remain open.
 
 - [Stage 7B PR #20 environment notification correction](2026-10-25-stage7b-windows-environment-notification-correction.md) — real-window broadcast regression, Windows red-first failure and follow-up verification; native candidate acceptance remains separate.
 

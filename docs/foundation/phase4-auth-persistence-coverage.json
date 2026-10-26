@@ -15,7 +15,7 @@
       "platform": "Linux",
       "result": "PASS",
       "evidence": "cargo test -p jarvis-acp --test phase4_credential_boundary (2 passed); red-first foreign override failed on baseline before correction",
-      "evidence_commit": "42f98b6cb9dbc8eb484539be833e01ad56e15219"
+      "evidence_commit": "a2605a36bd8dc76e49fc67b10578a471e831dcfd"
     },
     {
       "capability": "Explicit credential override ownership preflight on native macOS and Windows",
@@ -29,7 +29,7 @@
       "platform": "macOS and Windows",
       "result": "UNTESTED",
       "evidence": "phase4_credential_boundary is included in default Cargo integration tests; exact-head native CI pending",
-      "evidence_commit": "42f98b6cb9dbc8eb484539be833e01ad56e15219"
+      "evidence_commit": "a2605a36bd8dc76e49fc67b10578a471e831dcfd"
     },
     {
       "capability": "ACP session ownership, legacy knob isolation and missing-root read",

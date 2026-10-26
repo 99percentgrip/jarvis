@@ -59,7 +59,9 @@ Verify terminal interaction through the production TUI binary with isolated stat
   The fixture must not query or change the invoking release host via `/dev/tty`.
 
 - `release_hosts_pty.py` explicitly invokes the non-shipping TUI example and ACP
-  integration driver; ordinary executable dormancy is tested separately while
+  integration driver; synthetic OpenAI/xAI signed-out vault records carry the
+  production application owner marker so startup preflight accepts the fixture.
+  Ordinary executable dormancy is tested separately while
   preserving read-only user-project CI status. It observes one isolated RRC ledger through real TUI/ACP
   processes for all four selected, signed-out adapters: partial matrix, blocked no-write retry, Published/main degraded,
   and cross-host cancellation preserving epoch/run/tag/assets. ACP pipe reading uses a bounded queue on every OS; Windows identities retain

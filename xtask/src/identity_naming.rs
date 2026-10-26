@@ -27,6 +27,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/evidence-index.md",
     "docs/foundation/2026-10-26-migration-interruption-identity-repair.md",
     "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md",
+    "docs/foundation/2026-10-27-phase4-host-fixture-followup.md",
     "docs/foundation/2026-10-20-stage7a-ci-optimization.md",
     "docs/foundation/2026-10-20-stage7b-independent-candidate-continuation.md",
     "docs/foundation/2026-10-20-stage7b-local-closeout.md",

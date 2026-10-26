@@ -111,7 +111,7 @@ def run_provider(tui_binary, acp_binary, selected, dormant=False):
         sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
         ledger=seed(root,sha)
         glm=root/'zai-vault.json';glm.write_text('{"credentials":null}');glm.chmod(0o600)
-        vault=root/'vault.json';vault.write_text(json.dumps(dict(credentials={name:{'native-auth':json.dumps(dict(mode='signed-out'))} for name in ['openai','xai']})));vault.chmod(0o600)
+        vault=root/'vault.json';vault.write_text(json.dumps(dict(application='99percentgrip.jarvis', credentials={name:{'native-auth':json.dumps(dict(mode='signed-out'))} for name in ['openai','xai']})));vault.chmod(0o600)
         listener=socket.socket();listener.bind(('127.0.0.1',0));listener.listen();listener.settimeout(.05)
         extra=dict(ZAI_API_KEY='',Z_AI_API_KEY='',JARVIS_PROVIDER=selected,
                    JARVIS_CREDENTIALS_PATH=str(glm),
