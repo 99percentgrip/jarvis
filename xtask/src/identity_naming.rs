@@ -25,6 +25,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/architecture/stage7b-release-and-storage.md",
     "docs/foundation/2026-10-20-stage6-distribution.md",
     "docs/foundation/evidence-index.md",
+    "docs/foundation/2026-10-26-migration-interruption-identity-repair.md",
     "docs/foundation/2026-10-20-stage7a-ci-optimization.md",
     "docs/foundation/2026-10-20-stage7b-independent-candidate-continuation.md",
     "docs/foundation/2026-10-20-stage7b-local-closeout.md",
@@ -130,6 +131,11 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     let mut scrubbed = line.replace("use jarvis_identity::", "use owned_identity::");
     for env in jarvis_identity::RUNTIME_ENVIRONMENT {
         scrubbed = scrub_technical_token(&scrubbed, env.current);
+    }
+    // Exact user-facing interrupted-turn marker in the shared worker renderer;
+    // do not exempt the brand stem in prose or other files.
+    if path == "crates/jarvis-harness/src/lib.rs" {
+        scrubbed = scrub_technical_token(&scrubbed, "[Jarvis: provider stream interrupted");
     }
     const STAGE6_INSTALLER_TOKENS: &[&str] = &[
         "JARVIS_PACKAGE_SHA256",
@@ -292,6 +298,25 @@ mod tests {
                 "new upstream mention".into()
             )
         );
+    }
+    #[test]
+    fn interruption_product_marker_is_scoped_to_shared_worker_output() {
+        assert!(owned_line(
+            "crates/jarvis-harness/src/lib.rs",
+            "format!(\"[Jarvis: provider stream interrupted\")"
+        ));
+        assert!(!owned_line(
+            "crates/jarvis-harness/src/lib.rs",
+            "format!(\"[Jarvis: arbitrary product claim\")"
+        ));
+        assert!(!owned_line(
+            "crates/jarvis-harness/src/lib.rs",
+            "Jarvis upstream prose"
+        ));
+        assert!(!owned_line(
+            "crates/jarvis-domain/src/lib.rs",
+            "format!(\"[Jarvis: interrupted\")"
+        ));
     }
     #[test]
     fn declarations_are_scoped_and_other_upstream_mentions_stay_frozen() {

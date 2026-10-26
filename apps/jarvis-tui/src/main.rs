@@ -14350,11 +14350,11 @@ fn outcome_text(outcome: &AgentTurnOutcome) -> String {
                 .join("\n");
             let note = if *tool_call_started {
                 format!(
-                    "[Agent Vesper: provider stream interrupted ({cause:?}); recovery withheld because a tool call had started.]"
+                    "[Jarvis: provider stream interrupted ({cause:?}); recovery withheld because a tool call had started.]"
                 )
             } else {
                 format!(
-                    "[Agent Vesper: provider stream interrupted ({cause:?}) after bounded recovery was exhausted.]"
+                    "[Jarvis: provider stream interrupted ({cause:?}) after bounded recovery was exhausted.]"
                 )
             };
             if partial.is_empty() {
@@ -19394,6 +19394,11 @@ mod tests {
             },
             history: Vec::new(),
         };
+        if let AgentEvent::Completed { outcome, .. } = &event {
+            let text = outcome_text(outcome);
+            assert!(text.contains("[Jarvis: provider stream interrupted"));
+            assert!(!text.contains("[Agent Vesper:"));
+        }
         apply_agent_event(event, &mut state);
         assert!(
             state
