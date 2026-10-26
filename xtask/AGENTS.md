@@ -24,6 +24,9 @@ architecture, MSRV, and source-oracle checks.
   moves resolve to original frozen-hit paths; new upstream prose, unknown
   identifiers and historical-scope additions stay embargoed;
   the frozen naming baseline and all thirteen upstream patterns remain intact.
+  The migration audit receipts and merged PR #22 integration record admit only
+  reviewed quoted identifiers, three exact historic GitHub rule/check URLs and
+  the exact recorded CI label; new branded prose or other URLs remain refused.
   The interrupted-turn migration repair admits only the complete shared-worker
   interrupted-stream marker prefix and reviewed quoted technical tokens in its
   owning report; an arbitrary product claim after the short marker must fail.
