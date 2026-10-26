@@ -6,6 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-26-windows-private-replacement-investigation.md` owns Issue #23's diagnostic Windows sharing regression and native-execution gap, not an incident resolution.
+
 - `2026-10-26-migration-interruption-identity-repair.md` owns the three-host displayed-label correction, local regressions and remaining exact-head/native acceptance boundary.
 
 - `2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 shell notification red/green evidence; no candidate rerun is authorized.

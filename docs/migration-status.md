@@ -2,7 +2,7 @@
 
 ## Independent migration audit checkpoint — 2026-10-26
 
-Independent alpha acceptance is **NOT ESTABLISHED**. The accepted Stage 7B
+The [Windows private replacement investigation](foundation/2026-10-26-windows-private-replacement-investigation.md) adds a diagnostic Windows test for Issue #23, without establishing the historical failure's root cause. Independent alpha acceptance is **NOT ESTABLISHED**. The accepted Stage 7B
 nonpublishing five-target candidate at main `59d174ef` retains its bounded
 archive/CI evidence, but the workspace is still versioned `0.24.14`; a complete
 classification of inherited identifiers, independent auth and user-state tests,

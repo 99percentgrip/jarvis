@@ -24,6 +24,7 @@ architecture, MSRV, and source-oracle checks.
   moves resolve to original frozen-hit paths; new upstream prose, unknown
   identifiers and historical-scope additions stay embargoed;
   the frozen naming baseline and all thirteen upstream patterns remain intact.
+  The Issue #23 diagnostic report admits registered technical paths and command identities only; unreviewed product prose remains blocked.
   The interrupted-turn migration repair admits only the complete shared-worker
   interrupted-stream marker prefix and reviewed quoted technical tokens in its
   owning report; an arbitrary product claim after the short marker must fail.
