@@ -33,3 +33,5 @@ Candidate execution: workflow 40217349974
 ## Executed checkpoint
 
 [Reconnaissance report](2026-10-26-migration-recon-execution.md) and its [pinned baseline](2026-10-26-migration-baseline-manifest.md) retain the current UNKNOWN inventory and failed exact-head matrix. This is not closure; no candidate acceptance or publication follows from these documents.
+
+[Classification/CI continuation](2026-10-26-migration-classification-ci-review-checkpoint.md) retains the current risk-prioritized v2 inventory, the exact-PR-head failure and the unavailable independent reviewer. Rule-based documentary triage is not production acceptance.

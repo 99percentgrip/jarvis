@@ -1,5 +1,16 @@
 # Migration Status
 
+## Independent-product audit continuation — 2026-10-26
+
+The [classification and CI review checkpoint](foundation/2026-10-26-migration-classification-ci-review-checkpoint.md)
+retains 1,069 UNKNOWN migration text files plus unreviewed nonmatching and
+binary surfaces. PR #21 is blocked by its exact-head Windows process-settlement
+failure; the separate interrupted-label PR #22 is draft, with final-head CI
+and independent review outstanding. The accepted Stage 7B candidate remains
+source-pinned to `59d174ef` and does not contain the proposed label repair.
+Current workspace version `0.24.14` is not a validated independent alpha
+version. Migration, experimental alpha and production acceptance remain open.
+
 ## Independent runtime migration — 2026-10-15
 
 Stage 3 runtime isolation is implemented on the dedicated feature branch and

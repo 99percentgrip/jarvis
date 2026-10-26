@@ -7,6 +7,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 ## Ownership
 
 - `2026-10-26-migration-recon-execution.md`, the baseline manifest and compressed identifier inventory own the source-pinned audit checkpoint; UNKNOWN findings and missing final-source gates remain open.
+- `2026-10-26-migration-classification-ci-review-checkpoint.md` owns the source-pinned v2 inventory triage and reviewed rule limits; its v2 compressed inventory, binary-candidate manifest and exact-head CI snapshot retain the supporting data without superseding v1 or approving unknown active paths.
 
 - `2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 shell notification red/green evidence; no candidate rerun is authorized.
 
