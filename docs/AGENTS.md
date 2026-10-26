@@ -7,7 +7,7 @@ Own durable project documentation and evidence-backed engineering records.
 ## Ownership
 
 - `foundation/2026-10-26-migration-recon-execution.md` owns the partial independent-migration audit, baseline and open gates; the audit plan remains open rather than claiming alpha completion.
-- `foundation/2026-10-26-migration-classification-ci-review-checkpoint.md` owns the versioned triage rules, PR #22 diff review limitations and exact-head CI snapshot; it is not independent approval or migration acceptance.
+- `foundation/2026-10-26-migration-classification-ci-review-checkpoint.md` owns v2 triage and historical CI. `foundation/2026-10-26-migration-phase3-execution.md` owns v3 direct-source decisions and interim sampling; `foundation/2026-10-26-migration-ci-final-settlement.md` owns final exact-head CI results. None is independent approval or migration acceptance.
 
 - `foundation/2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 Windows shell notification correction and native Windows receipts; candidate acceptance remains separate.
 
