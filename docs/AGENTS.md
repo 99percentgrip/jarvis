@@ -6,6 +6,8 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `foundation/2026-10-26-migration-recon-execution.md` owns the partial independent-migration audit, baseline and open gates; the audit plan remains open rather than claiming alpha completion.
+
 - `foundation/2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 Windows shell notification correction and native Windows receipts; candidate acceptance remains separate.
 
 - `foundation/2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md` owns Windows User PATH repair PR #20 and separate lossless merged-branch cleanup; native candidate acceptance remains separately gated.
