@@ -24,6 +24,9 @@ architecture, MSRV, and source-oracle checks.
   moves resolve to original frozen-hit paths; new upstream prose, unknown
   identifiers and historical-scope additions stay embargoed;
   the frozen naming baseline and all thirteen upstream patterns remain intact.
+  The interrupted-turn migration repair admits only the exact shared-worker
+  display marker and reviewed quoted technical tokens in its owning report;
+  unregistered product prose still fails the same baseline.
   Stage 7B adds only exact controller/storage technical identifiers and scoped receipt paths; no general prose exemption or baseline regeneration is permitted. The PR #11 PTY receipt admits its one recorded GitHub job-log endpoint; the candidate preflight receipt admits its three exact script filenames only within that owned document. Unknown names and upstream-brand prose remain rejected.
 
 

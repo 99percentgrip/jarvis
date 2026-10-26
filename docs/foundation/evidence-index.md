@@ -1,4 +1,4 @@
-- [Jarvis interrupted-turn identity repair](2026-10-26-migration-interruption-identity-repair.md) — scoped ACP/TUI/shared-worker user-facing prefix correction and Linux-local regressions; exact-head/native gates remain open.
+- [Interrupted-turn identity repair](2026-10-26-migration-interruption-identity-repair.md) — scoped ACP/TUI/shared-worker user-facing prefix correction and Linux-local regressions; exact-head/native gates remain open.
 - [Stage 7B native acceptance reverification](2026-10-21-stage7b-native-acceptance-reverification.md) — 165/165 exact local cases and the feature-enabled ACP governor process case passed; hosted five-target candidate remains unexecuted.
 - [Stage 7B local continuation closeout](2026-10-20-stage7b-local-closeout.md) — earlier ownership/lease receipts and the then-blocked D-Bus attempt; superseded for native acceptance by the reverification above.
 - [Stage 7B storage ownership hardening](2026-10-20-stage7b-storage-ownership-hardening.md) — red-first unmarked-root and metadata-redirection refusals, restart-safe atomic writes, scoped library verification; candidate remains nonpublishing and incomplete.

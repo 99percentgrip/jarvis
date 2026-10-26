@@ -1,16 +1,16 @@
 # Migration Status
 
-## Jarvis migration audit checkpoint — 2026-10-26
+## Independent migration audit checkpoint — 2026-10-26
 
 Independent alpha acceptance is **NOT ESTABLISHED**. The accepted Stage 7B
 nonpublishing five-target candidate at main `59d174ef` retains its bounded
-archive/CI evidence, but Jarvis is still versioned `0.24.14`; a complete
+archive/CI evidence, but the workspace is still versioned `0.24.14`; a complete
 classification of inherited identifiers, independent auth and user-state tests,
 and final-source exact-commit CI/native acceptance remain open. The scoped
 [interrupted-turn identity correction](foundation/2026-10-26-migration-interruption-identity-repair.md)
 fixes three user-facing output paths on a separate repair branch; it does not
 retroactively change that accepted candidate. Historical Vesper release records
-below are not Jarvis publication evidence.
+below are not independent publication evidence.
 
 ## Independent runtime migration — 2026-10-15
 

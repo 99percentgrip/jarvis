@@ -2163,7 +2163,7 @@ mod tests {
     use jarvis_agent::ToolService;
 
     #[test]
-    fn interrupted_worker_result_uses_jarvis_identity_and_retains_partial_text() {
+    fn interrupted_worker_result_uses_owned_identity_and_retains_partial_text() {
         let outcome = AgentTurnOutcome::Interrupted {
             assistant_content: vec![ContentPart::Text(
                 ContentText::new("partial worker answer").unwrap(),
