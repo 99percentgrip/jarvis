@@ -1579,7 +1579,7 @@ fn outcome_text(outcome: &AgentTurnOutcome) -> String {
                 .collect::<Vec<_>>()
                 .join("\n");
             let suffix = format!(
-                "[Agent Vesper: provider stream interrupted ({cause:?}); tool_call_started={tool_call_started}.]"
+                "[Jarvis: provider stream interrupted ({cause:?}); tool_call_started={tool_call_started}.]"
             );
             if partial.is_empty() {
                 suffix
@@ -2161,6 +2161,24 @@ fn execute_tui_tool(
 mod tests {
     use super::*;
     use jarvis_agent::ToolService;
+
+    #[test]
+    fn interrupted_worker_result_uses_jarvis_identity_and_retains_partial_text() {
+        let outcome = AgentTurnOutcome::Interrupted {
+            assistant_content: vec![ContentPart::Text(
+                ContentText::new("partial worker answer").unwrap(),
+            )],
+            cause: jarvis_domain::StreamInterruptionCause::ReadInactivity,
+            tool_call_started: true,
+            iterations: 1,
+            tool_results: Vec::new(),
+            plan: None,
+        };
+        let rendered = outcome_text(&outcome);
+        assert!(rendered.starts_with("partial worker answer"));
+        assert!(rendered.contains("[Jarvis: provider stream interrupted"));
+        assert!(!rendered.contains("[Agent Vesper:"));
+    }
 
     #[test]
     fn memory_stores_read_the_cross_project_global_skill_layer() {

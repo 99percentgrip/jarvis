@@ -6,6 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-26-migration-interruption-identity-repair.md` owns the three-host displayed-label correction, local regressions and remaining exact-head/native acceptance boundary.
+
 - `2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 shell notification red/green evidence; no candidate rerun is authorized.
 
 - `2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md` owns red/green Windows PATH repair and safely retained worktree/branch evidence; no candidate rerun follows.

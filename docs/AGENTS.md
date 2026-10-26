@@ -6,6 +6,8 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
+- `migration-status.md` owns the current independent Jarvis checkpoint above inherited Vesper release history; `foundation/2026-10-26-migration-interruption-identity-repair.md` owns the scoped interrupted-output label evidence, not alpha clearance.
+
 - `foundation/2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 Windows shell notification correction and native Windows receipts; candidate acceptance remains separate.
 
 - `foundation/2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md` owns Windows User PATH repair PR #20 and separate lossless merged-branch cleanup; native candidate acceptance remains separately gated.
