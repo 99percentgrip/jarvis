@@ -125,8 +125,16 @@ pub fn validate_production_credential_overrides() -> Result<(), CredentialStoreE
         "JARVIS_LMSTUDIO_CREDENTIALS_PATH",
     ] {
         if let Some(path) = std::env::var_os(name) {
-            SecureCredentialStore::new("99percentgrip.jarvis", PathBuf::from(path))
-                .validate_application_owner()?;
+            let store = SecureCredentialStore::new("99percentgrip.jarvis", PathBuf::from(path));
+            match store.validate_application_owner() {
+                Ok(()) => {}
+                // An explicitly malformed private vault is an inert signed-out
+                // blocker in existing native fixtures. The provider still
+                // refuses it at credential resolution; it cannot authorize a
+                // native-keyring fallback or a credential write.
+                Err(CredentialStoreError::Serialize) => {}
+                Err(error) => return Err(error),
+            }
         }
     }
     Ok(())

@@ -51,6 +51,26 @@ fn foreign_credential_overrides_are_refused_before_private_root_initialization()
 }
 
 #[test]
+fn malformed_private_blocker_stays_inert_and_is_not_adopted() {
+    let fixture = tempfile::tempdir().unwrap();
+    let path = fixture.path().join("invalid.json");
+    let blocker = br#"{"credentials":null}"#;
+    write_private(&path, blocker);
+    let output = launch(&fixture, "JARVIS_CREDENTIALS_PATH", &path);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), blocker);
+    let store = jarvis_auth::SecureCredentialStore::new("99percentgrip.jarvis", path);
+    assert!(matches!(
+        store.load(jarvis_auth::CredentialId::new("zai", "api-key")),
+        Err(jarvis_auth::CredentialStoreError::Serialize)
+    ));
+}
+
+#[test]
 fn owned_credential_override_allows_clean_startup_without_rewriting_vault() {
     let fixture = tempfile::tempdir().unwrap();
     let path = fixture.path().join("credentials.json");

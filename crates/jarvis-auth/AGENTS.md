@@ -11,7 +11,7 @@ require Secret Service rather than automatic plaintext fallback.
 - `src/lib.rs` owns credential identifiers, validation, native-store access,
   strict private-file persistence, secret-free Windows cross-process leases,
   and secret-safe errors/receipts. Its read-only production override preflight
-  validates explicit vault ownership before either host initializes private roots.
+  validates explicit vault ownership before either host initializes private roots. Permission-verified malformed vault blockers may pass *startup only*: credential read and write still refuse them; well-formed foreign records always refuse at preflight.
 - `src/native_records.rs` owns Windows size-bounded native records, immutable
   generations, readback/integrity, interruption recovery and sign-out tombstones.
 - `src/native_store.rs` selects explicit `keyring-core` native stores without
