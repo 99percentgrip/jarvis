@@ -1,4 +1,4 @@
-# Agent Vesper TUI
+# Jarvis TUI
 
 ## Purpose
 

@@ -1,15 +1,22 @@
 # Migration Status
 
-## Independent-product audit continuation — 2026-10-26
+## Independent migration audit checkpoint — 2026-10-26
 
-The [classification and CI review checkpoint](foundation/2026-10-26-migration-classification-ci-review-checkpoint.md)
-retains 1,069 UNKNOWN migration text files plus unreviewed nonmatching and
-binary surfaces. PR #21 is blocked by its exact-head Windows process-settlement
-failure; the separate interrupted-label PR #22 is draft, with final-head CI
-and independent review outstanding. The accepted Stage 7B candidate remains
-source-pinned to `59d174ef` and does not contain the proposed label repair.
-Current workspace version `0.24.14` is not a validated independent alpha
-version. Migration, experimental alpha and production acceptance remain open.
+Independent alpha acceptance is **NOT ESTABLISHED**. The accepted Stage 7B
+nonpublishing five-target candidate at `59d174ef` retains only its exact-source
+archive/CI evidence. The separate [interrupted-turn identity repair](foundation/2026-10-26-migration-interruption-identity-repair.md)
+merged as `1e01c4ed`; it does not retroactively change that earlier candidate.
+The [source-pinned v3 inventory](foundation/2026-10-26-migration-phase3-execution.md)
+still has 1,067 UNKNOWN text-matched files and 110 separate binary leads.
+Both PR #21 and PR #22 passed 13/13 pre-merge checks on their recorded heads;
+PR #21 remains draft and must be retested after reconciliation. The original
+Windows command-settlement failure is historical and its subsequent pass does
+not establish its cause. Issue #23 tracks the separate Windows private-state
+replacement failure on the post-merge candidate (attempt 1), whose rerun passed
+(attempt 2) without establishing cause. Workspace version remains `0.24.14`;
+independent auth, user-state and final-source native candidate acceptance remain
+open. Historical Vesper release records below are not independent publication
+evidence.
 
 ## Independent runtime migration — 2026-10-15
 

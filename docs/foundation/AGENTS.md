@@ -6,8 +6,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
-- `2026-10-26-migration-recon-execution.md`, the baseline manifest and compressed identifier inventory own the source-pinned audit checkpoint; UNKNOWN findings and missing final-source gates remain open.
-- `2026-10-26-migration-classification-ci-review-checkpoint.md` owns source-pinned v2 triage and historical CI. `2026-10-26-migration-phase3-execution.md` owns v3's narrow direct-source decisions and interim CI snapshot; `2026-10-26-migration-ci-final-settlement.md` owns the final 13/13 exact-head GitHub check receipts. None supersedes historical failures, constitutes independent review, or approves unresolved active paths.
+- `2026-10-26-migration-recon-execution.md` and baseline inventory own source-pinned reconnaissance. `2026-10-26-migration-classification-ci-review-checkpoint.md` owns v2 triage and historical CI; `2026-10-26-migration-phase3-execution.md` owns v3 direct-source decisions and interim CI; `2026-10-26-migration-ci-final-settlement.md` owns both PRs' pre-merge 13/13 exact-head CI. `2026-10-26-migration-interruption-identity-repair.md` and `2026-10-26-migration-pr22-postmerge-evidence.md` own the separate label fix and integration record. Preserve failed attempts and unresolved active paths; none proves final migration acceptance.
 
 - `2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 shell notification red/green evidence; no candidate rerun is authorized.
 

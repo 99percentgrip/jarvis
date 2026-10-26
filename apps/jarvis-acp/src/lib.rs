@@ -2840,7 +2840,7 @@ fn interrupted_outcome_text(
     if partial.is_empty() {
         reason
     } else {
-        format!("{partial}\n\n[Agent Vesper: {reason}]")
+        format!("{partial}\n\n[Jarvis: {reason}]")
     }
 }
 
@@ -4107,6 +4107,8 @@ mod tests {
         assert!(text.starts_with("partial answer"));
         assert!(text.contains("ReadInactivity"));
         assert!(text.contains("tool call had started"));
+        assert!(text.contains("[Jarvis: Provider stream interrupted"));
+        assert!(!text.contains("[Agent Vesper:"));
     }
 
     #[test]

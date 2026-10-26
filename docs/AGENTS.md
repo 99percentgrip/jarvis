@@ -6,8 +6,8 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
-- `foundation/2026-10-26-migration-recon-execution.md` owns the partial independent-migration audit, baseline and open gates; the audit plan remains open rather than claiming alpha completion.
-- `foundation/2026-10-26-migration-classification-ci-review-checkpoint.md` owns v2 triage and historical CI. `foundation/2026-10-26-migration-phase3-execution.md` owns v3 direct-source decisions and interim sampling; `foundation/2026-10-26-migration-ci-final-settlement.md` owns final exact-head CI results. None is independent approval or migration acceptance.
+- `migration-status.md` owns current independent-product status above inherited Vesper release history.
+- `foundation/2026-10-26-migration-recon-execution.md` owns the partial audit baseline. `foundation/2026-10-26-migration-classification-ci-review-checkpoint.md` owns v2 triage and historical CI; `foundation/2026-10-26-migration-phase3-execution.md` owns v3 decisions and interim CI; `foundation/2026-10-26-migration-ci-final-settlement.md` owns final exact-head pre-merge CI. `foundation/2026-10-26-migration-pr22-postmerge-evidence.md` and `foundation/2026-10-26-migration-interruption-identity-repair.md` own the separate merged label repair and bounded integration receipts. None is full migration acceptance.
 
 - `foundation/2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 Windows shell notification correction and native Windows receipts; candidate acceptance remains separate.
 
