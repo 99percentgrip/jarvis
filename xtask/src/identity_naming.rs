@@ -26,6 +26,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-20-stage6-distribution.md",
     "docs/foundation/evidence-index.md",
     "docs/foundation/2026-10-26-migration-interruption-identity-repair.md",
+    "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md",
     "docs/foundation/2026-10-20-stage7a-ci-optimization.md",
     "docs/foundation/2026-10-20-stage7b-independent-candidate-continuation.md",
     "docs/foundation/2026-10-20-stage7b-local-closeout.md",
@@ -209,6 +210,11 @@ pub fn owned_line(path: &str, line: &str) -> bool {
             &scrubbed,
             "repos/99percentgrip/jarvis/actions/jobs/119437025291/logs",
         );
+    }
+    if path == "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md" {
+        // Exact reviewable PR receipt, not a general URL or prose exemption.
+        scrubbed =
+            scrub_technical_token(&scrubbed, "https://github.com/99percentgrip/jarvis/pull/25");
     }
     if path.starts_with("docs/foundation/2026-10-21-stage7b-") {
         scrubbed = scrub_technical_token(&scrubbed, "/home/Alex/Projects/jarvis/target");

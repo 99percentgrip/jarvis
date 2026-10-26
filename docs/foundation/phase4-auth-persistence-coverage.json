@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7",
-  "scope": "Reachable production authentication and private-state consumers; results apply only to the indicated platform and command. NULL evidence commit denotes phase-branch candidate until the pushed SHA is recorded in the execution report.",
+  "scope": "Scoped matrix. Linux local evidence at pushed PR #25 head; native tests and broader consumers remain untested. Post-push receipts in the linked local execution report.",
   "capabilities": [
     {
       "capability": "Explicit GLM/OpenAI/xAI/LM Studio credential override ownership preflight",
@@ -15,7 +15,7 @@
       "platform": "Linux",
       "result": "PASS",
       "evidence": "cargo test -p jarvis-acp --test phase4_credential_boundary (2 passed); red-first foreign override failed on baseline before correction",
-      "evidence_commit": null
+      "evidence_commit": "42f98b6cb9dbc8eb484539be833e01ad56e15219"
     },
     {
       "capability": "Explicit credential override ownership preflight on native macOS and Windows",
@@ -29,7 +29,7 @@
       "platform": "macOS and Windows",
       "result": "UNTESTED",
       "evidence": "phase4_credential_boundary is included in default Cargo integration tests; exact-head native CI pending",
-      "evidence_commit": null
+      "evidence_commit": "42f98b6cb9dbc8eb484539be833e01ad56e15219"
     },
     {
       "capability": "ACP session ownership, legacy knob isolation and missing-root read",
