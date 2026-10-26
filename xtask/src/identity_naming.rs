@@ -135,7 +135,7 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     // Exact user-facing interrupted-turn marker in the shared worker renderer;
     // do not exempt the brand stem in prose or other files.
     if path == "crates/jarvis-harness/src/lib.rs" {
-        scrubbed = scrub_technical_token(&scrubbed, "[Jarvis:");
+        scrubbed = scrub_technical_token(&scrubbed, "[Jarvis: provider stream interrupted");
     }
     const STAGE6_INSTALLER_TOKENS: &[&str] = &[
         "JARVIS_PACKAGE_SHA256",
@@ -304,6 +304,10 @@ mod tests {
         assert!(owned_line(
             "crates/jarvis-harness/src/lib.rs",
             "format!(\"[Jarvis: provider stream interrupted\")"
+        ));
+        assert!(!owned_line(
+            "crates/jarvis-harness/src/lib.rs",
+            "format!(\"[Jarvis: arbitrary product claim\")"
         ));
         assert!(!owned_line(
             "crates/jarvis-harness/src/lib.rs",
