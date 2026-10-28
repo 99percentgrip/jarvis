@@ -132,6 +132,8 @@ excluded from shipping builds and separately tracked.
 
 Phase 4B's bounded follow-up [checkpoint crash-recovery report](foundation/2026-10-28-phase4b-checkpoint-torn-append.md) and [trace matrix](foundation/phase4b-runtime-recovery-matrix.json) cover one source-reproduced lost-acknowledgment defect through the TUI checkpoint bundle; native exact-head acceptance and remaining credential/session/coexistence cases are separate gates, not completed by this repair.
 
+The [Phase 4C failed-write report](foundation/2026-10-28-phase4c-session-cron-failed-writes.md) covers only Linux-local session/cron write-error cache consistency; the [coverage matrix](foundation/phase4b-runtime-recovery-matrix.json) retains open native, hosted and credential acceptance. This does not close Phase 4B.
+
 Stage 4 requires separate authorization. No automatic Vesper import/replay,
 credential sharing, installer execution, registry migration, release activation,
 tag or public artifact is delivered by this stage.

@@ -21,7 +21,7 @@ architecture, MSRV, and source-oracle checks.
   output and external code boundaries. Identity custom-build targets are refused.
 - `src/identity_naming.rs` permits only registered technical identifiers in active source and
   reviewed quoted identity declarations in owning documents. The Phase 4B checkpoint
-  report is an explicitly registered owning document for technical command/path
+  report and Phase 4C session/cron report are explicitly registered owning documents for technical command/path
   receipts; its registration does not permit unregistered product prose. Registered directory
   moves resolve to original frozen-hit paths; new upstream prose, unknown
   identifiers and historical-scope additions stay embargoed;

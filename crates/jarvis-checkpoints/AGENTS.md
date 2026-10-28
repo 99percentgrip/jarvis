@@ -67,6 +67,7 @@ exits — no `@contextmanager` wrapper needed.
   - `MAX_RETENTION_COUNT` checkpoints kept on disk (default 50, hard 100)
   - `MAX_LINEAGE_DEPTH` session chain length (default 100)
   - `MAX_CRON_JOBS` (default 500)
+- Session creation stages the child and parent status in one atomic rewrite. Cron and session rewrites publish cached mutations only after successful persistence; failed appends do not consume in-memory IDs. These guarantees are process-local, not multi-process transactions.
 - Shared JSONL append separates a fresh record from an unterminated crash
   suffix before acknowledging the append; malformed prior lines remain
   skippable on reload. This does not make multi-process appends atomic.
@@ -103,7 +104,7 @@ exits — no `@contextmanager` wrapper needed.
 
 ## Verification
 
-- `cargo test -p jarvis-checkpoints` — unit + integration tests:
+- `cargo test -p jarvis-checkpoints` — unit + integration tests, including `tests/failed_mutations.rs` for disposable failed-write rollback and retry IDs:
   file-state restoration round-trips, `MAX_RETENTION_COUNT` unlinking,
   RAII discipline (implicit via Rust but asserted via scoped helpers),
   bounds enforcement, sensitive-file refusal, ignored-tree refusal,

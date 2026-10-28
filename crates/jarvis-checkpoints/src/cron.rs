@@ -30,7 +30,7 @@ pub struct CronRegistry {
     state: Mutex<State>,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct State {
     entries: Vec<CronEntry>,
     next_id: u64,
@@ -121,7 +121,6 @@ impl CronRegistry {
             return Err(CheckpointError::RetentionCapReached);
         }
         let id = format!("cron-{}", state.next_id);
-        state.next_id = state.next_id.saturating_add(1);
         let entry = CronEntry {
             id,
             name: name.to_string(),
@@ -138,6 +137,7 @@ impl CronRegistry {
         entry.validate()?;
         let serialized = serde_json::to_string(&entry)?;
         append_line(&Self::log_path(&self.root), &serialized)?;
+        state.next_id = state.next_id.saturating_add(1);
         state.entries.push(entry.clone());
         Ok(entry)
     }
@@ -145,18 +145,20 @@ impl CronRegistry {
     /// Removes the entry with the given id. Idempotent.
     pub fn forget(&self, id: &str) -> Result<bool, CheckpointError> {
         let mut state = self.state.lock().expect("cron mutex poisoned");
-        let before = state.entries.len();
-        state.entries.retain(|entry| entry.id != id);
-        let removed = before - state.entries.len();
+        let mut staged = state.clone();
+        let before = staged.entries.len();
+        staged.entries.retain(|entry| entry.id != id);
+        let removed = before - staged.entries.len();
         if removed == 0 {
             return Ok(false);
         }
         let mut buffer = String::new();
-        for entry in &state.entries {
+        for entry in &staged.entries {
             buffer.push_str(&serde_json::to_string(entry)?);
             buffer.push('\n');
         }
         write_atomic(&Self::log_path(&self.root), buffer.as_bytes())?;
+        *state = staged;
         Ok(true)
     }
 
@@ -182,7 +184,8 @@ impl CronRegistry {
         schedule: Option<&str>,
     ) -> Result<Option<CronEntry>, CheckpointError> {
         let mut state = self.state.lock().expect("cron mutex poisoned");
-        let Some(entry) = state.entries.iter_mut().find(|entry| entry.id == id) else {
+        let mut staged = state.clone();
+        let Some(entry) = staged.entries.iter_mut().find(|entry| entry.id == id) else {
             return Ok(None);
         };
         if let Some(name) = name {
@@ -196,7 +199,8 @@ impl CronRegistry {
         }
         entry.validate()?;
         let updated = entry.clone();
-        rewrite(&self.root, &state.entries)?;
+        rewrite(&self.root, &staged.entries)?;
+        *state = staged;
         Ok(Some(updated))
     }
 
@@ -207,12 +211,14 @@ impl CronRegistry {
         enabled: bool,
     ) -> Result<Option<CronEntry>, CheckpointError> {
         let mut state = self.state.lock().expect("cron mutex poisoned");
-        let Some(entry) = state.entries.iter_mut().find(|entry| entry.id == id) else {
+        let mut staged = state.clone();
+        let Some(entry) = staged.entries.iter_mut().find(|entry| entry.id == id) else {
             return Ok(None);
         };
         entry.enabled = enabled;
         let updated = entry.clone();
-        rewrite(&self.root, &state.entries)?;
+        rewrite(&self.root, &staged.entries)?;
+        *state = staged;
         Ok(Some(updated))
     }
 
@@ -221,9 +227,10 @@ impl CronRegistry {
     /// operator-triggered run but still cannot duplicate a live claim.
     pub fn claim_due(&self, now: SystemTime, force: bool) -> Result<Vec<CronRun>, CheckpointError> {
         let mut state = self.state.lock().expect("cron mutex poisoned");
+        let mut staged = state.clone();
         let mut changed = false;
         let mut runs = Vec::new();
-        for entry in &mut state.entries {
+        for entry in &mut staged.entries {
             if !entry.enabled {
                 continue;
             }
@@ -262,7 +269,8 @@ impl CronRegistry {
             changed = true;
         }
         if changed {
-            rewrite(&self.root, &state.entries)?;
+            rewrite(&self.root, &staged.entries)?;
+            *state = staged;
         }
         Ok(runs)
     }
@@ -275,7 +283,8 @@ impl CronRegistry {
         now: SystemTime,
     ) -> Result<bool, CheckpointError> {
         let mut state = self.state.lock().expect("cron mutex poisoned");
-        let Some(entry) = state.entries.iter_mut().find(|entry| entry.id == id) else {
+        let mut staged = state.clone();
+        let Some(entry) = staged.entries.iter_mut().find(|entry| entry.id == id) else {
             return Err(CheckpointError::CronJobNotFound(id.to_owned()));
         };
         let Some(claim) = entry.claim.as_mut() else {
@@ -285,7 +294,8 @@ impl CronRegistry {
             return Ok(false);
         }
         claim.expires_at = now + Duration::from_secs(CRON_CLAIM_TTL_SECONDS);
-        rewrite(&self.root, &state.entries)?;
+        rewrite(&self.root, &staged.entries)?;
+        *state = staged;
         Ok(true)
     }
 
@@ -302,7 +312,8 @@ impl CronRegistry {
             return Err(CheckpointError::BoundsViolated("cron status"));
         }
         let mut state = self.state.lock().expect("cron mutex poisoned");
-        let Some(entry) = state.entries.iter_mut().find(|entry| entry.id == id) else {
+        let mut staged = state.clone();
+        let Some(entry) = staged.entries.iter_mut().find(|entry| entry.id == id) else {
             return Err(CheckpointError::CronJobNotFound(id.to_owned()));
         };
         if entry.claim.as_ref().map(|claim| claim.token.as_str()) != Some(token) {
@@ -321,7 +332,8 @@ impl CronRegistry {
             entry.next_run_at = None;
         }
         let updated = entry.clone();
-        rewrite(&self.root, &state.entries)?;
+        rewrite(&self.root, &staged.entries)?;
+        *state = staged;
         Ok(updated)
     }
 

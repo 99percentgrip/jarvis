@@ -6,6 +6,8 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-28-phase4c-session-cron-failed-writes.md` owns the bounded red-first failed-write cache-consistency repair and local receipts; the Phase 4B coverage matrix also tracks native and hosted open cases.
+
 - `2026-10-28-phase4b-checkpoint-torn-append.md` owns the bounded Phase 4B source-reproduced checkpoint JSONL recovery defect, focused TUI consumer test and exact-head/native acceptance status; `phase4b-runtime-recovery-matrix.json` tracks scope-specific covered and open credential/session/coexistence cases without claiming full Phase 4B completion.
 
 - `2026-10-26-migration-interruption-identity-repair.md` owns the three-host displayed-label correction, local regressions and remaining exact-head/native acceptance boundary.
