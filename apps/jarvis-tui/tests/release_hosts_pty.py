@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from settings_pty import Host
+from settings_pty import Host, fixture_owned_directory
 
 
 def seed(root, sha, published=False):
@@ -151,8 +151,13 @@ def run_provider(tui_binary, acp_binary, selected, dormant=False):
         subprocess.run(['git','remote','add','origin','https://github.com/fixture/rrc-hosts'],cwd=root,check=True)
         sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
         ledger=seed(root,sha)
-        glm=root/'zai-vault.json';glm.write_text('{"credentials":null}');glm.chmod(0o600)
-        vault=root/'vault.json';vault.write_text(json.dumps(dict(application='99percentgrip.jarvis', credentials={name:{'native-auth':json.dumps(dict(mode='signed-out'))} for name in ['openai','xai']})));vault.chmod(0o600)
+        # Windows chmod does not strip inherited broad DACL entries. Declare a
+        # private, marked fixture parent BEFORE creating the synthetic vaults;
+        # the files inherit its owner-only ACL, matching the first-launch fixture.
+        credential_root = root / 'fixture-credentials'
+        fixture_owned_directory(credential_root)
+        glm=credential_root/'zai-vault.json';glm.write_text('{"credentials":null}');glm.chmod(0o600)
+        vault=credential_root/'vault.json';vault.write_text(json.dumps(dict(application='99percentgrip.jarvis', credentials={name:{'native-auth':json.dumps(dict(mode='signed-out'))} for name in ['openai','xai']})));vault.chmod(0o600)
         listener=socket.socket();listener.bind(('127.0.0.1',0));listener.listen();listener.settimeout(.05)
         extra=dict(ZAI_API_KEY='',Z_AI_API_KEY='',JARVIS_PROVIDER=selected,
                    JARVIS_CREDENTIALS_PATH=str(glm),
