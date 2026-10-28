@@ -65,8 +65,11 @@ Verify terminal interaction through the production TUI binary with isolated stat
   preserving read-only user-project CI status. It observes one isolated RRC ledger through real TUI/ACP
   processes for all four selected, signed-out adapters: partial matrix, blocked no-write retry, Published/main degraded,
   and cross-host cancellation preserving epoch/run/tag/assets. ACP pipe reading uses a bounded queue on every OS; Windows identities retain
-  the native canonical path prefix. Synthetic persisted
-  evidence and signed-out vaults must never dispatch a provider request.
+  the native canonical path prefix. ACP startup failures retain bounded file-backed
+  stderr and report only allowlisted error classes and process exit codes; a deadline
+  terminates and reaps the child. `test_release_hosts_acp_diagnostics.py` pins
+  secret-safe classification and owned-child settlement on each native lane.
+  Synthetic persisted evidence and signed-out vaults must never dispatch a provider request.
   Seed the ledger identity and filename from the canonical Git common directory,
   matching both production hosts. Published mutation fixtures include the required
   provenance/report and intended-commit collections, even when synthetic and empty.

@@ -2,7 +2,7 @@
 
 ## Objective and disposition
 
-Isolate actual production credential and private-state consumers from foreign state. This is **BLOCKED** for full Phase 4 acceptance; one real startup preflight defect is corrected in an isolated branch, with local Linux red/green evidence, but native exact-head acceptance, broad consumer coverage and independent review remain outstanding. No production subscription authorization, legacy import, release or data migration is authorized here. The machine-readable scoped matrix is [phase4-auth-persistence-coverage.json](phase4-auth-persistence-coverage.json); Candidate rows bind to current pushed PR #25 head `a2605a36bd8dc76e49fc67b10578a471e831dcfd`; they do not claim native or complete acceptance.
+Isolate actual production credential and private-state consumers from foreign state. This is **BLOCKED** for full Phase 4 acceptance; one real startup preflight defect is corrected in an isolated branch, with local Linux red/green evidence, but native exact-head acceptance, broad consumer coverage and independent review remain outstanding. No production subscription authorization, legacy import, release or data migration is authorized here. The machine-readable scoped matrix is [phase4-auth-persistence-coverage.json](phase4-auth-persistence-coverage.json); Candidate rows bind to earlier pushed PR #25 head `a2605a36bd8dc76e49fc67b10578a471e831dcfd`; they do not claim native or complete acceptance.
 
 ## Methods and source paths
 

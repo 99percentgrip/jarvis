@@ -56,9 +56,17 @@ def seed(root, sha, published=False):
 
 class Acp:
     def __init__(self, binary, root, env):
-        binary = str(Path(binary).resolve())
-        self.child = subprocess.Popen([binary], cwd=root, env=env, stdin=subprocess.PIPE,
-                                      stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        command = ([str(Path(part).resolve()) for part in binary]
+                   if isinstance(binary, (tuple, list)) else [str(Path(binary).resolve())])
+        # A file, not an undrained pipe: startup diagnostics cannot block the
+        # child. Only allowlisted error classes and the exit code reach CI logs.
+        self.stderr = tempfile.TemporaryFile()
+        try:
+            self.child = subprocess.Popen(command, cwd=root, env=env, stdin=subprocess.PIPE,
+                                          stdout=subprocess.PIPE, stderr=self.stderr)
+        except BaseException:
+            self.stderr.close()
+            raise
         self.rows = queue.Queue()
         def read_rows():
             for row in self.child.stdout:
@@ -68,22 +76,48 @@ class Acp:
         self.reader.start()
         self.messages = []
 
+    def failure(self, reason):
+        if self.child.poll() is None:
+            self.child.terminate()
+            try:
+                self.child.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.child.kill()
+                self.child.wait(timeout=5)
+        self.stderr.flush()
+        self.stderr.seek(0)
+        # Never print stderr itself: startup logging may contain private paths.
+        data = self.stderr.read(65536)
+        categories = {
+            b'Private application storage ownership refused': 'application ownership',
+            b'Project-private storage is unowned or redirected': 'project ownership',
+            b'Private credential ownership refused': 'credential ownership',
+            b'No such file or directory': 'missing file',
+            b'The system cannot find the path specified': 'missing path',
+        }
+        kind = next((label for marker, label in categories.items() if marker in data), 'unclassified')
+        return AssertionError(f'ACP {reason}; exit={self.child.returncode}; stderr_class={kind}; stderr_bytes_at_most={len(data)}')
+
     def rpc(self, identity, method, params):
-        self.child.stdin.write((json.dumps(dict(jsonrpc='2.0', id=identity, method=method, params=params))+'\n').encode())
-        self.child.stdin.flush()
+        try:
+            self.child.stdin.write((json.dumps(dict(jsonrpc='2.0', id=identity, method=method, params=params))+'\n').encode())
+            self.child.stdin.flush()
+        except BrokenPipeError:
+            raise self.failure('closed input before response') from None
         deadline = time.monotonic()+30
         while time.monotonic() < deadline:
             try:
                 row = self.rows.get(timeout=max(.001, deadline-time.monotonic()))
             except queue.Empty:
                 break
-            assert row is not None, 'ACP ended before response'
+            if row is None:
+                raise self.failure('ended before response')
             value = json.loads(row)
             self.messages.append(value)
             if value.get('id') == identity:
                 assert 'error' not in value, value
                 return value
-        raise AssertionError('ACP response deadline exceeded')
+        raise self.failure('response deadline exceeded')
 
     def prompt(self, identity, session, text):
         start=len(self.messages)
@@ -94,11 +128,18 @@ class Acp:
     def close(self):
         if self.child.poll() is None:
             self.child.terminate()
-        self.child.wait(timeout=10)
-        self.reader.join(timeout=5)
-        assert not self.reader.is_alive(), "ACP stdout reader did not settle"
-        self.child.stdin.close()
-        self.child.stdout.close()
+        try:
+            try:
+                self.child.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.child.kill()
+                self.child.wait(timeout=5)
+            self.reader.join(timeout=5)
+            assert not self.reader.is_alive(), "ACP stdout reader did not settle"
+        finally:
+            self.child.stdin.close()
+            self.child.stdout.close()
+            self.stderr.close()
 
 
 def run_provider(tui_binary, acp_binary, selected, dormant=False):
