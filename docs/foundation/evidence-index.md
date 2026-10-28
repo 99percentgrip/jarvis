@@ -11,6 +11,8 @@
 
 # Foundation Evidence Index
 
+- [Phase 4B bounded checkpoint crash recovery](2026-10-28-phase4b-checkpoint-torn-append.md) — torn JSONL append lost an acknowledged checkpoint after restart; red-first public store regression, owned TUI bundle/foreign-state fixture and [coverage matrix](phase4b-runtime-recovery-matrix.json). Native exact-head CI and broader Phase 4B acceptance remain open.
+
 - [Stage 7B PR #20 environment notification correction](2026-10-25-stage7b-windows-environment-notification-correction.md) — real-window broadcast regression, Windows red-first failure and follow-up verification; native candidate acceptance remains separate.
 
 - [Stage 7B Windows PATH repair and branch cleanup](2026-10-25-stage7b-windows-path-repair-and-branch-cleanup.md) — Windows red regression, focused PR #20 PATH ownership correction and independently verified branch cleanup; native candidate acceptance remains separate.

@@ -18434,6 +18434,70 @@ mod tests {
     }
 
     #[test]
+    fn owned_checkpoint_bundle_recovers_after_torn_record_without_adopting_foreign_state() {
+        let temp = tempfile::tempdir().unwrap();
+        let foreign = temp.path().join("vesper-checkpoints");
+        std::fs::create_dir(&foreign).unwrap();
+        std::fs::write(foreign.join("foreign-state"), b"synthetic foreign state").unwrap();
+        let foreign_before = std::fs::read(foreign.join("foreign-state")).unwrap();
+        let root = temp.path().join("jarvis-checkpoints");
+        let workspace = temp.path().join("project");
+        std::fs::create_dir(&workspace).unwrap();
+        std::fs::write(workspace.join("example.txt"), b"first").unwrap();
+        let stores = CheckpointStores::open_at(root.clone());
+        let first = stores
+            .ledger
+            .as_ref()
+            .unwrap()
+            .create(
+                "sess-1",
+                None,
+                jarvis_checkpoints::CheckpointKind::Manual,
+                None,
+                &workspace,
+            )
+            .unwrap();
+        drop(stores);
+        use std::io::Write;
+        std::fs::OpenOptions::new()
+            .append(true)
+            .open(root.join("checkpoints.jsonl"))
+            .unwrap()
+            .write_all(b"{\"id\":\"interrupted")
+            .unwrap();
+        let stores = CheckpointStores::open_at(root.clone());
+        let second = stores
+            .ledger
+            .as_ref()
+            .unwrap()
+            .create(
+                "sess-1",
+                None,
+                jarvis_checkpoints::CheckpointKind::Manual,
+                None,
+                &workspace,
+            )
+            .unwrap();
+        drop(stores);
+        let stores = CheckpointStores::open_at(root);
+        let ledger = stores.ledger.as_ref().unwrap();
+        assert_eq!(ledger.list().len(), 2);
+        assert!(ledger.get(&first.id).is_some());
+        assert!(ledger.get(&second.id).is_some());
+        std::fs::write(workspace.join("example.txt"), b"changed").unwrap();
+        assert_eq!(ledger.restore(&second.id, &workspace).unwrap(), 1);
+        assert_eq!(
+            std::fs::read(workspace.join("example.txt")).unwrap(),
+            b"first"
+        );
+        assert_eq!(
+            std::fs::read(foreign.join("foreign-state")).unwrap(),
+            foreign_before
+        );
+        assert_eq!(std::fs::read_dir(&foreign).unwrap().count(), 1);
+    }
+
+    #[test]
     fn private_publisher_records_refuse_unowned_storage_and_reload_owned_state() {
         let foreign = tempfile::tempdir().unwrap();
         let entry = jarvis_mcp::TrustedPublisher {

@@ -320,6 +320,41 @@ mod tests {
     }
 
     #[test]
+    fn acknowledged_checkpoint_after_torn_append_survives_restart() {
+        let temp = TempDir::new().unwrap();
+        let (root, ledger) = ledger_under(&temp);
+        let workspace = workspace_with_files(&temp);
+        let first = ledger
+            .create("sess-1", None, CheckpointKind::Manual, None, &workspace)
+            .unwrap();
+        drop(ledger);
+        // A crash can leave an unterminated JSONL suffix after the last
+        // acknowledged record. Reopen through the same public store used by
+        // the host, then publish a fresh checkpoint and reopen once more.
+        use std::io::Write;
+        std::fs::OpenOptions::new()
+            .append(true)
+            .open(root.join("checkpoints.jsonl"))
+            .unwrap()
+            .write_all(b"{\"id\":\"interrupted")
+            .unwrap();
+        let reopened = CheckpointsLedger::open(&root).unwrap();
+        assert_eq!(reopened.len(), 1);
+        let second = reopened
+            .create("sess-1", None, CheckpointKind::Manual, None, &workspace)
+            .unwrap();
+        drop(reopened);
+        let restored = CheckpointsLedger::open(&root).unwrap();
+        assert_eq!(
+            restored.len(),
+            2,
+            "acknowledged checkpoint must survive restart"
+        );
+        assert_eq!(restored.list()[0].id, first.id);
+        assert_eq!(restored.list()[1].id, second.id);
+    }
+
+    #[test]
     fn restore_round_trips_workspace_state() {
         let temp = TempDir::new().unwrap();
         let (_root, ledger) = ledger_under(&temp);

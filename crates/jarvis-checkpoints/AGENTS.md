@@ -67,6 +67,9 @@ exits — no `@contextmanager` wrapper needed.
   - `MAX_RETENTION_COUNT` checkpoints kept on disk (default 50, hard 100)
   - `MAX_LINEAGE_DEPTH` session chain length (default 100)
   - `MAX_CRON_JOBS` (default 500)
+- Shared JSONL append separates a fresh record from an unterminated crash
+  suffix before acknowledging the append; malformed prior lines remain
+  skippable on reload. This does not make multi-process appends atomic.
 - Cron records remain JSONL-compatible with older entries; missing `enabled`
   fields default to `true`.
 - **Pruning is aggressive and synchronous.** Every `create` checks the
