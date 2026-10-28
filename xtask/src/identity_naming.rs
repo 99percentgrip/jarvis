@@ -27,6 +27,10 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/evidence-index.md",
     "docs/foundation/2026-10-26-migration-interruption-identity-repair.md",
     "docs/foundation/2026-10-26-windows-private-replacement-investigation.md",
+    "docs/foundation/2026-10-26-migration-phase3-execution.md",
+    "docs/foundation/2026-10-26-migration-current-head-followup.md",
+    "docs/foundation/2026-10-26-migration-pr21-reconciliation.md",
+    "docs/foundation/2026-10-26-migration-pr22-postmerge-evidence.md",
     "docs/foundation/2026-10-20-stage7a-ci-optimization.md",
     "docs/foundation/2026-10-20-stage7b-independent-candidate-continuation.md",
     "docs/foundation/2026-10-20-stage7b-local-closeout.md",
@@ -203,6 +207,29 @@ pub fn owned_line(path: &str, line: &str) -> bool {
             scrubbed = scrub_technical_token(&scrubbed, token);
         }
     }
+    // Immutable audit receipts: these exact links and workflow label are evidence,
+    // not permission to introduce another branded URL or unreviewed prose.
+    if path == "docs/foundation/2026-10-26-migration-phase3-execution.md" {
+        for token in [
+            "repos/99percentgrip/jarvis/rulesets/25049950",
+            "Jarvis verification",
+        ] {
+            scrubbed = scrub_technical_token(&scrubbed, token);
+        }
+    }
+    if path == "docs/foundation/2026-10-26-migration-current-head-followup.md" {
+        for token in ["99percentgrip/jarvis", "Jarvis verification"] {
+            scrubbed = scrub_technical_token(&scrubbed, token);
+        }
+    }
+    if path == "docs/foundation/2026-10-26-migration-pr22-postmerge-evidence.md" {
+        for token in [
+            "https://github.com/99percentgrip/jarvis/pull/21/checks",
+            "https://github.com/99percentgrip/jarvis/pull/22/checks",
+        ] {
+            scrubbed = scrub_technical_token(&scrubbed, token);
+        }
+    }
     if path == "docs/foundation/2026-10-21-stage7b-pr11-macos-pty-timing-repair.md" {
         // One recorded CI job URL is an exact technical receipt, not an
         // exemption for arbitrary repository URLs or new brand prose.
@@ -319,6 +346,38 @@ mod tests {
             "format!(\"[Jarvis: interrupted\")"
         ));
     }
+    #[test]
+    fn migration_audit_receipts_admit_registered_ids_not_unreviewed_brand_prose() {
+        for path in [
+            "docs/foundation/2026-10-26-migration-phase3-execution.md",
+            "docs/foundation/2026-10-26-migration-pr21-reconciliation.md",
+            "docs/foundation/2026-10-26-migration-pr22-postmerge-evidence.md",
+        ] {
+            assert!(owned_line(
+                path,
+                "`crates/jarvis-security/src/private_state.rs`"
+            ));
+            assert!(!owned_line(path, "unregistered jarvis upstream prose"));
+            assert!(!owned_line(path, "`jarvis-unsupported-product`"));
+        }
+        assert!(!owned_line(
+            "docs/foundation/2026-10-26-migration-other.md",
+            "`crates/jarvis-security/src/private_state.rs`"
+        ));
+        assert!(owned_line(
+            "docs/foundation/2026-10-26-migration-phase3-execution.md",
+            "`gh api repos/99percentgrip/jarvis/rulesets/25049950` and `Jarvis verification`"
+        ));
+        assert!(owned_line(
+            "docs/foundation/2026-10-26-migration-pr22-postmerge-evidence.md",
+            "https://github.com/99percentgrip/jarvis/pull/21/checks"
+        ));
+        assert!(!owned_line(
+            "docs/foundation/2026-10-26-migration-pr22-postmerge-evidence.md",
+            "https://github.com/99percentgrip/jarvis/pull/99/checks"
+        ));
+    }
+
     #[test]
     fn declarations_are_scoped_and_other_upstream_mentions_stay_frozen() {
         assert!(owned_line(

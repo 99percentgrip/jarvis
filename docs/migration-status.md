@@ -2,15 +2,25 @@
 
 ## Independent migration audit checkpoint — 2026-10-26
 
-The [Windows private replacement investigation](foundation/2026-10-26-windows-private-replacement-investigation.md) adds a diagnostic Windows test for Issue #23, without establishing the historical failure's root cause. Independent alpha acceptance is **NOT ESTABLISHED**. The accepted Stage 7B
-nonpublishing five-target candidate at main `59d174ef` retains its bounded
-archive/CI evidence, but the workspace is still versioned `0.24.14`; a complete
-classification of inherited identifiers, independent auth and user-state tests,
-and final-source exact-commit CI/native acceptance remain open. The scoped
-[interrupted-turn identity correction](foundation/2026-10-26-migration-interruption-identity-repair.md)
-fixes three user-facing output paths on a separate repair branch; it does not
-retroactively change that accepted candidate. Historical Vesper release records
-below are not independent publication evidence.
+Independent alpha acceptance is **NOT ESTABLISHED**. The accepted Stage 7B
+nonpublishing five-target candidate at `59d174ef` retains only its exact-source
+archive/CI evidence. The separate [interrupted-turn identity repair](foundation/2026-10-26-migration-interruption-identity-repair.md)
+merged as `1e01c4ed`; it does not retroactively change that earlier candidate.
+The [source-pinned v3 inventory](foundation/2026-10-26-migration-phase3-execution.md)
+still has 1,067 UNKNOWN text-matched files and 110 separate binary leads.
+Both PR #21 and PR #22 passed 13/13 pre-merge checks on their recorded heads;
+PR #21 subsequently merged at `e9c7f654b9a45c834cb17bd883902c982fbfac2a`
+with four successful exact-merge workflows, including five native foundation
+jobs. PR #24 adds a [Windows private replacement diagnostic](foundation/2026-10-26-windows-private-replacement-investigation.md)
+and requires its own exact-head integration verification; it is not a repair.
+The original
+Windows command-settlement failure is historical and its subsequent pass does
+not establish its cause. Issue #23 tracks the separate Windows private-state
+replacement failure on the post-merge candidate (attempt 1), whose rerun passed
+(attempt 2) without establishing cause. Workspace version remains `0.24.14`;
+independent auth, user-state and final-source native candidate acceptance remain
+open. Historical Vesper release records below are not independent publication
+evidence.
 
 ## Independent runtime migration — 2026-10-15
 
