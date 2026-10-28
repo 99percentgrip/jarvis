@@ -16,6 +16,7 @@ Continue from `main` `1e01c4edd7bcda876b6b9c72f6888f0782fd39a7`, independently o
 
 - `crates/jarvis-checkpoints/src/io.rs`, `src/ledger.rs`, `AGENTS.md` — shared bounded recovery fix, red-first checkpoint regression, contract.
 - `apps/jarvis-tui/src/main.rs` — host composition/foreign-profile regression; `apps/jarvis-tui/AGENTS.md` remains unchanged because no host contract changed.
+- `xtask/src/identity_naming.rs`, `xtask/AGENTS.md` — narrow registration of the report's reviewed technical path/command receipts, with a red-first allow/deny regression; no embargo baseline or token changes.
 - `docs/foundation/phase4b-runtime-recovery-matrix.json`, this report, `docs/foundation/evidence-index.md`, `docs/foundation/AGENTS.md`, `docs/runtime-identity-stage3-prd.md` — scope, evidence, indexes.
 
 ## Exact local execution receipts
@@ -24,7 +25,7 @@ Continue from `main` `1e01c4edd7bcda876b6b9c72f6888f0782fd39a7`, independently o
 - After repair: same selected regression → `1 passed; 0 failed; 0 ignored`; `cargo test -p jarvis-checkpoints --quiet` → `48 passed; 0 failed; 0 ignored`.
 - `cargo test -p jarvis-tui --bin jarvis-tui owned_checkpoint_bundle_recovers_after_torn_record_without_adopting_foreign_state -- --nocapture` → `1 passed; 0 failed; 0 ignored; 206 filtered out` on Linux.
 - Baseline tests: `cargo test -p jarvis-auth --all-features --test native_persistence` → `1 passed; 2 ignored` (not native credential acceptance); `cargo test -p jarvis-sessions --test writer --quiet` → `10 passed; 0 failed`.
-- `cargo xtask architecture` → `architecture boundaries validated for 32 packages`; `cargo xtask naming-guard` → `clean (36 hits, all frozen in baseline)`; targeted all-features strict Clippy on `jarvis-checkpoints` and `jarvis-tui`, workspace format, and `git diff --check` returned zero. Full workspace, native Secret Service/keyring, Windows and macOS source-head execution remain pending.
+- `cargo xtask architecture` → `architecture boundaries validated for 32 packages`; targeted all-features strict Clippy on `jarvis-checkpoints` and `jarvis-tui`, workspace format, and `git diff --check` returned zero. The original local naming guard was run before staging the new report (it excludes untracked files); the first pushed head `924e27b2901753095562d6b6be495a517d590360` **failed** mandatory `quality` job `122728545990` in run `40662446305` with `9 new upstream-brand hit(s)` on technical command/path lines. Red-first `xtask` identity-scoping test then failed; only this report was registered as an owning technical-receipt document, and the new test passed while unrelated prose/unregistered identifiers still fail. Rerun `cargo xtask naming-guard` → `clean (36 hits, all frozen in baseline)` with the report tracked. All other first-head CI successes are stale for the corrected head. Full workspace, native Secret Service/keyring, Windows and macOS corrected-source execution remain pending.
 
 ## Deviations, unresolved gates and readiness
 
