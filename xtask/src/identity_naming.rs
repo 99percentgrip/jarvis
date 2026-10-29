@@ -27,6 +27,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/evidence-index.md",
     "docs/foundation/2026-10-26-migration-interruption-identity-repair.md",
     "docs/foundation/2026-10-28-phase4b-checkpoint-torn-append.md",
+    "docs/foundation/2026-10-28-phase4c-session-cron-failed-writes.md",
     "docs/foundation/2026-10-26-windows-private-replacement-investigation.md",
     "docs/foundation/2026-10-28-pr24-integration.md",
     "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md",
@@ -440,6 +441,21 @@ mod tests {
         assert!(!owned_line(path, "`jarvis-unreviewed`"));
         assert!(!owned_line(
             "docs/foundation/unowned-report.md",
+            "`jarvis-checkpoints`"
+        ));
+    }
+
+    #[test]
+    fn phase4c_report_admits_technical_receipts_only() {
+        let path = "docs/foundation/2026-10-28-phase4c-session-cron-failed-writes.md";
+        assert!(owned_line(
+            path,
+            "`cargo test -p jarvis-checkpoints --quiet`"
+        ));
+        assert!(!owned_line(path, "jarvis unregistered prose"));
+        assert!(!owned_line(path, "`jarvis-unreviewed`"));
+        assert!(!owned_line(
+            "docs/foundation/unowned.md",
             "`jarvis-checkpoints`"
         ));
     }

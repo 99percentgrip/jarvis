@@ -124,15 +124,19 @@ impl SessionLineage {
             return Err(CheckpointError::InvalidWorkspaceRoot);
         }
         let mut state = self.state.lock().expect("session mutex poisoned");
+        let mut staged = State {
+            records: state.records.clone(),
+            next_id: state.next_id,
+        };
         // Lineage depth guard.
-        if state.records.len() >= MAX_LINEAGE_DEPTH {
+        if staged.records.len() >= MAX_LINEAGE_DEPTH {
             return Err(CheckpointError::RetentionCapReached);
         }
-        let id = format!("sess-{}", state.next_id);
-        state.next_id = state.next_id.saturating_add(1);
+        let id = format!("sess-{}", staged.next_id);
+        staged.next_id = staged.next_id.saturating_add(1);
         // Validate the parent exists, if supplied.
         if let Some(parent) = parent_id
-            && !state.records.iter().any(|r| r.id == parent)
+            && !staged.records.iter().any(|r| r.id == parent)
         {
             return Err(CheckpointError::SessionNotFound(parent.to_string()));
         }
@@ -149,18 +153,16 @@ impl SessionLineage {
         record.validate()?;
         // Mark the parent superseded.
         if let Some(parent) = parent_id
-            && let Some(existing) = state.records.iter_mut().find(|r| r.id == parent)
+            && let Some(existing) = staged.records.iter_mut().find(|r| r.id == parent)
         {
             existing.status = SessionStatus::Superseded;
             existing.updated_at = now;
         }
-        let serialized = serde_json::to_string(&record)?;
-        append_line(&Self::log_path(&self.root), &serialized)?;
-        state.records.push(record.clone());
-        // Rewrite to persist the parent's status change atomically. The
-        // rewrite must include the freshly appended record, otherwise it
-        // clobbers the append and the new session never reaches disk.
-        Self::rewrite_log(&self.root, &state.records)?;
+        staged.records.push(record.clone());
+        // One atomic rewrite commits the new child and parent status together.
+        Self::rewrite_log(&self.root, &staged.records)?;
+        state.records = staged.records;
+        state.next_id = staged.next_id;
         Ok(record)
     }
 
@@ -180,7 +182,6 @@ impl SessionLineage {
             return Err(CheckpointError::SessionNotFound(parent_id.to_string()));
         }
         let id = format!("sess-{}", state.next_id);
-        state.next_id = state.next_id.saturating_add(1);
         let now = SystemTime::now();
         let record = SessionRecord {
             id: id.clone(),
@@ -194,6 +195,7 @@ impl SessionLineage {
         record.validate()?;
         let serialized = serde_json::to_string(&record)?;
         append_line(&Self::log_path(&self.root), &serialized)?;
+        state.next_id = state.next_id.saturating_add(1);
         state.records.push(record.clone());
         Ok(record)
     }
@@ -204,13 +206,15 @@ impl SessionLineage {
             return Err(CheckpointError::BoundsViolated("name length"));
         }
         let mut state = self.state.lock().expect("session mutex poisoned");
-        let Some(record) = state.records.iter_mut().find(|r| r.id == id) else {
+        let mut staged = state.records.clone();
+        let Some(record) = staged.iter_mut().find(|r| r.id == id) else {
             return Err(CheckpointError::SessionNotFound(id.to_string()));
         };
         record.name = new_name.to_string();
         record.updated_at = SystemTime::now();
         let updated = record.clone();
-        Self::rewrite_log(&self.root, &state.records)?;
+        Self::rewrite_log(&self.root, &staged)?;
+        state.records = staged;
         Ok(updated)
     }
 

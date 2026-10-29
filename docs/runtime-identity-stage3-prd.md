@@ -132,7 +132,9 @@ remain. Native OS-manager/browser/installer verification is CI evidence, not a
 local installation or real-user-data test. Research workspace advisory remains
 excluded from shipping builds and separately tracked.
 
-Phase 4B's bounded follow-up [checkpoint crash-recovery report](foundation/2026-10-28-phase4b-checkpoint-torn-append.md) and [trace matrix](foundation/phase4b-runtime-recovery-matrix.json) cover one source-reproduced lost-acknowledgment defect through the TUI checkpoint bundle; its original corrected PR #26 head passed five native jobs and 13/13 exact-head checks, while reconciliation against integrated main and remaining credential/session/coexistence cases remain separate gates, not completed by this repair.
+Phase 4B's bounded follow-up [checkpoint crash-recovery report](foundation/2026-10-28-phase4b-checkpoint-torn-append.md) and [trace matrix](foundation/phase4b-runtime-recovery-matrix.json) cover one source-reproduced lost-acknowledgment defect through the TUI checkpoint bundle; the [integration record](foundation/2026-10-29-pr25-pr27-integration.md) tracks its reconciled #26 head and exact-main CI. Remaining credential/session/coexistence cases remain separate gates, not completed by this repair.
+
+The [Phase 4C failed-write report](foundation/2026-10-28-phase4c-session-cron-failed-writes.md) covers scoped session/cron write-error cache consistency, with five native runner receipts on its original stacked head; the [integration record](foundation/2026-10-29-pr25-pr27-integration.md) owns reconciled-head proof. The [coverage matrix](foundation/phase4b-runtime-recovery-matrix.json) retains open hosted, credential and comprehensive recovery acceptance. This does not close Phase 4B or Phase 4C.
 
 Stage 4 requires separate authorization. No automatic Vesper import/replay,
 credential sharing, installer execution, registry migration, release activation,

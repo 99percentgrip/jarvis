@@ -40,8 +40,18 @@
       "existing_test": "crates/jarvis-checkpoints/src/sessions.rs::create_persists_the_new_record_across_reopen",
       "missing_scenario": "Full native process replay, corrupt middle records, interrupted writes and cleanup across hosts",
       "platform": "Linux, Windows, macOS",
-      "evidence_sha": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7",
-      "result": "OPEN; shared append fix alone does not prove all consumers"
+      "evidence_sha": "d47e79329ee5204664d40c5c332d8d87d8a44f55",
+      "result": "PARTIAL: PR #26 named checkpoint/TUI tests native green; session/cron write-error and hosted wrapper acceptance open"
+    },
+    {
+      "requirement": "Failed session/cron rewrite must not expose unpersisted live state or consume retry IDs",
+      "consumer": "SessionLineage and CronRegistry public production stores",
+      "backend": "Owned session and cron JSONL under disposable checkpoint root",
+      "existing_test": "crates/jarvis-checkpoints/tests/failed_mutations.rs",
+      "missing_scenario": "Reconciled-head native verification, separate-process restart, fault after sync, hosted command consumers, multi-process scheduler claims",
+      "platform": "Original stacked PR #27 head: Linux x86_64/arm64, Windows x86_64, macOS Intel/Apple Silicon; reconciled head pending",
+      "evidence_sha": "2c72516c93da673d0b750800a7fbab143787450e",
+      "result": "RED before correction (2 failed); GREEN locally (3 passed); all three named regressions passed in five native jobs of original-head run 40683488287; new reconciled candidate not yet verified"
     }
   ]
 }

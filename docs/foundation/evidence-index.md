@@ -20,6 +20,8 @@
 
 # Foundation Evidence Index
 
+- [Phase 4C session and cron failed-write consistency](2026-10-28-phase4c-session-cron-failed-writes.md) — red-first rollback of failed in-memory mutations, disposable public-store cases and [open coverage matrix](phase4b-runtime-recovery-matrix.json). Native acceptance remains pending.
+
 - [PR #25–#27 sequential protected integration](2026-10-29-pr25-pr27-integration.md) — exact-head and post-merge evidence, scoped preservation and outstanding limits; provisional states remain explicit until verified.
 
 - [Phase 4B bounded checkpoint crash recovery](2026-10-28-phase4b-checkpoint-torn-append.md) — torn JSONL append lost an acknowledged checkpoint after restart; red-first public store regression, owned TUI bundle/foreign-state fixture and [coverage matrix](phase4b-runtime-recovery-matrix.json). Native exact-head CI verified the scoped repair; broader Phase 4B acceptance remains open.
