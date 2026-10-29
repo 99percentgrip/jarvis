@@ -114,6 +114,32 @@ impl fmt::Debug for SecureCredentialStore {
     }
 }
 
+/// Preflight every explicit application credential override before host initialization.
+/// This is read-only: invalid foreign vaults must not be discovered only after
+/// bootstrap has already created independent private application directories.
+pub fn validate_production_credential_overrides() -> Result<(), CredentialStoreError> {
+    for name in [
+        "JARVIS_CREDENTIALS_PATH",
+        "JARVIS_OPENAI_CREDENTIALS_PATH",
+        "JARVIS_XAI_CREDENTIALS_PATH",
+        "JARVIS_LMSTUDIO_CREDENTIALS_PATH",
+    ] {
+        if let Some(path) = std::env::var_os(name) {
+            let store = SecureCredentialStore::new("99percentgrip.jarvis", PathBuf::from(path));
+            match store.validate_application_owner() {
+                Ok(()) => {}
+                // An explicitly malformed private vault is an inert signed-out
+                // blocker in existing native fixtures. The provider still
+                // refuses it at credential resolution; it cannot authorize a
+                // native-keyring fallback or a credential write.
+                Err(CredentialStoreError::Serialize) => {}
+                Err(error) => return Err(error),
+            }
+        }
+    }
+    Ok(())
+}
+
 impl SecureCredentialStore {
     /// Creates a native-first store with one explicit fallback vault.
     #[must_use]

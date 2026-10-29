@@ -129,7 +129,9 @@ class Host:
             path.chmod(0o600)
         # Inactive optional providers must fail before native credential lookup.
         blocker = fixture_credentials / "unavailable.json"
-        blocker.write_text("{}")
+        # Deliberately malformed private vault: still fails at provider resolution,
+        # but startup preflight does not mistake it for an owned credential.
+        blocker.write_text('{"credentials":null}')
         blocker.chmod(0o600)
         env = dict(PATH=os.environ['PATH'], HOME=str(home), USERPROFILE=str(home),
                    XDG_DATA_HOME=str(root/'data'), XDG_CONFIG_HOME=str(root/'config'),

@@ -62,6 +62,8 @@ The [architecture](architecture/runtime-identity-stage3.md),
 
 ## Required behavior and source-linked acceptance
 
+The subsequent [Phase 4 authentication/persistence execution](foundation/2026-10-27-phase4-auth-persistence-execution.md), [scoped machine-readable matrix](foundation/phase4-auth-persistence-coverage.json), [release-host fixture follow-up](foundation/2026-10-27-phase4-host-fixture-followup.md) [historical PR #25 exact-head native CI closeout](foundation/2026-10-28-phase4-pr25-native-ci-closeout.md) and [current integration report](foundation/2026-10-29-pr24-pr25-integration.md) record the red-first ordinary-host credential preflight correction, Windows fixture repair and five-platform synthetic credential receipts. Broader consumer and independent-review gates remain open; [sequential integration evidence](foundation/2026-10-29-pr25-pr27-integration.md) tracks the reconciled #25 head, merge and post-merge CI without claiming full Phase 4 acceptance. These do not close Stage 3 integration gates or overall migration acceptance.
+
 | Requirement | Implementation / regression evidence | Candidate status |
 | --- | --- | --- |
 | 1. Five native platform path strategies | Shared config `JarvisPaths`; identity contract compares real resolver to approved plans | Local injected-platform proof; native CI pending |
@@ -130,7 +132,7 @@ remain. Native OS-manager/browser/installer verification is CI evidence, not a
 local installation or real-user-data test. Research workspace advisory remains
 excluded from shipping builds and separately tracked.
 
-Phase 4B's bounded follow-up [checkpoint crash-recovery report](foundation/2026-10-28-phase4b-checkpoint-torn-append.md) and [trace matrix](foundation/phase4b-runtime-recovery-matrix.json) cover one source-reproduced lost-acknowledgment defect through the TUI checkpoint bundle; native exact-head acceptance and remaining credential/session/coexistence cases are separate gates, not completed by this repair.
+Phase 4B's bounded follow-up [checkpoint crash-recovery report](foundation/2026-10-28-phase4b-checkpoint-torn-append.md) and [trace matrix](foundation/phase4b-runtime-recovery-matrix.json) cover one source-reproduced lost-acknowledgment defect through the TUI checkpoint bundle; its original corrected PR #26 head passed five native jobs and 13/13 exact-head checks, while reconciliation against integrated main and remaining credential/session/coexistence cases remain separate gates, not completed by this repair.
 
 Stage 4 requires separate authorization. No automatic Vesper import/replay,
 credential sharing, installer execution, registry migration, release activation,
@@ -164,3 +166,5 @@ The protected-review corrections pass 3,675 local executions/165 acceptance case
 Rust 1.88 (including Windows config/auth/security checking), both workspace builds
 and fresh audit/deny. The corrected head requires its own thirteen successful
 checks and normal protected merge, then four exact-merge workflow successes.
+
+The later [Issue #23 Windows private replacement investigation](foundation/2026-10-26-windows-private-replacement-investigation.md) confirms an induced sharing-denial test on native Windows but does not establish the cause of the separate historical concurrency failure. Its [PR #24 integration record](foundation/2026-10-28-pr24-integration.md) tracks reconciliation and exact-head verification. Neither is Stage 3 acceptance or a production repair.

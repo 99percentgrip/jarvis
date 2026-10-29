@@ -1,0 +1,1107 @@
+{
+  "candidates": [
+    {
+      "blob_sha": "2c32901466258a82d17a3cbb57f1c826e515af5b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": ".glm-acp-images/screenshot_20260804_124631_0.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "825763ae7996852495c94a05cf3085e6014ff484",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": ".glm-acp-images/screenshot_20260804_125256_0.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "95c0965b64701f769e5ccd69b8c7a3e11cbcbfcf",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": ".glm-acp-images/screenshot_20260804_130453_0.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "2845e61453c4cc7f970b5d249788d8a6e7069dbb",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/after_78.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "e74ef34f195e623bd11b74ed3b078b1c6eab332f",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/after_click53.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "51e9e1b72d766e18573f0e41537ce4ddc78d1d34",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/after_continue.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "b759040fd9390938b8175af942ec6aeb552f46c7",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/after_newgame_click.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "f5eb41f4d66a440aed61f3dbee230e42ef4c84e6",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/after_skip.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "993de2f8d937f3be86082d5b36b86375524cb334",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/back_ingame.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "65fec35b58f7824cbb163cbd80bb6cc1e6e40cf8",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/column_zoom.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "6a7d3307f808bd6b3324d6e796e742cd4b4b2e43",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/construction_after_sweep.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "5ab1f6532446a9895666d44051768a8c6cb25bbc",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/construction_menu.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "6056f9e66cc374f23618e6d3e462ce2dcc16c945",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/construction_open.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "c944b4832d0d2c36b78d2fe531dbdb5142115cd6",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/construction_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "b68c9ecb9f4466fdd1db400c48c60e0a15fd7548",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/current_final.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "bdd8116a2c7e864873f1b8ca1eae14e4b471ca00",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/dialog_chain.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "346dc37deb14fa9113e21ab8ada4f217291cb178",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/final_screen.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "265176f0ebc0562db00e58928101b1183d5b52d3",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/final_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "a8ce4c770609eedb37420a9d374a6dd727196f66",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/in_game.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "bff78443ab6fdecb8626e05ced100f2cd60a5e7e",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ingame1.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "bad9fd14e45c804853f85bee8f8b7cf9d5a82215",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ingame2.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "63d3084b3bbfd406bde8a289580e9de905d9b424",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ingame_check.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "d88575344c280cfa8203a3c92c3300ad134d01bc",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ingame_final.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "d69ebb04456028c33db4ed987f4ae6078f067e9b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/left_zoom.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "e02a17b3d3c1bcf17443204056c159111f540039",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/menu_1.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "18af989b15bbfc6fc31ed545d031de6c7c0de4ea",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/menu_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "ccdb0df6f1f564288447109586a432330926bf36",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ml_bottom.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "20bd6ad6855c25c9acee30b809ad1f1270d24f33",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ml_btn0.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "e0112f287af0c33c69bdce1c8ef065855522a825",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ml_btn1.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "9b2ca13fa368efc11199df89d1c467f08938b3ae",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ml_btn2.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "55e4346b51e20256d64b28a30ecdddc5532ccdfa",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ml_btn3.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "8b778ee2a166154f033fdcb90e3036d3514b4fd4",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ml_btn6.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "4643522b51b1b799baa969f16d5587aab53061c2",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ml_center.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "59f98457e8679fa669e21d7ae088139611212f22",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/ml_menu_col.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "a29215b4bd6aee2ecd3074a836b854f0ea79bffb",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/modal_check.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "9458dfba8a2944232e131889115eedb67d688290",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/news_popup.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "9fd07d7b09e4470a80f43f1fcb0166b0f6534808",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/overlay_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "1588e9de2e4fb663d9ae7bdc0375fd42e25d773f",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/panel_transition.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "6e8fe24b94c9ecd542538f90a0adb92fa89cc704",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/pause_check.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "7773b354734ff00185dd5d7d8a0051f121accd01",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/pause_menu.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "3d12be095f10e2b107d22f87d83d01ef19f8ae03",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/placement_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "89d89db4fa49c540320dcf07ba7c728f5b493e70",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/popup_deep.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "841c624c400fce4285ca4b43eb1e4269d8adb8fc",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/popup_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "c4386627735124d75decf08ca4cbad0e361edfe3",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/popup_stuck.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "0b38307db5166a53e7f57b490d21daeb184aa21d",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/relaunch_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "c3e8ee9a2bc0d7ec456f15e186b2a6c2c386a138",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/right_zoom.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "94c0483f80ea29fb8616f4d6d9309d9aa19a8809",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/save_attempt.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "96ca92ba8bbcee974e33935b8e5f2fcb500a7402",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/save_panel.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "a2822111b15cf6ab88ca42b23744fc3bd69d2e4a",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/save_panel_open.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "00f805bc2bf6a3ae05f4839dfe53b131c8ca9f81",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/save_screen.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "4645a69bb217b0db110587c8fac9b42b056dbe4f",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/screen4.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "10ad1fbd9ed7842b87a9c71426ed432bf38fad5b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/screen5.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "920bd5debc3e3c4320bc31271748b8c2f531aa35",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/screen_now.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "feb54645610b5b95006b844639cd10d6e7674ddb",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/screen_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "05a97b3d83f1cb487f8bc74a2d401414b2578d82",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/setup_now.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "b443ef6ce5b33fb0debf70f3643c474e27954b56",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/setup_persist.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "5c659821e6e5caab9c7f4a5e3452d4cde7cd3c1d",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/setup_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "5d0e344565a7ba0f163f01eb42786e5f11260b24",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/state2.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "bf15925cb9393aed4ba81c190baea771a9fa0378",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/state_after_probe.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "f1970ff397133f43d7afc0c5d7aa47ac77aee030",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/state_seq.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "633c143d1e0e9002270507205345e2f1edd06c1f",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/static_menu.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "cb48b9f5351be065161184e7b432d661b00ca7e9",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/stuck_state.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "d6e87d74438609da00a5a67a89538ec615e0980a",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/tutorial_menu.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "dbd14ff9517420d2a2d66d5d79c30d8984026a1d",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/unknown_screen.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "7be115be40938049e2579c21122ef59d50b91e23",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/village_plots.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "50229ddf5496126e6c5c893a43ced827a7c68b58",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/Vesper bridge/recon/probes/ml/zoomed_check.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "96efc76ba99976bae2d4b23bb72c1f820dfbda8c",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-documentation-ci-and-windows-readiness-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "b6915846e787cc7b70f95b138aec40983b1323c2",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-autonomy-and-prd-audit-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "4f9090b18b6c5ae132b58b320b09e8e70ba2ef15",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-parity-production-release-corrective-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "69369058df13faf7e6fb74dcda2015f5f05a1968",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-parity-production-release-final-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "02f57a4ff03c5db074d62e04b77058e1b4782c47",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-parity-production-release-host-fixture-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "a57a6f2b0d4420acf193f72d9cebc574859a497b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-parity-production-release-integration-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "bb0d649e78f6540288227a6bd6fa2128de868189",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-parity-production-release-openai-fixture-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "e6f99139337bdb85684db5d8ed060ace71e177a4",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-parity-production-release-preparation-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "fb443b14d9f2c094c63e342246c1422b494da26b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-parity-production-release-windows-sse-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "306775d475cdcfb939b48d358b42528bc0de5b0d",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-06-rrc-version-preparation-resource-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "bd962a81b76d6e3d843b408c75ab7c9d65bea169",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-07-rrc-adaptive-resource-admission-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "542b5099b098ab19b9e04129378ef22be411ec11",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-07-rrc-native-cancellation-keybinding-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "a2ec0d1b67437d59594f4bb21639eda3946000c6",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-07-rrc-native-permission-and-stop-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "7df82f77645e76d80e795a6ffac11b95afcafe28",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-07-rrc-promotion-and-inventory-gap-audit-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "a8f1dbed8ac78b245264540aa9199c7a421abee8",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-07-rrc-publication-observation-recovery-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "fb0ac3efb13138e7572ad26cf799320ec16628ac",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-native-first-launch-and-rrc-ci-follow-up-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "5150e1a71ebe5fecce646c9d2398d62ebe9899fb",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-native-first-launch-and-rrc-workspace-repair-final-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "c36e2a5cbead366f9e82bba0dcbf3b175cbbed63",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-native-first-launch-and-rrc-workspace-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "6023fad652b253efc51f122e05cd8f1dc10ee505",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-rrc-ci-causal-diagnosis-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "8196cca70f76252d72aa6517f78bb6b5ed6c307a",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-windows-credential-cache-observation-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "95466f3d9b3665e6f7ec57bab5ddc75a3888b29d",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-windows-credential-controller-status-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "269bcb7e6259a61e877211726bd7b3a80d73522b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-windows-credential-current-host-fixture-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "b4637a22f709882440ab09ded26f476ef67d3201",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-windows-credential-persistence-repair-local-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "25afd1c333b3fc2848246fd0403b212b2ce523bf",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-windows-credential-persistence-rrc-follow-up-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "8f772154124c21257592eee03cd455c8aae9abd9",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-windows-credential-platform-continuation-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "d7efbd2717397538ff977c6b8d85147394a4dc16",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-windows-credential-proof-isolation-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "c15d04f5bb21314f7af0dbde2844bf43165a387f",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-08-windows-missing-runtime-package-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "91143d412eaa4291aa655c50360100cce218594f",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-09-native-voice-ci-and-rrc-recovery-local-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "424e91f80f6768fac75052f7e6e2e805e595152e",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-09-native-voice-platform-parity-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "48ae2363a4578fdf6f7851c31b36ed4be543f7d2",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-10-rrc-prepared-repair-resource-recovery-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "1eefcb832b30bc4a5c6789169b70ef25a94b943c",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-11-native-conpty-cleanup-race-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "cb77029660d1d745ab9ed3364fe9fa1658ffb660",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-11-native-voice-capacity-directory-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "477a887e91b9a688356f97e847edc35d6d0b908b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/2026-10-11-native-voice-download-and-owner-release-repair-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "dc45378c73bd510c20c21e4f39444587fd83cb39",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/output-reference-dark.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "dfd228873a1b92472c289b1de401540f0c00515b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/output-reference-light.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "75e9145057d19b2de2f68edbd1ba63174fb98fb1",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/output-reference-nord.png",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "003d2b6f503c639986f923a0bd97ba6966bb636d",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/release-recovery-controller-deep-debug-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "cd9a974ffb95817e630275dae89bc5992c846a30",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/release-recovery-controller-parity-continuation-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "1bc6ac26b19363a79719d0d2cd44f64c47dafd16",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/release-v0.24.9-closeout-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "c348c32f534d3244a9ae9568ce7b2490b80cc287",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "docs/foundation/release-v0.24.9-prd-reverification-receipts.tar.gz",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "1e78480975a5878619e71b1dc7957d6eb9489c4b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "skills/skills/research-paper-writing/templates/colm2025/colm2025_conference.pdf",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "396adefa6cccc9885433597c8e82bc6fa4c3329b",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "skills/skills/research-paper-writing/templates/iclr2026/iclr2026_conference.pdf",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "26dc1b8d7f4d3ec1a09d7b7be1d1d7171bcd178c",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "skills/skills/research-paper-writing/templates/icml2026/example_paper.pdf",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    },
+    {
+      "blob_sha": "98d2167980dcea38980d2c58a8630d8be1b0905d",
+      "category": "binary or compressed artifact candidate",
+      "classification": "UNKNOWN",
+      "owner": "nearest AGENTS.md",
+      "path": "skills/skills/research-paper-writing/templates/icml2026/icml_numpapers.pdf",
+      "review_status": "NOT_TESTED; filename extension only",
+      "risk": "unreviewed (archive contents or metadata may carry identifiers)",
+      "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+    }
+  ],
+  "limitations": "Extension-based candidate list only; text grep exclusions and files with other extensions remain unreviewed. No archive executed/extracted.",
+  "schema": 1,
+  "source_commit": "59d174ef032a7cd6cb82edfa2fe093c30d4fa138"
+}

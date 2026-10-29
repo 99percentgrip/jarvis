@@ -20,7 +20,9 @@ async fn main() -> ExitCode {
     if let Some(code) = handle_meta_flags() {
         return code;
     }
-    if jarvis_config::JarvisPaths::validate_environment().is_err() {
+    if jarvis_config::JarvisPaths::validate_environment().is_err()
+        || jarvis_auth::validate_production_credential_overrides().is_err()
+    {
         eprintln!("Private application storage ownership refused; no legacy state was imported.");
         return ExitCode::FAILURE;
     }
