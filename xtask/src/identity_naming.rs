@@ -28,6 +28,10 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-26-migration-interruption-identity-repair.md",
     "docs/foundation/2026-10-26-windows-private-replacement-investigation.md",
     "docs/foundation/2026-10-28-pr24-integration.md",
+    "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md",
+    "docs/foundation/2026-10-27-phase4-host-fixture-followup.md",
+    "docs/foundation/2026-10-28-phase4-pr25-native-ci-closeout.md",
+    "docs/foundation/2026-10-29-pr24-pr25-integration.md",
     "docs/foundation/2026-10-26-migration-phase3-execution.md",
     "docs/foundation/2026-10-26-migration-current-head-followup.md",
     "docs/foundation/2026-10-26-migration-pr21-reconciliation.md",
@@ -210,6 +214,15 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     }
     // Immutable audit receipts: these exact links and workflow label are evidence,
     // not permission to introduce another branded URL or unreviewed prose.
+    if path == "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md" {
+        // Exact historical PR link, not an exemption for new branded prose.
+        scrubbed =
+            scrub_technical_token(&scrubbed, "https://github.com/99percentgrip/jarvis/pull/25");
+    }
+    if path == "docs/foundation/2026-10-28-phase4-pr25-native-ci-closeout.md" {
+        scrubbed = scrub_technical_token(&scrubbed, "repos/99percentgrip/jarvis/branches/main");
+        scrubbed = scrub_technical_token(&scrubbed, "Jarvis verification");
+    }
     if path == "docs/foundation/2026-10-26-migration-phase3-execution.md" {
         for token in [
             "repos/99percentgrip/jarvis/rulesets/25049950",

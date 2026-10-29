@@ -83,7 +83,9 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   non-shipping integration hosts; ordinary executables remain release-disabled. Relative executable arguments and
   explicit CP1252 redirected Python output exercise the shared path/UTF-8 receipt
   contract on every lane. Windows uses pinned, hash-verified
-  Python 3.13 ConPTY; Linux/macOS use stdlib PTYs. Version/help and seeded-key
+  Python 3.13 ConPTY; Linux/macOS use stdlib PTYs. The release-host ACP
+  diagnostic regression runs on each lane before the process fixture and
+  never prints private stderr. Version/help and seeded-key
   tests cannot substitute for this interactive first-launch gate. Native governor
   cases run on all targets; Windows additionally runs a real constrained Job Object
   fixture against the production policy, proving unavailable/unsafe capacity is

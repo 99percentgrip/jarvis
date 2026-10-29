@@ -13,6 +13,8 @@ and composes the existing bounded atomic session writer.
 
 ## Ownership
 
+- `src/main.rs` preflights explicit production credential vault ownership before native private-root initialization, sharing the auth crate's read-only validator with ACP. `tests/settings_pty.py` uses an intentionally malformed private vault to prohibit a native-keyring fallback in signed-out PTY fixtures; it is not an owned production credential. The release-hosts fixture uses explicitly tagged synthetic signed-out OpenAI/xAI records under a marked owner-only fixture directory so Windows ACL preflight does not reject test-created files. TUI compilation is not terminal-level acceptance.
+
 - `src/messages.rs` owns terminal message composition, cached paste ranges and
   the ID-based future-turn journal. `commands.rs`/`dispatch.rs` own typed command
   intents; `main.rs` composes durable admission, runtime events and inspection;

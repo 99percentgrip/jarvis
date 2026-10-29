@@ -1,4 +1,4 @@
-- [PR #24 Windows private replacement integration](2026-10-28-pr24-integration.md) — reconciled Windows-only sharing diagnostic on the existing PR branch; Issue #23 remains unresolved and integration requires explicit owner authorization.
+- [PR #24 Windows private replacement integration](2026-10-28-pr24-integration.md) — diagnostic integrated by merge commit `3aa536306d9a7f63d5ae7a22bb08769fb4f64210`; four exact-main workflows passed, including the named Windows test; Issue #23 remains unresolved. Later post-merge receipts are retained locally.
 - [Windows private replacement investigation](2026-10-26-windows-private-replacement-investigation.md) — induced native Windows sharing-denial behavior, not proof of the historical failure's cause.
 - [Current-head migration follow-up](2026-10-26-migration-current-head-followup.md) — historical pre-merge PR #21 observation (no checks then); later exact-head/merged-main evidence is separately recorded.
 - [PR #21 audit reconciliation](2026-10-26-migration-pr21-reconciliation.md) — v3/Phase 3 source preservation, semantic main integration, post-merge PR #22 attempt-1 Windows failure and attempt-2 recovery; Issue #23 remains open.
@@ -19,6 +19,10 @@
 - [Stage 5 integration identity](2026-10-20-stage5-integration-identity.md) — ACP, MCP, Lens, and web client identities on baseline `f7f360ab648913428db79e6d48b3ad3ae61b1673`. Registry publication and historical import remain deferred.
 
 # Foundation Evidence Index
+
+- [PR #24 integrated-main and PR #25 reconciliation](2026-10-29-pr24-pr25-integration.md) — exact PR #24 merge and four successful post-merge workflows; existing PR #25 branch reconciliation, scope-limited credential review and separate merge-authorization boundary.
+
+- [Phase 4 authentication/persistence isolation](2026-10-27-phase4-auth-persistence-execution.md) — red-first ordinary ACP credential-override preflight repair and [machine-readable scoped coverage](phase4-auth-persistence-coverage.json); [release-host fixture follow-up](2026-10-27-phase4-host-fixture-followup.md) retains original and diagnostic failures. [PR #25 native CI closeout](2026-10-28-phase4-pr25-native-ci-closeout.md) records the historical exact-head synthetic five-platform receipts; new reconciliation against current main needs fresh verification. Broader consumer coverage and independent review remain open.
 
 - [Stage 7B PR #20 environment notification correction](2026-10-25-stage7b-windows-environment-notification-correction.md) — real-window broadcast regression, Windows red-first failure and follow-up verification; native candidate acceptance remains separate.
 

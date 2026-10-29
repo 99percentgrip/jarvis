@@ -59,12 +59,19 @@ Verify terminal interaction through the production TUI binary with isolated stat
   The fixture must not query or change the invoking release host via `/dev/tty`.
 
 - `release_hosts_pty.py` explicitly invokes the non-shipping TUI example and ACP
-  integration driver; ordinary executable dormancy is tested separately while
+  integration driver; synthetic OpenAI/xAI signed-out vault records carry the
+  production application owner marker and share a marked, owner-only test directory
+  with the inert Z.ai blocker. Windows file ACLs are inherited from this private
+  parent, not inferred from Python chmod, so startup preflight can accept the fixture.
+  Ordinary executable dormancy is tested separately while
   preserving read-only user-project CI status. It observes one isolated RRC ledger through real TUI/ACP
   processes for all four selected, signed-out adapters: partial matrix, blocked no-write retry, Published/main degraded,
   and cross-host cancellation preserving epoch/run/tag/assets. ACP pipe reading uses a bounded queue on every OS; Windows identities retain
-  the native canonical path prefix. Synthetic persisted
-  evidence and signed-out vaults must never dispatch a provider request.
+  the native canonical path prefix. ACP startup failures retain bounded file-backed
+  stderr and report only allowlisted error classes and process exit codes; a deadline
+  terminates and reaps the child. `test_release_hosts_acp_diagnostics.py` pins
+  secret-safe classification and owned-child settlement on each native lane.
+  Synthetic persisted evidence and signed-out vaults must never dispatch a provider request.
   Seed the ledger identity and filename from the canonical Git common directory,
   matching both production hosts. Published mutation fixtures include the required
   provenance/report and intended-commit collections, even when synthetic and empty.

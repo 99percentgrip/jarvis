@@ -62,6 +62,8 @@ The [architecture](architecture/runtime-identity-stage3.md),
 
 ## Required behavior and source-linked acceptance
 
+The subsequent [Phase 4 authentication/persistence execution](foundation/2026-10-27-phase4-auth-persistence-execution.md), [scoped machine-readable matrix](foundation/phase4-auth-persistence-coverage.json), [release-host fixture follow-up](foundation/2026-10-27-phase4-host-fixture-followup.md) [historical PR #25 exact-head native CI closeout](foundation/2026-10-28-phase4-pr25-native-ci-closeout.md) and [current integration report](foundation/2026-10-29-pr24-pr25-integration.md) record the red-first ordinary-host credential preflight correction, Windows fixture repair and five-platform synthetic credential receipts. Broader consumer and independent-review gates remain open; the reconciled PR #25 head requires its own native CI. These do not close Stage 3 integration gates or overall migration acceptance.
+
 | Requirement | Implementation / regression evidence | Candidate status |
 | --- | --- | --- |
 | 1. Five native platform path strategies | Shared config `JarvisPaths`; identity contract compares real resolver to approved plans | Local injected-platform proof; native CI pending |

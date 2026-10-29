@@ -29,7 +29,7 @@ Own durable project documentation and evidence-backed engineering records.
   receipts and the incomplete cross-platform candidate boundary.
 - `foundation/2026-10-20-stage7a-ci-optimization.md` owns the CI optimization evidence.
 - `architecture/stage6-distribution.md` owns the offline package and installer contract. `foundation/2026-10-20-stage6-distribution.md` owns its evidence.
-- `runtime-identity-stage3-prd.md` owns runtime isolation acceptance and the Stage 4 boundary.
+- `runtime-identity-stage3-prd.md` owns runtime isolation acceptance and the Stage 4 boundary. `foundation/2026-10-27-phase4-auth-persistence-execution.md` owns scoped credential startup and the coverage matrix; `foundation/2026-10-27-phase4-host-fixture-followup.md` owns diagnostic and corrected fixture history; `foundation/2026-10-28-phase4-pr25-native-ci-closeout.md` owns earlier native receipts, and `foundation/2026-10-29-pr24-pr25-integration.md` owns the current integration; neither is overall migration acceptance.
 
 - `rust-identity-stage2-prd.md` owns the authorized Rust workspace/executable migration and protected-merge acceptance; architecture/foundation children own its mapping and evidence.
 
