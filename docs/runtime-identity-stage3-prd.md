@@ -62,7 +62,7 @@ The [architecture](architecture/runtime-identity-stage3.md),
 
 ## Required behavior and source-linked acceptance
 
-The subsequent [Phase 4 authentication/persistence execution](foundation/2026-10-27-phase4-auth-persistence-execution.md), [scoped machine-readable matrix](foundation/phase4-auth-persistence-coverage.json), and [local release-host fixture follow-up](foundation/2026-10-27-phase4-host-fixture-followup.md) record a red-first ordinary-host credential preflight correction, local synthetic-process proof and remaining native/review gaps. These do not close Stage 3 integration gates or overall migration acceptance.
+The subsequent [Phase 4 authentication/persistence execution](foundation/2026-10-27-phase4-auth-persistence-execution.md), [scoped machine-readable matrix](foundation/phase4-auth-persistence-coverage.json), [release-host fixture follow-up](foundation/2026-10-27-phase4-host-fixture-followup.md) [historical PR #25 exact-head native CI closeout](foundation/2026-10-28-phase4-pr25-native-ci-closeout.md) and [current integration report](foundation/2026-10-29-pr24-pr25-integration.md) record the red-first ordinary-host credential preflight correction, Windows fixture repair and five-platform synthetic credential receipts. Broader consumer and independent-review gates remain open; the reconciled PR #25 head requires its own native CI. These do not close Stage 3 integration gates or overall migration acceptance.
 
 | Requirement | Implementation / regression evidence | Candidate status |
 | --- | --- | --- |
@@ -164,3 +164,5 @@ The protected-review corrections pass 3,675 local executions/165 acceptance case
 Rust 1.88 (including Windows config/auth/security checking), both workspace builds
 and fresh audit/deny. The corrected head requires its own thirteen successful
 checks and normal protected merge, then four exact-merge workflow successes.
+
+The later [Issue #23 Windows private replacement investigation](foundation/2026-10-26-windows-private-replacement-investigation.md) confirms an induced sharing-denial test on native Windows but does not establish the cause of the separate historical concurrency failure. Its [PR #24 integration record](foundation/2026-10-28-pr24-integration.md) tracks reconciliation and exact-head verification. Neither is Stage 3 acceptance or a production repair.

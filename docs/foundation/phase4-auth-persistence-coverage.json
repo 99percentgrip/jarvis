@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7",
-  "scope": "Scoped matrix. Linux local evidence at pushed PR #25 head; native tests and broader consumers remain untested. Post-push receipts in the linked local execution report.",
+  "scope": "Scoped consumer matrix. Exact-head native CI evidence for listed pathways at PR #25 b35be668; broader consumers and independent review remain open. Post-publication receipts are in 2026-10-28-phase4-pr25-native-ci-closeout.md (local only).",
   "capabilities": [
     {
       "capability": "Explicit GLM/OpenAI/xAI/LM Studio credential override ownership preflight",
@@ -27,9 +27,9 @@
       "positive_test": "Native ordinary-process startup with tagged owned synthetic vault",
       "negative_test": "Native ordinary-process startup with foreign vault preserves bytes and refuses",
       "platform": "macOS and Windows",
-      "result": "UNTESTED",
-      "evidence": "phase4_credential_boundary is included in default Cargo integration tests; exact-head native CI pending",
-      "evidence_commit": "a2605a36bd8dc76e49fc67b10578a471e831dcfd"
+      "result": "PASS",
+      "evidence": "PR #25 exact head b35be668: five-target-foundation 40639697587 Windows job 122654707726 ran phase4_credential_boundary (3 passed; owned startup and foreign override named ok); macOS Intel job 122654707849 ran the same test suite; see local 2026-10-28-phase4-pr25-native-ci-closeout.md. Not proof of every auth consumer.",
+      "evidence_commit": "b35be668bae8e88afea07cceb644c0c3635d6c39"
     },
     {
       "capability": "ACP session ownership, legacy knob isolation and missing-root read",
@@ -70,8 +70,8 @@
       "negative_test": "Locked/missing service must not create plaintext production vault",
       "platform": "Linux, macOS and Windows",
       "result": "UNTESTED",
-      "evidence": "cargo test -p jarvis-auth --all-features: hosted_native_credential_persistence ignored by default; no opted-in native acceptance run in this work",
-      "evidence_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7"
+      "evidence": "Positive case PASS on exact PR #25 head b35be668: run 40639697587 Windows 122654707726, macOS Intel 122654707849, Apple Silicon 122654707460, Linux x86_64 122654707694, arm64 122654707728 explicitly ran hosted_native_credential_persistence with NativeKeyring restart/rotation/sign-out/provider-isolation receipts. Overall row remains UNTESTED: locked/missing native service negative scenario not established by these receipts; default Cargo suite ignored the hosted case.",
+      "evidence_commit": "b35be668bae8e88afea07cceb644c0c3635d6c39"
     },
     {
       "capability": "Windows concurrent atomic private-state replacement root cause",
