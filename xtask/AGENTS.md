@@ -27,6 +27,8 @@ architecture, MSRV, and source-oracle checks.
   The migration audit receipts and merged PR #22 integration record admit only
   reviewed quoted identifiers, three exact historic GitHub rule/check URLs and
   the exact recorded CI label; new branded prose or other URLs remain refused.
+  The Issue #23 diagnostic and PR #24 integration report admit only reviewed
+  registered technical paths/command identities, not new product prose.
   The interrupted-turn migration repair admits only the complete shared-worker
   interrupted-stream marker prefix and reviewed quoted technical tokens in its
   owning report; an arbitrary product claim after the short marker must fail.

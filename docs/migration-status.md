@@ -9,7 +9,11 @@ merged as `1e01c4ed`; it does not retroactively change that earlier candidate.
 The [source-pinned v3 inventory](foundation/2026-10-26-migration-phase3-execution.md)
 still has 1,067 UNKNOWN text-matched files and 110 separate binary leads.
 Both PR #21 and PR #22 passed 13/13 pre-merge checks on their recorded heads;
-PR #21 remains draft and must be retested after reconciliation. The original
+PR #21 subsequently merged at `e9c7f654b9a45c834cb17bd883902c982fbfac2a`
+with four successful exact-merge workflows, including five native foundation
+jobs. PR #24 adds a [Windows private replacement diagnostic](foundation/2026-10-26-windows-private-replacement-investigation.md)
+and requires its own exact-head integration verification; it is not a repair.
+The original
 Windows command-settlement failure is historical and its subsequent pass does
 not establish its cause. Issue #23 tracks the separate Windows private-state
 replacement failure on the post-merge candidate (attempt 1), whose rerun passed

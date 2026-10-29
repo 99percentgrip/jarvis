@@ -162,3 +162,5 @@ The protected-review corrections pass 3,675 local executions/165 acceptance case
 Rust 1.88 (including Windows config/auth/security checking), both workspace builds
 and fresh audit/deny. The corrected head requires its own thirteen successful
 checks and normal protected merge, then four exact-merge workflow successes.
+
+The later [Issue #23 Windows private replacement investigation](foundation/2026-10-26-windows-private-replacement-investigation.md) confirms an induced sharing-denial test on native Windows but does not establish the cause of the separate historical concurrency failure. Its [PR #24 integration record](foundation/2026-10-28-pr24-integration.md) tracks reconciliation and exact-head verification. Neither is Stage 3 acceptance or a production repair.

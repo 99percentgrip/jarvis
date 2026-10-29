@@ -1,4 +1,6 @@
-- [Current-head migration follow-up](2026-10-26-migration-current-head-followup.md) — PR #21 has no observed exact-head checks at the current remote head; scoped local tests and remaining gates are explicit.
+- [PR #24 Windows private replacement integration](2026-10-28-pr24-integration.md) — reconciled Windows-only sharing diagnostic on the existing PR branch; Issue #23 remains unresolved and integration requires explicit owner authorization.
+- [Windows private replacement investigation](2026-10-26-windows-private-replacement-investigation.md) — induced native Windows sharing-denial behavior, not proof of the historical failure's cause.
+- [Current-head migration follow-up](2026-10-26-migration-current-head-followup.md) — historical pre-merge PR #21 observation (no checks then); later exact-head/merged-main evidence is separately recorded.
 - [PR #21 audit reconciliation](2026-10-26-migration-pr21-reconciliation.md) — v3/Phase 3 source preservation, semantic main integration, post-merge PR #22 attempt-1 Windows failure and attempt-2 recovery; Issue #23 remains open.
 - [PR #22 post-merge migration evidence](2026-10-26-migration-pr22-postmerge-evidence.md) — merge `1e01c4ed`, original pending workflow observations and independent assistant comment review; later workflow results are retained in PR #21's reconciliation.
 - [Interrupted-turn identity repair](2026-10-26-migration-interruption-identity-repair.md) — scoped ACP/TUI/shared-worker prefix correction; its earlier local/native-pending statements are historical pre-merge evidence.

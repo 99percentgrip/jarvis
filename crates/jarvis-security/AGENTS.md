@@ -25,6 +25,7 @@ output, path authority descriptors, and honest sandbox capability contracts.
 
 ## Verification
 
+- The Windows-only `tests/windows_private_replacement.rs` diagnoses file-sharing denial without retries; cross-compilation does not substitute for native Windows execution or resolve Issue #23.
 - Run `cargo test -p jarvis-security`.
 - Run `cargo xtask architecture`.
 
