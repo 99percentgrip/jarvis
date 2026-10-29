@@ -6,7 +6,8 @@ Own durable project documentation and evidence-backed engineering records.
 
 ## Ownership
 
-- `migration-status.md` owns the current independent-product checkpoint above inherited Vesper release history; `foundation/2026-10-26-migration-interruption-identity-repair.md` owns the scoped interrupted-output label evidence, not alpha clearance.
+- `migration-status.md` owns current independent-product status above inherited Vesper release history. `foundation/2026-10-26-windows-private-replacement-investigation.md` owns Issue #23's bounded Windows sharing diagnostic, not a causal resolution; `foundation/2026-10-28-pr24-integration.md` owns its current integration verification.
+- `foundation/2026-10-26-migration-recon-execution.md` owns the partial audit baseline. `foundation/2026-10-26-migration-classification-ci-review-checkpoint.md` owns v2 triage and historical CI; `foundation/2026-10-26-migration-phase3-execution.md` owns v3 decisions and interim CI; `foundation/2026-10-26-migration-ci-final-settlement.md` owns final exact-head pre-merge CI. `foundation/2026-10-26-migration-pr21-reconciliation.md` owns the audit-branch main integration and post-merge CI/Issue #23 observations; `foundation/2026-10-26-migration-current-head-followup.md` owns the later current-remote-head observation. `foundation/2026-10-26-migration-pr22-postmerge-evidence.md` and `foundation/2026-10-26-migration-interruption-identity-repair.md` own the separately merged label repair. None is full migration acceptance.
 
 - `foundation/2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 Windows shell notification correction and native Windows receipts; candidate acceptance remains separate.
 
@@ -28,7 +29,7 @@ Own durable project documentation and evidence-backed engineering records.
   receipts and the incomplete cross-platform candidate boundary.
 - `foundation/2026-10-20-stage7a-ci-optimization.md` owns the CI optimization evidence.
 - `architecture/stage6-distribution.md` owns the offline package and installer contract. `foundation/2026-10-20-stage6-distribution.md` owns its evidence.
-- `runtime-identity-stage3-prd.md` owns runtime isolation acceptance and the Stage 4 boundary.
+- `runtime-identity-stage3-prd.md` owns runtime isolation acceptance and the Stage 4 boundary. `foundation/2026-10-27-phase4-auth-persistence-execution.md` owns scoped credential startup and the coverage matrix; `foundation/2026-10-27-phase4-host-fixture-followup.md` owns diagnostic and corrected fixture history; `foundation/2026-10-28-phase4-pr25-native-ci-closeout.md` owns earlier native receipts, and `foundation/2026-10-29-pr24-pr25-integration.md` owns the current integration; neither is overall migration acceptance.
 
 - `rust-identity-stage2-prd.md` owns the authorized Rust workspace/executable migration and protected-merge acceptance; architecture/foundation children own its mapping and evidence.
 

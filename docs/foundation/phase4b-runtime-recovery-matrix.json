@@ -11,7 +11,7 @@
       "missing_scenario": "Additional end-to-end negative service and host credential consumers on all native platforms",
       "platform": "Linux, Windows, macOS",
       "evidence_sha": "b35be668bae8e88afea07cceb644c0c3635d6c39",
-      "result": "PARTIAL; local hosted fixture is ignored by default, not executed in this worktree"
+      "result": "PARTIAL; selected hosted native keyring and provider credential tests passed on all five PR #26 native jobs; standalone local default run ignored two hosted cases. Additional consumers remain open"
     },
     {
       "requirement": "Acknowledged checkpoint after interrupted JSONL append survives restart",
@@ -19,9 +19,9 @@
       "backend": "owned checkpoint JSONL under JARVIS_CHECKPOINT_ROOT or .jarvis/checkpoints",
       "existing_test": "crates/jarvis-checkpoints/src/ledger.rs::create_persists_across_reopen",
       "missing_scenario": "Torn unterminated suffix followed by successful append and second restart",
-      "platform": "Linux x86_64, Windows x86_64, macOS Intel and Apple silicon native CI; Linux arm64 check also success",
+      "platform": "Linux locally; native Linux x86_64/arm64, Windows x86_64 and macOS Intel/Apple Silicon CI",
       "evidence_sha": "d47e79329ee5204664d40c5c332d8d87d8a44f55",
-      "result": "GREEN: named checkpoint and TUI bundle tests executed on native Linux x86_64, Windows x86_64, macOS Intel/Apple silicon in PR #26 exact-head CI; broader recovery open"
+      "result": "RED before repair (1 record vs 2); GREEN in all five selected native jobs of run 40665446147, PR #26 13/13 exact-head checks"
     },
     {
       "requirement": "Synthetic foreign checkpoint state remains unchanged under owned recovery",
@@ -29,9 +29,9 @@
       "backend": "distinct temporary Jarvis and synthetic foreign profiles",
       "existing_test": "apps/jarvis-tui/src/main.rs::private_store_bundles_never_open_unowned_roots",
       "missing_scenario": "Interrupted owned append and subsequent publication with foreign contents invariant",
-      "platform": "Linux x86_64, Windows x86_64, macOS Intel and Apple silicon native CI; Linux arm64 check also success",
+      "platform": "Linux locally; native Linux x86_64/arm64, Windows x86_64 and macOS Intel/Apple Silicon CI",
       "evidence_sha": "d47e79329ee5204664d40c5c332d8d87d8a44f55",
-      "result": "GREEN: named owned TUI bundle and unowned-root tests executed on native Linux x86_64, Windows x86_64, macOS Intel/Apple silicon; ACL/reparse negatives open"
+      "result": "GREEN in all five selected native jobs of run 40665446147 for content, entry count and owned restore; ACL/metadata manifests and reparse negatives not covered"
     },
     {
       "requirement": "Session and other JSONL consumers recover without loss of acknowledged records",
@@ -48,10 +48,10 @@
       "consumer": "SessionLineage and CronRegistry public production stores",
       "backend": "Owned session and cron JSONL under disposable checkpoint root",
       "existing_test": "crates/jarvis-checkpoints/tests/failed_mutations.rs",
-      "missing_scenario": "Native Windows/macOS, separate-process restart, fault after sync, hosted command consumers, multi-process scheduler claims",
-      "platform": "Linux local only; Windows and macOS pending",
-      "evidence_sha": null,
-      "result": "RED before correction (2 failed); GREEN locally (3 passed after added lease settlement case); exact-head native CI pending"
+      "missing_scenario": "Reconciled-head native verification, separate-process restart, fault after sync, hosted command consumers, multi-process scheduler claims",
+      "platform": "Original stacked PR #27 head: Linux x86_64/arm64, Windows x86_64, macOS Intel/Apple Silicon; reconciled head pending",
+      "evidence_sha": "2c72516c93da673d0b750800a7fbab143787450e",
+      "result": "RED before correction (2 failed); GREEN locally (3 passed); all three named regressions passed in five native jobs of original-head run 40683488287; new reconciled candidate not yet verified"
     }
   ]
 }

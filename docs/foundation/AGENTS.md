@@ -7,10 +7,15 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 ## Ownership
 
 - `2026-10-28-phase4c-session-cron-failed-writes.md` owns the bounded red-first failed-write cache-consistency repair and local receipts; the Phase 4B coverage matrix also tracks native and hosted open cases.
+- `2026-10-29-pr25-pr27-integration.md` owns the authorized sequential PR #25–#27 integration, exact merge/main matrix, preservation, review limitations and remaining risks; post-publication receipts stay local until another authorized code change.
 
 - `2026-10-28-phase4b-checkpoint-torn-append.md` owns the bounded Phase 4B source-reproduced checkpoint JSONL recovery defect, focused TUI consumer test and exact-head/native acceptance status; `phase4b-runtime-recovery-matrix.json` tracks scope-specific covered and open credential/session/coexistence cases without claiming full Phase 4B completion.
 
-- `2026-10-26-migration-interruption-identity-repair.md` owns the three-host displayed-label correction, local regressions and remaining exact-head/native acceptance boundary.
+- `2026-10-27-phase4-auth-persistence-execution.md` and `phase4-auth-persistence-coverage.json` own scoped red-first credential-override preflight and its limited coverage matrix; `2026-10-27-phase4-host-fixture-followup.md` preserves signed-out native fixture failure/correction receipts. `2026-10-28-phase4-pr25-native-ci-closeout.md` owns historical exact-head PR #25 native receipts and review limitations; `2026-10-29-pr24-pr25-integration.md` owns PR #24 actual merged-main receipts and PR #25 reconciliation/current-head boundary. Windows Issue #23 remains separately unresolved.
+
+- `2026-10-26-windows-private-replacement-investigation.md` owns Issue #23's sharing-denial diagnostic, historical failed-run context and unresolved causal boundary. `2026-10-28-pr24-integration.md` owns PR #24 reconciliation, exact-head review/CI and later authorized integration readback; publication-only receipts remain local until another authorized code change.
+
+- `2026-10-26-migration-recon-execution.md` and baseline inventory own source-pinned reconnaissance. `2026-10-26-migration-classification-ci-review-checkpoint.md` owns v2 triage and historical CI; `2026-10-26-migration-phase3-execution.md` owns v3 decisions and interim CI; `2026-10-26-migration-ci-final-settlement.md` owns the earlier pre-merge 13/13 check receipts. `2026-10-26-migration-pr21-reconciliation.md` owns audit/main integration and post-merge CI/Issue #23 observations; `2026-10-26-migration-current-head-followup.md` owns the later remote PR-head check absence and scoped local tests. `2026-10-26-migration-interruption-identity-repair.md` and `2026-10-26-migration-pr22-postmerge-evidence.md` own the label fix and initial integration record. Preserve failed attempts and unresolved active paths; none proves final migration acceptance.
 
 - `2026-10-25-stage7b-windows-environment-notification-correction.md` owns PR #20 P1 shell notification red/green evidence; no candidate rerun is authorized.
 

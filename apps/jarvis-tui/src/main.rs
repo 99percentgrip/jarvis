@@ -149,6 +149,8 @@ pub(crate) async fn main() -> io::Result<()> {
         })?;
         return run_rrc_terminal_ownership_probe(std::path::Path::new(program));
     }
+    jarvis_auth::validate_production_credential_overrides()
+        .map_err(|_| io::Error::other("Private credential ownership refused"))?;
     jarvis_config::JarvisPaths::initialize_environment()?;
     jarvis_security::validate_new_or_owned_directory(&std::env::current_dir()?.join(".jarvis"))?;
     // VRO-13 PR-2: resolve JARVIS_FIREWALL once at boot. First

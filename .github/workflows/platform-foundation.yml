@@ -171,6 +171,7 @@ jobs:
             acp_binary="$acp_binary.exe"
           fi
           python apps/jarvis-tui/tests/test_windows_child_cleanup.py
+          python apps/jarvis-tui/tests/test_release_hosts_acp_diagnostics.py
           python apps/jarvis-tui/tests/first_launch_pty.py "$native_binary"
           python apps/jarvis-tui/tests/settings_auth_pty.py "$native_binary"
           python apps/jarvis-tui/tests/voice_setup_pty.py "$native_binary"

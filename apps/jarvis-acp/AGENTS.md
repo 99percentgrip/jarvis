@@ -7,6 +7,8 @@ transport, stderr-only tracing, and orderly shutdown.
 
 ## Ownership
 
+- `src/main.rs` preflights explicit production credential vault overrides before host startup; `tests/phase4_credential_boundary.rs` runs the ordinary ACP binary against synthetic owned and foreign vaults. No subscription authorization or native-keyring acceptance follows from this test.
+
 - VB-PRD-001 composition is behind the default-off `bridge` build
   feature. `bridge_enabled_from_settings()` resolves the explicit
   user-owned `.jarvis/bridge-settings.json` once per process

@@ -1,4 +1,13 @@
-- [Interrupted-turn identity repair](2026-10-26-migration-interruption-identity-repair.md) — scoped ACP/TUI/shared-worker user-facing prefix correction and Linux-local regressions; exact-head/native gates remain open.
+- [PR #24 Windows private replacement integration](2026-10-28-pr24-integration.md) — diagnostic integrated by merge commit `3aa536306d9a7f63d5ae7a22bb08769fb4f64210`; four exact-main workflows passed, including the named Windows test; Issue #23 remains unresolved. Later post-merge receipts are retained locally.
+- [Windows private replacement investigation](2026-10-26-windows-private-replacement-investigation.md) — induced native Windows sharing-denial behavior, not proof of the historical failure's cause.
+- [Current-head migration follow-up](2026-10-26-migration-current-head-followup.md) — historical pre-merge PR #21 observation (no checks then); later exact-head/merged-main evidence is separately recorded.
+- [PR #21 audit reconciliation](2026-10-26-migration-pr21-reconciliation.md) — v3/Phase 3 source preservation, semantic main integration, post-merge PR #22 attempt-1 Windows failure and attempt-2 recovery; Issue #23 remains open.
+- [PR #22 post-merge migration evidence](2026-10-26-migration-pr22-postmerge-evidence.md) — merge `1e01c4ed`, original pending workflow observations and independent assistant comment review; later workflow results are retained in PR #21's reconciliation.
+- [Interrupted-turn identity repair](2026-10-26-migration-interruption-identity-repair.md) — scoped ACP/TUI/shared-worker prefix correction; its earlier local/native-pending statements are historical pre-merge evidence.
+- [Migration exact-head pre-merge CI settlement](2026-10-26-migration-ci-final-settlement.md) — [per-job snapshot](2026-10-26-migration-ci-snapshot-final.json); PR #21 and #22 then passed 13/13; historical Windows failure remains.
+- [Migration Phase 3 execution checkpoint](2026-10-26-migration-phase3-execution.md) — [v3 inventory](2026-10-26-migration-identifier-inventory-v3.jsonl.gz), [interim CI snapshot](2026-10-26-migration-ci-snapshot-phase3.json); 1,067 UNKNOWN text files and 110 binary leads at that checkpoint.
+- [Migration classification and CI review checkpoint](2026-10-26-migration-classification-ci-review-checkpoint.md) — [v2 inventory](2026-10-26-migration-identifier-inventory-v2.jsonl.gz), [binary candidates](2026-10-26-migration-binary-candidates.json), [CI snapshot](2026-10-26-migration-ci-snapshot.json); 1,069 UNKNOWN at that checkpoint.
+- [Independent migration reconnaissance](2026-10-26-migration-recon-execution.md) — baseline and historical failed checks; [baseline manifest](2026-10-26-migration-baseline-manifest.md) and [v1 inventory](2026-10-26-migration-identifier-inventory.jsonl.gz).
 - [Stage 7B native acceptance reverification](2026-10-21-stage7b-native-acceptance-reverification.md) — 165/165 exact local cases and the feature-enabled ACP governor process case passed; hosted five-target candidate remains unexecuted.
 - [Stage 7B local continuation closeout](2026-10-20-stage7b-local-closeout.md) — earlier ownership/lease receipts and the then-blocked D-Bus attempt; superseded for native acceptance by the reverification above.
 - [Stage 7B storage ownership hardening](2026-10-20-stage7b-storage-ownership-hardening.md) — red-first unmarked-root and metadata-redirection refusals, restart-safe atomic writes, scoped library verification; candidate remains nonpublishing and incomplete.
@@ -13,7 +22,13 @@
 
 - [Phase 4C session and cron failed-write consistency](2026-10-28-phase4c-session-cron-failed-writes.md) — red-first rollback of failed in-memory mutations, disposable public-store cases and [open coverage matrix](phase4b-runtime-recovery-matrix.json). Native acceptance remains pending.
 
-- [Phase 4B bounded checkpoint crash recovery](2026-10-28-phase4b-checkpoint-torn-append.md) — torn JSONL append lost an acknowledged checkpoint after restart; red-first public store regression, owned TUI bundle/foreign-state fixture and [coverage matrix](phase4b-runtime-recovery-matrix.json). Native exact-head CI and broader Phase 4B acceptance remain open.
+- [PR #25–#27 sequential protected integration](2026-10-29-pr25-pr27-integration.md) — exact-head and post-merge evidence, scoped preservation and outstanding limits; provisional states remain explicit until verified.
+
+- [Phase 4B bounded checkpoint crash recovery](2026-10-28-phase4b-checkpoint-torn-append.md) — torn JSONL append lost an acknowledged checkpoint after restart; red-first public store regression, owned TUI bundle/foreign-state fixture and [coverage matrix](phase4b-runtime-recovery-matrix.json). Native exact-head CI verified the scoped repair; broader Phase 4B acceptance remains open.
+
+- [PR #24 integrated-main and PR #25 reconciliation](2026-10-29-pr24-pr25-integration.md) — exact PR #24 merge and four successful post-merge workflows; PR #25 reconciliation and scoped credential review (publication-only merge receipts retained locally).
+
+- [Phase 4 authentication/persistence isolation](2026-10-27-phase4-auth-persistence-execution.md) — red-first ordinary ACP credential-override preflight repair and [machine-readable scoped coverage](phase4-auth-persistence-coverage.json); [release-host fixture follow-up](2026-10-27-phase4-host-fixture-followup.md) retains original and diagnostic failures. [PR #25 native CI closeout](2026-10-28-phase4-pr25-native-ci-closeout.md) records historical exact-head synthetic five-platform receipts. Broader consumer coverage and independent review remain open.
 
 - [Stage 7B PR #20 environment notification correction](2026-10-25-stage7b-windows-environment-notification-correction.md) — real-window broadcast regression, Windows red-first failure and follow-up verification; native candidate acceptance remains separate.
 
