@@ -20,9 +20,13 @@
 
 # Foundation Evidence Index
 
-- [PR #24 integrated-main and PR #25 reconciliation](2026-10-29-pr24-pr25-integration.md) — exact PR #24 merge and four successful post-merge workflows; existing PR #25 branch reconciliation, scope-limited credential review and separate merge-authorization boundary.
+- [PR #25–#27 sequential protected integration](2026-10-29-pr25-pr27-integration.md) — exact-head and post-merge evidence, scoped preservation and outstanding limits; provisional states remain explicit until verified.
 
-- [Phase 4 authentication/persistence isolation](2026-10-27-phase4-auth-persistence-execution.md) — red-first ordinary ACP credential-override preflight repair and [machine-readable scoped coverage](phase4-auth-persistence-coverage.json); [release-host fixture follow-up](2026-10-27-phase4-host-fixture-followup.md) retains original and diagnostic failures. [PR #25 native CI closeout](2026-10-28-phase4-pr25-native-ci-closeout.md) records the historical exact-head synthetic five-platform receipts; new reconciliation against current main needs fresh verification. Broader consumer coverage and independent review remain open.
+- [Phase 4B bounded checkpoint crash recovery](2026-10-28-phase4b-checkpoint-torn-append.md) — torn JSONL append lost an acknowledged checkpoint after restart; red-first public store regression, owned TUI bundle/foreign-state fixture and [coverage matrix](phase4b-runtime-recovery-matrix.json). Native exact-head CI verified the scoped repair; broader Phase 4B acceptance remains open.
+
+- [PR #24 integrated-main and PR #25 reconciliation](2026-10-29-pr24-pr25-integration.md) — exact PR #24 merge and four successful post-merge workflows; PR #25 reconciliation and scoped credential review (publication-only merge receipts retained locally).
+
+- [Phase 4 authentication/persistence isolation](2026-10-27-phase4-auth-persistence-execution.md) — red-first ordinary ACP credential-override preflight repair and [machine-readable scoped coverage](phase4-auth-persistence-coverage.json); [release-host fixture follow-up](2026-10-27-phase4-host-fixture-followup.md) retains original and diagnostic failures. [PR #25 native CI closeout](2026-10-28-phase4-pr25-native-ci-closeout.md) records historical exact-head synthetic five-platform receipts. Broader consumer coverage and independent review remain open.
 
 - [Stage 7B PR #20 environment notification correction](2026-10-25-stage7b-windows-environment-notification-correction.md) — real-window broadcast regression, Windows red-first failure and follow-up verification; native candidate acceptance remains separate.
 

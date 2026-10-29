@@ -26,12 +26,14 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-20-stage6-distribution.md",
     "docs/foundation/evidence-index.md",
     "docs/foundation/2026-10-26-migration-interruption-identity-repair.md",
+    "docs/foundation/2026-10-28-phase4b-checkpoint-torn-append.md",
     "docs/foundation/2026-10-26-windows-private-replacement-investigation.md",
     "docs/foundation/2026-10-28-pr24-integration.md",
     "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md",
     "docs/foundation/2026-10-27-phase4-host-fixture-followup.md",
     "docs/foundation/2026-10-28-phase4-pr25-native-ci-closeout.md",
     "docs/foundation/2026-10-29-pr24-pr25-integration.md",
+    "docs/foundation/2026-10-29-pr25-pr27-integration.md",
     "docs/foundation/2026-10-26-migration-phase3-execution.md",
     "docs/foundation/2026-10-26-migration-current-head-followup.md",
     "docs/foundation/2026-10-26-migration-pr21-reconciliation.md",
@@ -423,6 +425,22 @@ mod tests {
         assert!(!owned_line(
             "docs/architecture/identity-architecture.md",
             "`jarvis-unreviewed`"
+        ));
+    }
+
+    #[test]
+    fn phase4b_report_admits_only_registered_identity_tokens() {
+        let path = "docs/foundation/2026-10-28-phase4b-checkpoint-torn-append.md";
+        assert!(owned_line(
+            path,
+            "`cargo test -p jarvis-checkpoints --quiet`"
+        ));
+        assert!(owned_line(path, "`apps/jarvis-tui/src/main.rs`"));
+        assert!(!owned_line(path, "jarvis upstream prose"));
+        assert!(!owned_line(path, "`jarvis-unreviewed`"));
+        assert!(!owned_line(
+            "docs/foundation/unowned-report.md",
+            "`jarvis-checkpoints`"
         ));
     }
 

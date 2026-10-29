@@ -1,0 +1,47 @@
+{
+  "base_sha": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7",
+  "candidate_sha": "d47e79329ee5204664d40c5c332d8d87d8a44f55",
+  "scope": "Phase 4B bounded checkpoint JSONL crash recovery; remaining credential/session/coexistence requirements are open",
+  "rows": [
+    {
+      "requirement": "Credential namespace, native persistence, rotation, logout and native failure modes",
+      "consumer": "SecureCredentialStore via provider/host authentication",
+      "backend": "native OS manager or explicitly owned retained vault",
+      "existing_test": "crates/jarvis-auth/tests/native_persistence.rs; crates/jarvis-auth/tests/linux_secret_service.rs; PR #25 native receipts",
+      "missing_scenario": "Additional end-to-end negative service and host credential consumers on all native platforms",
+      "platform": "Linux, Windows, macOS",
+      "evidence_sha": "b35be668bae8e88afea07cceb644c0c3635d6c39",
+      "result": "PARTIAL; selected hosted native keyring and provider credential tests passed on all five PR #26 native jobs; standalone local default run ignored two hosted cases. Additional consumers remain open"
+    },
+    {
+      "requirement": "Acknowledged checkpoint after interrupted JSONL append survives restart",
+      "consumer": "TUI CheckpointStores::open_at -> CheckpointsLedger::open/create -> append_line -> reopen",
+      "backend": "owned checkpoint JSONL under JARVIS_CHECKPOINT_ROOT or .jarvis/checkpoints",
+      "existing_test": "crates/jarvis-checkpoints/src/ledger.rs::create_persists_across_reopen",
+      "missing_scenario": "Torn unterminated suffix followed by successful append and second restart",
+      "platform": "Linux locally; native Linux x86_64/arm64, Windows x86_64 and macOS Intel/Apple Silicon CI",
+      "evidence_sha": "d47e79329ee5204664d40c5c332d8d87d8a44f55",
+      "result": "RED before repair (1 record vs 2); GREEN in all five selected native jobs of run 40665446147, PR #26 13/13 exact-head checks"
+    },
+    {
+      "requirement": "Synthetic foreign checkpoint state remains unchanged under owned recovery",
+      "consumer": "TUI CheckpointStores::open_at -> public CheckpointsLedger",
+      "backend": "distinct temporary Jarvis and synthetic foreign profiles",
+      "existing_test": "apps/jarvis-tui/src/main.rs::private_store_bundles_never_open_unowned_roots",
+      "missing_scenario": "Interrupted owned append and subsequent publication with foreign contents invariant",
+      "platform": "Linux locally; native Linux x86_64/arm64, Windows x86_64 and macOS Intel/Apple Silicon CI",
+      "evidence_sha": "d47e79329ee5204664d40c5c332d8d87d8a44f55",
+      "result": "GREEN in all five selected native jobs of run 40665446147 for content, entry count and owned restore; ACL/metadata manifests and reparse negatives not covered"
+    },
+    {
+      "requirement": "Session and other JSONL consumers recover without loss of acknowledged records",
+      "consumer": "SessionLineage, CronRegistry and hosted command wrappers",
+      "backend": "owned JSONL stores sharing append_line",
+      "existing_test": "crates/jarvis-checkpoints/src/sessions.rs::create_persists_the_new_record_across_reopen",
+      "missing_scenario": "Full native process replay, corrupt middle records, interrupted writes and cleanup across hosts",
+      "platform": "Linux, Windows, macOS",
+      "evidence_sha": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7",
+      "result": "OPEN; shared append fix alone does not prove all consumers"
+    }
+  ]
+}

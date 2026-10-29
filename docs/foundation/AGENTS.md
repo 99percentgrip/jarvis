@@ -6,6 +6,10 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-10-29-pr25-pr27-integration.md` owns the authorized sequential PR #25–#27 integration, exact merge/main matrix, preservation, review limitations and remaining risks; post-publication receipts stay local until another authorized code change.
+
+- `2026-10-28-phase4b-checkpoint-torn-append.md` owns the bounded Phase 4B source-reproduced checkpoint JSONL recovery defect, focused TUI consumer test and exact-head/native acceptance status; `phase4b-runtime-recovery-matrix.json` tracks scope-specific covered and open credential/session/coexistence cases without claiming full Phase 4B completion.
+
 - `2026-10-27-phase4-auth-persistence-execution.md` and `phase4-auth-persistence-coverage.json` own scoped red-first credential-override preflight and its limited coverage matrix; `2026-10-27-phase4-host-fixture-followup.md` preserves signed-out native fixture failure/correction receipts. `2026-10-28-phase4-pr25-native-ci-closeout.md` owns historical exact-head PR #25 native receipts and review limitations; `2026-10-29-pr24-pr25-integration.md` owns PR #24 actual merged-main receipts and PR #25 reconciliation/current-head boundary. Windows Issue #23 remains separately unresolved.
 
 - `2026-10-26-windows-private-replacement-investigation.md` owns Issue #23's sharing-denial diagnostic, historical failed-run context and unresolved causal boundary. `2026-10-28-pr24-integration.md` owns PR #24 reconciliation, exact-head review/CI and later authorized integration readback; publication-only receipts remain local until another authorized code change.

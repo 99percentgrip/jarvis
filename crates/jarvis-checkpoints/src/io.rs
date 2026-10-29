@@ -55,13 +55,32 @@ pub(crate) fn write_atomic(target: &Path, payload: &[u8]) -> Result<(), Checkpoi
 /// `Mutex` to serialize them.
 pub(crate) fn append_line(target: &Path, line: &str) -> Result<(), CheckpointError> {
     jarvis_security::validate_private_path(target).map_err(|_| CheckpointError::InvalidRoot)?;
-    use std::io::Write;
-    // Scoped: the `File` is dropped at the closing brace.
+    use std::io::{Read, Seek, SeekFrom};
+    // Scoped: the `File` is dropped at the closing brace. Read the last byte
+    // before appending: a crash may have left an unterminated, unparseable
+    // suffix. Never join an acknowledged new record onto that suffix.
     let mut file = fs::OpenOptions::new()
         .create(true)
+        .read(true)
         .append(true)
         .open(target)
         .map_err(|_| CheckpointError::io("open"))?;
+    if file
+        .metadata()
+        .map_err(|_| CheckpointError::io("stat"))?
+        .len()
+        > 0
+    {
+        file.seek(SeekFrom::End(-1))
+            .map_err(|_| CheckpointError::io("seek"))?;
+        let mut last = [0];
+        file.read_exact(&mut last)
+            .map_err(|_| CheckpointError::io("read"))?;
+        if last[0] != b'\n' {
+            file.write_all(b"\n")
+                .map_err(|_| CheckpointError::io("write"))?;
+        }
+    }
     writeln!(file, "{line}").map_err(|_| CheckpointError::io("write"))?;
     file.sync_all().map_err(|_| CheckpointError::io("fsync"))?;
     Ok(())
