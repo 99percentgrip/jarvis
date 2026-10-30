@@ -29,6 +29,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-28-phase4b-checkpoint-torn-append.md",
     "docs/foundation/2026-10-28-phase4c-session-cron-failed-writes.md",
     "docs/foundation/2026-10-26-windows-private-replacement-investigation.md",
+    "docs/foundation/2026-10-30-phase5a-windows-private-state-reliability.md",
     "docs/foundation/2026-10-28-pr24-integration.md",
     "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md",
     "docs/foundation/2026-10-27-phase4-host-fixture-followup.md",
@@ -225,6 +226,12 @@ pub fn owned_line(path: &str, line: &str) -> bool {
     if path == "docs/foundation/2026-10-28-phase4-pr25-native-ci-closeout.md" {
         scrubbed = scrub_technical_token(&scrubbed, "repos/99percentgrip/jarvis/branches/main");
         scrubbed = scrub_technical_token(&scrubbed, "Jarvis verification");
+    }
+    if path == "docs/foundation/2026-10-30-phase5a-windows-private-state-reliability.md" {
+        scrubbed = scrub_technical_token(
+            &scrubbed,
+            "/home/Alex/Projects/jarvis-integration-archive-20261028",
+        );
     }
     if path == "docs/foundation/2026-10-26-migration-phase3-execution.md" {
         for token in [
@@ -426,6 +433,25 @@ mod tests {
         assert!(!owned_line(
             "docs/architecture/identity-architecture.md",
             "`jarvis-unreviewed`"
+        ));
+    }
+
+    #[test]
+    fn phase5a_report_admits_exact_archive_path_but_no_new_brand_prose() {
+        let path = "docs/foundation/2026-10-30-phase5a-windows-private-state-reliability.md";
+        assert!(owned_line(
+            path,
+            "`cargo test -p jarvis-security --lib --quiet`"
+        ));
+        assert!(owned_line(
+            path,
+            "`/home/Alex/Projects/jarvis-integration-archive-20261028`"
+        ));
+        assert!(!owned_line(path, "jarvis unregistered prose"));
+        assert!(!owned_line(path, "`jarvis-unreviewed`"));
+        assert!(!owned_line(
+            "docs/foundation/unowned-report.md",
+            "`/home/Alex/Projects/jarvis-integration-archive-20261028`"
         ));
     }
 
