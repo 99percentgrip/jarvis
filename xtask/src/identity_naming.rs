@@ -29,6 +29,7 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-28-phase4b-checkpoint-torn-append.md",
     "docs/foundation/2026-10-28-phase4c-session-cron-failed-writes.md",
     "docs/foundation/2026-10-26-windows-private-replacement-investigation.md",
+    "docs/foundation/2026-10-30-phase5a-windows-private-state-reliability.md",
     "docs/foundation/2026-10-28-pr24-integration.md",
     "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md",
     "docs/foundation/2026-10-27-phase4-host-fixture-followup.md",
@@ -427,6 +428,18 @@ mod tests {
             "docs/architecture/identity-architecture.md",
             "`jarvis-unreviewed`"
         ));
+    }
+
+    #[test]
+    fn phase5a_report_admits_only_registered_tokens() {
+        let path = "docs/foundation/2026-10-30-phase5a-windows-private-state-reliability.md";
+        assert!(owned_line(
+            path,
+            "`cargo test -p jarvis-security --lib --quiet`"
+        ));
+        assert!(!owned_line(path, "jarvis unregistered prose"));
+        assert!(!owned_line(path, "`jarvis-unreviewed`"));
+        assert!(!owned_line(path, "jarvis unregistered archive prose"));
     }
 
     #[test]

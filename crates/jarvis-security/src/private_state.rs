@@ -68,13 +68,48 @@ fn private_temporary_workspace_in(prefix: &str, base: &Path) -> io::Result<tempf
 /// Same-directory staged replacement for application-private configuration.
 pub fn write_private_atomic(target: &Path, bytes: &[u8]) -> io::Result<()> {
     use io::Write;
-    validate_private_path(target)?;
+    // Test-only Windows diagnostics retain the original error and raw OS code;
+    // never print a private path or payload. The production path is unchanged.
+    macro_rules! stage {
+        ($name:literal, $operation:expr) => {{
+            let result = $operation;
+            #[cfg(all(test, windows))]
+            if let Err(ref error) = result {
+                eprintln!(
+                    "write_private_atomic stage={} win32={:?}",
+                    $name,
+                    error.raw_os_error()
+                );
+            }
+            result
+        }};
+    }
+    stage!("validate_path", validate_private_path(target))?;
     let parent = target.parent().ok_or_else(denied)?;
-    prepare_owned_directory(parent)?;
-    let mut staged = tempfile::NamedTempFile::new_in(parent)?;
-    staged.write_all(bytes)?;
-    staged.as_file().sync_all()?;
-    staged.persist(target).map_err(|error| error.error)?;
+    stage!("prepare_owner", prepare_owned_directory(parent))?;
+    let mut staged = stage!("create_temp", tempfile::NamedTempFile::new_in(parent))?;
+    stage!("write_temp", staged.write_all(bytes))?;
+    stage!("sync_temp", staged.as_file().sync_all())?;
+    #[cfg(windows)]
+    {
+        // tempfile's Windows persist fails with OS error 5 under a pinned
+        // private verifier even when both handles share deletion. Native
+        // probes distinguish the successful attribute reset and rename when
+        // performed separately from the failing combined persist operation.
+        // Keep clears FILE_ATTRIBUTE_TEMPORARY after closing the staging
+        // handle; re-arm RAII cleanup before the atomic same-directory rename.
+        let kept = stage!(
+            "clear_temp_attribute",
+            staged.into_temp_path().keep().map_err(|error| error.error)
+        )?;
+        let cleanup = tempfile::TempPath::try_from_path(kept)?;
+        stage!("rename_replace", fs::rename(&cleanup, target))?;
+    }
+    #[cfg(not(windows))]
+    stage!(
+        "persist_replace",
+        staged.persist(target).map_err(|error| error.error)
+    )?;
     #[cfg(unix)]
     fs::File::open(parent)?.sync_all()?;
     Ok(())
