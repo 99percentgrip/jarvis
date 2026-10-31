@@ -120,6 +120,29 @@ mod tests {
     }
 
     #[test]
+    fn native_rename_over_pinned_verifier_identifies_replace_stage() {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        let source = root.join("staging");
+        std::fs::write(&source, b"after").unwrap();
+        // A closed, ordinary staging file has no temporary attribute and no
+        // open handle: this isolates Windows' rename-over-open-target step.
+        let verifier = handle(&target, false).unwrap();
+        let result = std::fs::rename(&source, &target);
+        assert!(
+            result.is_ok(),
+            "native rename raw OS error: {:?}",
+            result.unwrap_err().raw_os_error()
+        );
+        drop(verifier);
+        assert_eq!(std::fs::read(&target).unwrap(), b"after");
+        crate::validate_private_file(&target).unwrap();
+        crate::validate_owned_directory(&root).unwrap();
+    }
+
+    #[test]
     fn native_acl_refuses_broad_access_and_secures_only_new_storage() {
         let fixture = tempfile::tempdir().unwrap();
         let private = fixture.path().join("private");

@@ -37,7 +37,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   under legacy payload names; they do not activate new installer/update ownership.
 
 
-- Jarvis Windows workspace tests run serially to avoid competing PowerShell startup fixtures; every test and fixed timing assertion remains required.
+- Jarvis Windows workspace tests run serially to avoid competing PowerShell startup fixtures; every test and fixed timing assertion remains required. `platform-foundation.yml` offers an explicit `workflow_dispatch` private-state probe on native Windows for focused Issue #23 diagnostics; it skips the foundation matrix only on that opt-in dispatch, never for PR/main events. A probe result is not mandatory five-target acceptance.
 
 - Jarvis PR verification checks out the exact PR head with persisted credentials
   disabled. `pr-verification.yml` and `verify_pr_matrix.py` own the fail-closed
