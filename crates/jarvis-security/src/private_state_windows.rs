@@ -194,6 +194,25 @@ mod tests {
     }
 
     #[test]
+    fn native_attribute_reset_on_staging_is_independent_of_target_verifier() {
+        use std::io::Write;
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        let verifier = handle(&target, false).unwrap();
+        let mut staged = tempfile::NamedTempFile::new_in(&root).unwrap();
+        staged.write_all(b"after").unwrap();
+        staged.as_file().sync_all().unwrap();
+        // TempPath::keep calls the same SetFileAttributesW used by persist,
+        // without calling MoveFileExW. It closes its own file handle first.
+        let path = staged.into_temp_path().keep().map_err(|e| e.error).unwrap();
+        std::fs::rename(&path, &target).unwrap();
+        drop(verifier);
+        assert_eq!(std::fs::read(&target).unwrap(), b"after");
+    }
+
+    #[test]
     fn native_acl_refuses_broad_access_and_secures_only_new_storage() {
         let fixture = tempfile::tempdir().unwrap();
         let private = fixture.path().join("private");
