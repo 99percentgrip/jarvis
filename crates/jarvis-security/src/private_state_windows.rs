@@ -143,6 +143,30 @@ mod tests {
     }
 
     #[test]
+    fn native_open_staging_rename_isolated_from_attribute_reset() {
+        use std::io::Write;
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        let verifier = handle(&target, false).unwrap();
+        let mut staged = tempfile::NamedTempFile::new_in(&root).unwrap();
+        staged.write_all(b"after").unwrap();
+        staged.as_file().sync_all().unwrap();
+        // std::fs::rename maps to native rename and does not call tempfile's
+        // SetFileAttributesW. Keep the staging handle open, unlike the preceding
+        // closed-source control, to distinguish its sharing behavior.
+        let result = std::fs::rename(staged.path(), &target);
+        assert!(
+            result.is_ok(),
+            "open-stage native rename raw OS error: {:?}",
+            result.unwrap_err().raw_os_error()
+        );
+        drop(verifier);
+        assert_eq!(std::fs::read(&target).unwrap(), b"after");
+    }
+
+    #[test]
     fn native_acl_refuses_broad_access_and_secures_only_new_storage() {
         let fixture = tempfile::tempdir().unwrap();
         let private = fixture.path().join("private");
