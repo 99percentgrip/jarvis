@@ -132,7 +132,7 @@ remain. Native OS-manager/browser/installer verification is CI evidence, not a
 local installation or real-user-data test. Research workspace advisory remains
 excluded from shipping builds and separately tracked.
 
-The [Phase 5A Windows private-state reliability investigation](foundation/2026-10-30-phase5a-windows-private-state-reliability.md) preserves the original Issue #23 error-5 and rerun receipts and tracks native contention diagnostics; a controlled sharing refusal is not proof of the historical failing syscall. Windows reliability and release acceptance stay open until causal and scope-appropriate native evidence exist.
+The [Issue #23 Windows private-state verifier-sharing repair](foundation/2026-10-30-phase5a-windows-private-state-reliability.md) preserves the original error-5/rerun receipts, native red-first verifier-handle conflict and narrowly scoped production correction; controlled sharing refusal alone does not prove the historical failing syscall. Windows reliability and release acceptance stay open pending final exact-head native evidence and authorized post-merge verification.
 
 Phase 4B's bounded follow-up [checkpoint crash-recovery report](foundation/2026-10-28-phase4b-checkpoint-torn-append.md) and [trace matrix](foundation/phase4b-runtime-recovery-matrix.json) cover one source-reproduced lost-acknowledgment defect through the TUI checkpoint bundle; the [integration record](foundation/2026-10-29-pr25-pr27-integration.md) tracks its reconciled #26 head and exact-main CI. Remaining credential/session/coexistence cases remain separate gates, not completed by this repair.
 

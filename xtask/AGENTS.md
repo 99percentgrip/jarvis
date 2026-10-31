@@ -31,8 +31,7 @@ architecture, MSRV, and source-oracle checks.
   the exact recorded CI label; new branded prose or other URLs remain refused.
   The Issue #23 diagnostic, PR #24 integration report and Phase 5A Windows
   reliability report admit only reviewed registered technical paths/command
-  identities; Phase 5A's archive path is an exact report-scoped receipt, not a
-  new product prose exemption.
+  identities; no private absolute archive path is admitted by the naming guard.
   The interrupted-turn migration repair admits only the complete shared-worker
   interrupted-stream marker prefix and reviewed quoted technical tokens in its
   owning report; an arbitrary product claim after the short marker must fail.

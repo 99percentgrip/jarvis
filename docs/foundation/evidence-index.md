@@ -20,7 +20,7 @@
 
 # Foundation Evidence Index
 
-- [Phase 5A Windows private-state reliability investigation](2026-10-30-phase5a-windows-private-state-reliability.md) — original error-5 receipt, stage-scoped test diagnostics and synchronized native Windows contention gate; original failing operation and root cause remain unproven.
+- [Issue #23 Windows private-state verifier-sharing repair](2026-10-30-phase5a-windows-private-state-reliability.md) — original error-5 receipt, diagnostic coverage, native red-first reproduction of a production-owned no-delete-sharing verifier, narrow repair and acceptance boundary; the exact historical syscall remains unrecorded.
 
 - [Phase 4C session and cron failed-write consistency](2026-10-28-phase4c-session-cron-failed-writes.md) — red-first rollback of failed in-memory mutations, disposable public-store cases and [open coverage matrix](phase4b-runtime-recovery-matrix.json). Native acceptance remains pending.
 

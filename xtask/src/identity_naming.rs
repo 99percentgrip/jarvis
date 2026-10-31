@@ -227,12 +227,6 @@ pub fn owned_line(path: &str, line: &str) -> bool {
         scrubbed = scrub_technical_token(&scrubbed, "repos/99percentgrip/jarvis/branches/main");
         scrubbed = scrub_technical_token(&scrubbed, "Jarvis verification");
     }
-    if path == "docs/foundation/2026-10-30-phase5a-windows-private-state-reliability.md" {
-        scrubbed = scrub_technical_token(
-            &scrubbed,
-            "/home/Alex/Projects/jarvis-integration-archive-20261028",
-        );
-    }
     if path == "docs/foundation/2026-10-26-migration-phase3-execution.md" {
         for token in [
             "repos/99percentgrip/jarvis/rulesets/25049950",
@@ -437,22 +431,15 @@ mod tests {
     }
 
     #[test]
-    fn phase5a_report_admits_exact_archive_path_but_no_new_brand_prose() {
+    fn phase5a_report_admits_only_registered_tokens() {
         let path = "docs/foundation/2026-10-30-phase5a-windows-private-state-reliability.md";
         assert!(owned_line(
             path,
             "`cargo test -p jarvis-security --lib --quiet`"
         ));
-        assert!(owned_line(
-            path,
-            "`/home/Alex/Projects/jarvis-integration-archive-20261028`"
-        ));
         assert!(!owned_line(path, "jarvis unregistered prose"));
         assert!(!owned_line(path, "`jarvis-unreviewed`"));
-        assert!(!owned_line(
-            "docs/foundation/unowned-report.md",
-            "`/home/Alex/Projects/jarvis-integration-archive-20261028`"
-        ));
+        assert!(!owned_line(path, "jarvis unregistered archive prose"));
     }
 
     #[test]

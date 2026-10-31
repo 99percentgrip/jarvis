@@ -23,6 +23,32 @@ fn assert_sharing_denied(error: std::io::Error) {
 }
 
 #[test]
+fn delete_sharing_reader_allows_replacement_without_losing_its_snapshot() {
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fixture.path().join("private");
+    let target = root.join("settings.json");
+    write_private_atomic(&target, b"original").unwrap();
+    for value in 0..32u8 {
+        let mut reader = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0x1 | 0x2 | 0x4)
+            .open(&target)
+            .unwrap();
+        let before = fs::read(&target).unwrap();
+        let next = vec![value; 8192];
+        write_private_atomic(&target, &next).unwrap();
+        use std::io::Read;
+        let mut snapshot = Vec::new();
+        reader.read_to_end(&mut snapshot).unwrap();
+        assert_eq!(snapshot, before);
+        assert_eq!(fs::read(&target).unwrap(), next);
+        validate_private_file(&target).unwrap();
+        validate_owned_directory(&root).unwrap();
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 2);
+    }
+}
+
+#[test]
 fn non_delete_sharing_reader_denies_replace_without_corrupting_the_record() {
     let fixture = tempfile::tempdir().unwrap();
     let root = fixture.path().join("private");

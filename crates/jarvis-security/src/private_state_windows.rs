@@ -21,7 +21,10 @@ fn handle(path: &Path, write_acl: bool) -> io::Result<std::fs::File> {
     // READ_CONTROL, optionally WRITE_DAC; pin object and open a reparse point itself.
     options
         .access_mode(0x0002_0000 | if write_acl { 0x0004_0000 } else { 0 })
-        .share_mode(0x0000_0001 | 0x0000_0002)
+        // Verifiers pin the object for owner/DACL inspection but must not block
+        // same-target atomic publication by a concurrent writer. A handle to the
+        // old file remains valid after replacement; no ACL is changed by verify.
+        .share_mode(0x0000_0001 | 0x0000_0002 | 0x0000_0004)
         .custom_flags(0x0200_0000 | 0x0020_0000);
     let file = options.open(path)?;
     if file.metadata()?.file_attributes() & 0x400 != 0 {
@@ -104,13 +107,16 @@ mod tests {
         crate::write_private_atomic(&target, b"before").unwrap();
         // Hold the exact production verification handle, not an imitation or a
         // timed reader. Before FILE_SHARE_DELETE, MoveFileExW cannot replace it.
-        let verifier = handle(&target, false).unwrap();
-        crate::write_private_atomic(&target, b"after").unwrap();
-        assert_eq!(std::fs::read(&target).unwrap(), b"after");
-        drop(verifier);
-        crate::validate_private_file(&target).unwrap();
-        crate::validate_owned_directory(&root).unwrap();
-        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 2);
+        for iteration in 0..32u8 {
+            let verifier = handle(&target, false).unwrap();
+            let payload = vec![iteration; 8192];
+            crate::write_private_atomic(&target, &payload).unwrap();
+            assert_eq!(std::fs::read(&target).unwrap(), payload);
+            drop(verifier);
+            crate::validate_private_file(&target).unwrap();
+            crate::validate_owned_directory(&root).unwrap();
+            assert_eq!(std::fs::read_dir(&root).unwrap().count(), 2);
+        }
     }
 
     #[test]
