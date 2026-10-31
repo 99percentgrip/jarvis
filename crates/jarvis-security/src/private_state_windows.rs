@@ -167,6 +167,33 @@ mod tests {
     }
 
     #[test]
+    fn native_closed_staging_persist_over_pinned_verifier() {
+        use std::io::Write;
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        for value in 0..32u8 {
+            let verifier = handle(&target, false).unwrap();
+            let mut staged = tempfile::NamedTempFile::new_in(&root).unwrap();
+            staged.write_all(&vec![value; 8192]).unwrap();
+            staged.as_file().sync_all().unwrap();
+            // The same tempfile persist API, with its own source handle closed.
+            // Any failure still owns and cleans its unique staging path.
+            staged
+                .into_temp_path()
+                .persist(&target)
+                .map_err(|error| error.error)
+                .unwrap();
+            drop(verifier);
+            assert_eq!(std::fs::read(&target).unwrap(), vec![value; 8192]);
+            crate::validate_private_file(&target).unwrap();
+            crate::validate_owned_directory(&root).unwrap();
+            assert_eq!(std::fs::read_dir(&root).unwrap().count(), 2);
+        }
+    }
+
+    #[test]
     fn native_acl_refuses_broad_access_and_secures_only_new_storage() {
         let fixture = tempfile::tempdir().unwrap();
         let private = fixture.path().join("private");
