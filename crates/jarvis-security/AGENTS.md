@@ -18,8 +18,11 @@ output, path authority descriptors, and honest sandbox capability contracts.
   points through safe pinned `windows-permissions` wrappers. Verification handles
   share delete access so an overlapping private-record publication is not blocked;
   unrelated handles that prohibit deletion still cause a propagated write failure.
-  Only fresh or empty owned objects may receive restrictive ACLs; parents and
-  Vesper state stay intact.
+  Windows private-record replacement closes the synced same-directory staging
+  handle, clears its temporary attribute, re-arms RAII cleanup, and then uses
+  native filesystem rename-over-target. Unix retains its existing persist and
+  parent sync. Only fresh or empty owned objects may receive restrictive ACLs;
+  parents and Vesper state stay intact.
 - This crate depends on no workspace crate. Private-state helpers perform bounded
   explicit filesystem initialization; they never grant tool/process authority.
 - Secret values never expose contents through Debug, Display, errors, or serialization.

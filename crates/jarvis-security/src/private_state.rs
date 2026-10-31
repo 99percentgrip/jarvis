@@ -90,6 +90,22 @@ pub fn write_private_atomic(target: &Path, bytes: &[u8]) -> io::Result<()> {
     let mut staged = stage!("create_temp", tempfile::NamedTempFile::new_in(parent))?;
     stage!("write_temp", staged.write_all(bytes))?;
     stage!("sync_temp", staged.as_file().sync_all())?;
+    #[cfg(windows)]
+    {
+        // tempfile's Windows persist fails with OS error 5 under a pinned
+        // private verifier even when both handles share deletion. Native
+        // probes distinguish the successful attribute reset and rename when
+        // performed separately from the failing combined persist operation.
+        // Keep clears FILE_ATTRIBUTE_TEMPORARY after closing the staging
+        // handle; re-arm RAII cleanup before the atomic same-directory rename.
+        let kept = stage!(
+            "clear_temp_attribute",
+            staged.into_temp_path().keep().map_err(|error| error.error)
+        )?;
+        let cleanup = tempfile::TempPath::try_from_path(kept)?;
+        stage!("rename_replace", fs::rename(&cleanup, target))?;
+    }
+    #[cfg(not(windows))]
     stage!(
         "persist_replace",
         staged.persist(target).map_err(|error| error.error)
