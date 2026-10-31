@@ -49,6 +49,46 @@ fn delete_sharing_reader_allows_replacement_without_losing_its_snapshot() {
 }
 
 #[test]
+fn bounded_nonhostile_writers_and_delete_sharing_reader_publish_whole_records() {
+    use std::io::Read;
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fixture.path().join("private");
+    let target = root.join("settings.json");
+    let first = vec![b'a'; 8192];
+    let second = vec![b'b'; 8192];
+    write_private_atomic(&target, &first).unwrap();
+    let barrier = Arc::new(Barrier::new(3));
+    std::thread::scope(|scope| {
+        for bytes in [&first, &second] {
+            let target = &target;
+            let barrier = Arc::clone(&barrier);
+            scope.spawn(move || {
+                barrier.wait();
+                for _ in 0..32 {
+                    write_private_atomic(target, bytes).unwrap();
+                }
+            });
+        }
+        barrier.wait();
+        for _ in 0..64 {
+            let mut reader = fs::OpenOptions::new()
+                .read(true)
+                .share_mode(0x1 | 0x2 | 0x4)
+                .open(&target)
+                .unwrap();
+            let mut record = Vec::new();
+            reader.read_to_end(&mut record).unwrap();
+            assert!(record == first || record == second);
+        }
+    });
+    let record = fs::read(&target).unwrap();
+    assert!(record == first || record == second);
+    validate_private_file(&target).unwrap();
+    validate_owned_directory(&root).unwrap();
+    assert_eq!(fs::read_dir(&root).unwrap().count(), 2);
+}
+
+#[test]
 fn non_delete_sharing_reader_denies_replace_without_corrupting_the_record() {
     let fixture = tempfile::tempdir().unwrap();
     let root = fixture.path().join("private");

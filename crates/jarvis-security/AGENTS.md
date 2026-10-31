@@ -31,7 +31,7 @@ output, path authority descriptors, and honest sandbox capability contracts.
 
 ## Verification
 
-- The Windows-only `tests/windows_private_replacement.rs` checks both delete-sharing and non-delete-sharing readers and barrier-synchronized two-writer denial without retries. A native Windows unit regression holds the production verifier handle through replacement. Unit-test-only Windows stage/error-code diagnostics in `private_state.rs` never log paths or payloads. Cross-compilation does not substitute for native Windows execution or identify Issue #23's historical syscall.
+- The Windows-only `tests/windows_private_replacement.rs` checks 2 × 32 nonhostile same-target writes and 64 whole-record reads, both delete-sharing and non-delete-sharing readers, and barrier-synchronized two-writer denial without retries. A native Windows unit regression holds the production verifier handle through replacement. Unit-test-only Windows stage/error-code diagnostics in `private_state.rs` never log paths or payloads. Cross-compilation does not substitute for native Windows execution or identify Issue #23's historical syscall.
 - Run `cargo test -p jarvis-security`.
 - Run `cargo xtask architecture`.
 
