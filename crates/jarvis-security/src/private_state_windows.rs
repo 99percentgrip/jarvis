@@ -97,6 +97,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn pinned_private_verifier_must_not_block_atomic_replacement() {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        // Hold the exact production verification handle, not an imitation or a
+        // timed reader. Before FILE_SHARE_DELETE, MoveFileExW cannot replace it.
+        let verifier = handle(&target, false).unwrap();
+        crate::write_private_atomic(&target, b"after").unwrap();
+        assert_eq!(std::fs::read(&target).unwrap(), b"after");
+        drop(verifier);
+        crate::validate_private_file(&target).unwrap();
+        crate::validate_owned_directory(&root).unwrap();
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 2);
+    }
+
+    #[test]
     fn native_acl_refuses_broad_access_and_secures_only_new_storage() {
         let fixture = tempfile::tempdir().unwrap();
         let private = fixture.path().join("private");
