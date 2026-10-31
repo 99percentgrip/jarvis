@@ -5,11 +5,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      private_state_probe:
-        description: "Run focused native Windows private-state tests only (diagnostic, not foundation acceptance)"
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
@@ -47,26 +42,7 @@ env:
   CARGO_PROFILE_TEST_DEBUG: "line-tables-only"
 
 jobs:
-  private-state-probe:
-    if: github.event_name == 'workflow_dispatch' && inputs.private_state_probe == true
-    name: private-state-probe-windows
-    runs-on: windows-2025
-    timeout-minutes: 35
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - name: Install pinned Rust toolchain
-        shell: bash
-        run: rustup toolchain install 1.95.0 --profile minimal
-      - name: Run focused native private-state tests
-        shell: bash
-        run: |
-          cargo test -p jarvis-security --lib private_state_windows::tests -- --test-threads=1 --nocapture
-          cargo test -p jarvis-security --test windows_private_replacement -- --test-threads=1 --nocapture
-
   foundation:
-    if: github.event_name != 'workflow_dispatch' || inputs.private_state_probe != true
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
     # These complete native matrices exceeded the former total budget after
