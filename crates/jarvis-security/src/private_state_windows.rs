@@ -21,7 +21,10 @@ fn handle(path: &Path, write_acl: bool) -> io::Result<std::fs::File> {
     // READ_CONTROL, optionally WRITE_DAC; pin object and open a reparse point itself.
     options
         .access_mode(0x0002_0000 | if write_acl { 0x0004_0000 } else { 0 })
-        .share_mode(0x0000_0001 | 0x0000_0002)
+        // Verifiers pin the object for owner/DACL inspection but must not block
+        // same-target atomic publication by a concurrent writer. A handle to the
+        // old file remains valid after replacement; no ACL is changed by verify.
+        .share_mode(0x0000_0001 | 0x0000_0002 | 0x0000_0004)
         .custom_flags(0x0200_0000 | 0x0020_0000);
     let file = options.open(path)?;
     if file.metadata()?.file_attributes() & 0x400 != 0 {
@@ -95,6 +98,92 @@ pub(super) fn secure_empty(path: &Path) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pinned_private_verifier_must_not_block_atomic_replacement() {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        // Hold the exact production verification handle, not an imitation or a
+        // timed reader. Before FILE_SHARE_DELETE, MoveFileExW cannot replace it.
+        for iteration in 0..32u8 {
+            let verifier = handle(&target, false).unwrap();
+            let payload = vec![iteration; 8192];
+            crate::write_private_atomic(&target, &payload).unwrap();
+            assert_eq!(std::fs::read(&target).unwrap(), payload);
+            drop(verifier);
+            crate::validate_private_file(&target).unwrap();
+            crate::validate_owned_directory(&root).unwrap();
+            assert_eq!(std::fs::read_dir(&root).unwrap().count(), 2);
+        }
+    }
+
+    #[test]
+    fn native_rename_over_pinned_verifier_identifies_replace_stage() {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        let source = root.join("staging");
+        std::fs::write(&source, b"after").unwrap();
+        // A closed, ordinary staging file has no temporary attribute and no
+        // open handle: this isolates Windows' rename-over-open-target step.
+        let verifier = handle(&target, false).unwrap();
+        let result = std::fs::rename(&source, &target);
+        assert!(
+            result.is_ok(),
+            "native rename raw OS error: {:?}",
+            result.unwrap_err().raw_os_error()
+        );
+        drop(verifier);
+        assert_eq!(std::fs::read(&target).unwrap(), b"after");
+        crate::validate_private_file(&target).unwrap();
+        crate::validate_owned_directory(&root).unwrap();
+    }
+
+    #[test]
+    fn native_open_staging_rename_isolated_from_attribute_reset() {
+        use std::io::Write;
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        let verifier = handle(&target, false).unwrap();
+        let mut staged = tempfile::NamedTempFile::new_in(&root).unwrap();
+        staged.write_all(b"after").unwrap();
+        staged.as_file().sync_all().unwrap();
+        // std::fs::rename maps to native rename and does not call tempfile's
+        // SetFileAttributesW. Keep the staging handle open, unlike the preceding
+        // closed-source control, to distinguish its sharing behavior.
+        let result = std::fs::rename(staged.path(), &target);
+        assert!(
+            result.is_ok(),
+            "open-stage native rename raw OS error: {:?}",
+            result.unwrap_err().raw_os_error()
+        );
+        drop(verifier);
+        assert_eq!(std::fs::read(&target).unwrap(), b"after");
+    }
+
+    #[test]
+    fn native_attribute_reset_on_staging_is_independent_of_target_verifier() {
+        use std::io::Write;
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("private");
+        let target = root.join("settings.json");
+        crate::write_private_atomic(&target, b"before").unwrap();
+        let verifier = handle(&target, false).unwrap();
+        let mut staged = tempfile::NamedTempFile::new_in(&root).unwrap();
+        staged.write_all(b"after").unwrap();
+        staged.as_file().sync_all().unwrap();
+        // TempPath::keep calls the same SetFileAttributesW used by persist,
+        // without calling MoveFileExW. It closes its own file handle first.
+        let path = staged.into_temp_path().keep().map_err(|e| e.error).unwrap();
+        std::fs::rename(&path, &target).unwrap();
+        drop(verifier);
+        assert_eq!(std::fs::read(&target).unwrap(), b"after");
+    }
 
     #[test]
     fn native_acl_refuses_broad_access_and_secures_only_new_storage() {

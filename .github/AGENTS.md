@@ -37,7 +37,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   under legacy payload names; they do not activate new installer/update ownership.
 
 
-- Jarvis Windows workspace tests run serially to avoid competing PowerShell startup fixtures; every test and fixed timing assertion remains required.
+- Jarvis Windows workspace tests run serially to avoid competing PowerShell startup fixtures; every test and fixed timing assertion remains required. The five-target workflow has exactly the five mandatory matrix jobs; a temporary focused Issue #23 dispatch probe introduced an extra skipped job and was removed after the strict PR verifier rejected it. Diagnostic dispatch receipts are not mandatory five-target acceptance.
 
 - Jarvis PR verification checks out the exact PR head with persisted credentials
   disabled. `pr-verification.yml` and `verify_pr_matrix.py` own the fail-closed
