@@ -249,6 +249,8 @@ impl SecureCredentialStore {
         validate_identity(id)?;
         let secret = validate_record(secret)?;
         self.prepare_operation_storage()?;
+        // Reject a corrupt retained record before mutating the native manager.
+        self.fallback.load(id)?;
         let account = keyring_account(id);
         #[cfg(windows)]
         {
@@ -295,6 +297,8 @@ impl SecureCredentialStore {
     pub fn remove(&self, id: CredentialId) -> Result<(), CredentialStoreError> {
         self.validate_application_owner()?;
         validate_identity(id)?;
+        // Reject a corrupt retained record before deleting from the native manager.
+        self.fallback.load(id)?;
         let account = keyring_account(id);
         #[cfg(windows)]
         {
@@ -434,12 +438,12 @@ impl PrivateFileCredentialStore {
         let bytes = std::fs::read(&self.path).map_err(|_| CredentialStoreError::Io)?;
         let vault: Vault =
             serde_json::from_slice(&bytes).map_err(|_| CredentialStoreError::Serialize)?;
-        Ok(vault
+        vault
             .credentials
             .get(id.provider)
             .and_then(|entries| entries.get(id.account))
-            .and_then(|value| validate_record(value).ok())
-            .map(SecretValue::new))
+            .map(|value| validate_record(value).map(SecretValue::new))
+            .transpose()
     }
 
     /// Atomically merges one credential into the private vault.

@@ -20,6 +20,8 @@
 
 # Foundation Evidence Index
 
+- [Phase 5B credential reliability candidate](2026-11-01-phase5b-credential-reliability.md) — owned-vault malformed-value red/green correction, synthetic host-boundary receipts and [updated scoped coverage matrix](phase4-auth-persistence-coverage.json); native exact-head acceptance remains open.
+
 - [Issue #23 Windows private-state verifier-sharing repair](2026-10-30-phase5a-windows-private-state-reliability.md) — original error-5 receipt, diagnostic coverage, native red-first reproduction of a production-owned no-delete-sharing verifier, narrow repair and acceptance boundary; the exact historical syscall remains unrecorded.
 
 - [Phase 4C session and cron failed-write consistency](2026-10-28-phase4c-session-cron-failed-writes.md) — red-first rollback of failed in-memory mutations, disposable public-store cases and [open coverage matrix](phase4b-runtime-recovery-matrix.json). Native acceptance remains pending.
