@@ -6,6 +6,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
+- `2026-11-01-phase5b-credential-reliability.md` owns the scoped malformed-record red/green correction, Phase 4 matrix reconciliation, host-boundary receipts and explicit native/CI/open acceptance limits.
 - `2026-10-28-phase4c-session-cron-failed-writes.md` owns the bounded red-first failed-write cache-consistency repair and local receipts; the Phase 4B coverage matrix also tracks native and hosted open cases.
 - `2026-10-29-pr25-pr27-integration.md` owns the authorized sequential PR #25–#27 integration, exact merge/main matrix, preservation, review limitations and remaining risks; post-publication receipts stay local until another authorized code change.
 

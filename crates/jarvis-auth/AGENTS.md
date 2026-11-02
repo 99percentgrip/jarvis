@@ -55,7 +55,10 @@ require Secret Service rather than automatic plaintext fallback.
   refuse a write/delete before native mutation when a retained vault credential
   cannot be safely retired; startup and private signed-out fixtures remain read-only.
 - Composite records are bounded to 256 KiB; serialized Unix vaults to 1 MiB.
-  Oversized writes must preserve the previous readable vault.
+  Oversized writes must preserve the previous readable vault. An invalid value in
+  a retained owned vault must return an error for that credential on load,
+  store and remove before accessing or mutating the native manager; unrelated
+  well-formed provider entries remain readable.
 
 ## Work Guidance
 

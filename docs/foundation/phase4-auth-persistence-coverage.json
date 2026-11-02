@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "base_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7",
-  "scope": "Scoped consumer matrix. Exact-head native CI evidence for listed pathways at PR #25 b35be668; broader consumers and independent review remain open. Post-publication receipts are in 2026-10-28-phase4-pr25-native-ci-closeout.md (local only).",
+  "base_commit": "4db508421346ac20c14fbb9a328e587ae851a7b7",
+  "scope": "Integrated Phase 5B baseline; historical rows retain their original evidence SHA. New malformed-record repair is locally verified only; native exact-head CI and independent review remain pending.",
   "capabilities": [
     {
       "capability": "Explicit GLM/OpenAI/xAI/LM Studio credential override ownership preflight",
@@ -75,17 +75,31 @@
     },
     {
       "capability": "Windows concurrent atomic private-state replacement root cause",
-      "classification": "PARTIALLY IMPLEMENTED",
+      "classification": "IMPLEMENTED",
       "entry_point": "crates/jarvis-security/src/private_state.rs:write_private_atomic",
       "runtime_consumer": "private-state consumer -> tempfile::NamedTempFile::persist -> Windows MoveFileExW replacement",
       "storage_identity": "Jarvis-owned private files with marked parent",
       "risk": "OS error 5 under concurrent writers; specific failing syscall still unknown",
       "positive_test": "PR #24 native diagnostic file-sharing test executed on Windows",
-      "negative_test": "Historical error remains unexplained; no source repair asserted",
+      "negative_test": "Historical syscall not captured; induced pinned verifier failure was repaired; hostile no-delete reader still fails closed",
       "platform": "Windows",
-      "result": "UNTESTED",
-      "evidence": "main run 40271802076 Windows job 121406020467 attempt 1 failed; attempt 2 green; PR #24 run 40332026404 job 121603620822 test windows_private_replacement executed; diagnostic cannot identify original syscall",
-      "evidence_commit": "3beddd429abbf4f8d5ccd15db9d2da1a12b28a5a"
+      "result": "PASS",
+      "evidence": "PR #28 merge 4db508421346ac20c14fbb9a328e587ae851a7b7; main five-target run 41323233523 Windows job 124897694416 logged original, pinned verifier, sharing and ACL/junction tests as ok; exact historical syscall remains unknown",
+      "evidence_commit": "4db508421346ac20c14fbb9a328e587ae851a7b7"
+    },
+    {
+      "capability": "Owned credential vault malformed targeted value refusal",
+      "classification": "REPAIR CANDIDATE",
+      "entry_point": "crates/jarvis-auth/src/lib.rs:SecureCredentialStore::load/store/remove",
+      "runtime_consumer": "TUI and ACP registered adapters -> SecureCredentialStore -> retained vault/native keyring",
+      "storage_identity": "99percentgrip.jarvis; UUID-scoped synthetic openai and xai accounts",
+      "risk": "Malformed retained record was treated as absent, permitting native credential discovery; mutation could reach native backend before recognizing corruption",
+      "positive_test": "Untargeted xai record remains readable and vault bytes unchanged",
+      "negative_test": "Targeted openai invalid record load/store/remove return InvalidSecret before native mutation",
+      "platform": "Linux",
+      "result": "LOCAL PASS; NATIVE CI NOT TESTED",
+      "evidence": "cargo test -p jarvis-auth --test credential_corruption (red first: 1 failed; corrected: 1 passed); all-features auth 18 unit + 1 integration + 1 receipt-parser passed, 6 hosted/native ignored",
+      "evidence_commit": "UNCOMMITTED CANDIDATE"
     }
   ]
 }
