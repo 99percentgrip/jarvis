@@ -66,7 +66,7 @@ The subsequent [Phase 4 authentication/persistence execution](foundation/2026-10
 
 ### Phase 5B subscription-neutral credential acceptance
 
-The [offline execution and LM Studio refusal repair record](foundation/2026-11-03-phase5b-offline-auth-acceptance.md) tracks actual isolated production-host probes, red/green correction and the still-open host/platform matrix. It is not live account acceptance or final migration readiness.
+The [offline execution and LM Studio refusal repair record](foundation/2026-11-03-phase5b-offline-auth-acceptance.md) tracks actual isolated production-host probes, red/green correction and the still-open host/platform matrix. The [PR #31 CI fixture-repair record](foundation/2026-11-03-phase5b-pr31-ci-fixture-repair.md) preserves the first exact-head failure and its scoped local correction. Neither is live account acceptance or final migration readiness.
 
 The [owner's provider subscription and isolation decision](foundation/2026-11-03-phase5b-subscription-isolation-policy.md) supersedes only ambiguous Phase 5B requests for live positive authentication on providers without an available subscription. Mandatory CI/release gates must use isolated synthetic credentials and offline protocol fixtures for Z.ai and xAI; LM Studio uses deterministic local fixtures or an explicitly available local endpoint. The owner's OpenAI ChatGPT subscription is not API billing permission, and neither mode authorizes a live call. No real credentials, user credential-manager reads, paid endpoints or production mocks enter foundation verification.
 

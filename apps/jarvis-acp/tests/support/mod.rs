@@ -136,12 +136,13 @@ impl ProcessHarness {
         address: std::net::SocketAddr,
         extra: impl IntoIterator<Item = (&'static str, String)>,
     ) -> Self {
-        let temp = std::env::temp_dir().join(format!(
-            "agent-vesper-stage41-{}-{}",
-            std::process::id(),
-            unique_suffix()
-        ));
-        fs::create_dir_all(&temp).unwrap();
+        // Atomically reserve the process root: wall-clock-derived names can collide
+        // between concurrent process fixtures on coarse or adjusted clocks.
+        let temp = tempfile::Builder::new()
+            .prefix("agent-vesper-stage41-")
+            .tempdir()
+            .unwrap()
+            .keep();
         // HOME/env isolation does not isolate OS credential managers. An explicit
         // signed-out Vesper record prevents inactive OpenAI discovery from seeing
         // host credentials; native OpenAI fixtures use their synthetic loopback route.
@@ -489,23 +490,6 @@ fn wait_for_exit(child: &mut Child) {
         assert!(Instant::now() < deadline, "ACP process did not exit on EOF");
         thread::sleep(Duration::from_millis(10));
     }
-}
-
-fn unique_suffix() -> u128 {
-    // Combine wall-clock nanoseconds with a monotonic per-process counter.
-    // On Apple Silicon the clock has nanosecond resolution, but two parallel
-    // test threads can still observe the same nanosecond tick; the counter
-    // guarantees every ProcessHarness temp dir is distinct even under that
-    // race, which prevents cross-test isolation-root collisions when the
-    // workspace test harness runs process_blockers in parallel.
-    use std::sync::atomic::{AtomicU64, Ordering};
-    static COUNTER: AtomicU64 = AtomicU64::new(0);
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
-    nanos.wrapping_add(seq as u128)
 }
 
 /// Preserve OS execution prerequisites without inheriting real private runtime roots.
