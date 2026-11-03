@@ -36,7 +36,7 @@ transport, stderr-only tracing, and orderly shutdown.
   only; meta output stays on stderr. `registry/agent.json` stays the historical
   Vesper registration and is not a publishable Jarvis manifest.
 
-- LM Studio provider and cognition preferences use the shared ownership-validated config resolver/reader, including the same `JARVIS_HOME` precedence as the TUI. Read-only startup never initializes missing preferences or adopts unknown/redirected roots.
+- LM Studio provider and cognition preferences use the shared ownership-validated config resolver/reader, including the same `JARVIS_HOME` precedence as the TUI. Read-only startup never initializes missing preferences or adopts unknown/redirected roots. LM Studio chat HTTP refusal is classified by status only; never read or echo the local server's rejection body (it may contain a bearer or prompt). `lmstudio_provider::selected_model_wire_tests::rejected_local_token_never_echoes_server_body_or_bearer` exercises the real session against a loopback 401; `local_refusal_statuses_have_bounded_provider_neutral_diagnostics` pins status-only 403/404/429/503 classifications without duplicating the socket fixture. Discovery rejects HTTP errors before parsing response JSON.
 
 - Admitted release prompts retain their ACP owner until native settlement and
   stream shared milestones plus the final durable receipt explicitly. Concurrent
@@ -144,9 +144,11 @@ transport, stderr-only tracing, and orderly shutdown.
   must not be serialized into ordinary ACP response prose.
 - Contain no session, provider-wire, or ACP-mapping business logic.
 - Stdout is exclusively newline-delimited ACP JSON-RPC.
-- Process fixtures use native absolute temporary workspaces and explicitly private
-  HOME/USERPROFILE/roaming/local roots on every platform. Restoring OS execution
-  prerequisites must never inherit real application data roots.
+- Process fixtures use atomically reserved native absolute temporary workspaces
+  and explicitly private HOME/USERPROFILE/roaming/local roots on every platform.
+  `tests/support/mod.rs` retains each reserved root through the child lifetime
+  and cleans it only after reaping the child. Restoring OS execution prerequisites
+  must never inherit real application data roots.
 - Tests use loopback endpoints and synthetic credentials only. The shared process
   harness supplies explicit signed-out OpenAI and xAI vault records under its
   temporary root; environment/HOME isolation alone does not isolate an OS credential

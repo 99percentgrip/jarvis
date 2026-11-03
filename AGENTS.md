@@ -262,6 +262,25 @@ When the user requests a durable behavior change, record it here or in the relev
   disposable packages under `spikes/`.
 - No live provider calls or user-state writes are permitted in foundation
   verification.
+- Mandatory CI and release acceptance never require paid AI subscriptions.
+  Subscription access does not imply API billing or authorize live provider
+  calls. Cloud providers use synthetic credentials, offline responses and
+  protocol-contract fixtures; LM Studio uses deterministic loopback fixtures
+  or an explicitly available isolated local endpoint. An absent optional local
+  server or unavailable subscription must not fail mandatory CI. Test processes
+  isolate private roots and native credentials, block external provider traffic,
+  and must not read user OS credential-manager records.
+- For unavailable providers, test bounded, correctly classified refusal without
+  crashes, hangs, secret exposure, unauthorized retries, cross-provider credential
+  access or fallback, or interference with other providers. Only those observed
+  negative paths count as PASS. Distinguish missing, invalid and expired
+  credentials, missing entitlement, rate limit and transport failure; a generic
+  error is not proof of expected refusal. Unexecuted positive live-provider
+  authentication is NOT TESTED, not FAIL or NOT SUPPORTED (unless the capability
+  genuinely is unsupported). Actual leakage, wrong fallback, crash or unauthorized
+  access is FAIL and requires repair. Preserve supported provider integrations;
+  subscription availability alone never licenses removal or mock production
+  behavior. Offline evidence does not establish live vendor compatibility.
 - Supply-chain license policy permits the OSI-approved `BSL-1.0` for native
   platform integrations such as the Windows clipboard backend; advisory,
   source, and wildcard-dependency gates remain fail-closed.

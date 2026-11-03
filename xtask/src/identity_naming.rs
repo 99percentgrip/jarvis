@@ -31,6 +31,8 @@ const OWNED_PATHS: &[&str] = &[
     "docs/foundation/2026-10-26-windows-private-replacement-investigation.md",
     "docs/foundation/2026-10-30-phase5a-windows-private-state-reliability.md",
     "docs/foundation/2026-11-01-phase5b-credential-reliability.md",
+    "docs/foundation/2026-11-03-phase5b-subscription-isolation-policy.md",
+    "docs/foundation/2026-11-03-phase5b-offline-auth-acceptance.md",
     "docs/foundation/2026-10-28-pr24-integration.md",
     "docs/foundation/2026-10-27-phase4-auth-persistence-execution.md",
     "docs/foundation/2026-10-27-phase4-host-fixture-followup.md",

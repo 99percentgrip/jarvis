@@ -71,6 +71,28 @@ fn err(msg: impl Into<String>) -> ProviderError {
 // Factory
 // ---------------------------------------------------------------------------
 
+/// Classify local HTTP refusal using only the status, never provider prose.
+fn rejected_http(status: reqwest::StatusCode) -> ProviderError {
+    let code = status.as_u16();
+    let (category, message) = match code {
+        401 => (
+            ErrorCategory::Authentication,
+            "LM Studio rejected the local API token",
+        ),
+        403 => (ErrorCategory::Authorization, "LM Studio denied access"),
+        429 => (ErrorCategory::QuotaOrRate, "LM Studio rate limit reached"),
+        404 => (
+            ErrorCategory::InvalidRequest,
+            "LM Studio model or endpoint not found",
+        ),
+        _ => (ErrorCategory::Transport, "LM Studio HTTP request failed"),
+    };
+    let mut error = err(format!("{message} (HTTP {code})"));
+    error.http_status = Some(code);
+    error.info.category = category;
+    error
+}
+
 /// LM Studio provider factory. Owns the `reqwest` client + the network config.
 #[derive(Clone)]
 pub struct LmStudioFactory {
@@ -201,13 +223,13 @@ impl LmStudioFactory {
             .await
             .map_err(|error| format!("/api/v1/models HTTP: {error}"))?;
         let status = response.status();
+        if !status.is_success() {
+            return Err(format!("/api/v1/models HTTP {status}"));
+        }
         let body: serde_json::Value = response
             .json()
             .await
             .map_err(|error| format!("/api/v1/models body: {error}"))?;
-        if !status.is_success() {
-            return Err(format!("/api/v1/models HTTP {status}"));
-        }
         let snapshot =
             snapshot_from_native(&body, &self.id).map_err(|error| format!("parse: {error}"))?;
         *self.catalog.write().expect("catalog lock poisoned") = Some(snapshot.clone());
@@ -328,12 +350,9 @@ impl ProviderSession for LmStudioSession {
             };
 
             if !resp.status().is_success() {
-                let status = resp.status();
-                let body: serde_json::Value = resp
-                    .json()
-                    .await
-                    .map_err(|e| err(format!("HTTP body: {e}")))?;
-                return Err(err(format!("HTTP {status}: {body}")));
+                // A local server can echo the bearer or prompt in its error
+                // body. Do not read or display untrusted response prose.
+                return Err(rejected_http(resp.status()));
             }
 
             // Spawn a task that reads the SSE byte stream and sends events
@@ -1213,6 +1232,135 @@ impl LmStudioTransport for ReqwestLmStudioTransport {
 #[cfg(test)]
 mod selected_model_wire_tests {
     use super::*;
+
+    // The 401 loopback session below proves the production call reaches this
+    // classifier without consuming an echoed bearer. Pin its other branches
+    // without duplicating the socket/credential fixture for every status.
+    #[test]
+    fn local_refusal_statuses_have_bounded_provider_neutral_diagnostics() {
+        for (code, category, expected) in [
+            (403, ErrorCategory::Authorization, "LM Studio denied access"),
+            (
+                404,
+                ErrorCategory::InvalidRequest,
+                "LM Studio model or endpoint not found",
+            ),
+            (
+                429,
+                ErrorCategory::QuotaOrRate,
+                "LM Studio rate limit reached",
+            ),
+            (
+                503,
+                ErrorCategory::Transport,
+                "LM Studio HTTP request failed",
+            ),
+        ] {
+            let error = rejected_http(reqwest::StatusCode::from_u16(code).unwrap());
+            assert_eq!(error.http_status, Some(code));
+            assert_eq!(error.info.category, category);
+            assert_eq!(error.info.retryability, Retryability::Never);
+            let diagnostic = format!("{error:?}");
+            assert!(
+                diagnostic.contains(expected),
+                "unexpected status classification"
+            );
+            assert!(diagnostic.contains(&format!("HTTP {code}")));
+            assert!(diagnostic.len() < 1024, "unbounded refusal diagnostic");
+            assert!(!diagnostic.contains("synthetic-local-secret"));
+        }
+    }
+
+    // Exercise the production session, not a request-builder-only fake. The
+    // local server deliberately echoes the synthetic bearer in its rejection.
+    #[tokio::test]
+    async fn rejected_local_token_never_echoes_server_body_or_bearer() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) =
+                tokio::time::timeout(std::time::Duration::from_secs(5), listener.accept())
+                    .await
+                    .unwrap()
+                    .unwrap();
+            let headers = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                let mut bytes = Vec::new();
+                while !bytes.windows(4).any(|part| part == b"\r\n\r\n") {
+                    let mut chunk = [0; 1024];
+                    let count = socket.read(&mut chunk).await.unwrap();
+                    assert!(count > 0 && bytes.len() + count <= 8192);
+                    bytes.extend_from_slice(&chunk[..count]);
+                }
+                String::from_utf8(bytes).unwrap().to_ascii_lowercase()
+            })
+            .await
+            .unwrap();
+            assert!(headers.contains("authorization: bearer synthetic-local-secret"));
+            let body = r#"{"error":"synthetic-local-secret private-server-message"}"#;
+            socket.write_all(format!("HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).as_bytes()).await.unwrap();
+        });
+        let config = LmStudioConfig::new(format!("http://{address}/v1"))
+            .unwrap()
+            .with_api_key("synthetic-local-secret");
+        let session = LmStudioSession {
+            config,
+            client: reqwest::Client::builder().no_proxy().build().unwrap(),
+        };
+        let request = ProviderRequest {
+            request_id: jarvis_domain::ProviderRequestId::new("fixture").unwrap(),
+            provider_id: pid(),
+            model: QualifiedModelId {
+                provider_id: pid(),
+                model_id: ModelId::new("fixture-model").unwrap(),
+            },
+            endpoint_id: None,
+            system_instructions: vec![],
+            messages: vec![],
+            tools: vec![],
+            hosted_tools: vec![],
+            tool_choice: jarvis_domain::ToolChoiceIntent::None,
+            capabilities: vec![],
+            reasoning: None,
+            structured_output: jarvis_provider::StructuredOutputIntent::None,
+            sampling: None,
+            maximum_output_tokens: None,
+            continuation: None,
+            fallback_policy: jarvis_provider::FallbackPolicy::Strict,
+            cache_routing_key: None,
+            provider_extensions: None,
+        };
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(6),
+            session.start(
+                request,
+                std::sync::Arc::new(jarvis_runtime::RuntimeCancellation::new()),
+            ),
+        )
+        .await
+        .unwrap();
+        server.await.unwrap();
+        let failure = match result {
+            Err(error) => error,
+            Ok(_) => panic!("unauthorized local request succeeded"),
+        };
+        assert_eq!(failure.http_status, Some(401));
+        assert_eq!(failure.info.category, ErrorCategory::Authentication);
+        let message = format!("{failure:?}");
+        assert!(
+            message.contains("401"),
+            "status classification lost: {message}"
+        );
+        assert!(
+            !message.contains("synthetic-local-secret"),
+            "provider echoed bearer"
+        );
+        assert!(
+            !message.contains("private-server-message"),
+            "provider echoed untrusted error body"
+        );
+    }
+
     #[tokio::test]
     async fn selected_model_reaches_the_real_http_body_instead_of_launch_model() {
         use std::io::{Read, Write};

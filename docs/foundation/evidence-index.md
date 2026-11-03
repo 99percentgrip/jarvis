@@ -20,7 +20,13 @@
 
 # Foundation Evidence Index
 
-- [Phase 5B credential reliability candidate](2026-11-01-phase5b-credential-reliability.md) — owned-vault malformed-value red/green correction, synthetic host-boundary receipts and [updated scoped coverage matrix](phase4-auth-persistence-coverage.json); native exact-head acceptance remains open.
+- [Phase 5B offline authentication execution and LM Studio refusal repair](2026-11-03-phase5b-offline-auth-acceptance.md) — production TUI/ACP loopback, credential isolation, red/green secret-echo correction, qualified coverage and pending native/PR gates. [Scoped matrix](phase4-auth-persistence-coverage.json) remains non-final.
+- [Phase 5B PR #31 first CI failure and ACP fixture repair](2026-11-03-phase5b-pr31-ci-fixture-repair.md) — two red quality receipts, atomic test-root correction, scoped Linux retest and local successful exact-head CI readback; full offline acceptance remains open.
+- [PR #31 final corrective audit](2026-11-03-pr31-final-corrective-audit.md) — subscription-neutral privacy correction, cross-host LM Studio classification tests, fixture-preservation audit and final-head gate boundary.
+
+- [Phase 5B subscription and test-isolation policy](2026-11-03-phase5b-subscription-isolation-policy.md) — owner's offline mandatory-gate decision; separates expected, specifically proven negative-path refusals from unexecuted live-positive authorization in the [scoped coverage matrix](phase4-auth-persistence-coverage.json). No provider tests or release gates were run for this prose-only decision.
+
+- [Phase 5B credential reliability integration and continuation](2026-11-01-phase5b-credential-reliability.md) — owned-vault malformed-value red/green correction, guarded PR #29 merge and Issue #30 closure; [exact-merge receipt](phase5b-pr29-integration-receipt.json) binds four successful main workflows and five native jobs. [Scoped coverage matrix](phase4-auth-persistence-coverage.json) preserves open broader provider/host acceptance. Post-publication receipts remain local until the next authorized code change.
 
 - [Issue #23 Windows private-state verifier-sharing repair](2026-10-30-phase5a-windows-private-state-reliability.md) — original error-5 receipt, diagnostic coverage, native red-first reproduction of a production-owned no-delete-sharing verifier, narrow repair and acceptance boundary; the exact historical syscall remains unrecorded.
 
