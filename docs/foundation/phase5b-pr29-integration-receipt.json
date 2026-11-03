@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "pr": 29,
+  "authorized_head": "f6381e7e851823ab3cccb604c405f0fbf29f0115",
+  "base_before_merge": "4db508421346ac20c14fbb9a328e587ae851a7b7",
+  "merge_sha": "2f7433df570430f05b88d80b2d287119ef876c34",
+  "merge_method": "merge commit with expected-head guard; no admin bypass",
+  "premerge_required_checks": "13 completed/success on authorized head",
+  "main_workflows": {
+    "pull-request-validation": 41540918351,
+    "msrv": 41540918380,
+    "web-driver": 41540918316,
+    "five-target-foundation": 41540918483
+  },
+  "main_workflow_results": "four completed/success on exact merge SHA; foundation five native jobs completed/success",
+  "foundation_jobs": {
+    "linux-arm64": 125604534978,
+    "linux-x86_64": 125604535244,
+    "windows-x86_64": 125604535288,
+    "macos-intel": 125604535302,
+    "macos-apple-silicon": 125604535492
+  },
+  "named_merged_regressions": {
+    "windows-x86_64": "test malformed_owned_record_fails_closed_without_changing_other_provider ... ok; native credential acceptance verified: hosted_native_credential_persistence",
+    "linux-x86_64": "test malformed_owned_record_fails_closed_without_changing_other_provider ... ok; real locked Secret Service: write refused without plaintext fallback; test missing_service_never_creates_a_plaintext_vault ... ok",
+    "macos-intel": "test malformed_owned_record_fails_closed_without_changing_other_provider ... ok; native credential acceptance verified: hosted_native_credential_persistence",
+    "macos-apple-silicon": "test malformed_owned_record_fails_closed_without_changing_other_provider ... ok; native credential acceptance verified: hosted_native_credential_persistence"
+  },
+  "issue_30": "closed 2026-11-03T00:43:34Z with exact-merge receipts; broader Phase 5B remains open",
+  "limitations": "No real credentials, paid provider calls, live host sign-in, macOS/Windows unavailable-service negatives or native corrupt-manager recovery."
+}

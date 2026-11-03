@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_commit": "4db508421346ac20c14fbb9a328e587ae851a7b7",
-  "scope": "Integrated Phase 5B baseline; historical rows retain their original evidence SHA. New malformed-record repair is locally verified only; native exact-head CI and independent review remain pending.",
+  "scope": "Integrated Phase 5B baseline; historical rows retain their original evidence SHA. Malformed-record repair passed exact-merge main/native CI and Issue #30 closed. Subscription absence cannot fail offline CI: unexecuted live positives are NOT TESTED; specific isolated refusals require affirmative proof. Broader host-consumer and unavailable-service acceptance remains open.",
   "capabilities": [
     {
       "capability": "Explicit GLM/OpenAI/xAI/LM Studio credential override ownership preflight",
@@ -47,16 +47,16 @@
     },
     {
       "capability": "OpenAI subscription and xAI Grok account independent login/refresh",
-      "classification": "PARTIALLY IMPLEMENTED",
+      "classification": "LIVE POSITIVE ACCEPTANCE UNEXECUTED; HISTORICAL STAGE 3 SCOPE SEPARATE",
       "entry_point": "crates/jarvis-provider-openai/src/credentials.rs:Credentials; crates/jarvis-provider-xai/src/credentials.rs:Credentials",
-      "runtime_consumer": "Host registered provider -> native adapter -> secure store; Stage 3 production subscription login/refresh inactive",
+      "runtime_consumer": "Host registered provider -> native adapter -> secure store; Stage 3 subscription authorization was deferred at the historical evidence SHA, not a current NOT SUPPORTED verdict",
       "storage_identity": "openai/native-auth and xai/native-auth under 99percentgrip.jarvis",
-      "risk": "Unverified independent OAuth ownership or cross-billing fallback",
-      "positive_test": "No positive production subscription authorization claimed",
-      "negative_test": "Startup rejects foreign override; existing provider fixtures do not establish live authorization",
+      "risk": "Unverified independent OAuth ownership, entitlement refusal or cross-billing fallback",
+      "positive_test": "Live subscription login and refresh not executed; ChatGPT subscription does not authorize OpenAI API charges or any live test",
+      "negative_test": "Historical foreign-vault startup refusal is scoped PASS. Missing/invalid/expired credentials, insufficient entitlement, rate limit and transport cases each need bounded, correctly classified offline isolation checks; generic refusal is insufficient",
       "platform": "Linux, macOS and Windows",
-      "result": "NOT IMPLEMENTED",
-      "evidence": "Production adapter AGENTS.md Stage 3 inactivity contracts; live authorization not executed",
+      "result": "NOT TESTED (live positive authorization); offline negative scenarios partially evidenced, not a blanket PASS",
+      "evidence": "Historical Stage 3 deferred authorization at 1e01c4ed; PR #29 merged synthetic corruption refusal at 2f7433df and subsequent Linux ACP CLI probes do not prove all negative classifications or live auth. Subscription availability is not software failure; see 2026-11-03-phase5b-subscription-isolation-policy.md",
       "evidence_commit": "1e01c4edd7bcda876b6b9c72f6888f0782fd39a7"
     },
     {
@@ -89,17 +89,31 @@
     },
     {
       "capability": "Owned credential vault malformed targeted value refusal",
-      "classification": "REPAIR CANDIDATE",
+      "classification": "INTEGRATED SCOPED REPAIR",
       "entry_point": "crates/jarvis-auth/src/lib.rs:SecureCredentialStore::load/store/remove",
       "runtime_consumer": "TUI and ACP registered adapters -> SecureCredentialStore -> retained vault/native keyring",
       "storage_identity": "99percentgrip.jarvis; UUID-scoped synthetic openai and xai accounts",
       "risk": "Malformed retained record was treated as absent, permitting native credential discovery; mutation could reach native backend before recognizing corruption",
       "positive_test": "Untargeted xai record remains readable and vault bytes unchanged",
       "negative_test": "Targeted openai invalid record load/store/remove return InvalidSecret before native mutation",
-      "platform": "Linux",
-      "result": "LOCAL PASS; NATIVE CI NOT TESTED",
-      "evidence": "cargo test -p jarvis-auth --test credential_corruption (red first: 1 failed; corrected: 1 passed); all-features auth 18 unit + 1 integration + 1 receipt-parser passed, 6 hosted/native ignored",
-      "evidence_commit": "UNCOMMITTED CANDIDATE"
+      "platform": "Linux, macOS and Windows",
+      "result": "PASS for scoped corruption refusal; broader Phase 5B OPEN",
+      "evidence": "Red-first local regression failed as expected; corrected targeted regression passed on merged main 2f7433df570430f05b88d80b2d287119ef876c34 in five-target-foundation run 41540918483 (Windows 125604535288, Linux x86_64 125604535244, macOS Intel 125604535302 and Apple Silicon 125604535492 named log receipts); other Linux arm64 job also passed. All four mandatory exact-merge workflows succeeded. Separate isolated Linux ACP CLI negative probes refused targeted corrupt records for OpenAI/xAI/GLM without vault mutation; these do not establish live successful login.",
+      "evidence_commit": "2f7433df570430f05b88d80b2d287119ef876c34"
+    },
+    {
+      "capability": "LM Studio local HTTP rejection cannot echo an API token or server prose",
+      "classification": "LOCAL CANDIDATE REPAIR; INTEGRATION PENDING",
+      "entry_point": "apps/jarvis-tui/src/lmstudio_provider.rs:LmStudioSession::start; apps/jarvis-acp/src/lmstudio_provider.rs:LmStudioSession::start",
+      "runtime_consumer": "Both real host LM Studio session adapters; /api/v1/models refuses HTTP errors before parsing JSON",
+      "storage_identity": "Test-owned synthetic local bearer; no native credential manager or real LM Studio instance",
+      "risk": "Untrusted 401 JSON could echo bearer into user-visible provider error/ACP stdout",
+      "positive_test": "Each host emits bearer in loopback request and preserves correct 401 status/authentication classification",
+      "negative_test": "Each host refuses echoed 401 JSON without secret/error-body in error debug; baseline both regressions failed before correction",
+      "platform": "Linux x86_64 local loopback within network namespace; macOS/Windows and process-level refusal NOT TESTED",
+      "result": "PASS for focused local production-session 401 refusal; full host/platform offline acceptance NOT TESTED; candidate CI pending",
+      "evidence": "2026-11-03-phase5b-offline-auth-acceptance.md: pre-fix TUI and ACP real-session regression both failed `provider echoed bearer`; post-fix selected_model_wire_tests TUI 3 passed, ACP 2 passed; no exact-head CI yet",
+      "evidence_commit": "uncommitted test/phase5b-offline-acceptance candidate based on 2f7433df570430f05b88d80b2d287119ef876c34"
     }
   ]
 }

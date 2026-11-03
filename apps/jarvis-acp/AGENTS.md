@@ -36,7 +36,7 @@ transport, stderr-only tracing, and orderly shutdown.
   only; meta output stays on stderr. `registry/agent.json` stays the historical
   Vesper registration and is not a publishable Jarvis manifest.
 
-- LM Studio provider and cognition preferences use the shared ownership-validated config resolver/reader, including the same `JARVIS_HOME` precedence as the TUI. Read-only startup never initializes missing preferences or adopts unknown/redirected roots.
+- LM Studio provider and cognition preferences use the shared ownership-validated config resolver/reader, including the same `JARVIS_HOME` precedence as the TUI. Read-only startup never initializes missing preferences or adopts unknown/redirected roots. LM Studio chat HTTP refusal is classified by status only; never read or echo the local server's rejection body (it may contain a bearer or prompt). `lmstudio_provider::selected_model_wire_tests::rejected_local_token_never_echoes_server_body_or_bearer` exercises the real session against a loopback 401. Discovery rejects HTTP errors before parsing response JSON.
 
 - Admitted release prompts retain their ACP owner until native settlement and
   stream shared milestones plus the final durable receipt explicitly. Concurrent

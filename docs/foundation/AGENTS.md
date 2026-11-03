@@ -6,7 +6,7 @@ Own evidence and decisions that close the pre-workspace blockers identified by r
 
 ## Ownership
 
-- `2026-11-01-phase5b-credential-reliability.md` owns the scoped malformed-record red/green correction, Phase 4 matrix reconciliation, host-boundary receipts and explicit native/CI/open acceptance limits.
+- `2026-11-01-phase5b-credential-reliability.md` owns the scoped malformed-record red/green correction, Phase 4 matrix reconciliation, guarded PR #29 integration, Issue #30 closure, host-boundary receipts and explicit remaining acceptance limits. `phase5b-pr29-integration-receipt.json` binds its exact-main workflow/native-job identities and named regression results. `2026-11-03-phase5b-subscription-isolation-policy.md` owns the subsequent provider subscription/offline test decision and truthful live-positive versus negative-path evidence classification in `phase4-auth-persistence-coverage.json`. `2026-11-03-phase5b-offline-auth-acceptance.md` owns the later offline production-host execution, LM Studio HTTP refusal red/green correction, source/documentation map and remaining acceptance gaps; it does not certify live account access.
 - `2026-10-28-phase4c-session-cron-failed-writes.md` owns the bounded red-first failed-write cache-consistency repair and local receipts; the Phase 4B coverage matrix also tracks native and hosted open cases.
 - `2026-10-29-pr25-pr27-integration.md` owns the authorized sequential PR #25–#27 integration, exact merge/main matrix, preservation, review limitations and remaining risks; post-publication receipts stay local until another authorized code change.
 
