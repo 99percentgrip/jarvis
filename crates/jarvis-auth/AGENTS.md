@@ -22,7 +22,10 @@ require Secret Service rather than automatic plaintext fallback.
 - `tests/native_persistence.rs` owns explicit hosted synthetic save/restart/
   rotation/sign-out acceptance through the public production store. Every
   reload requires a named one-case passing child receipt; missing/renamed/ignored
-  or zero-match selections fail, including an offline parser regression.
+  or zero-match selections fail, including an offline parser regression. The opt-in
+  native corruption case writes only to a UUID service and verifies malformed
+  application-record refusal without neighbor crossover or a plaintext vault;
+  it does not establish genuine OS-manager denial or damaged OS storage.
 
 ## Local Contracts
 

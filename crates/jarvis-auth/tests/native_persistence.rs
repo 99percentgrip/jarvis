@@ -1,7 +1,7 @@
 //! Explicit hosted-platform acceptance; default foundation tests never access
 //! an OS credential manager. Every native identity belongs to this fixture.
 
-use jarvis_auth::{CredentialId, SecureCredentialStore, StorageBackend};
+use jarvis_auth::{CredentialId, CredentialStoreError, SecureCredentialStore, StorageBackend};
 use std::{path::PathBuf, process::Command};
 
 const ID: CredentialId = CredentialId::new("fixture", "subscription");
@@ -119,6 +119,90 @@ fn hosted_native_credential_reload_child() {
         store.load(ID).unwrap().unwrap().expose().as_str(),
         synthetic_record(&phase)
     );
+}
+
+// Write a malformed application record through the actual platform manager,
+// into a test-owned UUID service. This is not a keychain-lock/ACL experiment.
+#[test]
+#[ignore = "explicit hosted OS credential-manager acceptance only"]
+fn hosted_native_corrupt_record_refuses_without_crossing_provider_namespace() {
+    #[cfg(target_os = "linux")]
+    if std::env::var("NATIVE_SECRET_SERVICE_FIXTURE").as_deref() == Ok("unlocked-private-bus") {
+        assert!(
+            std::env::var("DBUS_SESSION_BUS_ADDRESS")
+                .unwrap()
+                .starts_with(&format!(
+                    "unix:path={}/run/",
+                    std::env::var("NATIVE_SECRET_SERVICE_FIXTURE_HOME").unwrap()
+                ))
+        );
+        assert!(
+            std::path::Path::new(&std::env::var("NATIVE_SECRET_SERVICE_FIXTURE_HOME").unwrap())
+                .join(".native-credential-test-home")
+                .is_file()
+        );
+    } else {
+        require_hosted_fixture();
+    }
+    #[cfg(not(target_os = "linux"))]
+    require_hosted_fixture();
+    let temporary = tempfile::tempdir().unwrap();
+    let service: &'static str = Box::leak(
+        format!("vesper-ci-credential-{}", uuid::Uuid::new_v4().simple()).into_boxed_str(),
+    );
+    let vault = temporary.path().join("auth").join("fixture.json");
+    let store = SecureCredentialStore::new(service, vault.clone());
+    let cleanup = Cleanup(store.clone());
+    store.store(NEIGHBOR, "synthetic-neighbor-key").unwrap();
+    let native = {
+        #[cfg(windows)]
+        {
+            windows_native_keyring_store::Store::new().unwrap()
+        }
+        #[cfg(target_os = "macos")]
+        {
+            apple_native_keyring_store::keychain::Store::new().unwrap()
+        }
+        #[cfg(target_os = "linux")]
+        {
+            dbus_secret_service_keyring_store::Store::new().unwrap()
+        }
+    };
+    let entry = keyring_core::api::CredentialStoreApi::build(
+        native.as_ref(),
+        service,
+        "fixture:subscription",
+        None,
+    )
+    .unwrap();
+    // Own cleanup even if a later assertion fails, without touching any
+    // non-UUID entry in the runner's native manager.
+    struct RemoveCorrupt(keyring_core::Entry);
+    impl Drop for RemoveCorrupt {
+        fn drop(&mut self) {
+            let _ = self.0.delete_credential();
+        }
+    }
+    let corrupt = RemoveCorrupt(entry);
+    corrupt.0.set_password("synthetic-corrupt\nrecord").unwrap();
+    assert!(matches!(
+        store.load(ID),
+        Err(CredentialStoreError::InvalidSecret)
+    ));
+    assert_eq!(
+        store.load(NEIGHBOR).unwrap().unwrap().expose().as_str(),
+        "synthetic-neighbor-key"
+    );
+    assert!(
+        !vault.exists(),
+        "corrupt native record must not create plaintext vault"
+    );
+    // Delete only this test-owned entry directly. Production malformed-record
+    // deletion is not assumed to succeed or remove an OS manager entry.
+    corrupt.0.delete_credential().unwrap();
+    assert!(store.load(ID).unwrap().is_none());
+    drop(cleanup);
+    println!("native UUID record corruption refused without neighbor crossover");
 }
 
 fn valid_reload_receipt(output: &[u8], success: bool) -> bool {

@@ -69,8 +69,8 @@
       "positive_test": "Hosted UUID synthetic native entries with fresh process reload",
       "negative_test": "Locked/missing service must not create plaintext production vault",
       "platform": "Linux, macOS and Windows",
-      "result": "UNTESTED",
-      "evidence": "Positive case PASS on exact PR #25 head b35be668: run 40639697587 Windows 122654707726, macOS Intel 122654707849, Apple Silicon 122654707460, Linux x86_64 122654707694, arm64 122654707728 explicitly ran hosted_native_credential_persistence with NativeKeyring restart/rotation/sign-out/provider-isolation receipts. Overall row remains UNTESTED: locked/missing native service negative scenario not established by these receipts; default Cargo suite ignored the hosted case.",
+      "result": "Linux GNOME private bus locked/missing and native restart/rotation/logout/isolation PASS; macOS/Windows negative service and full production-host scenarios NOT TESTED",
+      "evidence": "Positive case PASS on exact PR #25 head b35be668: run 40639697587 Windows 122654707726, macOS Intel 122654707849, Apple Silicon 122654707460, Linux x86_64 122654707694, arm64 122654707728 explicitly ran hosted_native_credential_persistence with NativeKeyring restart/rotation/sign-out/provider-isolation receipts. Linux GNOME private-bus locked and missing-service negatives passed on merge b3a112b6, five-target run 41613094633 Linux x86_64 job 125839677944 (named real locked receipt and missing-service test ok); local isolated private bus also passed both exact cases and encrypted session invariant; macOS/Windows negative backend cases and full production-host matrix remain untested. The default Cargo suite ignored the hosted case; the separately selected acceptance case passed.",
       "evidence_commit": "b35be668bae8e88afea07cceb644c0c3635d6c39"
     },
     {
@@ -103,7 +103,7 @@
     },
     {
       "capability": "LM Studio local HTTP rejection cannot echo an API token or server prose",
-      "classification": "LOCAL CANDIDATE REPAIR; INTEGRATION PENDING",
+      "classification": "INTEGRATED SCOPED REPAIR; BROADER PHASE 5B OPEN",
       "entry_point": "apps/jarvis-tui/src/lmstudio_provider.rs:LmStudioSession::start; apps/jarvis-acp/src/lmstudio_provider.rs:LmStudioSession::start",
       "runtime_consumer": "Both real host LM Studio session adapters; /api/v1/models refuses HTTP errors before parsing JSON",
       "storage_identity": "Test-owned synthetic local bearer; no native credential manager or real LM Studio instance",
@@ -111,9 +111,23 @@
       "positive_test": "Each host emits bearer in loopback request and preserves correct 401 status/authentication classification",
       "negative_test": "Each host refuses echoed 401 JSON without secret/error-body in error debug; baseline both regressions failed before correction",
       "platform": "Linux x86_64 local loopback within network namespace; macOS/Windows and process-level refusal NOT TESTED",
-      "result": "PASS for focused local production-session 401 refusal; full host/platform offline acceptance NOT TESTED; candidate CI pending",
-      "evidence": "2026-11-03-phase5b-offline-auth-acceptance.md: pre-fix TUI and ACP real-session regression both failed `provider echoed bearer`; post-fix selected_model_wire_tests TUI 3 passed, ACP 2 passed; no exact-head CI yet",
-      "evidence_commit": "uncommitted test/phase5b-offline-acceptance candidate based on 2f7433df570430f05b88d80b2d287119ef876c34"
+      "result": "PASS for focused production-session 401 refusal on merged source; full host/process/platform offline acceptance NOT TESTED",
+      "evidence": "2026-11-03-pr31-controlled-integration.md: pre-fix TUI/ACP real-session failures in offline auth report; merged-source network-isolated TUI 4/4 and ACP 3/3; main five-target run 41613094633 Linux x86_64 job 125839677944 and Windows job 125839678137 explicitly logged both named 401 regressions ok; four main workflows succeeded",
+      "evidence_commit": "b3a112b653eb1d8316b27060557680bbfeed17b8"
+    },
+    {
+      "capability": "UUID native-manager malformed application record isolation (hosted acceptance candidate)",
+      "classification": "SCOPED NEW ACCEPTANCE; NATIVE WINDOWS/MACOS PENDING",
+      "entry_point": "crates/jarvis-auth/tests/native_persistence.rs:hosted_native_corrupt_record_refuses_without_crossing_provider_namespace",
+      "runtime_consumer": "native OS keyring API -> SecureCredentialStore::load",
+      "storage_identity": "test-owned UUID service; fixture:subscription and neighbor:api-key",
+      "risk": "Malformed app record might leak, cross provider namespace or create plaintext vault",
+      "positive_test": "Native neighbor stays readable and test-owned corrupt entry is cleaned up",
+      "negative_test": "Native stored malformed application record returns InvalidSecret without creating fallback",
+      "platform": "Linux private GNOME bus PASS; macOS Intel/Apple Silicon and Windows hosted pending",
+      "result": "Linux scoped PASS; macOS/Windows NOT TESTED pending exact-head native runs; OS lock/ACL denial NOT TESTED",
+      "evidence": "2026-11-04-phase5b-native-host-acceptance.md: private Linux bus exact native case 1 passed/0 failed, encrypted DH observer; hosted native CI not yet run",
+      "evidence_commit": "unpublished candidate based on b3a112b653eb1d8316b27060557680bbfeed17b8"
     }
   ]
 }

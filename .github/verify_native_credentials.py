@@ -47,6 +47,10 @@ def main():
             ["-p", "jarvis-provider-openai", "--lib"],
             "auth::tests::hosted_device_flow_persists_large_subscription_record",
         ),
+        (
+            ["-p", "jarvis-auth", "--test", "native_persistence"],
+            "hosted_native_corrupt_record_refuses_without_crossing_provider_namespace",
+        ),
     ]
     if os.environ["RUNNER_OS"] == "Linux":
         cases.append((["-p", "jarvis-auth", "--test", "linux_secret_service"],
