@@ -262,15 +262,14 @@ When the user requests a durable behavior change, record it here or in the relev
   disposable packages under `spikes/`.
 - No live provider calls or user-state writes are permitted in foundation
   verification.
-- Mandatory CI and release acceptance never require paid third-party AI
-  subscriptions. The owner's only active provider subscription is OpenAI;
-  ChatGPT subscription access does not imply API billing or authorize live
-  subscription/API calls. Z.ai and xAI use synthetic credentials, offline
-  responses and protocol-contract fixtures; LM Studio uses deterministic local
-  fixtures or an explicitly available local endpoint. An absent optional local
+- Mandatory CI and release acceptance never require paid AI subscriptions.
+  Subscription access does not imply API billing or authorize live provider
+  calls. Cloud providers use synthetic credentials, offline responses and
+  protocol-contract fixtures; LM Studio uses deterministic loopback fixtures
+  or an explicitly available isolated local endpoint. An absent optional local
   server or unavailable subscription must not fail mandatory CI. Test processes
   isolate private roots and native credentials, block external provider traffic,
-  and must not read the owner's OS credential manager.
+  and must not read user OS credential-manager records.
 - For unavailable providers, test bounded, correctly classified refusal without
   crashes, hangs, secret exposure, unauthorized retries, cross-provider credential
   access or fallback, or interference with other providers. Only those observed

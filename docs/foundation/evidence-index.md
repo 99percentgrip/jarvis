@@ -21,7 +21,8 @@
 # Foundation Evidence Index
 
 - [Phase 5B offline authentication execution and LM Studio refusal repair](2026-11-03-phase5b-offline-auth-acceptance.md) — production TUI/ACP loopback, credential isolation, red/green secret-echo correction, qualified coverage and pending native/PR gates. [Scoped matrix](phase4-auth-persistence-coverage.json) remains non-final.
-- [Phase 5B PR #31 first CI failure and ACP fixture repair](2026-11-03-phase5b-pr31-ci-fixture-repair.md) — exact-head red quality receipt, atomic test-root correction, scoped Linux retest and pending replacement CI.
+- [Phase 5B PR #31 first CI failure and ACP fixture repair](2026-11-03-phase5b-pr31-ci-fixture-repair.md) — two red quality receipts, atomic test-root correction, scoped Linux retest and local successful exact-head CI readback; full offline acceptance remains open.
+- [PR #31 final corrective audit](2026-11-03-pr31-final-corrective-audit.md) — subscription-neutral privacy correction, cross-host LM Studio classification tests, fixture-preservation audit and final-head gate boundary.
 
 - [Phase 5B subscription and test-isolation policy](2026-11-03-phase5b-subscription-isolation-policy.md) — owner's offline mandatory-gate decision; separates expected, specifically proven negative-path refusals from unexecuted live-positive authorization in the [scoped coverage matrix](phase4-auth-persistence-coverage.json). No provider tests or release gates were run for this prose-only decision.
 

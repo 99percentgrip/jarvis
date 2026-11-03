@@ -491,7 +491,8 @@ and composes the existing bounded atomic session writer.
   is classified by status without reading/echoing untrusted server prose (which
   may contain the bearer or prompt); model discovery checks status before parsing
   JSON. The real-session loopback 401 regression lives in
-  `lmstudio_provider::selected_model_wire_tests::rejected_local_token_never_echoes_server_body_or_bearer`.
+  `lmstudio_provider::selected_model_wire_tests::rejected_local_token_never_echoes_server_body_or_bearer`;
+  the adjacent classifier regression covers status-only 403/404/429/503.
   PRD `provider-capability-gating` P5: the catalog fetches the verified
   native `GET /api/v1/models` schema (lmstudio-ai docs
   `1_developer/2_rest/list.md` — evidence in the PRD) into a shared cache;

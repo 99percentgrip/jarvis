@@ -1086,6 +1086,45 @@ mod tests {
 #[cfg(test)]
 mod selected_model_wire_tests {
     use super::*;
+
+    // The 401 loopback session below proves the production call reaches this
+    // classifier without consuming an echoed bearer. Pin its other branches
+    // without duplicating the socket/credential fixture for every status.
+    #[test]
+    fn local_refusal_statuses_have_bounded_provider_neutral_diagnostics() {
+        for (code, category, expected) in [
+            (403, ErrorCategory::Authorization, "LM Studio denied access"),
+            (
+                404,
+                ErrorCategory::InvalidRequest,
+                "LM Studio model or endpoint not found",
+            ),
+            (
+                429,
+                ErrorCategory::QuotaOrRate,
+                "LM Studio rate limit reached",
+            ),
+            (
+                503,
+                ErrorCategory::Transport,
+                "LM Studio HTTP request failed",
+            ),
+        ] {
+            let error = rejected_http(reqwest::StatusCode::from_u16(code).unwrap());
+            assert_eq!(error.http_status, Some(code));
+            assert_eq!(error.info.category, category);
+            assert_eq!(error.info.retryability, Retryability::Never);
+            let diagnostic = format!("{error:?}");
+            assert!(
+                diagnostic.contains(expected),
+                "unexpected status classification"
+            );
+            assert!(diagnostic.contains(&format!("HTTP {code}")));
+            assert!(diagnostic.len() < 1024, "unbounded refusal diagnostic");
+            assert!(!diagnostic.contains("synthetic-local-secret"));
+        }
+    }
+
     // Exercise the production session, not a request-builder-only fake. The
     // local server deliberately echoes the synthetic bearer in its rejection.
     #[tokio::test]

@@ -2,7 +2,7 @@
 
 ## Objective
 
-Adopt the owner's mandatory subscription-neutral acceptance policy without claiming that absent paid provider access proves a live authentication path. This is a documentation/policy work unit, not an implementation or release candidate.
+Adopt subscription-neutral acceptance without claiming that absent paid provider access proves a live authentication path. This records a documentation/policy decision; production and test repairs are recorded separately.
 
 ## Method and inspected scope
 
@@ -10,9 +10,9 @@ Read the repository and documentation DOX chain, `docs/runtime-identity-stage3-p
 
 ## Adopted acceptance rule
 
-Only OpenAI is an active owner subscription; ChatGPT access and paid API billing are distinct, and neither grants permission to call a provider during foundation tests. Mandatory CI and release gates must not require Z.ai, xAI or another paid subscription. Z.ai and xAI need synthetic identities, deterministic offline responses and protocol-contract tests. LM Studio needs local deterministic fixtures or an explicitly available endpoint; an unavailable optional server is not a mandatory-gate failure. Maintain all supported provider adapters.
+Subscription access and paid API billing are distinct; neither grants permission to call a provider during foundation tests. Mandatory CI and release gates must not require any paid provider subscription. Cloud providers need synthetic identities, deterministic offline responses and protocol-contract tests. LM Studio needs disposable local loopback fixtures or an explicitly available isolated local endpoint; an unavailable optional server is not a mandatory-gate failure. Maintain all supported provider adapters.
 
-Negative-path PASS requires a fixture-specific refusal with bounded completion, correct classification, no crash/hang, secret exposure, unauthorized retries, reads of another provider's native credentials, cross-provider fallback or provider interference. Missing credentials, invalid or expired credentials, missing entitlement, rate limits and transport failures are different cases; a generic nonzero exit does not establish each one. Private test roots, synthetic identities, no owner OS-manager reads and blocked external provider traffic are prerequisites. An actual unexpected leak, fallback, crash or unauthorized access remains FAIL and warrants red-first correction. Live positive sign-in that was not executed is **NOT TESTED**; **NOT SUPPORTED** describes genuinely absent product behavior, not a missing subscription. Do not infer live compatibility from offline tests or promote historical Stage 3 deferred-authorization language into a current-provider verdict.
+Negative-path PASS requires a fixture-specific refusal with bounded completion, correct classification, no crash/hang, secret exposure, unauthorized retries, reads of another provider's native credentials, cross-provider fallback or provider interference. Missing credentials, invalid or expired credentials, missing entitlement, rate limits and transport failures are different cases; a generic nonzero exit does not establish each one. Private test roots, synthetic identities, no user OS-manager reads and blocked external provider traffic are prerequisites. An actual unexpected leak, fallback, crash or unauthorized access remains FAIL and warrants red-first correction. Live positive sign-in that was not executed is **NOT TESTED**; **NOT SUPPORTED** describes genuinely absent product behavior, not a missing subscription. Do not infer live compatibility from offline tests or promote historical Stage 3 deferred-authorization language into a current-provider verdict.
 
 The override is limited to Phase 5B's ambiguous live-positive subscription requirement. Platform-native storage/locked/missing-service behavior, two-host consumer boundaries, restart, rotation, sign-out, provider isolation, packaging and protected CI are still required where applicable. Offline negative-path acceptance is not overall Phase 5B completion.
 
