@@ -101,7 +101,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   `verify_native_credentials.py` requires one named passing Rust receipt for
   each parent case; the core fixture likewise requires one exact child receipt.
   Missing, renamed, ignored and zero-match cases fail even when Cargo exits zero.
-  Its offline parser/guard tests never invoke Cargo or native credential access.
+  The opt-in hosted lane also writes one malformed application record through the real native manager under a UUID service and verifies refusal without provider crossover or plaintext fallback; this does not prove OS-manager lock, ACL denial or backend corruption. Its offline parser/guard tests never invoke Cargo or native credential access.
 - Validation workflows must not call live providers or require credentials.
   `release-recovery-acceptance.yml` is a manually dispatched, read-only controlled
   fixture for deterministic complete-matrix red, repeated-fingerprint, focused-green

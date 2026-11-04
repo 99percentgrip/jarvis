@@ -31,8 +31,9 @@ architecture, MSRV, and source-oracle checks.
   the exact recorded CI label; new branded prose or other URLs remain refused.
   The Issue #23 diagnostic, PR #24 integration report, Phase 5A Windows
   reliability report, Phase 5B credential correction, subscription-policy and
-  offline execution reports admit only reviewed registered technical paths/command
-  identities; no private absolute
+  offline execution, PR #31 post-merge and Phase 5B native-host continuation
+  reports admit only reviewed registered technical paths/command identities;
+  no private absolute
   archive path is admitted by the naming guard.
   The interrupted-turn migration repair admits only the complete shared-worker
   interrupted-stream marker prefix and reviewed quoted technical tokens in its
