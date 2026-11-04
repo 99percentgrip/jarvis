@@ -25,6 +25,7 @@
 - [PR #31 final corrective audit](2026-11-03-pr31-final-corrective-audit.md) — subscription-neutral privacy correction, cross-host LM Studio classification tests, fixture-preservation audit and final-head gate boundary.
 - [PR #31 controlled integration and Phase 5B continuation](2026-11-03-pr31-controlled-integration.md) — guarded merge identity, post-merge workflow receipts and isolated Linux native-manager negative follow-up; remaining provider/host/platform matrix stays open.
 - [Phase 5B native and host acceptance continuation](2026-11-04-phase5b-native-host-acceptance.md) — UUID-scoped native application-record corruption, safety limitations of OS-denial tests, and real-host gaps; platform receipts and unexecuted scenarios remain separately classified.
+- [PR #32 integration and Phase 5B host lifecycle](2026-11-04-pr32-integration-host-lifecycle.md) — guarded merge, exact-main red Intel fixture, focused red-first fixture repair and offline real-process Linux TUI/ACP credential lifecycle; remaining platform and review gaps are explicit.
 
 - [Phase 5B subscription and test-isolation policy](2026-11-03-phase5b-subscription-isolation-policy.md) — owner's offline mandatory-gate decision; separates expected, specifically proven negative-path refusals from unexecuted live-positive authorization in the [scoped coverage matrix](phase4-auth-persistence-coverage.json). No provider tests or release gates were run for this prose-only decision.
 
