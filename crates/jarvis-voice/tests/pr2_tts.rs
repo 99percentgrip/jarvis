@@ -92,7 +92,12 @@ if kind == "truncated":
     sys.exit(0)
 samples = b"\x10\x00\x20\x00" * 2205  # ~0.1 s
 if kind == "oversized":
-    samples = samples * 20000  # far beyond the test bound
+    # Stream past the 2 MiB test bound without first allocating 176 MiB.
+    # On contended Intel runners that allocation delayed the first stdout
+    # byte beyond the unchanged engine deadline, masking the bound failure.
+    for _ in range(300):
+        sys.stdout.buffer.write(samples)
+    sys.exit(0)
 if kind == "slow":
     time.sleep(2)
     sys.stdout.buffer.write(header + samples)

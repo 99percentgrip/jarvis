@@ -70,6 +70,7 @@ types, and deterministic in-memory fakes.
   ("progress was not confirmed"), never absence of delivery; reports
   are metadata-only with absent stages absent. Hosts execute all
   effects; the session performs no I/O.
+- `tests/pr2_tts.rs` oversized engine fixture streams past the unchanged 2 MiB output bound rather than allocating ~176 MiB before its first stdout write; the production ten-second deadline and resource-exhaustion assertion remain unchanged. Historical contended Intel deadline failures are not proof of a production TTS defect.
 - `tts-subprocess` (PR-2, feature): **synthesis-only** — text in,
   canonical PCM out via the `VoiceTts` port; never plays audio, never
   creates files (stdout → memory), never treats process exit as

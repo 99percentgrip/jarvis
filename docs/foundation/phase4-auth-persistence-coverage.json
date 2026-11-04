@@ -117,17 +117,31 @@
     },
     {
       "capability": "UUID native-manager malformed application record isolation (hosted acceptance candidate)",
-      "classification": "SCOPED NEW ACCEPTANCE; NATIVE WINDOWS/MACOS PENDING",
+      "classification": "INTEGRATED SCOPED HOSTED NATIVE APPLICATION-RECORD REFUSAL; OS-SERVICE DENIAL NOT TESTED",
       "entry_point": "crates/jarvis-auth/tests/native_persistence.rs:hosted_native_corrupt_record_refuses_without_crossing_provider_namespace",
       "runtime_consumer": "native OS keyring API -> SecureCredentialStore::load",
       "storage_identity": "test-owned UUID service; fixture:subscription and neighbor:api-key",
       "risk": "Malformed app record might leak, cross provider namespace or create plaintext vault",
       "positive_test": "Native neighbor stays readable and test-owned corrupt entry is cleaned up",
       "negative_test": "Native stored malformed application record returns InvalidSecret without creating fallback",
-      "platform": "Linux private GNOME bus PASS; macOS Intel/Apple Silicon and Windows hosted pending",
-      "result": "Linux scoped PASS; macOS/Windows NOT TESTED pending exact-head native runs; OS lock/ACL denial NOT TESTED",
-      "evidence": "2026-11-04-phase5b-native-host-acceptance.md: private Linux bus exact native case 1 passed/0 failed, encrypted DH observer; hosted native CI not yet run",
-      "evidence_commit": "unpublished candidate based on b3a112b653eb1d8316b27060557680bbfeed17b8"
+      "platform": "Linux x86_64/arm64, macOS Intel/Apple Silicon and Windows x86_64 hosted; private Linux GNOME bus local fixture",
+      "result": "PASS scoped malformed application-record refusal at PR #32 head; exact-main native Intel gate FAILED in unrelated voice fixture before native selector; OS denial and recovery NOT TESTED",
+      "evidence": "2026-11-04-pr32-integration-host-lifecycle.md: PR #32 head f3745c95 run 41631570224 attempt 2 all five named native selector receipts; merge c6c5e012 main run 41808028141 attempt 1 macOS Intel 126499877463 red before selector, four other native lanes green. Follow-on fixture repair candidate awaits exact-head CI.",
+      "evidence_commit": "f3745c95f44e63c64457b40c6c1b48bee8440f58"
+    },
+    {
+      "capability": "Production TUI and ACP OpenAI API-key credential lifecycle through isolated Linux native store",
+      "classification": "LOCAL LINUX PRODUCTION-HOST SCOPED ACCEPTANCE; CROSS-PLATFORM AND FULL PROVIDER MATRIX OPEN",
+      "entry_point": "apps/jarvis-tui/tests/phase5b_native_lifecycle_pty.py; apps/jarvis-acp/tests/phase5b_native_cli_lifecycle.py",
+      "runtime_consumer": "ordinary TUI Settings provider credential port and ordinary ACP --setup/--check-auth/--logout CLI -> SecureCredentialStore on private GNOME Secret Service",
+      "storage_identity": "fixed production OpenAI native-auth identity isolated by disposable private Linux D-Bus/home; synthetic UUID key values; xAI tested absent",
+      "risk": "Fresh-process state loss, cross-provider fallback, failed preflight mutating native store or plaintext fallback",
+      "positive_test": "TUI save/restart/rotate/restart/remove/restart absence; ACP setup/check/rotate/check/logout/check on fresh processes",
+      "negative_test": "ACP foreign-owned fallback-path write and logout refuse while prior native credential remains configured; xAI remains absent; no secret in visible output",
+      "platform": "Linux x86_64 local bwrap private network and private GNOME Secret Service only",
+      "result": "PASS local bounded TUI and ACP host controls; exact rotated bytes, authenticated dispatch and macOS/Windows host/process matrix NOT TESTED",
+      "evidence": "2026-11-04-pr32-integration-host-lifecycle.md: each final process fixture printed PASS and private encrypted DH observer PASS; initial label, signed-out helper, and ownership-marker fixture errors were corrected; new candidate exact-head CI not yet run",
+      "evidence_commit": "local follow-on branch based on c6c5e012e2e1da7678ca7dbfd8a6895d606a950f"
     }
   ]
 }
