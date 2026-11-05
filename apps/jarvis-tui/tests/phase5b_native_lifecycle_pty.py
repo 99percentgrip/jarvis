@@ -15,7 +15,7 @@ import uuid
 from settings_pty import Host, fixture_owned_directory
 
 
-def run(binary):
+def run_one(binary, provider):
     private = Path(os.environ['NATIVE_SECRET_SERVICE_FIXTURE_HOME'])
     assert os.environ['NATIVE_SECRET_SERVICE_FIXTURE'] == 'unlocked-private-bus'
     assert Path.home() == private and (private / '.native-credential-test-home').is_file()
@@ -28,11 +28,11 @@ def run(binary):
         env = {'JARVIS_HOME': str(root / 'state'), 'ZAI_API_KEY': '',
                'JARVIS_VRO_ENABLED': '0', 'DBUS_SESSION_BUS_ADDRESS': os.environ['DBUS_SESSION_BUS_ADDRESS'],
                'XDG_RUNTIME_DIR': str(private / 'run'),
-               'JARVIS_OPENAI_CREDENTIALS_PATH': str(root / 'config' / 'native-openai.json')}
+               f'JARVIS_{provider.upper()}_CREDENTIALS_PATH': str(root / 'config' / f'native-{provider}.json')}
 
         def stored_key():
             result = subprocess.run(['secret-tool', 'lookup', 'service', '99percentgrip.jarvis',
-                                     'username', 'openai:native-auth'], capture_output=True,
+                                     'username', f'{provider}:native-auth'], capture_output=True,
                                     text=True, timeout=10)
             if result.returncode == 1 and not result.stdout and not result.stderr:
                 return None
@@ -48,10 +48,11 @@ def run(binary):
             host.wait('Start coding')
             host.key('s')
             host.choose('Providers')
-            host.choose('openai')
-            host.choose('Manage authentication · openai')
+            host.choose(provider)
+            host.choose(f'Manage authentication · {provider}')
             host.wait('Authentication')
-            host.choose('API key (usage-based billing)')
+            host.choose('API key (usage-based billing)' if provider == 'openai'
+                        else 'xAI API key (usage-based API billing)')
 
         def quit(host):
             host.key('\x1b')
@@ -113,8 +114,13 @@ def run(binary):
             quit(fourth)
         finally:
             fourth.close()
-        assert not (root / 'config' / 'native-openai.json').exists(), 'native save wrote fallback vault'
-    print('PASS: real TUI private-native OpenAI API-key save, reload, rotate, reload, remove, restart absence; no cloud requests')
+        assert not (root / 'config' / f'native-{provider}.json').exists(), 'native save wrote fallback vault'
+    print(f'PASS: real TUI private-native {provider} API-key save, exact reload, rotate, remove, restart absence; no cloud requests')
+
+
+def run(binary):
+    for provider in ('openai', 'xai'):
+        run_one(binary, provider)
 
 
 if __name__ == '__main__':
