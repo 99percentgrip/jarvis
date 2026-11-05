@@ -37,10 +37,27 @@ def run(binary):
                 'ALL_PROXY': 'http://127.0.0.1:9', 'NO_PROXY': ''}
         first, rotated = ('synthetic-' + uuid.uuid4().hex for _ in range(2))
 
+        def stored_key(provider):
+            # Read the actual private Secret Service entry, not --check-auth's
+            # boolean and not an environment override in the child process.
+            account = f'{provider}:native-auth'
+            result = subprocess.run(['secret-tool', 'lookup', 'service', '99percentgrip.jarvis',
+                                     'username', account], env=base, capture_output=True,
+                                    text=True, timeout=10)
+            if result.returncode == 1 and not result.stdout and not result.stderr:
+                return None  # secret-tool reports an absent record with exit 1.
+            assert result.returncode == 0 and result.stdout, 'private native credential lookup failed'
+            record = json.loads(result.stdout)
+            if record['mode'] == 'signed-out':
+                assert 'api_key' not in record, 'logout retained key in native tombstone'
+                return None
+            assert record['mode'] == 'api-key'
+            return record['api_key']
+
         def call(flag, *, key=None, vault=None, provider='openai'):
             env = dict(base)
             if key is not None:
-                env['OPENAI_API_KEY'] = key
+                env['OPENAI_API_KEY' if provider == 'openai' else 'XAI_API_KEY'] = key
             if vault is not None:
                 env['JARVIS_OPENAI_CREDENTIALS_PATH'] = str(vault)
             result = subprocess.run([binary, '--provider', provider, flag], env=env,
@@ -54,9 +71,12 @@ def run(binary):
         first_setup = call('--setup', key=first)
         assert first_setup.returncode == 0, first_setup.stderr
         assert call('--check-auth').returncode == 0
+        assert stored_key('openai') == first, 'initial native value differs'
         assert call('--setup', key=rotated).returncode == 0
         assert call('--check-auth').returncode == 0
+        assert stored_key('openai') == rotated, 'rotated native value differs'
         assert call('--check-auth', provider='xai').returncode != 0, 'OpenAI state crossed into xAI'
+        assert stored_key('xai') is None
         foreign.write_text(json.dumps({'application': '99percentgrip.agent-vesper', 'credentials': {}}))
         foreign.chmod(0o600)
         # Genuine production preflight failure, not injected native denial:
@@ -64,13 +84,28 @@ def run(binary):
         # the previously committed native entry.
         assert call('--setup', key=first, vault=foreign).returncode != 0
         assert call('--check-auth').returncode == 0
+        assert stored_key('openai') == rotated, 'failed write replaced valid key'
         assert call('--logout', vault=foreign).returncode != 0
         assert call('--check-auth').returncode == 0
+        assert stored_key('openai') == rotated, 'failed logout erased valid key'
         assert call('--logout').returncode == 0
         assert call('--check-auth').returncode != 0
+        assert stored_key('openai') is None, 'native record survived logout'
+        # The second registered API-key adapter must not inherit OpenAI's
+        # signed-out tombstone or its native key, in either direction.
+        assert call('--setup', key=first, provider='xai').returncode == 0
+        assert call('--check-auth', provider='xai').returncode == 0
+        assert stored_key('xai') == first
+        assert stored_key('openai') is None
+        assert call('--setup', key=rotated, provider='xai').returncode == 0
+        assert call('--check-auth', provider='xai').returncode == 0
+        assert stored_key('xai') == rotated
+        assert call('--logout', provider='xai').returncode == 0
+        assert call('--check-auth', provider='xai').returncode != 0
+        assert stored_key('xai') is None
         assert not path.exists(), 'production native write must not fall back to plaintext'
         assert json.loads(foreign.read_text())['application'] == '99percentgrip.agent-vesper'
-    print('PASS: ACP native OpenAI CLI absent/save/restart/rotate/restart/failed foreign-path write+logout preservation/logout/restart absence')
+    print('PASS: ACP private-native OpenAI and xAI exact-key save/rotate/restart/logout and OpenAI failed-preflight preservation; no network')
 
 
 if __name__ == '__main__':

@@ -134,14 +134,14 @@
       "classification": "LOCAL LINUX PRODUCTION-HOST SCOPED ACCEPTANCE; CROSS-PLATFORM AND FULL PROVIDER MATRIX OPEN",
       "entry_point": "apps/jarvis-tui/tests/phase5b_native_lifecycle_pty.py; apps/jarvis-acp/tests/phase5b_native_cli_lifecycle.py",
       "runtime_consumer": "ordinary TUI Settings provider credential port and ordinary ACP --setup/--check-auth/--logout CLI -> SecureCredentialStore on private GNOME Secret Service",
-      "storage_identity": "fixed production OpenAI native-auth identity isolated by disposable private Linux D-Bus/home; synthetic UUID key values; xAI tested absent",
+      "storage_identity": "fixed production OpenAI and xAI native-auth identities isolated by disposable private Linux D-Bus/home; synthetic UUID key values",
       "risk": "Fresh-process state loss, cross-provider fallback, failed preflight mutating native store or plaintext fallback",
-      "positive_test": "TUI save/restart/rotate/restart/remove/restart absence; ACP setup/check/rotate/check/logout/check on fresh processes",
-      "negative_test": "ACP foreign-owned fallback-path write and logout refuse while prior native credential remains configured; xAI remains absent; no secret in visible output",
+      "positive_test": "TUI OpenAI save/restart/rotate/restart/remove/restart absence with exact private native readback; ACP OpenAI and xAI setup/check/rotate/check/logout/check with exact private native readback",
+      "negative_test": "ACP foreign-owned fallback-path write and logout refuse while exact previous native credential remains; xAI and OpenAI cannot cross; no synthetic key in visible output",
       "platform": "Linux x86_64 local bwrap private network and private GNOME Secret Service only",
-      "result": "PASS local bounded TUI and ACP host controls; exact rotated bytes, authenticated dispatch and macOS/Windows host/process matrix NOT TESTED",
-      "evidence": "2026-11-04-pr32-integration-host-lifecycle.md: each final process fixture printed PASS and private encrypted DH observer PASS; initial label, signed-out helper, and ownership-marker fixture errors were corrected; new candidate exact-head CI not yet run",
-      "evidence_commit": "local follow-on branch based on c6c5e012e2e1da7678ca7dbfd8a6895d606a950f"
+      "result": "PASS local bounded TUI OpenAI and ACP OpenAI/xAI host controls, including exact synthetic native value; other providers and macOS/Windows host/process matrix NOT TESTED; no live provider dispatch",
+      "evidence": "2026-11-05-phase5b-auth-acceptance-continuation.md: baseline cebc4524 local real-process script PASS receipts and encrypted DH observation; scripts are not enrolled in CI, candidate exact-head CI pending. Earlier scoped result: 2026-11-04-pr32-integration-host-lifecycle.md",
+      "evidence_commit": "cebc452485999bbb3efe2694b599522f49277596 (baseline; candidate unpublished)"
     }
   ]
 }

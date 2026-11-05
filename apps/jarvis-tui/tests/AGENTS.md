@@ -36,7 +36,7 @@ Verify terminal interaction through the production TUI binary with isolated stat
   separately when executed; a portable script is not native-platform evidence.
 
 
-- `phase5b_native_lifecycle_pty.py` exercises ordinary TUI Settings OpenAI API-key save, rotation, removal and fresh-process inventory on a private Linux GNOME bus within a network namespace. It requires the private-bus runner, overrides the shared signed-out test vault with an explicit empty private path, and cannot establish native macOS/Windows manager denial or live provider request reuse.
+- `phase5b_native_lifecycle_pty.py` exercises ordinary TUI Settings OpenAI API-key save, exact private-native-record readback, rotation, removal and fresh-process inventory on a private Linux GNOME bus within a network namespace. It requires the private-bus runner, overrides the shared signed-out test vault with an explicit empty private path, and cannot establish native macOS/Windows manager denial or live provider request reuse.
 - `first_launch_pty.py` verifies signed-out first launch for every registered
   provider, all four Settings authentication routes, benign Back and clean Quit.
   Never seed a Z.ai key in this case; malformed private GLM vaults deliberately

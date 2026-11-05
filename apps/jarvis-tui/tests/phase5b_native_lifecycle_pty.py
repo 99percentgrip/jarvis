@@ -4,8 +4,10 @@
 Run only under .github/linux_secret_service_fixture.py and a network namespace.
 No caller credential manager, cloud traffic or user profile is accessible.
 """
+import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import uuid
@@ -27,6 +29,20 @@ def run(binary):
                'JARVIS_VRO_ENABLED': '0', 'DBUS_SESSION_BUS_ADDRESS': os.environ['DBUS_SESSION_BUS_ADDRESS'],
                'XDG_RUNTIME_DIR': str(private / 'run'),
                'JARVIS_OPENAI_CREDENTIALS_PATH': str(root / 'config' / 'native-openai.json')}
+
+        def stored_key():
+            result = subprocess.run(['secret-tool', 'lookup', 'service', '99percentgrip.jarvis',
+                                     'username', 'openai:native-auth'], capture_output=True,
+                                    text=True, timeout=10)
+            if result.returncode == 1 and not result.stdout and not result.stderr:
+                return None
+            assert result.returncode == 0 and result.stdout, 'private native read failed'
+            record = json.loads(result.stdout)
+            if record['mode'] == 'signed-out':
+                assert 'api_key' not in record
+                return None
+            assert record['mode'] == 'api-key'
+            return record['api_key']
 
         def open_auth(host):
             host.wait('Start coding')
@@ -54,6 +70,7 @@ def run(binary):
             assert key not in first.text()
             first.choose('Save and use API key')
             first.wait('API key saved and selected immediately')
+            assert stored_key() == key, 'TUI save differs from native value'
             assert key not in first.raw
             quit(first)
         finally:
@@ -64,11 +81,13 @@ def run(binary):
         try:
             open_auth(second)
             second.wait('Remove stored API key')
+            assert stored_key() == key, 'new TUI process lost saved native value'
             assert key not in second.raw
             second.choose('Enter or replace API key')
             second.key(rotated)
             second.choose('Save and use API key')
             second.wait('API key saved and selected immediately')
+            assert stored_key() == rotated, 'TUI rotation differs from native value'
             assert rotated not in second.raw
             quit(second)
         finally:
@@ -77,10 +96,12 @@ def run(binary):
         try:
             open_auth(third)
             third.wait('Remove stored API key')
+            assert stored_key() == rotated, 'new TUI process lost rotated native value'
             assert key not in third.raw and rotated not in third.raw
             third.choose('Remove stored API key')
             third.choose('Confirm')
             third.wait('removed')
+            assert stored_key() is None, 'TUI logout left native API key readable'
             quit(third)
         finally:
             third.close()
