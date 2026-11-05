@@ -22,7 +22,7 @@ implementation that provisions a backend demanding
   native image acceptance gates. The runtime package set resolves from a fixed
   Debian snapshot timestamp; its APT-signature-verified HTTP bootstrap is required
   because the pinned slim base intentionally has no CA bundle before the same
-  transaction installs `ca-certificates`. The Dockerfile runs `.github/snapshot-apt.sh` only for this runtime snapshot: signed metadata must fail on partial update; HTTP(S) acquisition has bounded per-request retries, two bounded whole-phase attempts and no unpinned mirror fallback. Persistent outage must fail the build rather than skip browser acceptance. fd 3/4 mapping uses a fixed shell script,
+  transaction installs `ca-certificates`. The Dockerfile runs `.github/snapshot-apt.sh` only for this runtime snapshot: signed metadata must fail on partial update; HTTP(S) acquisition has bounded per-request retries and two bounded whole-phase attempts per frontend. Only exclusive 503/504 fetch errors may switch to the Debian-owned frontend of the same signed, timestamped snapshot; a missing, unsigned or corrupt artifact must fail without rotating. Both frontends unavailable must fail the build rather than skip browser acceptance. fd 3/4 mapping uses a fixed shell script,
   never a TCP debugging listener or a new Rust unsafe boundary.
   The image also builds `vesper-setpriv` from checksum-pinned util-linux
   2.41.6 for the shared swarm scope's Landlock confinement; its complete

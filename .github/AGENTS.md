@@ -7,6 +7,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
 
 ## Local Contracts
 
+- Browser snapshot image acquisition keeps the timestamped signed Debian sources, fixed headless version and integrity checks. `.github/snapshot-apt.sh` retries transient HTTP 503/504 on the primary; only exclusively transient fetch failures may rotate the host to the Debian-owned `snapshot-cloudflare.debian.org` frontend of the same snapshot. Both frontends are bounded and fail closed; 404, signature and digest failures never trigger a switch. `test_browser_snapshot_install.py` and `test_snapshot_mirror.py` are enrolled in canonical quality; native two-architecture image acceptance is separate.
 - `ci.yml` quality runs `verify_workflows.sh` immediately after checkout. It installs hash-pinned actionlint 1.7.12 and validates every `.yml`/`.yaml` under `.github/workflows/`, including disabled workflows, before expensive compilation. Download, digest, executable or lint failures fail the existing required quality context; no suppression or trigger bypass is permitted.
 
 - The canonical quality job executes `scripts/test_jarvis_candidate_acceptance.py`; the existing `windows-installer` job executes the shared candidate sentinel byte guard regressions under both `powershell.exe` 5.1 and `pwsh.exe` 7+ before existing installer coverage. These tests do not authorize a new candidate.

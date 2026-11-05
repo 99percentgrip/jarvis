@@ -1,6 +1,6 @@
 # Agent Vesper — Release Recovery Controller PRD
 
-[Emergency integrated-main CI forensics](foundation/2026-11-05-emergency-ci-forensics.md) records the exact-main failed native/browser attempts, the already-integrated voice-fixture correction and the bounded same-SHA recovery: all five native jobs passed, but browser ARM package retrieval failed again. A scoped fail-closed pinned-snapshot acquisition correction awaits real two-architecture browser and complete exact-head CI; a green native matrix alone does not satisfy the red exact-main browser prerequisite.
+[Emergency integrated-main CI forensics](foundation/2026-11-05-emergency-ci-forensics.md) records the exact-main failed native/browser attempts, the already-integrated voice-fixture correction and the bounded same-SHA recovery: all five native jobs passed, but browser ARM package retrieval failed again. The initial bounded primary acquisition correction passed PR #34 but the integrated main browser build exhausted it on pinned packages. [Same-snapshot frontend failover](foundation/2026-11-05-browser-snapshot-frontend-repair.md) is a follow-up candidate: it requires real two-architecture browser acceptance and complete exact-head CI, and does not establish green main or Phase 5B readiness.
 
 The [PR #20 Windows environment-notification correction](foundation/2026-10-25-stage7b-windows-environment-notification-correction.md) tracks the P1 review, owned User PATH shell broadcast and its exact-head Windows CI gate; protected integration and candidate acceptance remain separate.
 
