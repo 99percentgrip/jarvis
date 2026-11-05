@@ -1,0 +1,40 @@
+# Phase 5B authentication lifecycle acceptance — isolated continuation
+
+## Objective and source
+
+Execute remaining subscription-independent authentication acceptance on integrated `cebc452485999bbb3efe2694b599522f49277596`, preserving the owner's dirty checkout and all unpublished worktrees. Candidate worktree: `.agent/phase5b-auth-acceptance`, branch `test/phase5b-auth-acceptance`. Production entry points: TUI main and Settings, ACP main `--setup`/`--check-auth`/`--logout`, and the native credential-store library. This candidate changes **tests and their documentation only**, not production source. Reused earlier PR #29–#35 reports and the unpublished continuation tests as source material; no historical result was recast as newly executed.
+
+## Methods and exact local receipts
+
+Built ordinary TUI and ACP host packages with offline Cargo, two concurrent compiler jobs (`Finished dev profile`). Ran host scripts through `bwrap --unshare-net --dev-bind / / --proc /proc python3 .github/linux_secret_service_fixture.py python3 <test> target/debug/<host>`: separate foreground GNOME Secret Service, private D-Bus, synthetic keys, disposable HOME, and encrypted-DH negotiation observer. The pre-change baseline host scripts both passed for OpenAI. After extending their assertions to compare the actual native record and to cover xAI/Z.ai, the outputs were:
+
+```
+PASS: ACP private-native OpenAI/xAI exact-key save/rotate/logout, Z.ai save/rotate, and OpenAI failed-preflight preservation; no network
+real private Secret Service encrypted DH session negotiation verified
+PASS: real TUI private-native openai API-key save, exact reload, rotate, remove, restart absence; no cloud requests
+PASS: real TUI private-native xai API-key save, exact reload, rotate, remove, restart absence; no cloud requests
+PASS: real TUI private-native zai API-key save, exact reload, rotate, remove, restart absence; no cloud requests
+real private Secret Service encrypted DH session negotiation verified
+```
+
+Then extended ACP with missing private-bus child-process write/delete refusal, exact retained-key comparison after denial, plaintext-vault absence, and restored-bus check. Re-run: `PASS: ACP private-native OpenAI/xAI exact-key save/rotate/logout, Z.ai save/rotate, missing-bus write/delete refusal and recovery; no network` and `real private Secret Service encrypted DH session negotiation verified`. The private manager was not locked or mutated to simulate denial: only child processes were given a nonexistent socket. This is genuine OS-backed inaccessible-manager behavior on Linux, **not** a permission-policy denial.
+
+`cargo test -p <auth-package> --lib native_records::tests --offline -j 2`: `11 passed; 0 failed` (injected native-record write/swap/delete/cleanup faults). `cargo test -p <acp-package> --test phase4_credential_boundary --offline -j 2`: `3 passed; 0 failed` (ordinary ACP foreign/malformed/owned vault startup). `bwrap --unshare-net ... python3 <tui-package>/tests/first_launch_pty.py <built-TUI-binary>`: four `PASS: signed-out {zai,openai,xai,lmstudio}: landing, four providers, auth Back, clean Quit` receipts. `bwrap --unshare-net ... env GITHUB_ACTIONS=true <native-fixture-selector>=isolated-hosted-fixture RUNNER_OS=Linux CARGO_BUILD_JOBS=2 python3 .github/verify_native_credentials.py` (explicit local fixture flags, not hosted CI) printed one named pass each for `hosted_native_credential_persistence`, `hosted_device_flow_persists_large_subscription_record`, `hosted_native_corrupt_record_refuses_without_crossing_provider_namespace`, `linux_native_persistence_namespace_and_restart`, and `missing_service_never_creates_a_plaintext_vault`, plus encrypted-DH observation. The device-flow case uses a synthetic isolated fixture; no live subscription authorization occurred. Focused offline LM Studio refusal regressions on both hosts (`cargo test -p <host-package> --lib rejected_local_token_never_echoes_server_body_or_bearer --offline -j 2`) each printed `1 passed; 0 failed`; these exercise the production session in process with a loopback rejection, not an ordinary-host process dispatch.
+
+## Provider × host × platform classifications
+
+| Provider / operation | Linux TUI production process | Linux ACP production process | macOS / Windows current candidate |
+| --- | --- | --- | --- |
+| OpenAI API key | PASS: signed-out, Settings save, exact native read, restart, rotate, exact read, remove, restart absence, no screen key | PASS: first absence, setup/check, exact native values before/after rotation, failed foreign-path and missing-bus write/delete preserve old key, restored bus, logout and absence; stdout and stderr checked for secret | NOT TESTED: fresh-process host matrix on this candidate |
+| xAI API key | PASS: same TUI lifecycle, native exact-value comparison | PASS: save/rotate native exact values, logout, restart absence and isolation from OpenAI | NOT TESTED: fresh-process host matrix on this candidate |
+| Z.ai API key | PASS: same TUI lifecycle, native exact-value comparison | PASS: first absence, setup/rotate, exact native values, isolation; CLI logout NOT SUPPORTED (fixture removes its own key only) | NOT TESTED: fresh-process host matrix on this candidate |
+| LM Studio optional key | PASS: signed-out landing and Settings Back; native-key persistence NOT SUPPORTED (optional environment key) | NOT TESTED: real-host environment-key dispatch/restart/rotation; earlier in-process loopback 401 non-disclosure PASS is distinct | NOT TESTED: host process matrix |
+| OpenAI/xAI subscription | NOT TESTED: live-positive; inactive production paths must refuse | NOT TESTED: live-positive; synthetic offline fixture does not enable production subscription | NOT TESTED: live-positive authorization is prohibited by this mission |
+
+Private Linux native-manager locked/missing cases are PASS in the separately selected existing native fixture; failed chunk/swap/delete preservation is PASS at the injected production record boundary, **not** proof of OS-policy denial. No secret is printed by the tests; tests assert the process output and TUI raw/text do not contain their synthetic keys. ACP `--check-auth` checks are fresh child processes. Environment fallback and plaintext-vault absence are asserted in the private manager fixture, not for all possible host configurations.
+
+## Deviations, unresolved acceptance and readiness
+
+No confirmed production defect in this continuation; no red-first production regression or repair. Existing LM Studio secret-echo and malformed-retained-record repairs remain historical scoped evidence. The ACP Z.ai CLI has no logout operation (NOT SUPPORTED there); evaluate an available production ACP-protocol or TUI sign-out path rather than asserting fixture deletion is host logout. LM Studio optional environment-key host dispatch and refusal, incomplete offline subscription refusal classifications, provider/billing-mode transitions in both real processes, and native failed rotation/deletion at OS-policy level remain NOT TESTED. macOS and Windows default user-manager operations cannot safely be denied by locking a shared keychain or changing machine credential policy; isolated genuine OS-manager denial has not been demonstrated. Use production-boundary injected faults in CI but do not conflate them with a real manager failure. These are release-impacting coverage gaps; Phase 5B is **INCOMPLETE**.
+
+The baseline's twelve main-push successes are historical and not candidate checks. At report preparation, no PR or exact-head 13-check matrix existed for this test candidate; independent review is **NOT COMPLETED**: a read-only delegated review was attempted, but its selected model was unavailable in the current account model list. No merge, release, tag or installation occurred. Preserve all unpublished worktrees and the primary checkout. Candidate changes require exact-head CI before any merge-readiness decision; merging is not authorized without the owner's specific approval. Post-publication CI/PR receipts, if any, belong in this local report and are not pushed as a separate documentation-only commit.
