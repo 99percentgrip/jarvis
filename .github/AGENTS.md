@@ -57,6 +57,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   Canonical/MSRV retain storage diagnostics on failure. The focused lifecycle
   gate proves exact acceptance linking after the workspace and default-doc graphs
   on both Linux architectures; it never reduces existing verification coverage.
+- `snapshot-apt.sh` is the browser runtime-image-only pinned Debian acquisition helper. It retains signed snapshot metadata, the existing fixed image/package pins and the no-fallback failure boundary; each update/install phase has two whole-command attempts with per-request retries and a bounded process deadline. `test_browser_snapshot_install.py` injects a transient failure and a persistent refusal with a private fake APT executable; canonical quality runs it before compilation. Neither the fixture nor retries substitute for a real two-architecture browser build.
 - `prepare-linux-apt.py` is CI-only guarded runner preparation. Preserve mirror
   files and cached mirror+file paths, route architecture-correct Ubuntu archives over HTTPS (ARM64 keeps ports) and set
   IPv4/retry/acquisition bounds for both sandbox and browser dependency setup.
@@ -240,6 +241,8 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   cannot replace complete production prerequisite or publishing gates.
 
 ## Child DOX Index
+
+- `snapshot-apt.sh` and `test_browser_snapshot_install.py` — fail-closed bounded browser-image snapshot acquisition and its offline transient/permanent-failure regression, enrolled by `ci.yml` quality.
 
 - `verify_workflows.sh` — pinned actionlint installation and complete workflow-directory syntax/structure gate in the existing quality job.
 

@@ -22,7 +22,7 @@ implementation that provisions a backend demanding
   native image acceptance gates. The runtime package set resolves from a fixed
   Debian snapshot timestamp; its APT-signature-verified HTTP bootstrap is required
   because the pinned slim base intentionally has no CA bundle before the same
-  transaction installs `ca-certificates`. fd 3/4 mapping uses a fixed shell script,
+  transaction installs `ca-certificates`. The Dockerfile runs `.github/snapshot-apt.sh` only for this runtime snapshot: signed metadata must fail on partial update; HTTP(S) acquisition has bounded per-request retries, two bounded whole-phase attempts and no unpinned mirror fallback. Persistent outage must fail the build rather than skip browser acceptance. fd 3/4 mapping uses a fixed shell script,
   never a TCP debugging listener or a new Rust unsafe boundary.
   The image also builds `vesper-setpriv` from checksum-pinned util-linux
   2.41.6 for the shared swarm scope's Landlock confinement; its complete
@@ -91,6 +91,7 @@ implementation that provisions a backend demanding
 
 ## Verification
 
+- `python3 .github/test_browser_snapshot_install.py` checks bounded retry and fail-closed pinning offline; native Docker image acceptance on both Linux architectures remains mandatory.
 - `cargo test -p jarvis-web-fetch`
 - `cargo test -p jarvis-web-fetch --all-features real_pipe_browser_actions --
   --ignored` with `JARVIS_WEB_TEST_IMAGE` and a working container runtime;

@@ -20,6 +20,8 @@
 
 # Foundation Evidence Index
 
+- [Emergency exact-main CI forensic audit](2026-11-05-emergency-ci-forensics.md) — immutable main/PR attempt and job evidence, repaired historical voice fixture, runner-unallocated macOS cancellations, repeated ARM snapshot retrieval failure and bounded fail-closed acquisition repair candidate; exact-head native browser proof and green main remain separate gates.
+
 - [Phase 5B offline authentication execution and LM Studio refusal repair](2026-11-03-phase5b-offline-auth-acceptance.md) — production TUI/ACP loopback, credential isolation, red/green secret-echo correction, qualified coverage and pending native/PR gates. [Scoped matrix](phase4-auth-persistence-coverage.json) remains non-final.
 - [Phase 5B PR #31 first CI failure and ACP fixture repair](2026-11-03-phase5b-pr31-ci-fixture-repair.md) — two red quality receipts, atomic test-root correction, scoped Linux retest and local successful exact-head CI readback; full offline acceptance remains open.
 - [PR #31 final corrective audit](2026-11-03-pr31-final-corrective-audit.md) — subscription-neutral privacy correction, cross-host LM Studio classification tests, fixture-preservation audit and final-head gate boundary.
