@@ -28,15 +28,19 @@ def run_one(binary, provider):
         env = {'JARVIS_HOME': str(root / 'state'), 'ZAI_API_KEY': '',
                'JARVIS_VRO_ENABLED': '0', 'DBUS_SESSION_BUS_ADDRESS': os.environ['DBUS_SESSION_BUS_ADDRESS'],
                'XDG_RUNTIME_DIR': str(private / 'run'),
-               f'JARVIS_{provider.upper()}_CREDENTIALS_PATH': str(root / 'config' / f'native-{provider}.json')}
+               ('JARVIS_CREDENTIALS_PATH' if provider == 'zai' else
+                f'JARVIS_{provider.upper()}_CREDENTIALS_PATH'): str(root / 'config' / f'native-{provider}.json')}
 
         def stored_key():
             result = subprocess.run(['secret-tool', 'lookup', 'service', '99percentgrip.jarvis',
-                                     'username', f'{provider}:native-auth'], capture_output=True,
+                                     'username', f'{provider}:' + ('api-key' if provider == 'zai' else 'native-auth')],
+                                    capture_output=True,
                                     text=True, timeout=10)
             if result.returncode == 1 and not result.stdout and not result.stderr:
                 return None
             assert result.returncode == 0 and result.stdout, 'private native read failed'
+            if provider == 'zai':
+                return result.stdout.rstrip('\n')
             record = json.loads(result.stdout)
             if record['mode'] == 'signed-out':
                 assert 'api_key' not in record
@@ -51,8 +55,9 @@ def run_one(binary, provider):
             host.choose(provider)
             host.choose(f'Manage authentication · {provider}')
             host.wait('Authentication')
-            host.choose('API key (usage-based billing)' if provider == 'openai'
-                        else 'xAI API key (usage-based API billing)')
+            if provider != 'zai':
+                host.choose('API key (usage-based billing)' if provider == 'openai'
+                            else 'xAI API key (usage-based API billing)')
 
         def quit(host):
             host.key('\x1b')
@@ -119,7 +124,7 @@ def run_one(binary, provider):
 
 
 def run(binary):
-    for provider in ('openai', 'xai'):
+    for provider in ('openai', 'xai', 'zai'):
         run_one(binary, provider)
 
 

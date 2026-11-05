@@ -32,7 +32,8 @@ def run(binary):
                 'XDG_RUNTIME_DIR': str(fixture / 'run'),
                 'DBUS_SESSION_BUS_ADDRESS': os.environ['DBUS_SESSION_BUS_ADDRESS'],
                 'JARVIS_OPENAI_CREDENTIALS_PATH': str(path),
-                'JARVIS_XAI_CREDENTIALS_PATH': str(auth / 'xai.json'), 'JARVIS_PROVIDER': 'openai',
+                'JARVIS_XAI_CREDENTIALS_PATH': str(auth / 'xai.json'),
+                'JARVIS_CREDENTIALS_PATH': str(auth / 'zai.json'), 'JARVIS_PROVIDER': 'openai',
                 'HTTP_PROXY': 'http://127.0.0.1:9', 'HTTPS_PROXY': 'http://127.0.0.1:9',
                 'ALL_PROXY': 'http://127.0.0.1:9', 'NO_PROXY': ''}
         first, rotated = ('synthetic-' + uuid.uuid4().hex for _ in range(2))
@@ -40,13 +41,15 @@ def run(binary):
         def stored_key(provider):
             # Read the actual private Secret Service entry, not --check-auth's
             # boolean and not an environment override in the child process.
-            account = f'{provider}:native-auth'
+            account = f'{provider}:' + ('api-key' if provider == 'zai' else 'native-auth')
             result = subprocess.run(['secret-tool', 'lookup', 'service', '99percentgrip.jarvis',
                                      'username', account], env=base, capture_output=True,
                                     text=True, timeout=10)
             if result.returncode == 1 and not result.stdout and not result.stderr:
                 return None  # secret-tool reports an absent record with exit 1.
             assert result.returncode == 0 and result.stdout, 'private native credential lookup failed'
+            if provider == 'zai':
+                return result.stdout.rstrip('\n')
             record = json.loads(result.stdout)
             if record['mode'] == 'signed-out':
                 assert 'api_key' not in record, 'logout retained key in native tombstone'
@@ -57,7 +60,7 @@ def run(binary):
         def call(flag, *, key=None, vault=None, provider='openai'):
             env = dict(base)
             if key is not None:
-                env['OPENAI_API_KEY' if provider == 'openai' else 'XAI_API_KEY'] = key
+                env[{'openai': 'OPENAI_API_KEY', 'xai': 'XAI_API_KEY', 'zai': 'ZAI_API_KEY'}[provider]] = key
             if vault is not None:
                 env['JARVIS_OPENAI_CREDENTIALS_PATH'] = str(vault)
             result = subprocess.run([binary, '--provider', provider, flag], env=env,
@@ -103,9 +106,24 @@ def run(binary):
         assert call('--logout', provider='xai').returncode == 0
         assert call('--check-auth', provider='xai').returncode != 0
         assert stored_key('xai') is None
+        assert call('--check-auth', provider='zai').returncode != 0
+        assert stored_key('zai') is None
+        assert call('--setup', key=first, provider='zai').returncode == 0
+        assert call('--check-auth', provider='zai').returncode == 0
+        assert stored_key('zai') == first, 'Z.ai first native value differs'
+        assert call('--setup', key=rotated, provider='zai').returncode == 0
+        assert call('--check-auth', provider='zai').returncode == 0
+        assert stored_key('zai') == rotated, 'Z.ai rotated native value differs'
+        assert stored_key('openai') is None and stored_key('xai') is None
+        # The ACP Z.ai CLI has no --logout action. Remove only our own entry
+        # inside the disposable fixture; do not claim a production logout.
+        clear = subprocess.run(['secret-tool', 'clear', 'service', '99percentgrip.jarvis',
+                                'username', 'zai:api-key'], env=base, capture_output=True,
+                               text=True, timeout=10)
+        assert clear.returncode == 0 and stored_key('zai') is None
         assert not path.exists(), 'production native write must not fall back to plaintext'
         assert json.loads(foreign.read_text())['application'] == '99percentgrip.agent-vesper'
-    print('PASS: ACP private-native OpenAI and xAI exact-key save/rotate/restart/logout and OpenAI failed-preflight preservation; no network')
+    print('PASS: ACP private-native OpenAI/xAI exact-key save/rotate/logout, Z.ai save/rotate, and OpenAI failed-preflight preservation; no network')
 
 
 if __name__ == '__main__':
