@@ -23,7 +23,7 @@ class SnapshotInstallTests(unittest.TestCase):
                 "count_file=\"$MOCK_ROOT/$phase\"\n"
                 "count=0; test ! -f \"$count_file\" || count=$(cat \"$count_file\")\n"
                 "count=$((count + 1)); printf '%s' \"$count\" > \"$count_file\"\n"
-                "case \"$MOCK_FAILURES\" in \"$phase:$count\"|\"$phase-all\"|always) exit 100;; esac\n"
+                "case \"$MOCK_FAILURES\" in \"$phase:$count\"|\"$phase-all\"|always) echo 'E: Failed to fetch http://snapshot.debian.org/file/blob/package.deb  503  No healthy backends' >&2; exit 100;; esac\n"
                 "exit 0\n"
             )
             (root / "apt-get").chmod(0o755)
@@ -40,14 +40,15 @@ class SnapshotInstallTests(unittest.TestCase):
     def test_single_snapshot_fetch_failure_retries_same_pinned_install(self):
         result, calls, sleeps = self.invoke("install:1")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(calls), 3, calls)
+        self.assertEqual(len(calls), 4, calls)
+        self.assertIn('--no-download install', calls[-1])
         self.assertIn(" update", calls[0])
         self.assertEqual(calls[1], calls[2])
         self.assertIn("chromium-headless-shell=" + VERSION, calls[1])
         self.assertIn("ca-certificates", calls[1])
         self.assertIn("libcap-ng0 procps tini", calls[1])
         self.assertEqual(len(sleeps), 1)
-        for call in calls:
+        for call in calls[:-1]:
             self.assertIn("Acquire::Retries=2", call)
             self.assertIn("Acquire::http::Timeout=30", call)
             self.assertIn("Acquire::https::Timeout=30", call)
@@ -55,7 +56,8 @@ class SnapshotInstallTests(unittest.TestCase):
     def test_transient_metadata_failure_retries_before_install(self):
         result, calls, sleeps = self.invoke("update:1")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(calls), 3, calls)
+        self.assertEqual(len(calls), 4, calls)
+        self.assertIn('--no-download install', calls[-1])
         self.assertEqual(calls[0], calls[1])
         self.assertIn("APT::Update::Error-Mode=any", calls[0])
         self.assertIn("chromium-headless-shell=" + VERSION, calls[2])
