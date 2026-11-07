@@ -17,6 +17,7 @@ migration gates and disposable platform assumptions on hosts unavailable locally
   fixture tools. Every active Linux workspace-compiling job runs it before Cargo.
   `test_credential_backend.py` checks the actual all-feature graph, retained native
   backend versions, workflow coverage and refusal outside hosted Linux.
+- `platform-foundation.yml` runs the ordinary TUI and ACP Phase 5B lifecycle Python scripts on both disposable Linux lanes after native host builds and bwrap preparation, inside a private GNOME Secret Service with provider HTTP routed to a refused loopback proxy. Hosted Linux runners refused bwrap network-namespace setup with `RTM_NEWADDR: Operation not permitted`; strict namespace isolation is local-only evidence, not claimed for CI. Native runner preparation requires `libsecret-tools`/`secret-tool` for exact private-record readback; `test_phase5b_native_prerequisites.py` guards installation on a disposable hosted runner. Missing prerequisites fail the job; `test_phase5b_host_enrollment.py` guards the workflow invocation in canonical quality. This is not macOS/Windows denial proof.
 - Linux credential acceptance runs on a fresh private bus and home with a bounded
   owned foreground GNOME daemon. `linux_secret_service_fixture.py` observes only
   OpenSession negotiation and requires encrypted DH without plaintext negotiation.

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Real ACP executable --setup/--check-auth/--logout on a private Linux bus.
 
-Must run under .github/linux_secret_service_fixture.py in a network namespace.
+Run under .github/linux_secret_service_fixture.py; host calls use refused local HTTP proxies.
+Local runs may additionally use a network namespace; CI runners disallow its setup.
 This tests the CLI host controls, not an in-memory provider test factory.
 """
 import json
@@ -32,15 +33,39 @@ def run(binary):
                 'XDG_RUNTIME_DIR': str(fixture / 'run'),
                 'DBUS_SESSION_BUS_ADDRESS': os.environ['DBUS_SESSION_BUS_ADDRESS'],
                 'JARVIS_OPENAI_CREDENTIALS_PATH': str(path),
-                'JARVIS_XAI_CREDENTIALS_PATH': str(auth / 'xai.json'), 'JARVIS_PROVIDER': 'openai',
+                'JARVIS_XAI_CREDENTIALS_PATH': str(auth / 'xai.json'),
+                'JARVIS_CREDENTIALS_PATH': str(auth / 'zai.json'), 'JARVIS_PROVIDER': 'openai',
                 'HTTP_PROXY': 'http://127.0.0.1:9', 'HTTPS_PROXY': 'http://127.0.0.1:9',
                 'ALL_PROXY': 'http://127.0.0.1:9', 'NO_PROXY': ''}
         first, rotated = ('synthetic-' + uuid.uuid4().hex for _ in range(2))
 
-        def call(flag, *, key=None, vault=None, provider='openai'):
+        def stored_key(provider):
+            # Read the actual private Secret Service entry, not --check-auth's
+            # boolean and not an environment override in the child process.
+            account = f'{provider}:' + ('api-key' if provider == 'zai' else 'native-auth')
+            result = subprocess.run(['secret-tool', 'lookup', 'service', '99percentgrip.jarvis',
+                                     'username', account], env=base, capture_output=True,
+                                    text=True, timeout=10)
+            if result.returncode == 1 and not result.stdout and not result.stderr:
+                return None  # secret-tool reports an absent record with exit 1.
+            assert result.returncode == 0 and result.stdout, 'private native credential lookup failed'
+            if provider == 'zai':
+                return result.stdout.rstrip('\n')
+            record = json.loads(result.stdout)
+            if record['mode'] == 'signed-out':
+                assert 'api_key' not in record, 'logout retained key in native tombstone'
+                return None
+            assert record['mode'] == 'api-key'
+            return record['api_key']
+
+        def call(flag, *, key=None, vault=None, provider='openai', missing_bus=False, zai_env_override=None):
             env = dict(base)
+            if missing_bus:
+                env['DBUS_SESSION_BUS_ADDRESS'] = f'unix:path={fixture}/absent-fixture-bus'
             if key is not None:
-                env['OPENAI_API_KEY'] = key
+                env[{'openai': 'OPENAI_API_KEY', 'xai': 'XAI_API_KEY', 'zai': 'ZAI_API_KEY'}[provider]] = key
+            if zai_env_override is not None:
+                env['ZAI_API_KEY'] = zai_env_override
             if vault is not None:
                 env['JARVIS_OPENAI_CREDENTIALS_PATH'] = str(vault)
             result = subprocess.run([binary, '--provider', provider, flag], env=env,
@@ -54,9 +79,18 @@ def run(binary):
         first_setup = call('--setup', key=first)
         assert first_setup.returncode == 0, first_setup.stderr
         assert call('--check-auth').returncode == 0
+        assert stored_key('openai') == first, 'initial native value differs'
         assert call('--setup', key=rotated).returncode == 0
         assert call('--check-auth').returncode == 0
+        assert stored_key('openai') == rotated, 'rotated native value differs'
+        # Deny only the child process's bus access, never lock a desktop manager.
+        assert call('--setup', key=first, missing_bus=True).returncode != 0
+        assert call('--logout', missing_bus=True).returncode != 0
+        assert stored_key('openai') == rotated, 'inaccessible manager lost prior key'
+        assert not path.exists(), 'inaccessible manager created plaintext fallback'
+        assert call('--check-auth').returncode == 0, 'restored bus did not recover'
         assert call('--check-auth', provider='xai').returncode != 0, 'OpenAI state crossed into xAI'
+        assert stored_key('xai') is None
         foreign.write_text(json.dumps({'application': '99percentgrip.agent-vesper', 'credentials': {}}))
         foreign.chmod(0o600)
         # Genuine production preflight failure, not injected native denial:
@@ -64,13 +98,47 @@ def run(binary):
         # the previously committed native entry.
         assert call('--setup', key=first, vault=foreign).returncode != 0
         assert call('--check-auth').returncode == 0
+        assert stored_key('openai') == rotated, 'failed write replaced valid key'
         assert call('--logout', vault=foreign).returncode != 0
         assert call('--check-auth').returncode == 0
+        assert stored_key('openai') == rotated, 'failed logout erased valid key'
         assert call('--logout').returncode == 0
         assert call('--check-auth').returncode != 0
+        assert stored_key('openai') is None, 'native record survived logout'
+        # The second registered API-key adapter must not inherit OpenAI's
+        # signed-out tombstone or its native key, in either direction.
+        assert call('--setup', key=first, provider='xai').returncode == 0
+        assert call('--check-auth', provider='xai').returncode == 0
+        assert stored_key('xai') == first
+        assert stored_key('openai') is None
+        assert call('--setup', key=rotated, provider='xai').returncode == 0
+        assert call('--check-auth', provider='xai').returncode == 0
+        assert stored_key('xai') == rotated
+        assert call('--logout', provider='xai').returncode == 0
+        assert call('--check-auth', provider='xai').returncode != 0
+        assert stored_key('xai') is None
+        assert call('--check-auth', provider='zai').returncode != 0
+        assert stored_key('zai') is None
+        # An explicitly selected optional local provider must never let the
+        # legacy Z.ai setup flag consume a stray ZAI_API_KEY from its environment.
+        assert call('--setup', provider='lmstudio', zai_env_override=first).returncode != 0
+        assert stored_key('zai') is None, 'LM Studio CLI selection mutated Z.ai native credentials'
+        assert call('--setup', key=first, provider='zai').returncode == 0
+        assert call('--check-auth', provider='zai').returncode == 0
+        assert stored_key('zai') == first, 'Z.ai first native value differs'
+        assert call('--setup', key=rotated, provider='zai').returncode == 0
+        assert call('--check-auth', provider='zai').returncode == 0
+        assert stored_key('zai') == rotated, 'Z.ai rotated native value differs'
+        assert stored_key('openai') is None and stored_key('xai') is None
+        # The ACP Z.ai CLI has no --logout action. Remove only our own entry
+        # inside the disposable fixture; do not claim a production logout.
+        clear = subprocess.run(['secret-tool', 'clear', 'service', '99percentgrip.jarvis',
+                                'username', 'zai:api-key'], env=base, capture_output=True,
+                               text=True, timeout=10)
+        assert clear.returncode == 0 and stored_key('zai') is None
         assert not path.exists(), 'production native write must not fall back to plaintext'
         assert json.loads(foreign.read_text())['application'] == '99percentgrip.agent-vesper'
-    print('PASS: ACP native OpenAI CLI absent/save/restart/rotate/restart/failed foreign-path write+logout preservation/logout/restart absence')
+    print('PASS: ACP private-native OpenAI/xAI exact-key save/rotate/logout, Z.ai save/rotate, missing-bus write/delete refusal and recovery; no network')
 
 
 if __name__ == '__main__':
