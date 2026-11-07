@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Real ACP executable --setup/--check-auth/--logout on a private Linux bus.
 
-Must run under .github/linux_secret_service_fixture.py in a network namespace.
+Run under .github/linux_secret_service_fixture.py; host calls use refused local HTTP proxies.
+Local runs may additionally use a network namespace; CI runners disallow its setup.
 This tests the CLI host controls, not an in-memory provider test factory.
 """
 import json

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Real TUI API-key lifecycle on an isolated private Linux Secret Service.
 
-Run only under .github/linux_secret_service_fixture.py and a network namespace.
-No caller credential manager, cloud traffic or user profile is accessible.
+Run under .github/linux_secret_service_fixture.py with refused HTTP proxies.
+Local runs additionally use a network namespace; hosted runners cannot set one up.
+No caller credential manager or user profile is accessible; no provider dispatch.
 """
 import json
 import os
