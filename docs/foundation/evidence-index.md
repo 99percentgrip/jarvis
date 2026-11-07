@@ -20,7 +20,7 @@
 
 # Foundation Evidence Index
 
-- [Phase 5B isolated production-host credential lifecycle continuation](2026-11-05-phase5b-auth-lifecycle-acceptance.md) — baseline Linux TUI/ACP fresh-process exact native key, rotation, logout, private missing-bus refusal and recovery; incomplete platform/provider matrix and unrun candidate CI remain explicit.
+- [Phase 5B consolidated production-host credential lifecycle acceptance](2026-11-05-phase5b-auth-lifecycle-acceptance.md) — PR #36/#37 assertion reconciliation, Linux TUI/ACP private native manager (including LM Studio), red-first ACP legacy Z.ai fallback isolation repair, CI enrollment and exact-head check boundary, remaining platform/provider gaps. [Original PR #36 local continuation](2026-11-05-phase5b-auth-acceptance-continuation.md) preserves its separately executed baseline; [scoped matrix](phase4-auth-persistence-coverage.json) retains OpenAI/xAI/Z.ai coverage.
 
 - [Emergency exact-main CI forensic audit](2026-11-05-emergency-ci-forensics.md) — immutable main/PR attempt and job evidence, repaired historical voice fixture, runner-unallocated macOS cancellations and bounded primary snapshot retry.
 - [Pinned browser snapshot frontend correction](2026-11-05-browser-snapshot-frontend-repair.md) — sustained 503/504 retrieval diagnosis, same signed-snapshot frontend fallback, red/green regressions and exact-head readiness boundary.

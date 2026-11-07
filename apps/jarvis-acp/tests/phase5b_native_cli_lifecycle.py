@@ -57,12 +57,14 @@ def run(binary):
             assert record['mode'] == 'api-key'
             return record['api_key']
 
-        def call(flag, *, key=None, vault=None, provider='openai', missing_bus=False):
+        def call(flag, *, key=None, vault=None, provider='openai', missing_bus=False, zai_env_override=None):
             env = dict(base)
             if missing_bus:
                 env['DBUS_SESSION_BUS_ADDRESS'] = f'unix:path={fixture}/absent-fixture-bus'
             if key is not None:
                 env[{'openai': 'OPENAI_API_KEY', 'xai': 'XAI_API_KEY', 'zai': 'ZAI_API_KEY'}[provider]] = key
+            if zai_env_override is not None:
+                env['ZAI_API_KEY'] = zai_env_override
             if vault is not None:
                 env['JARVIS_OPENAI_CREDENTIALS_PATH'] = str(vault)
             result = subprocess.run([binary, '--provider', provider, flag], env=env,
@@ -116,6 +118,10 @@ def run(binary):
         assert stored_key('xai') is None
         assert call('--check-auth', provider='zai').returncode != 0
         assert stored_key('zai') is None
+        # An explicitly selected optional local provider must never let the
+        # legacy Z.ai setup flag consume a stray ZAI_API_KEY from its environment.
+        assert call('--setup', provider='lmstudio', zai_env_override=first).returncode != 0
+        assert stored_key('zai') is None, 'LM Studio CLI selection mutated Z.ai native credentials'
         assert call('--setup', key=first, provider='zai').returncode == 0
         assert call('--check-auth', provider='zai').returncode == 0
         assert stored_key('zai') == first, 'Z.ai first native value differs'

@@ -130,18 +130,18 @@
       "evidence_commit": "f3745c95f44e63c64457b40c6c1b48bee8440f58"
     },
     {
-      "capability": "Production TUI and ACP OpenAI API-key credential lifecycle through isolated Linux native store",
+      "capability": "Production TUI and ACP OpenAI/xAI/Z.ai API-key and TUI LM Studio optional-key lifecycle through isolated Linux native store",
       "classification": "LOCAL LINUX PRODUCTION-HOST SCOPED ACCEPTANCE; CROSS-PLATFORM AND FULL PROVIDER MATRIX OPEN",
       "entry_point": "apps/jarvis-tui/tests/phase5b_native_lifecycle_pty.py; apps/jarvis-acp/tests/phase5b_native_cli_lifecycle.py",
       "runtime_consumer": "ordinary TUI Settings provider credential port and ordinary ACP --setup/--check-auth/--logout CLI -> SecureCredentialStore on private GNOME Secret Service",
-      "storage_identity": "fixed production OpenAI native-auth identity isolated by disposable private Linux D-Bus/home; synthetic UUID key values; xAI tested absent",
+      "storage_identity": "fixed production OpenAI/xAI native-auth and Z.ai api-key identities isolated by disposable private Linux D-Bus/home; synthetic UUID key values",
       "risk": "Fresh-process state loss, cross-provider fallback, failed preflight mutating native store or plaintext fallback",
-      "positive_test": "TUI save/restart/rotate/restart/remove/restart absence; ACP setup/check/rotate/check/logout/check on fresh processes",
-      "negative_test": "ACP foreign-owned fallback-path write and logout refuse while prior native credential remains configured; xAI remains absent; no secret in visible output",
+      "positive_test": "TUI OpenAI/xAI/Z.ai save/restart/rotate/restart/remove/restart absence with exact private native readback; ACP OpenAI/xAI setup/check/rotate/check/logout/check and Z.ai setup/check/rotate/check with exact private native readback; TUI LM Studio optional native key save/restart/rotate/restart/remove/restart exact readback",
+      "negative_test": "ACP foreign-owned fallback-path write and logout refuse while exact previous native credential remains; xAI and OpenAI cannot cross; no synthetic key in visible output; ACP missing private bus refuses write/delete, exact prior key retained, restoration recovers",
       "platform": "Linux x86_64 local bwrap private network and private GNOME Secret Service only",
-      "result": "PASS local bounded TUI and ACP host controls; exact rotated bytes, authenticated dispatch and macOS/Windows host/process matrix NOT TESTED",
-      "evidence": "2026-11-04-pr32-integration-host-lifecycle.md: each final process fixture printed PASS and private encrypted DH observer PASS; initial label, signed-out helper, and ownership-marker fixture errors were corrected; new candidate exact-head CI not yet run",
-      "evidence_commit": "local follow-on branch based on c6c5e012e2e1da7678ca7dbfd8a6895d606a950f"
+      "result": "PASS local bounded TUI OpenAI/xAI/Z.ai and ACP OpenAI/xAI save/rotate/logout plus Z.ai save/rotate, including exact synthetic native value; ACP Z.ai CLI logout NOT SUPPORTED, macOS/Windows host/process matrix NOT TESTED; no live provider dispatch; Linux ACP inaccessible private bus refusal/recovery PASS; TUI LM Studio native lifecycle local PASS; ACP LM Studio CLI controls NOT SUPPORTED, ACP process bearer refusal NOT TESTED",
+      "evidence": "2026-11-05-phase5b-auth-lifecycle-acceptance.md: local baseline and PR #37 real-host/private-DH receipts; PR #36 original distinct local evidence retained in 2026-11-05-phase5b-auth-acceptance-continuation.md; exact-head hosted enrollment pending; consolidated TUI LM Studio fourth provider executed locally",
+      "evidence_commit": "cebc452485999bbb3efe2694b599522f49277596 (local baseline); PR #37 candidate head pending"
     }
   ]
 }

@@ -266,6 +266,15 @@ jobs:
           fi
           command -v bwrap || echo "NOTE: bwrap unavailable - linux_bwrap tests will fail truthfully"
           cargo test --manifest-path spikes/process-sandbox/Cargo.toml --test linux_bwrap
+      - name: Verify Phase 5B production host native credential lifecycle
+        if: matrix.platform_spike == 'linux'
+        shell: bash
+        timeout-minutes: 8
+        run: |
+          # The earlier native preparation and host build must have succeeded;
+          # a missing bus, daemon, binary or network namespace fails this job.
+          bwrap --unshare-net --dev-bind / / --proc /proc python3 .github/linux_secret_service_fixture.py python3 apps/jarvis-acp/tests/phase5b_native_cli_lifecycle.py target/debug/jarvis-acp
+          bwrap --unshare-net --dev-bind / / --proc /proc python3 .github/linux_secret_service_fixture.py python3 apps/jarvis-tui/tests/phase5b_native_lifecycle_pty.py target/debug/jarvis-tui
       - name: Run macOS prepared conformance
         if: matrix.platform_spike == 'macos'
         shell: bash

@@ -257,6 +257,22 @@ async fn handle_native_auth_flags() -> Option<ExitCode> {
 
 fn handle_auth_flags() -> Option<ExitCode> {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
+    // This legacy handler only owns the Z.ai API-key CLI. A different
+    // explicitly selected provider must never consume ZAI_API_KEY or mutate
+    // that provider's native record via the legacy fallback.
+    let selected = provider_from_argv().or_else(|| std::env::var("JARVIS_PROVIDER").ok());
+    if selected
+        .as_deref()
+        .is_some_and(|id| id != "zai" && id != "glm")
+        && args
+            .iter()
+            .any(|arg| arg == "--setup" || arg == "--check-auth")
+    {
+        eprintln!(
+            "Authentication CLI control is unavailable for the selected provider; use native Settings."
+        );
+        return Some(ExitCode::FAILURE);
+    }
     if args.iter().any(|arg| arg == "--check-auth") {
         let source = jarvis_provider_glm::EnvironmentCredentialSource;
         if jarvis_provider_glm::resolve_credential(&source).is_ok() {

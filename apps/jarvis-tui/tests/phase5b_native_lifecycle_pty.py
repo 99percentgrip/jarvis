@@ -25,7 +25,7 @@ def run_one(binary, provider):
         fixture_owned_directory(root / 'config')
         key = 'synthetic-' + uuid.uuid4().hex
         rotated = 'synthetic-' + uuid.uuid4().hex
-        env = {'JARVIS_HOME': str(root / 'state'), 'ZAI_API_KEY': '',
+        env = {'JARVIS_HOME': str(root / 'state'), 'ZAI_API_KEY': '', 'LMSTUDIO_API_KEY': '',
                'JARVIS_VRO_ENABLED': '0', 'DBUS_SESSION_BUS_ADDRESS': os.environ['DBUS_SESSION_BUS_ADDRESS'],
                'XDG_RUNTIME_DIR': str(private / 'run'),
                ('JARVIS_CREDENTIALS_PATH' if provider == 'zai' else
@@ -33,13 +33,13 @@ def run_one(binary, provider):
 
         def stored_key():
             result = subprocess.run(['secret-tool', 'lookup', 'service', '99percentgrip.jarvis',
-                                     'username', f'{provider}:' + ('api-key' if provider == 'zai' else 'native-auth')],
+                                     'username', f'{provider}:' + ('api-key' if provider in ('zai', 'lmstudio') else 'native-auth')],
                                     capture_output=True,
                                     text=True, timeout=10)
             if result.returncode == 1 and not result.stdout and not result.stderr:
                 return None
             assert result.returncode == 0 and result.stdout, 'private native read failed'
-            if provider == 'zai':
+            if provider in ('zai', 'lmstudio'):
                 return result.stdout.rstrip('\n')
             record = json.loads(result.stdout)
             if record['mode'] == 'signed-out':
@@ -55,7 +55,7 @@ def run_one(binary, provider):
             host.choose(provider)
             host.choose(f'Manage authentication · {provider}')
             host.wait('Authentication')
-            if provider != 'zai':
+            if provider not in ('zai', 'lmstudio'):
                 host.choose('API key (usage-based billing)' if provider == 'openai'
                             else 'xAI API key (usage-based API billing)')
 
@@ -124,7 +124,7 @@ def run_one(binary, provider):
 
 
 def run(binary):
-    for provider in ('openai', 'xai', 'zai'):
+    for provider in ('openai', 'xai', 'zai', 'lmstudio'):
         run_one(binary, provider)
 
 
