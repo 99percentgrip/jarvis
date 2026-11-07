@@ -13,18 +13,19 @@ def prepare(environment, native=False):
     }.items()):
         raise RuntimeError("credential preparation requires disposable hosted Linux")
     ready = subprocess.run(["pkg-config", "--exists", "dbus-1"], check=False).returncode == 0
-    if not ready or (native and not shutil.which("gnome-keyring-daemon")):
+    if not ready or (native and (not shutil.which("gnome-keyring-daemon")
+                                 or not shutil.which("secret-tool"))):
         subprocess.run(["sudo", "--preserve-env=GITHUB_ACTIONS,RUNNER_OS", "python3",
                         ".github/prepare-linux-apt.py"], check=True, timeout=30)
         subprocess.run(["sudo", "apt-get", "update", "-qq"], check=True, timeout=120)
         packages = ["libdbus-1-dev", "pkg-config"]
         if native:
-            packages += ["gnome-keyring", "dbus", "dbus-x11"]
+            packages += ["gnome-keyring", "dbus", "dbus-x11", "libsecret-tools"]
         subprocess.run(["sudo", "apt-get", "install", "-y", *packages],
                        check=True, timeout=120)
     subprocess.run(["pkg-config", "--modversion", "dbus-1"], check=True, timeout=10)
     if native:
-        for command in ["gnome-keyring-daemon", "dbus-run-session", "dbus-monitor", "dbus-send"]:
+        for command in ["gnome-keyring-daemon", "dbus-run-session", "dbus-monitor", "dbus-send", "secret-tool"]:
             if not shutil.which(command):
                 raise RuntimeError(f"missing native credential fixture prerequisite: {command}")
 

@@ -63,6 +63,7 @@ jobs:
           python3 .github/test_workspace_tooling_identity.py
           python3 .github/test_credential_backend.py
           python3 .github/test_phase5b_host_enrollment.py
+          python3 .github/test_phase5b_native_prerequisites.py
       - name: Verify exact candidate acceptance regressions
         run: python3 scripts/test_jarvis_candidate_acceptance.py
       - name: Verify inherited naming policy before full build
